@@ -26,6 +26,8 @@ class Hte extends Model
 
     /**
      * All interns assigned to this HTE.
+     *
+     * @return HasMany<InternProfile, $this>
      */
     public function internProfiles(): HasMany
     {
@@ -35,6 +37,8 @@ class Hte extends Model
     /**
      * All supervisors assigned to this HTE.
      * (An HTE Supervisor's dashboard is scoped to just these interns — FR-17.)
+     *
+     * @return HasMany<SupervisorProfile, $this>
      */
     public function supervisorProfiles(): HasMany
     {

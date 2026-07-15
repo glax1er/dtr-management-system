@@ -25,6 +25,8 @@ class AttendanceLog extends Model
 
     /**
      * The intern who was scanned (a User with role = intern).
+     *
+     * @return BelongsTo<User, $this>
      */
     public function intern(): BelongsTo
     {
@@ -34,6 +36,8 @@ class AttendanceLog extends Model
     /**
      * That intern's profile fields directly (id_number, hte, program, etc.),
      * useful when you need those without also loading the User relation.
+     *
+     * @return BelongsTo<InternProfile, $this>
      */
     public function internProfile(): BelongsTo
     {
@@ -43,6 +47,8 @@ class AttendanceLog extends Model
     /**
      * The supervisor whose scanner recorded this entry (a User with
      * role = supervisor) — FR-28.
+     *
+     * @return BelongsTo<User, $this>
      */
     public function supervisor(): BelongsTo
     {

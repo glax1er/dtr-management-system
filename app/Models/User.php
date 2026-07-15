@@ -59,6 +59,8 @@ class User extends Authenticatable implements PasskeyUser
     /**
      * The intern-specific fields for this user, if role = intern.
      * Null for admin/supervisor accounts.
+     *
+     * @return HasOne<InternProfile, $this>
      */
     public function internProfile(): HasOne
     {
@@ -68,6 +70,8 @@ class User extends Authenticatable implements PasskeyUser
     /**
      * The supervisor-specific fields for this user, if role = supervisor.
      * Null for admin/intern accounts.
+     *
+     * @return HasOne<SupervisorProfile, $this>
      */
     public function supervisorProfile(): HasOne
     {

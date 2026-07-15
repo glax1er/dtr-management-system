@@ -24,6 +24,8 @@ class Program extends Model
 
     /**
      * All intern profiles enrolled under this program.
+     *
+     * @return HasMany<InternProfile, $this>
      */
     public function internProfiles(): HasMany
     {
