@@ -24,12 +24,17 @@ class SupervisorProfile extends Model
 
     /**
      * The shared auth record (name, email, password, role) for this supervisor.
+     *
+     * @return BelongsTo<User, $this>
      */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
+    /**
+     * @return BelongsTo<Hte, $this>
+     */
     public function hte(): BelongsTo
     {
         return $this->belongsTo(Hte::class, 'hte_id', 'hte_id');
@@ -39,6 +44,8 @@ class SupervisorProfile extends Model
      * Every attendance log this supervisor's scanner has recorded
      * (across all interns, not just their own HTE's — though in
      * practice a supervisor only ever scans their own HTE's interns).
+     *
+     * @return HasMany<AttendanceLog, $this>
      */
     public function scannedLogs(): HasMany
     {

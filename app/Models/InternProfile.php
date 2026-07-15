@@ -37,17 +37,25 @@ class InternProfile extends Model
 
     /**
      * The shared auth record (name, email, password, role) for this intern.
+     *
+     * @return BelongsTo<User, $this>
      */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
+    /**
+     * @return BelongsTo<Hte, $this>
+     */
     public function hte(): BelongsTo
     {
         return $this->belongsTo(Hte::class, 'hte_id', 'hte_id');
     }
 
+    /**
+     * @return BelongsTo<Program, $this>
+     */
     public function program(): BelongsTo
     {
         return $this->belongsTo(Program::class, 'program_id', 'program_id');
@@ -57,6 +65,8 @@ class InternProfile extends Model
      * Raw scan history for this intern (every Time In / Time Out scan).
      * Joins through users.id since attendance_logs references the
      * shared users table, not this profile table directly.
+     *
+     * @return HasMany<AttendanceLog, $this>
      */
     public function attendanceLogs(): HasMany
     {
