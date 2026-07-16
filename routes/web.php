@@ -14,6 +14,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             User::ROLE_ADMIN => 'admin.dashboard',
             User::ROLE_SUPERVISOR => 'supervisor.dashboard',
             User::ROLE_INTERN => 'intern.dashboard',
+            default => throw new \UnexpectedValueException('Invalid user role.'), // fallback route if role is not recognized
         });
     })->name('dashboard');
 

@@ -18,11 +18,11 @@ class AdminSeeder extends Seeder
      */
     public function run(): void
     {
-        $email = env('ADMIN_EMAIL');
-        $password = env('ADMIN_PASSWORD');
+        $email = config('admin.email');
+        $password = config('admin.password');
 
         if (app()->environment('production') && (! $email || ! $password)) {
-            $this->command?->warn(
+            $this->command->warn(
                 'Skipping AdminSeeder: ADMIN_EMAIL / ADMIN_PASSWORD are not set in production.',
             );
 
