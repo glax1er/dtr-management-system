@@ -103,3 +103,60 @@ test('only counts scans from the requested day', function () {
 
     expect($result->timeIn->format('Y-m-d H:i'))->toBe('2026-07-16 09:00');
 });
+
+test('a completed day under 30 minutes is flagged as suspiciously short', function () {
+    scan($this->intern, $this->supervisor, '2026-07-16 08:00');
+    scan($this->intern, $this->supervisor, '2026-07-16 08:10');
+
+    $result = ($this->compute)($this->intern->id, Carbon::parse('2026-07-16'));
+
+    expect($result->isSuspiciouslyShort)->toBeTrue()
+        ->and($result->isComplete())->toBeTrue();
+});
+
+test('a completed day at exactly 30 minutes is not flagged', function () {
+    scan($this->intern, $this->supervisor, '2026-07-16 08:00');
+    scan($this->intern, $this->supervisor, '2026-07-16 08:30');
+
+    $result = ($this->compute)($this->intern->id, Carbon::parse('2026-07-16'));
+
+    expect($result->isSuspiciouslyShort)->toBeFalse();
+});
+
+test('a normal full day is not flagged as short', function () {
+    scan($this->intern, $this->supervisor, '2026-07-16 08:00');
+    scan($this->intern, $this->supervisor, '2026-07-16 17:00');
+
+    $result = ($this->compute)($this->intern->id, Carbon::parse('2026-07-16'));
+
+    expect($result->isSuspiciouslyShort)->toBeFalse();
+});
+
+test('an incomplete day (single scan) is not flagged as short', function () {
+    scan($this->intern, $this->supervisor, '2026-07-16 08:00');
+
+    $result = ($this->compute)($this->intern->id, Carbon::parse('2026-07-16'));
+
+    expect($result->isSuspiciouslyShort)->toBeFalse()
+        ->and($result->isComplete())->toBeFalse();
+});
+
+test('a day with no scans at all is not flagged as short', function () {
+    $result = ($this->compute)($this->intern->id, Carbon::parse('2026-07-16'));
+
+    expect($result->isSuspiciouslyShort)->toBeFalse();
+});
+
+test('the short-shift flag is based on the raw gap, not the lunch-deducted hours', function () {
+    // A shift entirely inside the lunch window: raw gap is 30 minutes
+    // (not flagged as short), but hours rendered clamps to 0 after
+    // the lunch deduction. These are two separate concerns and should
+    // not be conflated.
+    scan($this->intern, $this->supervisor, '2026-07-16 12:15');
+    scan($this->intern, $this->supervisor, '2026-07-16 12:45');
+
+    $result = ($this->compute)($this->intern->id, Carbon::parse('2026-07-16'));
+
+    expect($result->isSuspiciouslyShort)->toBeFalse()
+        ->and($result->hours)->toBe(0.0);
+});

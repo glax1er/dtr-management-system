@@ -28,6 +28,20 @@ class ComputeRenderedHoursForDay
 
     private const int LUNCH_END_HOUR = 13;
 
+    /**
+     * A completed day (time-in and time-out both present) with a raw
+     * gap under this many minutes is flagged for Sir Tupas/Admin to
+     * review, rather than silently accepted as a valid full day. This
+     * sits above the 5-minute debounce in RecordScan on purpose: the
+     * debounce already prevents any two *recorded* scans for the same
+     * intern from being closer together than 5 minutes, so a lower
+     * threshold here could never actually trigger. 30 minutes catches
+     * the "cleared the debounce but still clearly not a real shift"
+     * case — e.g. two scans 10 minutes apart — without flagging
+     * legitimate short partial days.
+     */
+    private const int SHORT_SHIFT_THRESHOLD_MINUTES = 30;
+
     public function __invoke(int $internUserId, CarbonInterface $date): RenderedHours
     {
         $scans = AttendanceLog::query()
@@ -37,13 +51,25 @@ class ComputeRenderedHoursForDay
             ->pluck('scan_timestamp');
 
         if ($scans->isEmpty()) {
-            return new RenderedHours(timeIn: null, timeOut: null, hours: 0.0, lunchDeducted: false);
+            return new RenderedHours(
+                timeIn: null,
+                timeOut: null,
+                hours: 0.0,
+                lunchDeducted: false,
+                isSuspiciouslyShort: false,
+            );
         }
 
         // Only one scan today: we have a time-in, but no time-out to
         // pair it with yet. Report it as incomplete rather than guessing.
         if ($scans->count() === 1) {
-            return new RenderedHours(timeIn: $scans->first(), timeOut: null, hours: 0.0, lunchDeducted: false);
+            return new RenderedHours(
+                timeIn: $scans->first(),
+                timeOut: null,
+                hours: 0.0,
+                lunchDeducted: false,
+                isSuspiciouslyShort: false,
+            );
         }
 
         $timeIn = $scans->first();
@@ -58,7 +84,13 @@ class ComputeRenderedHoursForDay
         // ends) does not, so it isn't wrongly docked an hour.
         $crossesLunch = $timeIn->lt($lunchEnd) && $timeOut->gt($lunchStart);
 
-        $minutes = $timeIn->diffInMinutes($timeOut);
+        // Checked on the raw gap, before any lunch deduction — this is
+        // a plausibility check ("was this really a shift?"), a
+        // separate concern from how much of it gets paid.
+        $rawMinutes = $timeIn->diffInMinutes($timeOut);
+        $isSuspiciouslyShort = $rawMinutes < self::SHORT_SHIFT_THRESHOLD_MINUTES;
+
+        $minutes = $rawMinutes;
 
         if ($crossesLunch) {
             // max(0, ...) guards a rare edge case: a shift entirely inside
@@ -72,6 +104,7 @@ class ComputeRenderedHoursForDay
             timeOut: $timeOut,
             hours: round($minutes / 60, 2),
             lunchDeducted: $crossesLunch,
+            isSuspiciouslyShort: $isSuspiciouslyShort,
         );
     }
 }
