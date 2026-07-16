@@ -6,12 +6,15 @@ use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Models\Hte;
 use App\Models\Program;
+use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
@@ -35,6 +38,7 @@ class FortifyServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureActions();
+        $this->configureAuthentication();
         $this->configureViews();
         $this->configureRateLimiting();
     }
@@ -46,6 +50,39 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::createUsersUsing(CreateNewUser::class);
+    }
+
+    /**
+     * Configure how Fortify authenticates login attempts.
+     *
+     * Replaces Fortify's default credential check so we can block interns
+     * whose `intern_profiles.status` isn't `approved` yet from logging in,
+     * even with correct credentials.
+     */
+    private function configureAuthentication(): void
+    {
+        Fortify::authenticateUsing(function (Request $request) {
+            $user = User::where('email', $request->email)->first();
+
+            if (! $user || ! Hash::check((string) $request->password, $user->password)) {
+                return null;
+            }
+
+            if ($user->isIntern()) {
+                $status = $user->internProfile?->status;
+
+                if ($status !== 'approved') {
+                    throw ValidationException::withMessages([
+                        Fortify::username() => match ($status) {
+                            'rejected' => 'Your registration was not approved. Please contact your program coordinator.',
+                            default => 'Your registration is still pending admin approval. Please check back later.',
+                        },
+                    ]);
+                }
+            }
+
+            return $user;
+        });
     }
 
     /**
