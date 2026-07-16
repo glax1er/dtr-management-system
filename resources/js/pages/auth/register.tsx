@@ -5,15 +5,34 @@ import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { login } from '@/routes';
 import { store } from '@/routes/register';
 
-type Props = {
-    passwordRules: string;
+type Program = {
+    program_id: number;
+    program_name: string;
 };
 
-export default function Register({ passwordRules }: Props) {
+type Hte = {
+    hte_id: number;
+    hte_name: string;
+};
+
+type Props = {
+    passwordRules: string;
+    programs: Program[];
+    htes: Hte[];
+};
+
+export default function Register({ passwordRules, programs, htes }: Props) {
     return (
         <>
             <Head title="Register" />
@@ -59,11 +78,114 @@ export default function Register({ passwordRules }: Props) {
                             </div>
 
                             <div className="grid gap-2">
+                                <Label htmlFor="id_number">ID number</Label>
+                                <Input
+                                    id="id_number"
+                                    type="text"
+                                    required
+                                    tabIndex={3}
+                                    autoComplete="off"
+                                    name="id_number"
+                                    placeholder="e.g. 2021-00123"
+                                />
+                                <InputError message={errors.id_number} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="contact_number">
+                                    Contact number
+                                </Label>
+                                <Input
+                                    id="contact_number"
+                                    type="text"
+                                    tabIndex={4}
+                                    autoComplete="tel"
+                                    name="contact_number"
+                                    placeholder="09XXXXXXXXX (optional)"
+                                />
+                                <InputError message={errors.contact_number} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="sex">Sex</Label>
+                                <Select name="sex" required>
+                                    <SelectTrigger
+                                        id="sex"
+                                        tabIndex={5}
+                                        className="w-full"
+                                    >
+                                        <SelectValue placeholder="Select sex" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="male">
+                                            Male
+                                        </SelectItem>
+                                        <SelectItem value="female">
+                                            Female
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <InputError message={errors.sex} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="program_id">Program</Label>
+                                <Select name="program_id" required>
+                                    <SelectTrigger
+                                        id="program_id"
+                                        tabIndex={6}
+                                        className="w-full"
+                                    >
+                                        <SelectValue placeholder="Select program" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {programs.map((program) => (
+                                            <SelectItem
+                                                key={program.program_id}
+                                                value={String(
+                                                    program.program_id,
+                                                )}
+                                            >
+                                                {program.program_name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <InputError message={errors.program_id} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="hte_id">
+                                    Host training establishment
+                                </Label>
+                                <Select name="hte_id" required>
+                                    <SelectTrigger
+                                        id="hte_id"
+                                        tabIndex={7}
+                                        className="w-full"
+                                    >
+                                        <SelectValue placeholder="Select HTE" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {htes.map((hte) => (
+                                            <SelectItem
+                                                key={hte.hte_id}
+                                                value={String(hte.hte_id)}
+                                            >
+                                                {hte.hte_name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <InputError message={errors.hte_id} />
+                            </div>
+
+                            <div className="grid gap-2">
                                 <Label htmlFor="password">Password</Label>
                                 <PasswordInput
                                     id="password"
                                     required
-                                    tabIndex={3}
+                                    tabIndex={8}
                                     autoComplete="new-password"
                                     name="password"
                                     placeholder="Password"
@@ -79,7 +201,7 @@ export default function Register({ passwordRules }: Props) {
                                 <PasswordInput
                                     id="password_confirmation"
                                     required
-                                    tabIndex={4}
+                                    tabIndex={9}
                                     autoComplete="new-password"
                                     name="password_confirmation"
                                     placeholder="Confirm password"
@@ -93,7 +215,7 @@ export default function Register({ passwordRules }: Props) {
                             <Button
                                 type="submit"
                                 className="mt-2 w-full"
-                                tabIndex={5}
+                                tabIndex={10}
                                 data-test="register-user-button"
                             >
                                 {processing && <Spinner />}
@@ -103,7 +225,7 @@ export default function Register({ passwordRules }: Props) {
 
                         <div className="text-center text-sm text-muted-foreground">
                             Already have an account?{' '}
-                            <TextLink href={login()} tabIndex={6}>
+                            <TextLink href={login()} tabIndex={11}>
                                 Log in
                             </TextLink>
                         </div>

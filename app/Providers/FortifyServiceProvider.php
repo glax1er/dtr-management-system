@@ -14,6 +14,9 @@ use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
 
+use App\Models\Hte;
+use App\Models\Program;
+
 class FortifyServiceProvider extends ServiceProvider
 {
     /**
@@ -69,6 +72,14 @@ class FortifyServiceProvider extends ServiceProvider
 
         Fortify::registerView(fn () => Inertia::render('auth/register', [
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
+            'programs' => Program::query()
+                ->where('is_active', true)
+                ->orderBy('program_name')
+                ->get(['program_id', 'program_name']),
+            'htes' => Hte::query()
+                ->where('status', 'active')
+                ->orderBy('hte_name')
+                ->get(['hte_id', 'hte_name']),
         ]));
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge'));
