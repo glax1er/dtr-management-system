@@ -1,8 +1,17 @@
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, router } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -28,11 +37,33 @@ type Hte = {
 
 type Props = {
     passwordRules: string;
+    registered?: boolean;
     programs: Program[];
     htes: Hte[];
 };
 
-export default function Register({ passwordRules, programs, htes }: Props) {
+export default function Register({
+    passwordRules,
+    registered,
+    programs,
+    htes,
+}: Props) {
+    const [showApprovalDialog, setShowApprovalDialog] = useState(
+        registered ?? false,
+    );
+
+    // Inertia redirects back to this same page component after a
+    // successful registration — it doesn't remount, it just updates
+    // props. So the dialog has to react to `registered` changing,
+    // not just its value at first mount.
+    useEffect(() => {
+        if (registered) {
+            setShowApprovalDialog(true);
+        }
+    }, [registered]);
+
+    const goToLogin = () => router.visit(login());
+
     return (
         <>
             <Head title="Register" />
@@ -232,6 +263,30 @@ export default function Register({ passwordRules, programs, htes }: Props) {
                     </>
                 )}
             </Form>
+
+            <Dialog
+                open={showApprovalDialog}
+                onOpenChange={(open) => {
+                    setShowApprovalDialog(open);
+                    if (!open) {
+                        goToLogin();
+                    }
+                }}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Registration submitted</DialogTitle>
+                        <DialogDescription>
+                            Your account has been created and is now pending
+                            approval from an administrator. You'll be able to
+                            log in once your registration has been approved.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button onClick={goToLogin}>Go to login</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
