@@ -16,7 +16,7 @@ import {
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 
-const mainNavItems: NavItem[] = [
+const baseNavItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: dashboard(),
@@ -38,6 +38,8 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
+    const mainNavItems = baseNavItems;
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
