@@ -27,10 +27,10 @@ class DashboardController extends Controller
                 'program_name' => $profile->program->program_name,
                 'registered_at' => $profile->registered_at->diffForHumans(),
             ]);
-
+        
         return Inertia::render('admin/dashboard', [
             'pendingApprovals' => $pendingInterns->count(),
-            'totalInterns' => User::where('role', User::ROLE_INTERN)->count(),
+            'totalInterns' => InternProfile::where('status', 'approved')->count(),
             'totalSupervisors' => User::where('role', User::ROLE_SUPERVISOR)->count(),
             'activePrograms' => \App\Models\Program::where('is_active', true)->count(),
             'pendingInterns' => $pendingInterns,
