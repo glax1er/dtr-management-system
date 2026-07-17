@@ -2,6 +2,7 @@ export type User = {
     id: number;
     name: string;
     email: string;
+    role: 'admin' | 'supervisor' | 'intern';
     avatar?: string;
     email_verified_at: string | null;
     two_factor_enabled?: boolean;
@@ -10,9 +11,14 @@ export type User = {
     [key: string]: unknown;
 };
 
-export type Auth = {
-    user: User;
-};
+    export type Auth = {
+        user: User;
+    };
+
+    export type PageProps = {
+        auth: Auth;
+        [key: string]: unknown;
+    };
 
 /* @chisel-passkeys */
 export type Passkey = {
