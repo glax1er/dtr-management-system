@@ -3,10 +3,12 @@
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\InternApprovalController;
 use App\Http\Controllers\Admin\SupervisorController;
+use App\Http\Controllers\Intern\DashboardController as InternDashboardController;
+use App\Http\Controllers\Intern\DtrReportController;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'welcome')->name('home');
+Route::redirect('/', '/login')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
@@ -19,7 +21,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
     })->name('dashboard');
 
-    Route::middleware('role:'.User::ROLE_ADMIN)->prefix('admin')->name('admin.')->group(function () {
+    Route::middleware('role:' . User::ROLE_ADMIN)->prefix('admin')->name('admin.')->group(function () {
         Route::get('dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
         Route::post('interns/{internProfile}/approve', [InternApprovalController::class, 'approve'])
@@ -34,13 +36,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('supervisors.updateStatus');
     });
 
-    Route::middleware('role:'.User::ROLE_SUPERVISOR)->prefix('supervisor')->name('supervisor.')->group(function () {
+    Route::middleware('role:' . User::ROLE_SUPERVISOR)->prefix('supervisor')->name('supervisor.')->group(function () {
         Route::inertia('dashboard', 'supervisor/dashboard')->name('dashboard');
     });
 
-    Route::middleware('role:'.User::ROLE_INTERN)->prefix('intern')->name('intern.')->group(function () {
-        Route::inertia('dashboard', 'intern/dashboard')->name('dashboard');
+    Route::middleware('role:' . User::ROLE_INTERN)->prefix('intern')->name('intern.')->group(function () {
+        Route::get('dashboard', [InternDashboardController::class, 'index'])->name('dashboard');
+        Route::get('dtr-report', [DtrReportController::class, 'download'])->name('dtr-report.download');
     });
 });
 
-require __DIR__.'/settings.php';
+require __DIR__ . '/settings.php';
