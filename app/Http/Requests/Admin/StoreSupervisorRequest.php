@@ -2,21 +2,23 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Concerns\ProfileValidationRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class StoreSupervisorRequest extends FormRequest
 {
+    use ProfileValidationRules;
+
     public function authorize(): bool
     {
-        return true; // gate already enforced by 'role:admin' route middleware
+        return true;
     }
 
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')],
+            ...$this->profileRules(),
             'hte_id' => ['required', 'integer', Rule::exists('htes', 'hte_id')],
         ];
     }

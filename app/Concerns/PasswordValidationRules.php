@@ -8,20 +8,21 @@ use Illuminate\Validation\Rules\Password;
 trait PasswordValidationRules
 {
     /**
-     * Get the validation rules used to validate passwords.
+     * Requires 8+ chars, at least one uppercase, one lowercase,
+     * one number, and one symbol.
      *
      * @return array<int, Password|ValidationRule|array<mixed>|string>
      */
     protected function passwordRules(): array
     {
-        return ['required', 'string', Password::default(), 'confirmed'];
+        return [
+            'required',
+            'string',
+            Password::default()->mixedCase()->numbers()->symbols(),
+            'confirmed',
+        ];
     }
 
-    /**
-     * Get the validation rules used to validate the current password.
-     *
-     * @return array<int, Password|ValidationRule|array<mixed>|string>
-     */
     protected function currentPasswordRules(): array
     {
         return ['required', 'string', 'current_password'];

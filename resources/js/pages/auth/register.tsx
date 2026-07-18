@@ -52,10 +52,6 @@ export default function Register({
         registered ?? false,
     );
 
-    // Inertia redirects back to this same page component after a
-    // successful registration — it doesn't remount, it just updates
-    // props. So the dialog has to react to `registered` changing,
-    // not just its value at first mount.
     useEffect(() => {
         if (registered) {
             setShowApprovalDialog(true);
@@ -75,119 +71,156 @@ export default function Register({
             >
                 {({ processing, errors }) => (
                     <>
-                        <div className="grid gap-6">
-                            <div className="grid gap-2">
-                                <Label htmlFor="name">Name</Label>
-                                <Input
-                                    id="name"
-                                    type="text"
-                                    required
-                                    autoFocus
-                                    tabIndex={1}
-                                    autoComplete="name"
-                                    name="name"
-                                    placeholder="Full name"
-                                />
-                                <InputError
-                                    message={errors.name}
-                                    className="mt-2"
-                                />
+                        <div className="grid gap-4">
+                            {/* Name / Email */}
+                            <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="name">
+                                        Name{' '}
+                                        <span className="text-red-500">
+                                            *
+                                        </span>
+                                    </Label>
+                                    <Input
+                                        id="name"
+                                        type="text"
+                                        required
+                                        autoFocus
+                                        tabIndex={1}
+                                        autoComplete="name"
+                                        name="name"
+                                        placeholder="Full name"
+                                    />
+                                    <InputError message={errors.name} />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="email">
+                                        Email address{' '}
+                                        <span className="text-red-500">
+                                            *
+                                        </span>
+                                    </Label>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        required
+                                        tabIndex={2}
+                                        autoComplete="email"
+                                        name="email"
+                                        placeholder="email@usep.edu.ph"
+                                    />
+                                    <InputError message={errors.email} />
+                                </div>
                             </div>
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    required
-                                    tabIndex={2}
-                                    autoComplete="email"
-                                    name="email"
-                                    placeholder="email@example.com"
-                                />
-                                <InputError message={errors.email} />
+                            {/* ID number / Contact number */}
+                            <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="id_number">
+                                        ID number{' '}
+                                        <span className="text-red-500">
+                                            *
+                                        </span>
+                                    </Label>
+                                    <Input
+                                        id="id_number"
+                                        type="text"
+                                        required
+                                        tabIndex={3}
+                                        autoComplete="off"
+                                        name="id_number"
+                                        placeholder="e.g. 2021-00123"
+                                    />
+                                    <InputError message={errors.id_number} />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="contact_number">
+                                        Contact Number (optional)
+                                    </Label>
+                                    <Input
+                                        id="contact_number"
+                                        type="text"
+                                        tabIndex={4}
+                                        autoComplete="tel"
+                                        name="contact_number"
+                                        placeholder="09XXXXXXXXX"
+                                    />
+                                    <InputError
+                                        message={errors.contact_number}
+                                    />
+                                </div>
                             </div>
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="id_number">ID number</Label>
-                                <Input
-                                    id="id_number"
-                                    type="text"
-                                    required
-                                    tabIndex={3}
-                                    autoComplete="off"
-                                    name="id_number"
-                                    placeholder="e.g. 2021-00123"
-                                />
-                                <InputError message={errors.id_number} />
-                            </div>
-
-                            <div className="grid gap-2">
-                                <Label htmlFor="contact_number">
-                                    Contact number
-                                </Label>
-                                <Input
-                                    id="contact_number"
-                                    type="text"
-                                    tabIndex={4}
-                                    autoComplete="tel"
-                                    name="contact_number"
-                                    placeholder="09XXXXXXXXX (optional)"
-                                />
-                                <InputError message={errors.contact_number} />
-                            </div>
-
-                            <div className="grid gap-2">
-                                <Label htmlFor="sex">Sex</Label>
-                                <Select name="sex" required>
-                                    <SelectTrigger
-                                        id="sex"
-                                        tabIndex={5}
-                                        className="w-full"
-                                    >
-                                        <SelectValue placeholder="Select sex" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="male">
-                                            Male
-                                        </SelectItem>
-                                        <SelectItem value="female">
-                                            Female
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <InputError message={errors.sex} />
-                            </div>
-
-                            <div className="grid gap-2">
-                                <Label htmlFor="program_id">Program</Label>
-                                <Select name="program_id" required>
-                                    <SelectTrigger
-                                        id="program_id"
-                                        tabIndex={6}
-                                        className="w-full"
-                                    >
-                                        <SelectValue placeholder="Select program" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {programs.map((program) => (
-                                            <SelectItem
-                                                key={program.program_id}
-                                                value={String(
-                                                    program.program_id,
-                                                )}
-                                            >
-                                                {program.program_name}
+                            {/* Sex / Program */}
+                            <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="sex">
+                                        Sex{' '}
+                                        <span className="text-red-500">
+                                            *
+                                        </span>
+                                    </Label>
+                                    <Select name="sex" required>
+                                        <SelectTrigger
+                                            id="sex"
+                                            tabIndex={5}
+                                            className="w-full"
+                                        >
+                                            <SelectValue placeholder="Select sex" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="male">
+                                                Male
                                             </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <InputError message={errors.program_id} />
+                                            <SelectItem value="female">
+                                                Female
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <InputError message={errors.sex} />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="program_id">
+                                        Program{' '}
+                                        <span className="text-red-500">
+                                            *
+                                        </span>
+                                    </Label>
+                                    <Select name="program_id" required>
+                                        <SelectTrigger
+                                            id="program_id"
+                                            tabIndex={6}
+                                            className="w-full"
+                                        >
+                                            <SelectValue placeholder="Select program" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {programs.map((program) => (
+                                                <SelectItem
+                                                    key={program.program_id}
+                                                    value={String(
+                                                        program.program_id,
+                                                    )}
+                                                >
+                                                    {program.program_name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <InputError
+                                        message={errors.program_id}
+                                    />
+                                </div>
                             </div>
 
+                            {/* HTE (full width) */}
                             <div className="grid gap-2">
                                 <Label htmlFor="hte_id">
-                                    Host training establishment
+                                    Host training establishment{' '}
+                                    <span className="text-red-500">*</span>
                                 </Label>
                                 <Select name="hte_id" required>
                                     <SelectTrigger
@@ -211,36 +244,49 @@ export default function Register({
                                 <InputError message={errors.hte_id} />
                             </div>
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="password">Password</Label>
-                                <PasswordInput
-                                    id="password"
-                                    required
-                                    tabIndex={8}
-                                    autoComplete="new-password"
-                                    name="password"
-                                    placeholder="Password"
-                                    passwordrules={passwordRules}
-                                />
-                                <InputError message={errors.password} />
-                            </div>
+                            {/* Password / Confirm password */}
+                            <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="password">
+                                        Password{' '}
+                                        <span className="text-red-500">
+                                            *
+                                        </span>
+                                    </Label>
+                                    <PasswordInput
+                                        id="password"
+                                        required
+                                        tabIndex={8}
+                                        autoComplete="new-password"
+                                        name="password"
+                                        placeholder="Password"
+                                        passwordrules={passwordRules}
+                                    />
+                                    <InputError message={errors.password} />
+                                </div>
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="password_confirmation">
-                                    Confirm password
-                                </Label>
-                                <PasswordInput
-                                    id="password_confirmation"
-                                    required
-                                    tabIndex={9}
-                                    autoComplete="new-password"
-                                    name="password_confirmation"
-                                    placeholder="Confirm password"
-                                    passwordrules={passwordRules}
-                                />
-                                <InputError
-                                    message={errors.password_confirmation}
-                                />
+                                <div className="grid gap-2">
+                                    <Label htmlFor="password_confirmation">
+                                        Confirm password{' '}
+                                        <span className="text-red-500">
+                                            *
+                                        </span>
+                                    </Label>
+                                    <PasswordInput
+                                        id="password_confirmation"
+                                        required
+                                        tabIndex={9}
+                                        autoComplete="new-password"
+                                        name="password_confirmation"
+                                        placeholder="Confirm password"
+                                        passwordrules={passwordRules}
+                                    />
+                                    <InputError
+                                        message={
+                                            errors.password_confirmation
+                                        }
+                                    />
+                                </div>
                             </div>
 
                             <Button
@@ -294,4 +340,5 @@ export default function Register({
 Register.layout = {
     title: 'Create an account',
     description: 'Enter your details below to create your account',
+    maxWidth: 'max-w-xl',
 };

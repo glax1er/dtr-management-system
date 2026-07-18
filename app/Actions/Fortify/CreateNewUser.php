@@ -29,9 +29,18 @@ class CreateNewUser implements CreatesNewUsers
         Validator::make($input, [
             ...$this->profileRules(),
 
-            'id_number' => ['required', 'string', 'max:50', 'unique:intern_profiles,id_number'],
+            'id_number' => [
+                'required',
+                'string',
+                'regex:/^\d{4}-\d{5}$/',
+                'unique:intern_profiles,id_number',
+            ],
 
-            'contact_number' => ['nullable', 'string', 'max:20'],
+            'contact_number' => [
+                'nullable',
+                'string',
+                'regex:/^09\d{9}$/',
+            ],
 
             'sex' => ['required', 'in:male,female'],
 
@@ -40,6 +49,13 @@ class CreateNewUser implements CreatesNewUsers
             'hte_id' => ['required', 'integer', 'exists:htes,hte_id'],
 
             'password' => $this->passwordRules(),
+        ], [
+            'id_number.regex' => 'Format must be XXXX-XXXXX.',
+            'contact_number.regex' => 'Must be 11 digits starting with 09.',
+            'password.mixed_case' => 'Must include uppercase, lowercase, a number, and a symbol.',
+            'password.numbers' => 'Must include uppercase, lowercase, a number, and a symbol.',
+            'password.symbols' => 'Must include uppercase, lowercase, a number, and a symbol.',
+            'password.min' => 'Must include uppercase, lowercase, a number, and a symbol.',
         ])->validate();
 
         return DB::transaction(function () use ($input) {
