@@ -8,11 +8,6 @@ use Illuminate\Validation\Rule;
 
 trait ProfileValidationRules
 {
-    /**
-     * Get the validation rules used to validate user profiles.
-     *
-     * @return array<string, array<int, ValidationRule|array<mixed>|string>>
-     */
     protected function profileRules(?int $userId = null): array
     {
         return [
@@ -22,17 +17,23 @@ trait ProfileValidationRules
     }
 
     /**
-     * Get the validation rules used to validate user names.
+     * Requires at least two words (first + last name), to prevent
+     * someone registering with only a single-word name.
      *
      * @return array<int, ValidationRule|array<mixed>|string>
      */
     protected function nameRules(): array
     {
-        return ['required', 'string', 'max:255'];
+        return [
+            'required',
+            'string',
+            'max:255',
+            'regex:/^\S+(\s+\S+)+$/',
+        ];
     }
 
     /**
-     * Get the validation rules used to validate user emails.
+     * Restricts registration to official @usep.edu.ph email addresses.
      *
      * @return array<int, ValidationRule|array<mixed>|string>
      */
@@ -43,6 +44,7 @@ trait ProfileValidationRules
             'string',
             'email',
             'max:255',
+            'regex:/^[^@\s]+@usep\.edu\.ph$/i',
             $userId === null
                 ? Rule::unique(User::class)
                 : Rule::unique(User::class)->ignore($userId),
