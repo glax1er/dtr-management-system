@@ -15,11 +15,13 @@ class Program extends Model
     protected $fillable = [
         'program_name',
         'is_active',
+        'required_hours',
     ];
 
     protected $casts = [
-        'is_active'  => 'boolean',
-        'created_at' => 'datetime',
+        'is_active'      => 'boolean',
+        'required_hours' => 'integer',
+        'created_at'     => 'datetime',
     ];
 
     /**
