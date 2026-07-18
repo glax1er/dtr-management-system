@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\InternApprovalController;
+use App\Http\Controllers\Admin\SupervisorController;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
@@ -25,6 +26,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('interns.approve');
         Route::post('interns/{internProfile}/reject', [InternApprovalController::class, 'reject'])
             ->name('interns.reject');
+
+        Route::get('supervisors', [SupervisorController::class, 'index'])->name('supervisors.index');
+        Route::post('supervisors', [SupervisorController::class, 'store'])->name('supervisors.store');
+
+        Route::patch('supervisors/{supervisorProfile}/status', [SupervisorController::class, 'updateStatus'])
+            ->name('supervisors.updateStatus');
     });
 
     Route::middleware('role:'.User::ROLE_SUPERVISOR)->prefix('supervisor')->name('supervisor.')->group(function () {
