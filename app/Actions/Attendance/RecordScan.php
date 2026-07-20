@@ -19,12 +19,6 @@ use Illuminate\Support\Facades\Date;
  * this action actually decides is whether to write anything at all
  * (QR / approval / HTE checks, debounce), and what display label to
  * hand back to the scanner screen.
- *
- * Deliberately not wired to a route/controller yet: there is no
- * role-based auth middleware in the app yet to resolve "the currently
- * logged-in supervisor," so this is built as a self-contained,
- * directly-testable action that a thin controller can call the
- * moment that auth piece lands.
  */
 class RecordScan
 {
@@ -86,6 +80,7 @@ class RecordScan
         return new ScanResult(
             internUserId: $internProfile->user_id,
             internName: $internProfile->user->name,
+            idNumber: $internProfile->id_number,
             label: $this->labelForScanCountToday($internProfile->user_id, $at),
             timestamp: $isDuplicate ? $lastScan->scan_timestamp : $at,
             isDuplicate: $isDuplicate,
@@ -95,7 +90,7 @@ class RecordScan
     /**
      * Display-only: the first scan of the day is labeled Time In,
      * every scan after that is labeled Time Out. Nothing about this
-     * label is stored — ComputeRenderedHoursForDay derives time-in/
+     * label is stored — DailyAttendanceCalculator derives time-in/
      * time-out independently via MIN/MAX over the same raw rows, so
      * the two can never drift apart.
      */

@@ -16,6 +16,7 @@ final readonly class ScanResult
     public function __construct(
         public int $internUserId,
         public string $internName,
+        public string $idNumber,
         public ScanLabel $label,
         public CarbonInterface $timestamp,
         public bool $isDuplicate,

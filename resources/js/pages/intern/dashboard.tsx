@@ -73,21 +73,33 @@ export default function InternDashboard({
                         </CardContent>
                     </Card>
 
-                    {/* QR code placeholder — intentionally not wired up yet. */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>My QR Code</CardTitle>
-                            <CardDescription>Present this to your supervisor to time in/out</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-sidebar-border/70 text-muted-foreground">
-                                <QrCode className="size-10" />
-                                <span className="text-xs">
-                                    {profile.has_qr_code ? 'QR code coming soon' : 'Generated once your account is verified'}
-                                </span>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    {/* QR code */}
+<Card>
+    <CardHeader>
+        <CardTitle>My QR Code</CardTitle>
+        <CardDescription>Present this to your supervisor to time in/out</CardDescription>
+    </CardHeader>
+    <CardContent className="space-y-3">
+        {profile.has_qr_code ? (
+            <>
+                <div className="flex aspect-square items-center justify-center rounded-lg border p-4">
+                    <img src="/intern/qr-code" alt="Your QR code" className="h-full w-full object-contain" />
+                </div>
+                <Button asChild variant="outline" className="w-full">
+                    <a href="/intern/qr-code" download="qr-code.png">
+                        <Download className="mr-2 size-4" />
+                        Download PNG
+                    </a>
+                </Button>
+            </>
+        ) : (
+            <div className="flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-sidebar-border/70 text-muted-foreground">
+                <QrCode className="size-10" />
+                <span className="text-xs">Generated once your account is verified</span>
+            </div>
+        )}
+    </CardContent>
+</Card>
 
                     {/* Today's status */}
                     <Card>
