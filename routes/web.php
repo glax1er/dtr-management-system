@@ -24,13 +24,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('role:' . User::ROLE_ADMIN)->prefix('admin')->name('admin.')->group(function () {
         Route::get('dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
+        // Intern approval routes
         Route::post('interns/{internProfile}/approve', [InternApprovalController::class, 'approve'])
             ->name('interns.approve');
         Route::post('interns/{internProfile}/reject', [InternApprovalController::class, 'reject'])
             ->name('interns.reject');
 
+        // Supervisor management routes    
         Route::get('supervisors', [SupervisorController::class, 'index'])->name('supervisors.index');
         Route::post('supervisors', [SupervisorController::class, 'store'])->name('supervisors.store');
+        Route::get('supervisors/archives', [SupervisorController::class, 'archives'])->name('supervisors.archives');
+        Route::get('supervisors/archives', [SupervisorController::class, 'archives'])->name('supervisors.archives');
+        Route::post('supervisors', [SupervisorController::class, 'store'])->name('supervisors.store');
+        Route::patch('supervisors/{supervisorProfile}/soft-delete', [SupervisorController::class, 'softDelete'])->name('supervisors.softDelete');
+        Route::patch('supervisors/{userId}/restore', [SupervisorController::class, 'restore'])->name('supervisors.restore');
+        Route::delete('supervisors/{userId}', [SupervisorController::class, 'destroy'])->name('supervisors.destroy');
 
         Route::patch('supervisors/{supervisorProfile}/status', [SupervisorController::class, 'updateStatus'])
             ->name('supervisors.updateStatus');

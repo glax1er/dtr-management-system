@@ -1,5 +1,6 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
+import { Archive } from 'lucide-react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -55,6 +56,12 @@ export default function SupervisorsIndex({ supervisors, htes }: SupervisorsIndex
         });
     };
 
+    const handleSoftDelete = (userId: number) => {
+        if (confirm('Move this inactive supervisor to archives?')) {
+            router.patch(`/admin/supervisors/${userId}/soft-delete`, {}, { preserveScroll: true });
+        }
+    };
+
     return (
         <>
             <Head title="Supervisors" />
@@ -62,76 +69,84 @@ export default function SupervisorsIndex({ supervisors, htes }: SupervisorsIndex
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-semibold tracking-tight">Supervisors</h1>
-                        <p className="text-muted-foreground text-sm">Manage supervisor accounts and their assigned HTE.</p>
+                        <p className="text-muted-foreground text-sm">Manage supervisor accounts. Set to inactive to enable archiving.</p>
                     </div>
 
-                    <Dialog open={open} onOpenChange={setOpen}>
-                        <DialogTrigger asChild>
-                            <Button>Add Supervisor</Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <form onSubmit={handleSubmit}>
-                                <DialogHeader>
-                                    <DialogTitle>Add Supervisor</DialogTitle>
-                                    <DialogDescription>
-                                        A default password will be assigned. The supervisor can change it after logging in.
-                                    </DialogDescription>
-                                </DialogHeader>
+                    <div className="flex items-center gap-2">
+                        <Link href="/admin/supervisors/archives">
+                            <Button variant="outline" size="sm">
+                                <Archive className="mr-2 h-4 w-4" />
+                                Archives
+                            </Button>
+                        </Link>
 
-                                <div className="grid gap-4 py-4">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="name">Name</Label>
-                                        <Input
-                                            id="name"
-                                            value={data.name}
-                                            onChange={(e) => setData('name', e.target.value)}
-                                            required
-                                        />
-                                        <InputError message={errors.name} />
+                        <Dialog open={open} onOpenChange={setOpen}>
+                            <DialogTrigger asChild>
+                                <Button>Add Supervisor</Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <form onSubmit={handleSubmit}>
+                                    <DialogHeader>
+                                        <DialogTitle>Add Supervisor</DialogTitle>
+                                        <DialogDescription>
+                                            Create a new supervisor account. They will use the default supervisor password to log in.
+                                        </DialogDescription>
+                                    </DialogHeader>
+
+                                    <div className="grid gap-4 py-4">
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="name">Full Name</Label>
+                                            <Input
+                                                id="name"
+                                                value={data.name}
+                                                onChange={(e) => setData('name', e.target.value)}
+                                                placeholder="Juan Dela Cruz"
+                                            />
+                                            <InputError message={errors.name} />
+                                        </div>
+
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="email">Email</Label>
+                                            <Input
+                                                id="email"
+                                                type="email"
+                                                value={data.email}
+                                                onChange={(e) => setData('email', e.target.value)}
+                                                placeholder="juan@example.com"
+                                            />
+                                            <InputError message={errors.email} />
+                                        </div>
+
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="hte_id">Assigned HTE</Label>
+                                            <Select
+                                                value={data.hte_id}
+                                                onValueChange={(value) => setData('hte_id', value)}
+                                            >
+                                                <SelectTrigger id="hte_id">
+                                                    <SelectValue placeholder="Select HTE" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {htes.map((hte) => (
+                                                        <SelectItem key={hte.hte_id} value={String(hte.hte_id)}>
+                                                            {hte.hte_name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <InputError message={errors.hte_id} />
+                                        </div>
                                     </div>
 
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="email">Email</Label>
-                                        <Input
-                                            id="email"
-                                            type="email"
-                                            value={data.email}
-                                            onChange={(e) => setData('email', e.target.value)}
-                                            required
-                                        />
-                                        <InputError message={errors.email} />
-                                    </div>
-
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="hte_id">Host training establishment</Label>
-                                        <Select
-                                            value={data.hte_id}
-                                            onValueChange={(value) => setData('hte_id', value)}
-                                            required
-                                        >
-                                            <SelectTrigger id="hte_id" className="w-full">
-                                                <SelectValue placeholder="Select HTE" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {htes.map((hte) => (
-                                                    <SelectItem key={hte.hte_id} value={String(hte.hte_id)}>
-                                                        {hte.hte_name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <InputError message={errors.hte_id} />
-                                    </div>
-                                </div>
-
-                                <DialogFooter>
-                                    <Button type="submit" disabled={processing}>
-                                        Create Supervisor
-                                    </Button>
-                                </DialogFooter>
-                            </form>
-                        </DialogContent>
-                    </Dialog>
+                                    <DialogFooter>
+                                        <Button type="submit" disabled={processing}>
+                                            Create Supervisor
+                                        </Button>
+                                    </DialogFooter>
+                                </form>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
                 </div>
 
                 <Card className="flex-1">
@@ -154,20 +169,38 @@ export default function SupervisorsIndex({ supervisors, htes }: SupervisorsIndex
                                                 {supervisor.email} · {supervisor.hte_name}
                                             </p>
                                         </div>
-                                        <Select
-                                            value={supervisor.status}
-                                            onValueChange={(value) => {
-                                                router.patch(`/admin/supervisors/${supervisor.user_id}/status`, { status: value }, { preserveScroll: true });
-                                            }}
-                                        >
-                                            <SelectTrigger className="w-27.5">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="active">Active</SelectItem>
-                                                <SelectItem value="inactive">Inactive</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                        <div className="flex items-center gap-2">
+                                            <Select
+                                                value={supervisor.status}
+                                                onValueChange={(value) => {
+                                                    router.patch(
+                                                        `/admin/supervisors/${supervisor.user_id}/status`,
+                                                        { status: value },
+                                                        { preserveScroll: true }
+                                                    );
+                                                }}
+                                            >
+                                                <SelectTrigger className="w-27.5">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="active">Active</SelectItem>
+                                                    <SelectItem value="inactive">Inactive</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+
+                                            {/* Soft Delete only appears when status is inactive */}
+                                            {supervisor.status === 'inactive' && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleSoftDelete(supervisor.user_id)}
+                                                >
+                                                    <Archive className="mr-2 h-4 w-4" />
+                                                    Soft Delete
+                                                </Button>
+                                            )}
+                                        </div>
                                     </div>
                                 ))}
                             </div>
