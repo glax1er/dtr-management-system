@@ -3,6 +3,7 @@
 namespace App\Services\Attendance;
 
 use App\Models\AttendanceLog;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -96,7 +97,7 @@ class DailyAttendanceCalculator
     /**
      * @return array{0: float, 1: bool}
      */
-    private function computeHours(string $date, Carbon $timeIn, Carbon $timeOut): array
+    private function computeHours(string $date, CarbonInterface $timeIn, CarbonInterface $timeOut): array
     {
         $timezone = config('dtr.timezone');
 

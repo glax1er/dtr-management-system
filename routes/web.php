@@ -3,8 +3,10 @@
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\InternApprovalController;
 use App\Http\Controllers\Admin\SupervisorController;
+use App\Http\Controllers\Intern\QrCodeImageController;
 use App\Http\Controllers\Intern\DashboardController as InternDashboardController;
 use App\Http\Controllers\Intern\DtrReportController;
+use App\Http\Controllers\Supervisor\ScanController;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
@@ -38,11 +40,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware('role:' . User::ROLE_SUPERVISOR)->prefix('supervisor')->name('supervisor.')->group(function () {
         Route::inertia('dashboard', 'supervisor/dashboard')->name('dashboard');
+        Route::post('scan', [ScanController::class, '__invoke'])->name('scan');
     });
 
     Route::middleware('role:' . User::ROLE_INTERN)->prefix('intern')->name('intern.')->group(function () {
         Route::get('dashboard', [InternDashboardController::class, 'index'])->name('dashboard');
         Route::get('dtr-report', [DtrReportController::class, 'download'])->name('dtr-report.download');
+        Route::get('qr-code', [QrCodeImageController::class, 'show'])->name('qr-code.show');
     });
 });
 
