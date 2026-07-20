@@ -48,6 +48,10 @@ class CreateNewUser implements CreatesNewUsers
 
             'hte_id' => ['required', 'integer', 'exists:htes,hte_id'],
 
+            // ADDED — 'accepted' rule requires the field to be true/1/"on"/"yes";
+            // missing or false both fail validation, so the checkbox is effectively required
+            'privacy_accepted' => ['accepted'],
+
             'password' => $this->passwordRules(),
         ], [
             'id_number.regex' => 'Format must be XXXX-XXXXX.',
@@ -74,6 +78,7 @@ class CreateNewUser implements CreatesNewUsers
                 'hte_id' => $input['hte_id'],
                 'program_id' => $input['program_id'],
                 'status' => 'pending',
+                'privacy_accepted_at' => now(), // ADDED — records the actual moment consent was given
             ]);
 
             return $user;
