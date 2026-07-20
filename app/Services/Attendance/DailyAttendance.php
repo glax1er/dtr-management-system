@@ -2,6 +2,7 @@
 
 namespace App\Services\Attendance;
 
+use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 
 /**
@@ -13,9 +14,9 @@ use Illuminate\Support\Carbon;
 final readonly class DailyAttendance
 {
     public function __construct(
-        public string $date,        // 'Y-m-d', in the DTR display timezone
-        public Carbon $timeIn,      // first scan of the day
-        public ?Carbon $timeOut,    // last scan of the day, null if only 1 scan
+        public string $date,                // 'Y-m-d', in the DTR display timezone
+        public CarbonInterface $timeIn,      // first scan of the day
+        public ?CarbonInterface $timeOut,    // last scan of the day, null if only 1 scan
         public float $hoursRendered,
         public bool $lunchDeducted,
         public int $rawScanCount,   // total raw scans that day, incl. accidental double-scans
