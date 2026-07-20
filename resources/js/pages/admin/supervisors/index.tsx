@@ -118,12 +118,12 @@ export default function SupervisorsIndex({ supervisors, htes }: SupervisorsIndex
                                         </div>
 
                                         <div className="grid gap-2">
-                                            <Label htmlFor="hte_id">Assigned HTE</Label>
+                                            <Label htmlFor="hte_id">Host training establishment </Label>
                                             <Select
                                                 value={data.hte_id}
                                                 onValueChange={(value) => setData('hte_id', value)}
                                             >
-                                                <SelectTrigger id="hte_id">
+                                                <SelectTrigger id="hte_id" className="w-full">
                                                     <SelectValue placeholder="Select HTE" />
                                                 </SelectTrigger>
                                                 <SelectContent>
