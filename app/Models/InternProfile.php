@@ -28,11 +28,13 @@ class InternProfile extends Model
         'qr_code_value',
         'registered_at',
         'approved_at',
+        'privacy_accepted_at',
     ];
 
     protected $casts = [
         'registered_at' => 'datetime',
         'approved_at'   => 'datetime',
+        'privacy_accepted_at' => 'datetime',
     ];
 
     /**
