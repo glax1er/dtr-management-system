@@ -43,6 +43,10 @@ class SupervisorController extends Controller
 
         $supervisorProfile->update(['status' => $validated['status']]);
 
+        // Keep the HTE's stored contact_person in sync — an inactive
+        // supervisor should stop being listed as the contact.
+        $supervisorProfile->hte->refreshContactPerson();
+
         return back()->with('success', 'Supervisor status updated.');
     }
 
@@ -56,11 +60,14 @@ class SupervisorController extends Controller
                 'role' => User::ROLE_SUPERVISOR,
             ]);
 
-            SupervisorProfile::create([
+            $supervisorProfile = SupervisorProfile::create([
                 'user_id' => $user->id,
                 'hte_id' => $request->validated('hte_id'),
                 'status' => 'active',
             ]);
+
+            // Keep the HTE's stored contact_person in sync.
+            $supervisorProfile->hte->refreshContactPerson();
         });
 
         return redirect()->route('admin.supervisors.index')

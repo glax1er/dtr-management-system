@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\HteController;
 use App\Http\Controllers\Admin\InternApprovalController;
 use App\Http\Controllers\Admin\SupervisorController;
 use App\Http\Controllers\Intern\QrCodeImageController;
@@ -36,6 +37,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::patch('supervisors/{supervisorProfile}/status', [SupervisorController::class, 'updateStatus'])
             ->name('supervisors.updateStatus');
+
+        // ADDED — HTE management routes
+        Route::get('htes', [HteController::class, 'index'])->name('htes.index');
+        Route::post('htes', [HteController::class, 'store'])->name('htes.store');
+        Route::patch('htes/{hte}', [HteController::class, 'update'])->name('htes.update');
+        Route::patch('htes/{hte}/status', [HteController::class, 'updateStatus'])->name('htes.updateStatus');
     });
 
     Route::middleware('role:' . User::ROLE_SUPERVISOR)->prefix('supervisor')->name('supervisor.')->group(function () {
