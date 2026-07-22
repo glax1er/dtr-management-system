@@ -45,7 +45,7 @@ export default function InternDashboard({
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-3">
-                    {/* Profile / ID card */}
+                    {/* Profile + Today, merged into one card */}
                     <Card>
                         <CardHeader>
                             <CardTitle>My Profile</CardTitle>
@@ -70,69 +70,64 @@ export default function InternDashboard({
                                     {profile.status}
                                 </Badge>
                             </div>
+
+                            {/* Today's status, now a section within this same card */}
+                            <div className="mt-4 border-t pt-4">
+                                <p className="mb-2 text-sm font-medium">Today &middot; {today.date}</p>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Time In</span>
+                                        <span>{today.time_in ?? '—'}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Time Out</span>
+                                        <span>{today.time_out ?? '—'}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Status</span>
+                                        <Badge variant={today.status === 'complete' ? 'default' : 'outline'}>
+                                            {today.status === 'not_started'
+                                                ? 'Not started'
+                                                : today.status === 'open'
+                                                  ? 'In progress'
+                                                  : 'Complete'}
+                                        </Badge>
+                                    </div>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
 
-                    {/* QR code */}
-<Card>
-    <CardHeader>
-        <CardTitle>My QR Code</CardTitle>
-        <CardDescription>Present this to your supervisor to time in/out</CardDescription>
-    </CardHeader>
-    <CardContent className="space-y-3">
-        {profile.has_qr_code ? (
-            <>
-                <div className="flex aspect-square items-center justify-center rounded-lg border p-4">
-                    <img src="/intern/qr-code" alt="Your QR code" className="h-full w-full object-contain" />
-                </div>
-                <Button asChild variant="outline" className="w-full">
-                    <a href="/intern/qr-code" download="qr-code.png">
-                        <Download className="mr-2 size-4" />
-                        Download PNG
-                    </a>
-                </Button>
-            </>
-        ) : (
-            <div className="flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-sidebar-border/70 text-muted-foreground">
-                <QrCode className="size-10" />
-                <span className="text-xs">Generated once your account is verified</span>
-            </div>
-        )}
-    </CardContent>
-</Card>
-
-                    {/* Today's status */}
+                    {/* QR code — unchanged, stays as the middle card */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Today</CardTitle>
-                            <CardDescription>{today.date}</CardDescription>
+                            <CardTitle>My QR Code</CardTitle>
+                            <CardDescription>Present this to your supervisor to time in/out</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Time In</span>
-                                <span>{today.time_in ?? '—'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Time Out</span>
-                                <span>{today.time_out ?? '—'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Status</span>
-                                <Badge variant={today.status === 'complete' ? 'default' : 'outline'}>
-                                    {today.status === 'not_started'
-                                        ? 'Not started'
-                                        : today.status === 'open'
-                                          ? 'In progress'
-                                          : 'Complete'}
-                                </Badge>
-                            </div>
+                        <CardContent className="space-y-3">
+                            {profile.has_qr_code ? (
+                                <>
+                                    <div className="flex aspect-square items-center justify-center rounded-lg border p-4">
+                                        <img src="/intern/qr-code" alt="Your QR code" className="h-full w-full object-contain" />
+                                    </div>
+                                    <Button asChild variant="outline" className="w-full">
+                                        <a href="/intern/qr-code" download="qr-code.png">
+                                            <Download className="mr-2 size-4" />
+                                            Download PNG
+                                        </a>
+                                    </Button>
+                                </>
+                            ) : (
+                                <div className="flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-sidebar-border/70 text-muted-foreground">
+                                    <QrCode className="size-10" />
+                                    <span className="text-xs">Generated once your account is verified</span>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
-                </div>
 
-                <div className="grid gap-4 md:grid-cols-3">
-                    {/* Hours rendered progress */}
-                    <Card className="flex flex-col items-center justify-center gap-4 p-6 md:col-span-1">
+                    {/* Hours rendered progress — now the 3rd top-row card */}
+                    <Card className="flex flex-col items-center justify-center gap-4 p-6">
                         <CardTitle className="text-base">Hours Rendered</CardTitle>
                         <HoursProgressRing
                             percent={hours.progress_percent}
@@ -140,87 +135,86 @@ export default function InternDashboard({
                             required={hours.required}
                         />
                     </Card>
-
-                    {/* Full attendance log, paged by month — merged in from the
-                        old standalone attendance-logs page. */}
-                    <Card className="md:col-span-2">
-                        <CardHeader className="flex flex-row items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                                <Button variant="outline" size="icon" onClick={() => goToMonth(shiftMonth(month, -1))}>
-                                    <ChevronLeft />
-                                </Button>
-                                <CardTitle className="min-w-32 text-center text-base">{monthLabel}</CardTitle>
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    disabled={!canGoNextMonth}
-                                    onClick={() => goToMonth(shiftMonth(month, 1))}
-                                >
-                                    <ChevronRight />
-                                </Button>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <span className="text-sm text-muted-foreground">
-                                    Total:{' '}
-                                    <span className="font-medium text-foreground tabular-nums">
-                                        {monthTotalHours.toFixed(2)} hrs
-                                    </span>
-                                </span>
-                                <Button size="sm" asChild>
-                                    <a href={`/intern/dtr-report?month=${month}`} target="_blank" rel="noopener">
-                                        <Download />
-                                        DTR Report
-                                    </a>
-                                </Button>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            {logs.length === 0 ? (
-                                <p className="py-8 text-center text-sm text-muted-foreground">
-                                    No attendance logs recorded for {monthLabel}.
-                                </p>
-                            ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm">
-                                        <thead>
-                                            <tr className="border-b text-left text-muted-foreground">
-                                                <th className="py-2 pr-4 font-medium">Date</th>
-                                                <th className="py-2 pr-4 font-medium">Time In</th>
-                                                <th className="py-2 pr-4 font-medium">Time Out</th>
-                                                <th className="py-2 pr-4 font-medium">Hours</th>
-                                                <th className="py-2 pr-4 font-medium">Lunch Deducted</th>
-                                                <th className="py-2 font-medium">Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {logs.map((log) => (
-                                                <tr key={log.date} className="border-b last:border-0">
-                                                    <td className="py-2 pr-4">
-                                                        {log.date}
-                                                        <span className="ml-1 text-xs text-muted-foreground">
-                                                            {log.day.slice(0, 3)}
-                                                        </span>
-                                                    </td>
-                                                    <td className="py-2 pr-4">{log.time_in}</td>
-                                                    <td className="py-2 pr-4">{log.time_out ?? '—'}</td>
-                                                    <td className="py-2 pr-4 tabular-nums">
-                                                        {log.hours_rendered.toFixed(2)}
-                                                    </td>
-                                                    <td className="py-2 pr-4">{log.lunch_deducted ? 'Yes' : 'No'}</td>
-                                                    <td className="py-2">
-                                                        <Badge variant={log.status === 'complete' ? 'default' : 'outline'}>
-                                                            {log.status === 'complete' ? 'Complete' : 'No time-out'}
-                                                        </Badge>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
                 </div>
+
+                {/* Full attendance log, now full width on its own row */}
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" size="icon" onClick={() => goToMonth(shiftMonth(month, -1))}>
+                                <ChevronLeft />
+                            </Button>
+                            <CardTitle className="min-w-32 text-center text-base">{monthLabel}</CardTitle>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                disabled={!canGoNextMonth}
+                                onClick={() => goToMonth(shiftMonth(month, 1))}
+                            >
+                                <ChevronRight />
+                            </Button>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <span className="text-sm text-muted-foreground">
+                                Total:{' '}
+                                <span className="font-medium text-foreground tabular-nums">
+                                    {monthTotalHours.toFixed(2)} hrs
+                                </span>
+                            </span>
+                            <Button size="sm" asChild>
+                                <a href={`/intern/dtr-report?month=${month}`} target="_blank" rel="noopener">
+                                    <Download />
+                                    DTR Report
+                                </a>
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        {logs.length === 0 ? (
+                            <p className="py-8 text-center text-sm text-muted-foreground">
+                                No attendance logs recorded for {monthLabel}.
+                            </p>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b text-left text-muted-foreground">
+                                            <th className="py-2 pr-4 font-medium">Date</th>
+                                            <th className="py-2 pr-4 font-medium">Time In</th>
+                                            <th className="py-2 pr-4 font-medium">Time Out</th>
+                                            <th className="py-2 pr-4 font-medium">Hours</th>
+                                            <th className="py-2 pr-4 font-medium">Lunch Deducted</th>
+                                            <th className="py-2 font-medium">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {logs.map((log) => (
+                                            <tr key={log.date} className="border-b last:border-0">
+                                                <td className="py-2 pr-4">
+                                                    {log.date}
+                                                    <span className="ml-1 text-xs text-muted-foreground">
+                                                        {log.day.slice(0, 3)}
+                                                    </span>
+                                                </td>
+                                                <td className="py-2 pr-4">{log.time_in}</td>
+                                                <td className="py-2 pr-4">{log.time_out ?? '—'}</td>
+                                                <td className="py-2 pr-4 tabular-nums">
+                                                    {log.hours_rendered.toFixed(2)}
+                                                </td>
+                                                <td className="py-2 pr-4">{log.lunch_deducted ? 'Yes' : 'No'}</td>
+                                                <td className="py-2">
+                                                    <Badge variant={log.status === 'complete' ? 'default' : 'outline'}>
+                                                        {log.status === 'complete' ? 'Complete' : 'No time-out'}
+                                                    </Badge>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
             </div>
         </>
     );

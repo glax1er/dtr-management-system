@@ -33,7 +33,7 @@ return new class extends Migration
 
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->string('qr_code_value', 255)->nullable()->unique(); // generated on approval
-            $table->timestamp('registered_at')->useCurrent();
+            $table->timestamp('registered_at')->now();
             $table->timestamp('approved_at')->nullable();
 
             $table->index('hte_id', 'idx_intern_profile_hte');
