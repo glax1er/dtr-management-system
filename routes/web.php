@@ -8,6 +8,7 @@ use App\Http\Controllers\Intern\QrCodeImageController;
 use App\Http\Controllers\Intern\DashboardController as InternDashboardController;
 use App\Http\Controllers\Intern\DtrReportController;
 use App\Http\Controllers\Supervisor\ScanController;
+use App\Http\Controllers\Supervisor\DashboardController as SupervisorDashboardController;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
@@ -46,11 +47,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::middleware('role:' . User::ROLE_SUPERVISOR)->prefix('supervisor')->name('supervisor.')->group(function () {
-<<<<<<< HEAD
-        Route::inertia('dashboard', 'supervisor/dashboard')->name('dashboard');
-=======
-        Route::get('dashboard', [\App\Http\Controllers\Supervisor\DashboardController::class, 'index'])->name('dashboard');
->>>>>>> 84d828776447890ea8a57b2f5aa845f8669f8956
+Route::get('dashboard', [\App\Http\Controllers\Supervisor\DashboardController::class, 'index'])->name('dashboard');
         Route::post('scan', [ScanController::class, '__invoke'])->name('scan');
     });
 
