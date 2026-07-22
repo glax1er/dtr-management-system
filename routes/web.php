@@ -46,7 +46,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::middleware('role:' . User::ROLE_SUPERVISOR)->prefix('supervisor')->name('supervisor.')->group(function () {
-        Route::inertia('dashboard', 'supervisor/dashboard')->name('dashboard');
+        Route::get('dashboard', [\App\Http\Controllers\Supervisor\DashboardController::class, 'index'])->name('dashboard');
         Route::post('scan', [ScanController::class, '__invoke'])->name('scan');
     });
 
