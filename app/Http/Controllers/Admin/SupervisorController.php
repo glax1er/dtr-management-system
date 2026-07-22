@@ -64,6 +64,7 @@ class SupervisorController extends Controller
                 'user_id' => $user->id,
                 'hte_id' => $request->validated('hte_id'),
                 'status' => 'active',
+                'created_at' => now(),
             ]);
 
             // Keep the HTE's stored contact_person in sync.
