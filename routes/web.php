@@ -4,6 +4,8 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\HteController;
 use App\Http\Controllers\Admin\InternApprovalController;
 use App\Http\Controllers\Admin\SupervisorController;
+use App\Http\Controllers\Auth\VerificationResendController;
+use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Intern\QrCodeImageController;
 use App\Http\Controllers\Intern\DashboardController as InternDashboardController;
 use App\Http\Controllers\Intern\DtrReportController;
@@ -12,6 +14,14 @@ use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/login')->name('home');
+
+Route::post('email/verification-notification/resend', VerificationResendController::class)
+    ->middleware(['guest', 'throttle:6,1'])
+    ->name('verification.resend');
+
+Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
+    ->middleware(['signed', 'throttle:6,1'])
+    ->name('verification.verify.public');
 
 Route::middleware(['auth', 'verified'])->group(function () {
 

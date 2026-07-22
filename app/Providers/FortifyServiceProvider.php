@@ -74,6 +74,19 @@ class FortifyServiceProvider extends ServiceProvider
             }
 
             if ($user->isIntern()) {
+                // ADDED — email must be verified before approval status even
+                // matters. Flash the email on its own key (in addition to
+                // the usual validation error) so the login page can pop the
+                // "resend verification link" dialog instead of just showing
+                // a plain inline error under the field.
+                if (! $user->hasVerifiedEmail()) {
+                    $request->session()->flash('unverified_email', $user->email);
+
+                    throw ValidationException::withMessages([
+                        Fortify::username() => 'Your email address is not verified. Please check the verification link sent to your email.',
+                    ]);
+                }
+
                 $status = $user->internProfile?->status;
 
                 if ($status !== 'approved') {
@@ -98,6 +111,10 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::loginView(fn (Request $request) => Inertia::render('auth/login', [
             'canResetPassword' => Features::enabled(Features::resetPasswords()),
             'status' => $request->session()->get('status'),
+            // ADDED — set only when authenticateUsing() just blocked this
+            // person for an unverified email; tells the login page to pop
+            // the "resend verification link" dialog.
+            'unverifiedEmail' => $request->session()->get('unverified_email'),
         ]));
 
         Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/reset-password', [
@@ -116,7 +133,11 @@ class FortifyServiceProvider extends ServiceProvider
 
         Fortify::registerView(fn (Request $request) => Inertia::render('auth/register', [
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
-            'registered' => $request->session()->get('registered', false),
+            // CHANGED — was 'registered' (pending-approval dialog). Now
+            // drives the "verify your email" dialog shown right after
+            // Create Account instead.
+            'verifyEmail' => $request->session()->get('verifyEmail', false),
+            'registeredEmail' => $request->session()->get('registeredEmail'),
             'programs' => Program::query()
                 ->where('is_active', true)
                 ->orderBy('program_name')
