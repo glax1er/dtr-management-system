@@ -1,6 +1,7 @@
-import { Head } from '@inertiajs/react';
-import { GraduationCap } from 'lucide-react';
+import { Head, router } from '@inertiajs/react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
@@ -9,20 +10,45 @@ import {
 } from '@/components/ui/card';
 import { dashboard } from '@/routes';
 
-interface InternRow {
-    user_id: number;
-    name: string;
-    id_number: string;
-    program_name: string | null;
-    status: 'pending' | 'approved' | 'rejected';
-    total_hours: number;
+interface AttendanceLogRow {
+    date: string;
+    day: string;
+    intern_user_id: number;
+    intern_name: string;
+    time_in: string;
+    time_out: string | null;
+    hours_rendered: number;
+    lunch_deducted: boolean;
+    status: 'open' | 'complete';
+    punctuality: 'on_time' | 'late';
+    raw_scan_count: number;
 }
 
 interface MyInternsProps {
-    interns: InternRow[];
+    logs: AttendanceLogRow[];
+    month: string;
+    monthLabel: string;
+    canGoNextMonth: boolean;
+    internCount: number;
 }
 
-export default function MyInterns({ interns }: MyInternsProps) {
+function shiftMonth(month: string, delta: number): string {
+    const [year, m] = month.split('-').map(Number);
+    const date = new Date(Date.UTC(year, m - 1 + delta, 1));
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+export default function MyInterns({
+    logs,
+    month,
+    monthLabel,
+    canGoNextMonth,
+    internCount,
+}: MyInternsProps) {
+    const goToMonth = (targetMonth: string) => {
+        router.get('/supervisor/interns', { month: targetMonth }, { preserveState: true, preserveScroll: true });
+    };
+
     return (
         <>
             <Head title="My Interns" />
@@ -32,55 +58,74 @@ export default function MyInterns({ interns }: MyInternsProps) {
                         My Interns
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        Interns currently assigned to your HTE.
+                        Attendance log for {internCount} intern{internCount === 1 ? '' : 's'} assigned to your HTE.
                     </p>
                 </div>
 
                 <Card className="flex-1">
-                    <CardHeader>
-                        <CardTitle>{interns.length} intern{interns.length === 1 ? '' : 's'}</CardTitle>
+                    <CardHeader className="flex flex-row items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" size="icon" onClick={() => goToMonth(shiftMonth(month, -1))}>
+                                <ChevronLeft />
+                            </Button>
+                            <CardTitle className="min-w-32 text-center text-base">{monthLabel}</CardTitle>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                disabled={!canGoNextMonth}
+                                onClick={() => goToMonth(shiftMonth(month, 1))}
+                            >
+                                <ChevronRight />
+                            </Button>
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        {interns.length === 0 ? (
-                            <div className="flex flex-col items-center gap-2 py-10 text-center text-sm text-muted-foreground">
-                                <GraduationCap className="size-8 text-muted-foreground/60" />
-                                No interns are currently assigned to your HTE.
-                            </div>
+                        {logs.length === 0 ? (
+                            <p className="py-8 text-center text-sm text-muted-foreground">
+                                No attendance logs recorded for {monthLabel}.
+                            </p>
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="border-b text-left text-muted-foreground">
+                                            <th className="py-2 pr-4 font-medium">Date</th>
                                             <th className="py-2 pr-4 font-medium">Name</th>
-                                            <th className="py-2 pr-4 font-medium">ID Number</th>
-                                            <th className="py-2 pr-4 font-medium">Program</th>
-                                            <th className="py-2 pr-4 font-medium">Status</th>
-                                            <th className="py-2 font-medium">Total Hours</th>
+                                            <th className="py-2 pr-4 font-medium">Time In</th>
+                                            <th className="py-2 pr-4 font-medium">Time Out</th>
+                                            <th className="py-2 pr-4 font-medium">Hours</th>
+                                            <th className="py-2 pr-4 font-medium">Lunch Deducted</th>
+                                            <th className="py-2 font-medium">Remarks</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {interns.map((intern) => (
-                                            <tr key={intern.user_id} className="border-b last:border-0">
-                                                <td className="py-2 pr-4">{intern.name}</td>
-                                                <td className="py-2 pr-4">{intern.id_number}</td>
+                                        {logs.map((log) => (
+                                            <tr
+                                                key={`${log.intern_user_id}-${log.date}`}
+                                                className="border-b last:border-0"
+                                            >
                                                 <td className="py-2 pr-4">
-                                                    {intern.program_name ?? '—'}
+                                                    {log.date}
+                                                    <span className="ml-1 text-xs text-muted-foreground">
+                                                        {log.day.slice(0, 3)}
+                                                    </span>
                                                 </td>
-                                                <td className="py-2 pr-4">
-                                                    <Badge
-                                                        variant={
-                                                            intern.status === 'approved'
-                                                                ? 'default'
-                                                                : intern.status === 'pending'
-                                                                  ? 'outline'
-                                                                  : 'secondary'
-                                                        }
-                                                    >
-                                                        {intern.status}
+                                                <td className="py-2 pr-4">{log.intern_name}</td>
+                                                <td className="py-2 pr-4">{log.time_in}</td>
+                                                <td className="py-2 pr-4">{log.time_out ?? '—'}</td>
+                                                <td className="py-2 pr-4 tabular-nums">
+                                                    {log.hours_rendered.toFixed(2)}
+                                                </td>
+                                                <td className="py-2 pr-4">{log.lunch_deducted ? 'Yes' : 'No'}</td>
+                                                <td className="py-2">
+                                                    <Badge variant={log.punctuality === 'on_time' ? 'default' : 'destructive'}>
+                                                        {log.punctuality === 'on_time' ? 'On Time' : 'Late'}
                                                     </Badge>
-                                                </td>
-                                                <td className="py-2 tabular-nums">
-                                                    {intern.total_hours.toFixed(2)}
+                                                    {log.status === 'open' && (
+                                                        <Badge variant="outline" className="ml-1">
+                                                            No time-out
+                                                        </Badge>
+                                                    )}
                                                 </td>
                                             </tr>
                                         ))}
