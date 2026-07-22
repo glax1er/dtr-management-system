@@ -15,13 +15,14 @@ class DashboardController extends Controller
     {
         $pendingInterns = InternProfile::query()
             ->where('status', 'pending')
-            ->with(['user:id,name,email', 'hte:hte_id,hte_name', 'program:program_id,program_name'])
+            ->with(['user:id,name,email,email_verified_at', 'hte:hte_id,hte_name', 'program:program_id,program_name'])
             ->orderBy('registered_at')
             ->get()
             ->map(fn (InternProfile $profile) => [
                 'user_id' => $profile->user_id,
                 'name' => $profile->user->name,
                 'email' => $profile->user->email,
+                'email_verified' => $profile->user->email_verified_at !== null,
                 'id_number' => $profile->id_number,
                 'hte_name' => $profile->hte->hte_name,
                 'program_name' => $profile->program->program_name,

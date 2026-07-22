@@ -1,7 +1,7 @@
 // resources/js/pages/admin/dashboard.tsx
 
 import { Head, router, usePage } from '@inertiajs/react';
-import { Building2, ClipboardCheck, GraduationCap, Users } from 'lucide-react';
+import { Building2, ClipboardCheck, GraduationCap, MailCheck, MailWarning, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { dashboard } from '@/routes';
@@ -11,6 +11,7 @@ interface PendingIntern {
     user_id: number;
     name: string;
     email: string;
+    email_verified: boolean;
     id_number: string;
     hte_name: string;
     program_name: string;
@@ -87,7 +88,27 @@ export default function AdminDashboard({
                                         className="flex items-center justify-between rounded-lg border p-3"
                                     >
                                         <div>
-                                            <p className="font-medium">{intern.name}</p>
+                                            <div className="flex items-center gap-2">
+                                                <p className="font-medium">{intern.name}</p>
+                                                {intern.email_verified ? (
+                                                    <span
+                                                        className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
+                                                        title="This email address has been verified by the intern."
+                                                    >
+                                                        <MailCheck className="size-3" />
+                                                        Email verified
+                                                    </span>
+                                                ) : (
+                                                    <span
+                                                        className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-950 dark:text-amber-400"
+                                                        title="The intern hasn't clicked the verification link sent to this email yet."
+                                                    >
+                                                        <MailWarning className="size-3" />
+                                                        Email not verified
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-muted-foreground text-sm">{intern.email}</p>
                                             <p className="text-muted-foreground text-sm">
                                                 {intern.id_number} · {intern.program_name} · {intern.hte_name}
                                             </p>
@@ -96,7 +117,16 @@ export default function AdminDashboard({
                                             </p>
                                         </div>
                                         <div className="flex gap-2">
-                                            <Button size="sm" onClick={() => handleApprove(intern.user_id)}>
+                                            <Button
+                                                size="sm"
+                                                onClick={() => handleApprove(intern.user_id)}
+                                                disabled={!intern.email_verified}
+                                                title={
+                                                    intern.email_verified
+                                                        ? undefined
+                                                        : "Can't approve until the intern verifies their email."
+                                                }
+                                            >
                                                 Approve
                                             </Button>
                                             <Button size="sm" variant="outline" onClick={() => handleReject(intern.user_id)}>
