@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, ClipboardCheck, Clock, FolderGit2, GraduationCap, LayoutGrid, ScanLine, Users } from 'lucide-react';
+import { BookOpen, Building, ClipboardCheck, Clock, FolderGit2, GraduationCap, LayoutGrid, ScanLine, Users } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -20,6 +20,7 @@ const adminNavItems: NavItem[] = [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
     { title: 'Interns', href: '/admin/interns', icon: GraduationCap },
     { title: 'Supervisors', href: '/admin/supervisors', icon: Users },
+    { title: 'HTEs', href: '/admin/htes', icon: Building },
 ];
 
 const supervisorNavItems: NavItem[] = [

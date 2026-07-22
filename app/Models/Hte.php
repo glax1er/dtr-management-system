@@ -44,4 +44,24 @@ class Hte extends Model
     {
         return $this->hasMany(SupervisorProfile::class, 'hte_id', 'hte_id');
     }
+
+    /**
+     * Recomputes and saves `contact_person` from the names of this HTE's
+     * currently active supervisors, joined by comma if there's more than
+     * one. Called whenever a supervisor is assigned or their status
+     * changes, so the stored column always reflects who's actually
+     * reachable — never a stale or manually-typed name.
+     */
+    public function refreshContactPerson(): void
+    {
+        $names = $this->supervisorProfiles()
+            ->where('status', 'active')
+            ->with('user:id,name')
+            ->get()
+            ->pluck('user.name')
+            ->filter()
+            ->join(', ');
+
+        $this->update(['contact_person' => $names ?: null]);
+    }
 }
