@@ -49,16 +49,24 @@ function formatTime(iso: string): string {
     });
 }
 
+interface RecentScan {
+    intern_name: string;
+    label: 'time_in' | 'time_out';
+    scanned_at: string;
+}
+
 interface SupervisorDashboardProps {
-    myInternsCount?: number;
-    pendingDtrApprovals?: number;
-    hoursLoggedThisWeek?: number;
+    myInternsCount: number;
+    scansToday: number;
+    scansThisWeek: number;
+    recentScans: RecentScan[];
 }
 
 export default function SupervisorDashboard({
     myInternsCount = 0,
-    pendingDtrApprovals = 0,
-    hoursLoggedThisWeek = 0,
+    scansToday,
+    scansThisWeek,
+    recentScans
 }: SupervisorDashboardProps) {
     const { auth } = usePage<PageProps>().props;
 
@@ -184,17 +192,9 @@ export default function SupervisorDashboard({
     }
 
     const stats = [
-        { label: 'My Interns', value: myInternsCount, icon: GraduationCap },
-        {
-            label: 'Pending DTR Approvals',
-            value: pendingDtrApprovals,
-            icon: ClipboardCheck,
-        },
-        {
-            label: 'Hours Logged This Week',
-            value: hoursLoggedThisWeek,
-            icon: Clock,
-        },
+    { label: 'My Interns', value: myInternsCount, icon: GraduationCap },
+    { label: 'Scans Today', value: scansToday, icon: ClipboardCheck },
+    { label: 'Scans This Week', value: scansThisWeek, icon: Clock },
     ];
 
     return (
@@ -308,13 +308,30 @@ export default function SupervisorDashboard({
 
                 <Card className="flex-1">
                     <CardHeader>
-                        <CardTitle>DTR Entries Awaiting Approval</CardTitle>
+                        <CardTitle>Recent Scans</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-sm text-muted-foreground">
-                            No entries to review yet — this list will populate
-                            once your interns start logging time.
-                        </p>
+                        {recentScans.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">
+                                No scans recorded yet — this list fills up as you scan intern QR codes.
+                            </p>
+                        ) : (
+                            <div className="flex flex-col gap-3">
+                                {recentScans.map((scan, i) => (
+                                    <div
+                                        key={i}
+                                        className="flex items-center justify-between rounded-lg border p-3"
+                                    >
+                                        <div>
+                                            <p className="font-medium">{scan.intern_name}</p>
+                                            <p className="text-muted-foreground text-sm">
+                                                {scan.label === 'time_in' ? 'Timed In' : 'Timed Out'} · {scan.scanned_at}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>
