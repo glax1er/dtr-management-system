@@ -8,7 +8,7 @@ import {
     X,
 } from 'lucide-react';
 import { useState } from 'react';
-import type { FormEvent } from 'react';
+import type { FormEvent, KeyboardEvent } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,13 +20,6 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { dashboard } from '@/routes';
 
 interface AttendanceLogRow {
@@ -34,7 +27,7 @@ interface AttendanceLogRow {
     day: string;
     intern_user_id: number;
     intern_name: string;
-    time_in: string;
+    time_in: string | null;
     time_out: string | null;
     hours_rendered: number;
     lunch_deducted: boolean;
@@ -82,7 +75,8 @@ interface MyInternsProps {
     filters: Filters;
 }
 
-const PER_PAGE_OPTIONS = ['10', '20', '50', '100'];
+const MIN_PER_PAGE = 1;
+const MAX_PER_PAGE = 100;
 
 function shiftMonth(month: string, delta: number): string {
     const [year, m] = month.split('-').map(Number);
@@ -168,6 +162,7 @@ export default function MyInterns({
     const [search, setSearch] = useState(filters.search);
     const [fromDraft, setFromDraft] = useState(filters.from);
     const [toDraft, setToDraft] = useState(filters.to);
+    const [perPageDraft, setPerPageDraft] = useState(String(filters.per_page));
 
     const hasActiveFilters = filters.search !== '' || mode === 'range';
 
@@ -225,8 +220,19 @@ export default function MyInterns({
         visit({ ...baseParams(), sort: field, direction });
     };
 
-    const changePerPage = (value: string) => {
-        visit({ ...baseParams(), per_page: value });
+    const commitPerPage = () => {
+        const parsed = parseInt(perPageDraft, 10);
+        const clamped = Number.isNaN(parsed)
+            ? filters.per_page
+            : Math.min(MAX_PER_PAGE, Math.max(MIN_PER_PAGE, parsed));
+
+        setPerPageDraft(String(clamped));
+
+        if (clamped === filters.per_page) {
+            return;
+        }
+
+        visit({ ...baseParams(), per_page: String(clamped) });
     };
 
     const goToPage = (page: number) => {
@@ -456,9 +462,16 @@ export default function MyInterns({
                                                 <td className="py-2.5 pr-4">{log.lunch_deducted ? 'Yes' : 'No'}</td>
                                                 <td className="py-2.5">
                                                     <div className="flex flex-wrap gap-1">
-                                                        <Badge variant={log.punctuality === 'on_time' ? 'default' : 'destructive'}>
-                                                            {log.punctuality === 'on_time' ? 'On Time' : 'Late'}
-                                                        </Badge>
+                                                        {log.punctuality === 'on_time' ? (
+                                                            <Badge className="border-transparent bg-green-600 text-white dark:bg-green-600/80">
+                                                                On Time
+                                                            </Badge>
+                                                        ) : (
+                                                            <Badge variant="destructive">Late</Badge>
+                                                        )}
+                                                        {!log.time_in && (
+                                                            <Badge variant="outline">No time-in yet</Badge>
+                                                        )}
                                                         {log.status === 'open' && (
                                                             <Badge variant="outline">No time-out yet</Badge>
                                                         )}
@@ -481,18 +494,23 @@ export default function MyInterns({
                                         <Label htmlFor="per-page" className="text-xs whitespace-nowrap">
                                             Rows per page
                                         </Label>
-                                        <Select value={String(filters.per_page)} onValueChange={changePerPage}>
-                                            <SelectTrigger id="per-page" size="sm" className="w-[4.5rem]">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="min-w-[4.5rem]">
-                                                {PER_PAGE_OPTIONS.map((option) => (
-                                                    <SelectItem key={option} value={option}>
-                                                        {option}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                        <Input
+                                            id="per-page"
+                                            type="number"
+                                            inputMode="numeric"
+                                            min={MIN_PER_PAGE}
+                                            max={MAX_PER_PAGE}
+                                            value={perPageDraft}
+                                            onChange={(e) => setPerPageDraft(e.target.value)}
+                                            onBlur={commitPerPage}
+                                            onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    commitPerPage();
+                                                }
+                                            }}
+                                            className="h-8 w-[4.5rem]"
+                                        />
                                     </div>
                                 </div>
 

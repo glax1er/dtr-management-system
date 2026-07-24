@@ -31,7 +31,7 @@ class InternsController extends Controller
             'sort' => ['nullable', 'in:date,name'],
             'direction' => ['nullable', 'in:asc,desc'],
             'page' => ['nullable', 'integer', 'min:1'],
-            'per_page' => ['nullable', 'integer', 'in:10,20,50,100'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
         // FR: date-range mode — supervisor picks X/Y and sees accumulated
