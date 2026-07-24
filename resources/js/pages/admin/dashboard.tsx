@@ -72,34 +72,41 @@ export default function AdminDashboard({
                     ))}
                 </div>
 
-                <Card className="flex-1">
-                    <CardHeader>
-                        <CardTitle>Pending Intern Approvals</CardTitle>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-base">Pending Intern Approvals</CardTitle>
+                        {pendingInterns.length > 0 && (
+                            <span className="text-muted-foreground text-xs">
+                                {pendingInterns.length} awaiting review
+                            </span>
+                        )}
                     </CardHeader>
                     <CardContent>
                         {pendingInterns.length === 0 ? (
-                            <p className="text-muted-foreground text-sm">No pending approvals right now.</p>
+                            <p className="text-muted-foreground py-2 text-sm">No pending approvals right now.</p>
                         ) : (
-                            <div className="flex flex-col gap-3">
+                            <div className="flex max-h-72 flex-col gap-2 overflow-y-auto pr-1">
                                 {pendingInterns.map((intern) => (
                                     <div
                                         key={intern.user_id}
-                                        className="flex items-center justify-between rounded-lg border p-3"
+                                        className="flex items-center justify-between gap-3 rounded-md border p-2 text-sm"
                                     >
-                                        <div>
-                                            <p className="font-medium">{intern.name}</p>
-                                            <p className="text-muted-foreground text-sm">
+                                        <div className="min-w-0">
+                                            <p className="truncate font-medium">{intern.name}</p>
+                                            <p className="text-muted-foreground truncate text-xs">
                                                 {intern.id_number} · {intern.program_name} · {intern.hte_name}
                                             </p>
-                                            <p className="text-muted-foreground text-xs">
-                                                Registered {intern.registered_at}
-                                            </p>
                                         </div>
-                                        <div className="flex gap-2">
-                                            <Button size="sm" onClick={() => handleApprove(intern.user_id)}>
+                                        <div className="flex shrink-0 gap-1.5">
+                                            <Button size="sm" className="h-7 px-2.5 text-xs" onClick={() => handleApprove(intern.user_id)}>
                                                 Approve
                                             </Button>
-                                            <Button size="sm" variant="outline" onClick={() => handleReject(intern.user_id)}>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="h-7 px-2.5 text-xs"
+                                                onClick={() => handleReject(intern.user_id)}
+                                            >
                                                 Reject
                                             </Button>
                                         </div>
