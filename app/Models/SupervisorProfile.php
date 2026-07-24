@@ -13,8 +13,10 @@ class SupervisorProfile extends Model
     protected $primaryKey = 'user_id';
     public $incrementing = false;
 
-    // Only created_at exists, no updated_at column.
-    public $timestamps = false;
+    // Only created_at exists on this table. Eloquent will populate it on create
+    // and {@see UPDATED_AT} is disabled since this table has no updated_at.
+    public $timestamps = true;
+    public const UPDATED_AT = null;
 
     protected $fillable = [
         'user_id',
@@ -89,10 +91,8 @@ class SupervisorProfile extends Model
      * Get all assigned interns for this supervisor (works for both HTE and OJT).
      * For HTE supervisors: returns interns from their assigned HTE.
      * For OJT supervisors: returns all interns from their assigned program.
-     *
-     * @return \Illuminate\Database\Eloquent\Builder<InternProfile>
      */
-    public function getAssignedInterns()
+    public function getAssignedInterns(): mixed
     {
         if ($this->isHteSupervisor()) {
             return $this->hte->internProfiles();
@@ -119,7 +119,7 @@ class SupervisorProfile extends Model
     public function getScopeName(): string
     {
         return $this->isHteSupervisor()
-            ? ($this->hte?->hte_name ?? 'Unknown HTE')
-            : ($this->program?->program_name ?? 'Unknown Program');
+            ? ($this->hte->hte_name ?? 'Unknown HTE')
+            : ($this->program->program_name ?? 'Unknown Program');
     }
 }

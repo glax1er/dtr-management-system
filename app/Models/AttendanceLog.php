@@ -9,8 +9,10 @@ class AttendanceLog extends Model
 {
     protected $primaryKey = 'log_id';
 
-    // Only created_at exists, no updated_at column.
-    public $timestamps = false;
+    // Only created_at exists on this table. Eloquent will populate it on create
+    // and {@see UPDATED_AT} is disabled since this table has no updated_at.
+    public $timestamps = true;
+    public const UPDATED_AT = null;
 
     protected $fillable = [
         'intern_user_id',
