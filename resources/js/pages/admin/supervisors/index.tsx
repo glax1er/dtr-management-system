@@ -42,7 +42,7 @@ interface SupervisorsIndexProps {
     programs: Program[];
 }
 
-export default function SupervisorsIndex({ supervisors, htes }: SupervisorsIndexProps) {
+export default function SupervisorsIndex({ supervisors, htes, programs }: SupervisorsIndexProps) {
     const [open, setOpen] = useState(false);
 
     const { data, setData, post, processing, errors, reset } = useForm({
