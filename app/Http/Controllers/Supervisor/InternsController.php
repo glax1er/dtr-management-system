@@ -8,6 +8,7 @@ use App\Services\Attendance\DailyAttendance;
 use App\Services\Attendance\DailyAttendanceCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -24,28 +25,57 @@ class InternsController extends Controller
 
         $validated = $request->validate([
             'month' => ['nullable', 'date_format:Y-m'],
+            'from' => ['nullable', 'required_with:to', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'required_with:from', 'date_format:Y-m-d', 'after_or_equal:from'],
+            'search' => ['nullable', 'string', 'max:255'],
+            'sort' => ['nullable', 'in:date,name'],
+            'direction' => ['nullable', 'in:asc,desc'],
         ]);
 
-        $month = isset($validated['month'])
-            ? Carbon::createFromFormat('Y-m-d', $validated['month'] . '-01', $timezone)->startOfMonth()
-            : $today->clone()->startOfMonth();
+        // FR: date-range mode — supervisor picks X/Y and sees accumulated
+        // hours across that span. Falls back to the existing month-paged
+        // view when no range is supplied, so old links/behavior still work.
+        $usingRange = isset($validated['from'], $validated['to']);
+
+        $month = null;
+
+        if ($usingRange) {
+            $rangeStart = Carbon::createFromFormat('Y-m-d', $validated['from'], $timezone)->startOfDay();
+            $rangeEnd = Carbon::createFromFormat('Y-m-d', $validated['to'], $timezone)->endOfDay();
+        } else {
+            $month = isset($validated['month'])
+                ? Carbon::createFromFormat('Y-m-d', $validated['month'] . '-01', $timezone)->startOfMonth()
+                : $today->clone()->startOfMonth();
+
+            $rangeStart = $month->clone()->startOfMonth();
+            $rangeEnd = $month->clone()->endOfMonth();
+        }
+
+        $sort = $validated['sort'] ?? 'date';
+        $direction = $validated['direction'] ?? 'desc';
+        $search = trim($validated['search'] ?? '');
 
         $supervisorProfile = $request->user()->supervisorProfile;
 
-        $interns = InternProfile::query()
+        $internsQuery = InternProfile::query()
             ->where('hte_id', $supervisorProfile->hte_id)
-            ->with('user')
-            ->get();
+            ->with('user');
+
+        if ($search !== '') {
+            $internsQuery->whereHas('user', fn($query) => $query->where('name', 'like', "%{$search}%"));
+        }
+
+        $interns = $internsQuery->get();
 
         $rows = $interns
-            ->flatMap(function (InternProfile $intern) use ($month) {
+            ->flatMap(function (InternProfile $intern) use ($rangeStart, $rangeEnd) {
                 $days = $this->calculator->forIntern(
                     $intern->user_id,
-                    from: $month->clone()->startOfMonth(),
-                    to: $month->clone()->endOfMonth(),
+                    from: $rangeStart,
+                    to: $rangeEnd,
                 );
 
-                return $days->map(fn (DailyAttendance $day) => array_merge(
+                return $days->map(fn(DailyAttendance $day) => array_merge(
                     $day->toArray(),
                     [
                         'intern_user_id' => $intern->user_id,
@@ -53,17 +83,66 @@ class InternsController extends Controller
                         'punctuality' => $this->computePunctuality($day),
                     ],
                 ));
-            })
-            ->sortByDesc(fn (array $row) => $row['date'])
+            });
+
+        $rows = $this->sortRows($rows, $sort, $direction)->values();
+
+        // FR: accumulated hours per intern within the selected X-Y range.
+        // Reuses DailyAttendanceCalculator::totalHours(), which already
+        // supported an arbitrary date range — just wasn't wired to any
+        // controller yet.
+        $accumulatedHours = $interns
+            ->map(fn(InternProfile $intern) => [
+                'intern_user_id' => $intern->user_id,
+                'intern_name' => $intern->user->name,
+                'total_hours' => $this->calculator->totalHours($intern->user_id, $rangeStart, $rangeEnd),
+            ])
+            ->sortBy('intern_name')
             ->values();
 
         return Inertia::render('supervisor/interns', [
             'logs' => $rows,
-            'month' => $month->format('Y-m'),
-            'monthLabel' => $month->format('F Y'),
-            'canGoNextMonth' => $month->clone()->addMonthNoOverflow()->lessThanOrEqualTo($today->clone()->startOfMonth()),
+            'accumulatedHours' => $accumulatedHours,
+            'mode' => $usingRange ? 'range' : 'month',
+            'month' => $month?->format('Y-m'),
+            'monthLabel' => $month?->format('F Y'),
+            'canGoNextMonth' => $month
+                ? $month->clone()->addMonthNoOverflow()->lessThanOrEqualTo($today->clone()->startOfMonth())
+                : false,
             'internCount' => $interns->count(),
+            'filters' => [
+                'from' => $rangeStart->toDateString(),
+                'to' => $rangeEnd->toDateString(),
+                'search' => $search,
+                'sort' => $sort,
+                'direction' => $direction,
+            ],
         ]);
+    }
+
+    /**
+     * @param  Collection<int, array<string, mixed>>  $rows
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function sortRows(Collection $rows, string $sort, string $direction): Collection
+    {
+        $key = $sort === 'name' ? 'intern_name' : 'date';
+        $descending = $direction === 'desc';
+
+        // Secondary key keeps ordering stable/predictable when the primary
+        // sort key ties (e.g. same date across multiple interns, or same
+        // intern across multiple days).
+        return $rows->sort(function (array $a, array $b) use ($key, $descending) {
+            $primary = $descending ? $b[$key] <=> $a[$key] : $a[$key] <=> $b[$key];
+
+            if ($primary !== 0) {
+                return $primary;
+            }
+
+            $secondaryKey = $key === 'date' ? 'intern_name' : 'date';
+
+            return $a[$secondaryKey] <=> $b[$secondaryKey];
+        });
     }
 
     /**
