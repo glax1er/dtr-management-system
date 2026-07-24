@@ -23,7 +23,7 @@ return new class extends Migration
                 ->cascadeOnUpdate();
 
             $table->enum('status', ['active', 'inactive'])->default('active');
-            $table->timestamp('created_at')->useCurrent();
+            $table->timestamp('created_at')->now;
         });
     }
 
