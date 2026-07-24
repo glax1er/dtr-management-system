@@ -9,7 +9,7 @@ export function HoursProgressRing({
     percent,
     totalRendered,
     required,
-    size = 160,
+    size = 330,
 }: HoursProgressRingProps) {
     const strokeWidth = 12;
     const radius = (size - strokeWidth) / 2;

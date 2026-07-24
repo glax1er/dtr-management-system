@@ -78,7 +78,8 @@ class CreateNewUser implements CreatesNewUsers
                 'hte_id' => $input['hte_id'],
                 'program_id' => $input['program_id'],
                 'status' => 'pending',
-                'privacy_accepted_at' => now(), // ADDED — records the actual moment consent was given
+                'privacy_accepted_at' => now(), 
+                'registered_at' => now(),
             ]);
 
             return $user;

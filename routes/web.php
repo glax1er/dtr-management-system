@@ -9,6 +9,7 @@ use App\Http\Controllers\Intern\DashboardController as InternDashboardController
 use App\Http\Controllers\Intern\DtrReportController;
 use App\Http\Controllers\Supervisor\ScanController;
 use App\Http\Controllers\Supervisor\DashboardController as SupervisorDashboardController;
+use App\Http\Controllers\Supervisor\InternsController;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
@@ -49,6 +50,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('role:' . User::ROLE_SUPERVISOR)->prefix('supervisor')->name('supervisor.')->group(function () {
 Route::get('dashboard', [\App\Http\Controllers\Supervisor\DashboardController::class, 'index'])->name('dashboard');
         Route::post('scan', [ScanController::class, '__invoke'])->name('scan');
+        Route::get('interns', [InternsController::class, 'index'])->name('interns.index');
     });
 
     Route::middleware('role:' . User::ROLE_INTERN)->prefix('intern')->name('intern.')->group(function () {

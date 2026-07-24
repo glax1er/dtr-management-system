@@ -47,4 +47,16 @@ return [
     */
     'default_required_hours' => (int) env('DTR_REQUIRED_HOURS', 486),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Expected start time (punctuality cutoff)
+    |--------------------------------------------------------------------------
+    |
+    | Used only for the Supervisor's "My Interns" attendance log to mark
+    | a day's time-in as "On Time" or "Late". Same fixed cutoff for every
+    | intern for now — not per-HTE/per-program yet.
+    |
+    */
+    'expected_start_time' => env('DTR_EXPECTED_START_TIME', '08:00'),
+
 ];

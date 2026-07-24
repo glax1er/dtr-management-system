@@ -20,6 +20,7 @@ class SupervisorProfile extends Model
         'user_id',
         'hte_id',
         'status',
+        'created_at',
     ];
 
     /**

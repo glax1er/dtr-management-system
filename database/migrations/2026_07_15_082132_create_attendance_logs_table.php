@@ -23,8 +23,8 @@ return new class extends Migration
                 ->restrictOnDelete()
                 ->cascadeOnUpdate();
 
-            $table->dateTime('scan_timestamp')->useCurrent();
-            $table->timestamp('created_at')->useCurrent();
+            $table->dateTime('scan_timestamp')->now();
+            $table->timestamp('created_at')->now();
 
             $table->index(['intern_user_id', 'scan_timestamp'], 'idx_intern_date');
         });
