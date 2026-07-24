@@ -32,9 +32,9 @@ class InternsController extends Controller
 
         $supervisorProfile = $request->user()->supervisorProfile;
 
-        $interns = InternProfile::query()
-            ->where('hte_id', $supervisorProfile->hte_id)
-            ->with('user')
+        // Get interns based on supervisor type (HTE or OJT)
+        $interns = $supervisorProfile->getAssignedInterns()
+            ->with('user', 'hte', 'program')
             ->get();
 
         $rows = $interns
@@ -50,6 +50,8 @@ class InternsController extends Controller
                     [
                         'intern_user_id' => $intern->user_id,
                         'intern_name' => $intern->user->name,
+                        'hte_name' => $intern->hte->hte_name,
+                        'program_name' => $intern->program->program_name,
                         'punctuality' => $this->computePunctuality($day),
                     ],
                 ));
@@ -63,6 +65,8 @@ class InternsController extends Controller
             'monthLabel' => $month->format('F Y'),
             'canGoNextMonth' => $month->clone()->addMonthNoOverflow()->lessThanOrEqualTo($today->clone()->startOfMonth()),
             'internCount' => $interns->count(),
+            'supervisorType' => $supervisorProfile->supervisor_type,
+            'isOjtSupervisor' => $supervisorProfile->isOjtSupervisor(),
         ]);
     }
 

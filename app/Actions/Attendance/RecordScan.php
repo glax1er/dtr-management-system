@@ -57,6 +57,12 @@ class RecordScan
             throw new InvalidScanException(ScanRejectionReason::ScannerNotSupervisor);
         }
 
+        // Only HTE supervisors can scan. OJT supervisors are read-only.
+        if ($supervisorProfile->isOjtSupervisor()) {
+            throw new InvalidScanException(ScanRejectionReason::HteMismatch);
+        }
+
+        // For HTE supervisors, ensure they can only scan interns from their assigned HTE
         if ($supervisorProfile->hte_id !== $internProfile->hte_id) {
             throw new InvalidScanException(ScanRejectionReason::HteMismatch);
         }

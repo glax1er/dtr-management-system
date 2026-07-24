@@ -35,6 +35,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('supervisors', [SupervisorController::class, 'index'])->name('supervisors.index');
         Route::post('supervisors', [SupervisorController::class, 'store'])->name('supervisors.store');
+        Route::post('supervisors/ojt', [SupervisorController::class, 'storeOjtSupervisor'])->name('supervisors.store-ojt');
 
         Route::patch('supervisors/{supervisorProfile}/status', [SupervisorController::class, 'updateStatus'])
             ->name('supervisors.updateStatus');

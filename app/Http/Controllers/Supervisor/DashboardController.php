@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Supervisor;
 
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceLog;
-use App\Models\InternProfile;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -14,11 +13,14 @@ class DashboardController extends Controller
     public function index(): Response
     {
         $supervisor = auth()->user();
-        $hteId = $supervisor->supervisorProfile->hte_id;
+        $supervisorProfile = $supervisor->supervisorProfile;
 
-        $myInternsCount = InternProfile::where('hte_id', $hteId)
+        // Get interns based on supervisor type (HTE or OJT)
+        $myInterns = $supervisorProfile->getAssignedInterns()
             ->where('status', 'approved')
-            ->count();
+            ->get();
+
+        $myInternsCount = $myInterns->count();
 
         $scansToday = AttendanceLog::where('supervisor_user_id', $supervisor->id)
             ->whereDate('scan_timestamp', Carbon::today())
@@ -53,6 +55,9 @@ class DashboardController extends Controller
             'scansToday' => $scansToday,
             'scansThisWeek' => $scansThisWeek,
             'recentScans' => $recentScans,
+            'supervisorType' => $supervisorProfile->supervisor_type,
+            'isOjtSupervisor' => $supervisorProfile->isOjtSupervisor(),
+            'scopeName' => $supervisorProfile->getScopeName(),
         ]);
     }
 }

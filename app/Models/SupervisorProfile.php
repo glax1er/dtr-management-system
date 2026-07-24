@@ -19,6 +19,8 @@ class SupervisorProfile extends Model
     protected $fillable = [
         'user_id',
         'hte_id',
+        'program_id',
+        'supervisor_type',
         'status',
         'created_at',
     ];
@@ -34,11 +36,25 @@ class SupervisorProfile extends Model
     }
 
     /**
+     * The HTE this supervisor is assigned to (only for HTE supervisors).
+     * For OJT supervisors, this will be null.
+     *
      * @return BelongsTo<Hte, $this>
      */
     public function hte(): BelongsTo
     {
         return $this->belongsTo(Hte::class, 'hte_id', 'hte_id');
+    }
+
+    /**
+     * The program this OJT supervisor oversees (only for OJT supervisors).
+     * For HTE supervisors, this will be null.
+     *
+     * @return BelongsTo<Program, $this>
+     */
+    public function program(): BelongsTo
+    {
+        return $this->belongsTo(Program::class, 'program_id', 'program_id');
     }
 
     /**
@@ -51,5 +67,59 @@ class SupervisorProfile extends Model
     public function scannedLogs(): HasMany
     {
         return $this->hasMany(AttendanceLog::class, 'supervisor_user_id', 'user_id');
+    }
+
+    /**
+     * Check if this is an HTE Supervisor.
+     */
+    public function isHteSupervisor(): bool
+    {
+        return $this->supervisor_type === 'hte';
+    }
+
+    /**
+     * Check if this is an OJT Supervisor.
+     */
+    public function isOjtSupervisor(): bool
+    {
+        return $this->supervisor_type === 'ojt';
+    }
+
+    /**
+     * Get all assigned interns for this supervisor (works for both HTE and OJT).
+     * For HTE supervisors: returns interns from their assigned HTE.
+     * For OJT supervisors: returns all interns from their assigned program.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder<InternProfile>
+     */
+    public function getAssignedInterns()
+    {
+        if ($this->isHteSupervisor()) {
+            return $this->hte->internProfiles();
+        }
+
+        return $this->program->internProfiles();
+    }
+
+    /**
+     * Get the scope of this supervisor (either HTE or Program).
+     * Useful for polymorphic queries and logic.
+     *
+     * @return Hte|Program|null
+     */
+    public function getScope()
+    {
+        return $this->isHteSupervisor() ? $this->hte : $this->program;
+    }
+
+    /**
+     * Get the scope name for display/reference purposes.
+     * HTE supervisors return their HTE name, OJT supervisors return their program name.
+     */
+    public function getScopeName(): string
+    {
+        return $this->isHteSupervisor()
+            ? ($this->hte?->hte_name ?? 'Unknown HTE')
+            : ($this->program?->program_name ?? 'Unknown Program');
     }
 }

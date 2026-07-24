@@ -33,4 +33,17 @@ class Program extends Model
     {
         return $this->hasMany(InternProfile::class, 'program_id', 'program_id');
     }
+
+    /**
+     * All OJT supervisors assigned to this program.
+     * These supervisors have read access to all interns in the program
+     * across all HTEs.
+     *
+     * @return HasMany<SupervisorProfile, $this>
+     */
+    public function ojtSupervisors(): HasMany
+    {
+        return $this->hasMany(SupervisorProfile::class, 'program_id', 'program_id')
+            ->where('supervisor_type', 'ojt');
+    }
 }
