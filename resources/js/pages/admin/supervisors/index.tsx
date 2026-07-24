@@ -22,17 +22,24 @@ interface Hte {
     hte_name: string;
 }
 
+interface Program {
+    program_id: number;
+    program_name: string;
+}
+
 interface Supervisor {
     user_id: number;
     name: string;
     email: string;
-    hte_name: string;
+    supervisor_type: 'hte' | 'ojt';
+    scope_name: string;
     status: 'active' | 'inactive';
 }
 
 interface SupervisorsIndexProps {
     supervisors: Supervisor[];
     htes: Hte[];
+    programs: Program[];
 }
 
 export default function SupervisorsIndex({ supervisors, htes }: SupervisorsIndexProps) {
@@ -41,12 +48,17 @@ export default function SupervisorsIndex({ supervisors, htes }: SupervisorsIndex
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
         email: '',
+        supervisor_type: 'hte',
         hte_id: '',
+        program_id: '',
     });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        post('/admin/supervisors', {
+
+        const url = data.supervisor_type === 'ojt' ? '/admin/supervisors/ojt' : '/admin/supervisors';
+
+        post(url, {
             preserveScroll: true,
             onSuccess: () => {
                 reset();
@@ -74,11 +86,28 @@ export default function SupervisorsIndex({ supervisors, htes }: SupervisorsIndex
                                 <DialogHeader>
                                     <DialogTitle>Add Supervisor</DialogTitle>
                                     <DialogDescription>
-                                        A default password will be assigned. The supervisor can change it after logging in.
+                                        Create either an HTE Supervisor or an OJT Supervisor. The supervisor will receive a default password and can change it after logging in.
                                     </DialogDescription>
                                 </DialogHeader>
 
                                 <div className="grid gap-4 py-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="supervisor_type">Supervisor type</Label>
+                                        <Select
+                                            value={data.supervisor_type}
+                                            onValueChange={(value) => setData('supervisor_type', value as 'hte' | 'ojt')}
+                                            required
+                                        >
+                                            <SelectTrigger id="supervisor_type" className="w-full">
+                                                <SelectValue placeholder="Select type" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="hte">HTE Supervisor</SelectItem>
+                                                <SelectItem value="ojt">OJT Supervisor</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+ 
                                     <div className="grid gap-2">
                                         <Label htmlFor="name">Name</Label>
                                         <Input
@@ -89,7 +118,7 @@ export default function SupervisorsIndex({ supervisors, htes }: SupervisorsIndex
                                         />
                                         <InputError message={errors.name} />
                                     </div>
-
+ 
                                     <div className="grid gap-2">
                                         <Label htmlFor="email">Email</Label>
                                         <Input
@@ -101,27 +130,50 @@ export default function SupervisorsIndex({ supervisors, htes }: SupervisorsIndex
                                         />
                                         <InputError message={errors.email} />
                                     </div>
-
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="hte_id">Host training establishment</Label>
-                                        <Select
-                                            value={data.hte_id}
-                                            onValueChange={(value) => setData('hte_id', value)}
-                                            required
-                                        >
-                                            <SelectTrigger id="hte_id" className="w-full">
-                                                <SelectValue placeholder="Select HTE" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {htes.map((hte) => (
-                                                    <SelectItem key={hte.hte_id} value={String(hte.hte_id)}>
-                                                        {hte.hte_name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <InputError message={errors.hte_id} />
-                                    </div>
+ 
+                                    {data.supervisor_type === 'hte' ? (
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="hte_id">Host training establishment</Label>
+                                            <Select
+                                                value={data.hte_id}
+                                                onValueChange={(value) => setData('hte_id', value)}
+                                                required
+                                            >
+                                                <SelectTrigger id="hte_id" className="w-full">
+                                                    <SelectValue placeholder="Select HTE" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {htes.map((hte) => (
+                                                        <SelectItem key={hte.hte_id} value={String(hte.hte_id)}>
+                                                            {hte.hte_name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <InputError message={errors.hte_id} />
+                                        </div>
+                                    ) : (
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="program_id">Program</Label>
+                                            <Select
+                                                value={data.program_id}
+                                                onValueChange={(value) => setData('program_id', value)}
+                                                required
+                                            >
+                                                <SelectTrigger id="program_id" className="w-full">
+                                                    <SelectValue placeholder="Select program" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {programs.map((program) => (
+                                                        <SelectItem key={program.program_id} value={String(program.program_id)}>
+                                                            {program.program_name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <InputError message={errors.program_id} />
+                                        </div>
+                                    )}
                                 </div>
 
                                 <DialogFooter>
@@ -151,7 +203,10 @@ export default function SupervisorsIndex({ supervisors, htes }: SupervisorsIndex
                                         <div>
                                             <p className="font-medium">{supervisor.name}</p>
                                             <p className="text-muted-foreground text-sm">
-                                                {supervisor.email} · {supervisor.hte_name}
+                                                {supervisor.email} · {supervisor.scope_name}{' '}
+                                                <span className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                                                    {supervisor.supervisor_type === 'ojt' ? 'OJT Supervisor' : 'HTE Supervisor'}
+                                                </span>
                                             </p>
                                         </div>
                                         <Select
