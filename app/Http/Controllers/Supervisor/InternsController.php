@@ -30,6 +30,8 @@ class InternsController extends Controller
             'search' => ['nullable', 'string', 'max:255'],
             'sort' => ['nullable', 'in:date,name'],
             'direction' => ['nullable', 'in:asc,desc'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'in:10,20,50,100'],
         ]);
 
         // FR: date-range mode — supervisor picks X/Y and sees accumulated
@@ -87,6 +89,19 @@ class InternsController extends Controller
 
         $rows = $this->sortRows($rows, $sort, $direction)->values();
 
+        // FR: server-side pagination — only the current page of rows is
+        // ever serialized to the frontend, so payload size and render
+        // cost stay flat no matter how large the date range or intern
+        // roster gets. Rows are still assembled in PHP (they're derived
+        // from raw scans, not a single query), but slicing happens here,
+        // before anything is sent over the wire.
+        $perPage = (int) ($validated['per_page'] ?? 20);
+        $total = $rows->count();
+        $lastPage = max(1, (int) ceil($total / $perPage));
+        $page = min((int) ($validated['page'] ?? 1), $lastPage);
+
+        $pagedRows = $rows->forPage($page, $perPage)->values();
+
         // FR: accumulated hours per intern within the selected X-Y range.
         // Reuses DailyAttendanceCalculator::totalHours(), which already
         // supported an arbitrary date range — just wasn't wired to any
@@ -101,7 +116,15 @@ class InternsController extends Controller
             ->values();
 
         return Inertia::render('supervisor/interns', [
-            'logs' => $rows,
+            'logs' => [
+                'data' => $pagedRows,
+                'current_page' => $page,
+                'last_page' => $lastPage,
+                'per_page' => $perPage,
+                'total' => $total,
+                'from' => $total === 0 ? null : ($page - 1) * $perPage + 1,
+                'to' => $total === 0 ? null : min($page * $perPage, $total),
+            ],
             'accumulatedHours' => $accumulatedHours,
             'mode' => $usingRange ? 'range' : 'month',
             'month' => $month?->format('Y-m'),
@@ -116,6 +139,7 @@ class InternsController extends Controller
                 'search' => $search,
                 'sort' => $sort,
                 'direction' => $direction,
+                'per_page' => $perPage,
             ],
         ]);
     }
