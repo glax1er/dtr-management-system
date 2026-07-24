@@ -131,6 +131,7 @@ class InternsController extends Controller
             ],
             'supervisorType' => $supervisorProfile->supervisor_type,
             'isOjtSupervisor' => $supervisorProfile->isOjtSupervisor(),
+            'scopeName' => $supervisorProfile->getScopeName(),
         ]);
     }
 

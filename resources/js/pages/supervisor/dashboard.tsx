@@ -39,6 +39,7 @@ type ScanFlash =
 
 function readXsrfToken(): string {
     const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+
     return match ? decodeURIComponent(match[1]) : '';
 }
 
@@ -68,7 +69,14 @@ export default function SupervisorDashboard({
     scansThisWeek,
     recentScans
 }: SupervisorDashboardProps) {
-    const { auth } = usePage<PageProps>().props;
+    const {
+        auth,
+        isOjtSupervisor = false,
+        scopeName,
+    } = usePage<PageProps>().props as PageProps & {
+        isOjtSupervisor?: boolean;
+        scopeName?: string;
+    };
 
     const [flash, setFlash] = useState<ScanFlash | null>(null);
     const [cameraError, setCameraError] = useState<string | null>(null);
@@ -76,69 +84,11 @@ export default function SupervisorDashboard({
     const busyRef = useRef(false);
     const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    useEffect(() => {
-        const scanner = new Html5Qrcode(SCANNER_ELEMENT_ID);
-        scannerRef.current = scanner;
-        let cancelled = false;
-
-        const startPromise = scanner
-            .start(
-                { facingMode: 'environment' },
-                {
-                    fps: 10,
-                    // A fixed pixel qrbox (e.g. 250x250) looks tiny on a
-                    // tablet and cramped on a small phone. Sizing it as a
-                    // fraction of whatever the camera's actual viewfinder
-                    // turns out to be keeps the framing box sensible on
-                    // any device — this is html5-qrcode's documented
-                    // pattern for responsive scan regions.
-                    qrbox: (viewfinderWidth, viewfinderHeight) => {
-                        const edge = Math.floor(
-                            Math.min(viewfinderWidth, viewfinderHeight) * 0.7,
-                        );
-                        return { width: edge, height: edge };
-                    },
-                    // Force a square feed regardless of the phone's native
-                    // camera aspect ratio (varies a lot device to device)
-                    // so the preview always matches the square container
-                    // below instead of being stretched or letterboxed.
-                    aspectRatio: 1,
-                },
-                (decodedText) => {
-                    if (!cancelled) submitScan(decodedText);
-                },
-                () => {
-                    // Fires continuously while no code is in frame — expected, not an error.
-                },
-            )
-            .catch((err: unknown) => {
-                if (!cancelled) {
-                    setCameraError(
-                        'Could not access the camera. Make sure this page has camera permission and that no other app is using it.',
-                    );
-                    console.error(err);
-                }
-            });
-
-        return () => {
-            cancelled = true;
-            if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-            // Wait for start() to actually settle (success OR failure)
-            // before calling stop(). Calling stop() while start() is
-            // still mid-flight is what breaks the camera under React
-            // StrictMode's dev-only double mount/unmount/remount — it
-            // interrupts the first attempt right as it's requesting the
-            // camera, leaving the real (second) mount fighting over a
-            // half-initialized stream. This ordering fixes that without
-            // needing to touch StrictMode itself.
-            startPromise.finally(() => {
-                scanner.stop().catch(() => {});
-            });
-        };
-    }, []);
-
     function submitScan(qrCodeValue: string) {
-        if (busyRef.current) return;
+        if (busyRef.current) {
+            return;
+        }
+
         busyRef.current = true;
 
         fetch('/supervisor/scan', {
@@ -159,6 +109,7 @@ export default function SupervisorDashboard({
                         kind: 'error',
                         message: data.message ?? 'Scan rejected.',
                     });
+
                     return;
                 }
 
@@ -179,7 +130,10 @@ export default function SupervisorDashboard({
                 });
             })
             .finally(() => {
-                if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+                if (flashTimerRef.current) {
+                    clearTimeout(flashTimerRef.current);
+                }
+
                 flashTimerRef.current = setTimeout(
                     () => setFlash(null),
                     FLASH_DURATION_MS,
@@ -191,10 +145,82 @@ export default function SupervisorDashboard({
             });
     }
 
+    useEffect(() => {
+        if (isOjtSupervisor) {
+            return () => undefined;
+        }
+
+        const scanner = new Html5Qrcode(SCANNER_ELEMENT_ID);
+        scannerRef.current = scanner;
+        let cancelled = false;
+
+        const startPromise = scanner
+            .start(
+                { facingMode: 'environment' },
+                {
+                    fps: 10,
+                    // A fixed pixel qrbox (e.g. 250x250) looks tiny on a
+                    // tablet and cramped on a small phone. Sizing it as a
+                    // fraction of whatever the camera's actual viewfinder
+                    // keeps the framing box sensible on
+                    // any device — this is html5-qrcode's documented
+                    // pattern for responsive scan regions.
+                    qrbox: (viewfinderWidth, viewfinderHeight) => {
+                        const edge = Math.floor(
+                            Math.min(viewfinderWidth, viewfinderHeight) * 0.7,
+                        );
+
+                        return { width: edge, height: edge };
+                    },
+                    // Force a square feed regardless of the phone's native
+                    // camera aspect ratio (varies a lot device to device)
+                    // so the preview always matches the square container
+                    // below instead of being stretched or letterboxed.
+                    aspectRatio: 1,
+                },
+                (decodedText) => {
+                    if (!cancelled) {
+submitScan(decodedText);
+}
+                },
+                () => {
+                    // Fires continuously while no code is in frame — expected, not an error.
+                },
+            )
+            .catch((err: unknown) => {
+                if (!cancelled) {
+                    setCameraError(
+                        'Could not access the camera. Make sure this page has camera permission and that no other app is using it.',
+                    );
+                    console.error(err);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+
+            if (flashTimerRef.current) {
+clearTimeout(flashTimerRef.current);
+}
+
+            // Wait for start() to actually settle (success OR failure)
+            // before calling stop(). Calling stop() while start() is
+            // still mid-flight is what breaks the camera under React
+            // StrictMode's dev-only double mount/unmount/remount — it
+            // interrupts the first attempt right as it's requesting the
+            // camera, leaving the real (second) mount fighting over a
+            // half-initialized stream. This ordering fixes that without
+            // needing to touch StrictMode itself.
+            startPromise.finally(() => {
+                scanner.stop().catch(() => {});
+            });
+        };
+    }, [isOjtSupervisor]);
+
     const stats = [
-    { label: 'My Interns', value: myInternsCount, icon: GraduationCap },
-    { label: 'Scans Today', value: scansToday, icon: ClipboardCheck },
-    { label: 'Scans This Week', value: scansThisWeek, icon: Clock },
+        { label: 'My Interns', value: myInternsCount, icon: GraduationCap },
+        { label: 'Scans Today', value: scansToday, icon: ClipboardCheck },
+        { label: 'Scans This Week', value: scansThisWeek, icon: Clock },
     ];
 
     return (
@@ -206,7 +232,9 @@ export default function SupervisorDashboard({
                         Welcome back, {auth.user.name}
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        Scan an intern's QR code to record their time in/out.
+                        {isOjtSupervisor
+                            ? `You are logged in as an OJT Supervisor for ${scopeName ?? 'your program'}. Use the intern log page below to monitor attendance across all HTEs in your program.`
+                            : `Scan an intern's QR code to record their time in/out.`}
                     </p>
                 </div>
 
@@ -217,74 +245,81 @@ export default function SupervisorDashboard({
                 <Card className="gap-4 py-4 sm:gap-6 sm:py-6">
                     <CardHeader className="px-4 sm:px-6">
                         <CardTitle className="text-lg sm:text-xl">
-                            Scan Intern QR Code
+                            {isOjtSupervisor ? 'Program Attendance Monitor' : 'Scan Intern QR Code'}
                         </CardTitle>
                         <CardDescription>
-                            Have the intern present their QR code to the camera
-                            below.
+                            {isOjtSupervisor
+                                ? 'OJT Supervisors do not scan QR codes here. Use the intern log page for program-level attendance monitoring.'
+                                : 'Have the intern present their QR code to the camera below.'}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="px-3 sm:px-6">
-                        <div className="relative mx-auto aspect-square w-full max-w-sm overflow-hidden rounded-lg bg-black">
-                            {/* Always mounted — hidden via CSS if there's an error,
-                                never conditionally unmounted. html5-qrcode
-                                manipulates this div's DOM directly; removing and
-                                remounting it fights the library instead of
-                                working with it. */}
-                            <div
-                                id={SCANNER_ELEMENT_ID}
-                                className={
-                                    cameraError
-                                        ? 'hidden'
-                                        : 'h-full w-full [&>video]:h-full [&>video]:w-full [&>video]:object-cover'
-                                }
-                            />
-
-                            {cameraError && (
-                                <div className="flex h-full w-full items-center justify-center p-4 text-center text-sm text-white/80">
-                                    {cameraError}
-                                </div>
-                            )}
-
-                            {/* Overlaid on top of the camera feed, not stacked
-                                above it — a scan every few seconds otherwise
-                                shifts the whole layout up and down, which is
-                                disorienting when someone's actively holding a
-                                phone steady to line up a QR code. */}
-                            {flash && (
+                        {isOjtSupervisor ? (
+                            <div className="flex h-60 items-center justify-center rounded-lg border border-dashed border-muted px-4 text-center text-sm text-muted-foreground">
+                                OJT Supervisors do not perform QR scanning. View attendance logs and accumulated hours on the My Interns page.
+                            </div>
+                        ) : (
+                            <div className="relative mx-auto aspect-square w-full max-w-sm overflow-hidden rounded-lg bg-black">
+                                {/* Always mounted — hidden via CSS if there's an error,
+                                    never conditionally unmounted. html5-qrcode
+                                    manipulates this div's DOM directly; removing and
+                                    remounting it fights the library instead of
+                                    working with it. */}
                                 <div
+                                    id={SCANNER_ELEMENT_ID}
                                     className={
-                                        'absolute inset-x-0 top-0 p-3 text-sm shadow-md backdrop-blur-sm ' +
-                                        (flash.kind === 'success'
-                                            ? 'bg-emerald-500/90 text-white'
-                                            : 'bg-destructive/90 text-white')
+                                        cameraError
+                                            ? 'hidden'
+                                            : 'h-full w-full [&>video]:h-full [&>video]:w-full [&>video]:object-cover'
                                     }
-                                >
-                                    {flash.kind === 'success' ? (
-                                        <>
-                                            <div className="text-base font-semibold sm:text-lg">
-                                                {flash.internName}
+                                />
+
+                                {cameraError && (
+                                    <div className="flex h-full w-full items-center justify-center p-4 text-center text-sm text-white/80">
+                                        {cameraError}
+                                    </div>
+                                )}
+
+                                {/* Overlaid on top of the camera feed, not stacked
+                                    above it — a scan every few seconds otherwise
+                                    shifts the whole layout up and down, which is
+                                    disorienting when someone's actively holding a
+                                    phone steady to line up a QR code. */}
+                                {flash && (
+                                    <div
+                                        className={
+                                            'absolute inset-x-0 top-0 p-3 text-sm shadow-md backdrop-blur-sm ' +
+                                            (flash.kind === 'success'
+                                                ? 'bg-emerald-500/90 text-white'
+                                                : 'bg-destructive/90 text-white')
+                                        }
+                                    >
+                                        {flash.kind === 'success' ? (
+                                            <>
+                                                <div className="text-base font-semibold sm:text-lg">
+                                                    {flash.internName}
+                                                </div>
+                                                <div className="text-white/90">
+                                                    {flash.idNumber}
+                                                </div>
+                                                <div className="text-white/90">
+                                                    {flash.label === 'time_in'
+                                                        ? 'Timed In'
+                                                        : 'Timed Out'}{' '}
+                                                    · {formatTime(flash.timestamp)}
+                                                    {flash.isDuplicate &&
+                                                        ' (already recorded)'}
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="text-base font-medium sm:text-lg">
+                                                {flash.message}
                                             </div>
-                                            <div className="text-white/90">
-                                                {flash.idNumber}
-                                            </div>
-                                            <div className="text-white/90">
-                                                {flash.label === 'time_in'
-                                                    ? 'Timed In'
-                                                    : 'Timed Out'}{' '}
-                                                · {formatTime(flash.timestamp)}
-                                                {flash.isDuplicate &&
-                                                    ' (already recorded)'}
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <div className="text-base font-medium sm:text-lg">
-                                            {flash.message}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 
