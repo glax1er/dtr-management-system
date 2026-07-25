@@ -1,9 +1,11 @@
 <?php
+// app/Http/Controllers/Supervisor/DashboardController.php
 
 namespace App\Http\Controllers\Supervisor;
 
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceLog;
+use App\Models\InternProfile;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -13,31 +15,32 @@ class DashboardController extends Controller
     public function index(): Response
     {
         $supervisor = auth()->user();
-        $supervisorProfile = $supervisor->supervisorProfile;
+        $hteId = $supervisor->supervisorProfile->hte_id;
 
-        // Get interns based on supervisor type (HTE or OJT)
-        $myInterns = $supervisorProfile->getAssignedInterns()
+        $myInternsCount = InternProfile::where('hte_id', $hteId)
             ->where('status', 'approved')
-            ->get();
+            ->count();
 
-        $myInternsCount = $myInterns->count();
+        // Scope every scan query through the intern's HTE, not a
+        // stored supervisor_user_id — kiosk scans no longer record
+        // who scanned it, only who was scanned.
+        $baseQuery = fn () => AttendanceLog::query()
+            ->whereHas('internProfile', fn ($q) => $q->where('hte_id', $hteId));
 
-        $scansToday = AttendanceLog::where('supervisor_user_id', $supervisor->id)
+        $scansToday = $baseQuery()
             ->whereDate('scan_timestamp', Carbon::today())
             ->count();
 
-        $scansThisWeek = AttendanceLog::where('supervisor_user_id', $supervisor->id)
+        $scansThisWeek = $baseQuery()
             ->whereBetween('scan_timestamp', [Carbon::now()->startOfWeek(), Carbon::now()])
             ->count();
 
-        $recentScans = AttendanceLog::where('supervisor_user_id', $supervisor->id)
+        $recentScans = $baseQuery()
             ->with('intern:id,name')
             ->latest('scan_timestamp')
             ->limit(8)
             ->get()
             ->map(function (AttendanceLog $log) {
-                // Same rule as RecordScan: the intern's Nth scan that
-                // day is Time In only if N <= 1, otherwise Time Out.
                 $scansUpToThisOneToday = AttendanceLog::where('intern_user_id', $log->intern_user_id)
                     ->whereDate('scan_timestamp', $log->scan_timestamp)
                     ->where('scan_timestamp', '<=', $log->scan_timestamp)
@@ -55,9 +58,6 @@ class DashboardController extends Controller
             'scansToday' => $scansToday,
             'scansThisWeek' => $scansThisWeek,
             'recentScans' => $recentScans,
-            'supervisorType' => $supervisorProfile->supervisor_type,
-            'isOjtSupervisor' => $supervisorProfile->isOjtSupervisor(),
-            'scopeName' => $supervisorProfile->getScopeName(),
         ]);
     }
 }

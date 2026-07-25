@@ -9,6 +9,8 @@ use App\Http\Controllers\Intern\DashboardController as InternDashboardController
 use App\Http\Controllers\Intern\DtrReportController;
 use App\Http\Controllers\Supervisor\ScanController;
 use App\Http\Controllers\Supervisor\InternsController;
+use App\Http\Controllers\Admin\KioskController;
+use App\Http\Controllers\Kiosk\ScanController as KioskScanController;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
@@ -45,11 +47,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('htes', [HteController::class, 'store'])->name('htes.store');
         Route::patch('htes/{hte}', [HteController::class, 'update'])->name('htes.update');
         Route::patch('htes/{hte}/status', [HteController::class, 'updateStatus'])->name('htes.updateStatus');
+
+        Route::get('kiosk', [KioskController::class, 'show'])->name('kiosk.show');
+        Route::post('kiosk/{kiosk}/regenerate', [KioskController::class, 'regenerate'])->name('kiosk.regenerate');
+        Route::post('kiosk/{kiosk}/toggle', [KioskController::class, 'toggleActive'])->name('kiosk.toggle');
     });
 
     Route::middleware('role:' . User::ROLE_SUPERVISOR)->prefix('supervisor')->name('supervisor.')->group(function () {
         Route::get('dashboard', [\App\Http\Controllers\Supervisor\DashboardController::class, 'index'])->name('dashboard');
-        Route::post('scan', [ScanController::class, '__invoke'])->name('scan');
         Route::get('interns', [InternsController::class, 'index'])->name('interns.index');
     });
 
@@ -58,6 +63,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('dtr-report', [DtrReportController::class, 'download'])->name('dtr-report.download');
         Route::get('qr-code', [QrCodeImageController::class, 'show'])->name('qr-code.show');
     });
+
 });
+
+Route::get('kiosk/{token}', [KioskScanController::class, 'show'])->name('kiosk.scan.show');
+Route::post('kiosk/{token}/scan', [KioskScanController::class, 'store'])->name('kiosk.scan.store');
 
 require __DIR__ . '/settings.php';
