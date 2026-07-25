@@ -50,10 +50,18 @@ export default function AdminKiosk({ kiosk }: KioskProps) {
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <div>
-                                <CardTitle>{kiosk.name}</CardTitle>
-                                <CardDescription>Open this link on the shared tablet/device.</CardDescription>
+                                <CardTitle className="mb-2">{kiosk.name}</CardTitle>
+                                <CardDescription>
+                                    Open this link on the shared tablet/device.
+                                </CardDescription>
                             </div>
-                            <Badge variant={kiosk.is_active ? 'default' : 'secondary'}>
+                            <Badge
+                                className={
+                                    kiosk.is_active
+                                        ? 'bg-emerald-100 text-emerald-400 border-emerald-500'
+                                        : 'bg-red-100 text-red-400 border-red-500'
+                                }
+                            >
                                 {kiosk.is_active ? 'Active' : 'Disabled'}
                             </Badge>
                         </div>
@@ -67,10 +75,20 @@ export default function AdminKiosk({ kiosk }: KioskProps) {
                         </div>
 
                         <div className="flex gap-2">
-                            <Button variant="destructive" onClick={regenerate}>
+                            <Button
+                                onClick={regenerate}
+                                className="bg-amber-500 text-white border border-amber-700 hover:bg-amber-600"
+                            >
                                 Regenerate Link
                             </Button>
-                            <Button variant="outline" onClick={toggle}>
+                            <Button
+                                onClick={toggle}
+                                className={
+                                    kiosk.is_active
+                                        ? 'bg-red-500 hover:bg-red-600 text-white border border-red-700'
+                                        : 'bg-emerald-500 hover:bg-emerald-600 text-white border border-emerald-700'
+                                }
+                            >
                                 {kiosk.is_active ? 'Disable Kiosk' : 'Enable Kiosk'}
                             </Button>
                         </div>

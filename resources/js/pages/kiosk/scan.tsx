@@ -4,7 +4,7 @@ import { User as UserIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 const SCANNER_ELEMENT_ID = 'qr-scanner-viewport';
-const FLASH_DURATION_MS = 3000;
+const FLASH_DURATION_MS = 5000;
 const REPROCESS_COOLDOWN_MS = FLASH_DURATION_MS;
 
 interface ScannedIntern {
@@ -23,6 +23,21 @@ function formatTime(iso: string): string {
     return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
 
+// ADDED — reads the intern's name and time-in/out status aloud
+function speakAnnouncement(intern: ScannedIntern) {
+    if (!('speechSynthesis' in window)) return;
+    if (intern.isDuplicate) return;
+
+    const statusText = intern.label === 'time_in' ? 'Timed In' : 'Timed Out';
+    const utterance = new SpeechSynthesisUtterance(`${intern.internName}, ${statusText}`);
+    utterance.rate = 1;
+    utterance.lang = 'en-US';
+
+    // stop any announcement still playing from a previous scan
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+}
+
 interface KioskScanProps {
     kioskId: number;
     kioskName: string;
@@ -33,15 +48,43 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
     const [lastIntern, setLastIntern] = useState<ScannedIntern | null>(null);
     const [cameraError, setCameraError] = useState<string | null>(null);
     const scannerRef = useRef<Html5Qrcode | null>(null);
-    const busyRef = useRef(false);
+    const inFlightRef = useRef(false);
+    const lastProcessedRef = useRef<{ value: string; at: number } | null>(null);
     const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const audioRef = useRef<{ [key: string]: HTMLAudioElement }>({});
 
-    const token = window.location.pathname.split('/').filter(Boolean).pop() ?? '';
+    const token =
+        typeof window !== 'undefined'
+            ? (window.location.pathname.split('/').filter(Boolean).pop() ?? '')
+            : '';
 
     useEffect(() => {
         const scanner = new Html5Qrcode(SCANNER_ELEMENT_ID);
         scannerRef.current = scanner;
         let cancelled = false;
+
+        // Preload audio files to avoid startup delays
+        const soundPaths = ['/sounds/scan-duplicate.mp3', '/sounds/time-in.mp3', '/sounds/time-out.mp3', '/sounds/scan-error.mp3'];
+        soundPaths.forEach((path) => {
+            const audio = new Audio(path);
+            audio.preload = 'auto';
+            audioRef.current[path] = audio;
+        });
+
+        // Warm up each audio file
+        Object.values(audioRef.current).forEach((audio) => {
+            audio.muted = true;
+            audio
+                .play()
+                .then(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    audio.muted = false;
+                })
+                .catch(() => {
+                    audio.muted = false;
+                });
+        });
 
         const startPromise = scanner
             .start(
@@ -77,9 +120,41 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
         };
     }, []);
 
+    // ADDED — plays a short sound effect alongside the voice announcement
+    function playSound(src: string) {
+        const audio = audioRef.current[src];
+        if (!audio) {
+            console.warn(`Audio not found: ${src}`);
+            return;
+        }
+        audio.currentTime = 0;
+        audio.play().catch((err) => {
+            // Log to console for debugging — autoplay can be blocked until
+            // the page has real user interaction, though camera permission
+            // usually satisfies this requirement.
+            console.warn(`Could not play sound ${src}:`, err);
+        });
+    }
+
     function submitScan(qrCodeValue: string) {
-        if (busyRef.current) return;
-        busyRef.current = true;
+        const now = Date.now();
+
+        // Block only while a request is actually in flight — prevents
+        // firing multiple requests from the same physical scan burst.
+        if (inFlightRef.current) return;
+
+        // Block only if THIS SAME QR was processed within the cooldown —
+        // a different intern's QR is never blocked by this check.
+        if (
+            lastProcessedRef.current &&
+            lastProcessedRef.current.value === qrCodeValue &&
+            now - lastProcessedRef.current.at < REPROCESS_COOLDOWN_MS
+        ) {
+            return;
+        }
+
+        inFlightRef.current = true;
+        lastProcessedRef.current = { value: qrCodeValue, at: now };
 
         fetch(`/kiosk/${token}/scan`, {
             method: 'POST',
@@ -92,10 +167,13 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
 
                 if (!response.ok) {
                     setFlash({ kind: 'error', message: data.message ?? 'Scan rejected.' });
+                    playSound('/sounds/scan-error.mp3'); // ADDED
                     return;
                 }
 
-                setLastIntern({
+                // ADDED — build the object once so it can be reused for both
+                // display and the spoken announcement
+                const internData: ScannedIntern = {
                     internName: data.intern_name,
                     idNumber: data.id_number,
                     programName: data.program_name,
@@ -103,8 +181,23 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                     label: data.label,
                     timestamp: data.timestamp,
                     isDuplicate: data.is_duplicate,
-                });
+                };
+
+                setLastIntern(internData);
                 setFlash({ kind: 'success' });
+
+                if (internData.isDuplicate) {
+                    // ADDED — play a different sound for duplicate scans
+                    playSound('/sounds/scan-duplicate.mp3');
+                } else {
+                    // CHANGED — separate sound per direction instead of one generic beep
+                    playSound(
+                        internData.label === 'time_in'
+                            ? '/sounds/time-in.mp3'
+                            : '/sounds/time-out.mp3',
+                    );
+                }
+                speakAnnouncement(internData);
             })
             .catch(() => {
                 setFlash({
@@ -113,11 +206,12 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                 });
             })
             .finally(() => {
+                inFlightRef.current = false;
                 if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-                flashTimerRef.current = setTimeout(() => setFlash(null), FLASH_DURATION_MS);
-                setTimeout(() => {
-                    busyRef.current = false;
-                }, REPROCESS_COOLDOWN_MS);
+                flashTimerRef.current = setTimeout(() => {
+                    setFlash(null);
+                    setLastIntern(null);
+                }, FLASH_DURATION_MS);
             });
     }
 
@@ -129,7 +223,11 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
 
                 <div className="flex w-full max-w-4xl flex-col gap-6 md:flex-row">
                     {/* Camera */}
-                    <div className="relative mx-auto aspect-square w-full max-w-md overflow-hidden rounded-lg bg-black">
+                    <div
+                        className={`relative mx-auto aspect-square w-full max-w-md overflow-hidden rounded-lg border-2 bg-black transition-colors duration-300 ${
+                            flash?.kind === 'error' ? 'border-destructive' : 'border-transparent'
+                        }`}
+                    >
                         <div
                             id={SCANNER_ELEMENT_ID}
                             className={
@@ -154,7 +252,17 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
 
                     {/* ID card — persists until the next scan, doesn't
                         auto-clear like the old flash overlay did */}
-                    <div className="mx-auto w-full max-w-sm rounded-lg border border-white/10 bg-white/5 p-6 text-white backdrop-blur-sm">
+                    <div
+                        className={`mx-auto w-full max-w-sm rounded-lg border-4 p-6 text-white backdrop-blur-sm transition-colors duration-300 ${
+                            !lastIntern
+                                ? 'border-white/10 bg-white/5'
+                                : lastIntern.isDuplicate
+                                  ? 'border-red-500 bg-red-500/5'
+                                  : lastIntern.label === 'time_in'
+                                    ? 'border-emerald-400 bg-emerald-400/5'
+                                    : 'border-amber-400 bg-amber-400/5'
+                        }`}
+                    >
                         {!lastIntern ? (
                             <div className="flex h-full flex-col items-center justify-center gap-3 py-16 text-white/40">
                                 <UserIcon className="size-16" />
@@ -168,11 +276,11 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                                 </div>
 
                                 <div className="text-center">
-                                    <p className="text-xl font-semibold">{lastIntern.internName}</p>
-                                    <p className="text-white/60">{lastIntern.idNumber}</p>
+                                    <p className="text-2xl font-semibold">{lastIntern.internName}</p>
+                                    <p className="text-base text-white/60">{lastIntern.idNumber}</p>
                                 </div>
 
-                                <div className="space-y-2 border-t border-white/10 pt-4 text-sm">
+                                <div className="space-y-2 border-t border-white/10 pt-4 text-base">
                                     <div className="flex justify-between">
                                         <span className="text-white/50">Program</span>
                                         <span>{lastIntern.programName}</span>
@@ -185,10 +293,18 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                                         <span className="text-white/50">Status</span>
                                         <span
                                             className={
-                                                lastIntern.label === 'time_in' ? 'text-emerald-400' : 'text-amber-400'
+                                                lastIntern.isDuplicate
+                                                    ? 'font-medium text-red-500'
+                                                    : lastIntern.label === 'time_in'
+                                                      ? 'font-medium text-emerald-400'
+                                                      : 'font-medium text-amber-400'
                                             }
                                         >
-                                            {lastIntern.label === 'time_in' ? 'Timed In' : 'Timed Out'}
+                                            {lastIntern.isDuplicate
+                                                ? 'Duplicate'
+                                                : lastIntern.label === 'time_in'
+                                                  ? 'Timed In'
+                                                  : 'Timed Out'}
                                         </span>
                                     </div>
                                     <div className="flex justify-between">
@@ -196,7 +312,7 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                                         <span>{formatTime(lastIntern.timestamp)}</span>
                                     </div>
                                     {lastIntern.isDuplicate && (
-                                        <p className="pt-2 text-center text-xs text-amber-400">
+                                        <p className="pt-2 text-center text-sm text-red-500">
                                             Already recorded within the last few minutes.
                                         </p>
                                     )}

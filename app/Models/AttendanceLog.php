@@ -17,6 +17,7 @@ class AttendanceLog extends Model
     protected $fillable = [
         'intern_user_id',
         'supervisor_user_id',
+        'kiosk_id',
         'scan_timestamp',
     ];
 
@@ -55,5 +56,17 @@ class AttendanceLog extends Model
     public function supervisor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'supervisor_user_id', 'id');
+    }
+
+    /**
+     * The kiosk device that recorded this scan (nullable — older rows
+     * predate the kiosk system and were recorded by a logged-in
+     * supervisor instead; see supervisor_user_id).
+     *
+     * @return BelongsTo<Kiosk, $this>
+     */
+    public function kiosk(): BelongsTo
+    {
+        return $this->belongsTo(Kiosk::class, 'kiosk_id', 'id');
     }
 }
