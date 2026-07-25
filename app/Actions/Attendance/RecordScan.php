@@ -22,7 +22,7 @@ class RecordScan
         $at ??= Date::now();
 
         $internProfile = InternProfile::query()
-            ->with('user')
+            ->with(['user', 'program:program_id,program_name', 'hte:hte_id,hte_name'])
             ->where('qr_code_value', $qrCodeValue)
             ->first();
 
@@ -54,6 +54,8 @@ class RecordScan
             internUserId: $internProfile->user_id,
             internName: $internProfile->user->name,
             idNumber: $internProfile->id_number,
+            programName: $internProfile->program->program_name,
+            hteName: $internProfile->hte->hte_name,
             label: $this->labelForScanCountToday($internProfile->user_id, $at),
             timestamp: $isDuplicate ? $lastScan->scan_timestamp : $at,
             isDuplicate: $isDuplicate,

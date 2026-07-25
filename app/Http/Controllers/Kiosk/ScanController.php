@@ -59,6 +59,8 @@ class ScanController extends Controller
         return response()->json([
             'intern_name' => $result->internName,
             'id_number' => $result->idNumber,
+            'program_name' => $result->programName, 
+            'hte_name' => $result->hteName,         
             'label' => $result->label->value,
             'timestamp' => $result->timestamp->toIso8601String(),
             'is_duplicate' => $result->isDuplicate,

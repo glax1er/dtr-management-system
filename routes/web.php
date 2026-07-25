@@ -7,7 +7,6 @@ use App\Http\Controllers\Admin\SupervisorController;
 use App\Http\Controllers\Intern\QrCodeImageController;
 use App\Http\Controllers\Intern\DashboardController as InternDashboardController;
 use App\Http\Controllers\Intern\DtrReportController;
-use App\Http\Controllers\Supervisor\ScanController;
 use App\Http\Controllers\Supervisor\InternsController;
 use App\Http\Controllers\Admin\KioskController;
 use App\Http\Controllers\Kiosk\ScanController as KioskScanController;
