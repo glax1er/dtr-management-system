@@ -12,6 +12,7 @@ interface ScannedIntern {
     idNumber: string;
     programName: string;
     hteName: string;
+    photoUrl: string | null;
     label: 'time_in' | 'time_out';
     timestamp: string;
     isDuplicate: boolean;
@@ -23,9 +24,10 @@ function formatTime(iso: string): string {
     return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
 
-// ADDED — reads the intern's name and time-in/out status aloud
 function speakAnnouncement(intern: ScannedIntern) {
-    if (!('speechSynthesis' in window)) return;
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.getVoices();
+    }
     if (intern.isDuplicate) return;
 
     const statusText = intern.label === 'time_in' ? 'Timed In' : 'Timed Out';
@@ -33,7 +35,6 @@ function speakAnnouncement(intern: ScannedIntern) {
     utterance.rate = 1;
     utterance.lang = 'en-US';
 
-    // stop any announcement still playing from a previous scan
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
 }
@@ -63,7 +64,6 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
         scannerRef.current = scanner;
         let cancelled = false;
 
-        // Preload audio files to avoid startup delays
         const soundPaths = ['/sounds/scan-duplicate.mp3', '/sounds/time-in.mp3', '/sounds/time-out.mp3', '/sounds/scan-error.mp3'];
         soundPaths.forEach((path) => {
             const audio = new Audio(path);
@@ -71,19 +71,8 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
             audioRef.current[path] = audio;
         });
 
-        // Warm up each audio file
         Object.values(audioRef.current).forEach((audio) => {
-            audio.muted = true;
-            audio
-                .play()
-                .then(() => {
-                    audio.pause();
-                    audio.currentTime = 0;
-                    audio.muted = false;
-                })
-                .catch(() => {
-                    audio.muted = false;
-                });
+            audio.load();
         });
 
         const startPromise = scanner
@@ -120,7 +109,6 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
         };
     }, []);
 
-    // ADDED — plays a short sound effect alongside the voice announcement
     function playSound(src: string) {
         const audio = audioRef.current[src];
         if (!audio) {
@@ -129,9 +117,6 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
         }
         audio.currentTime = 0;
         audio.play().catch((err) => {
-            // Log to console for debugging — autoplay can be blocked until
-            // the page has real user interaction, though camera permission
-            // usually satisfies this requirement.
             console.warn(`Could not play sound ${src}:`, err);
         });
     }
@@ -139,12 +124,8 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
     function submitScan(qrCodeValue: string) {
         const now = Date.now();
 
-        // Block only while a request is actually in flight — prevents
-        // firing multiple requests from the same physical scan burst.
         if (inFlightRef.current) return;
 
-        // Block only if THIS SAME QR was processed within the cooldown —
-        // a different intern's QR is never blocked by this check.
         if (
             lastProcessedRef.current &&
             lastProcessedRef.current.value === qrCodeValue &&
@@ -167,17 +148,16 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
 
                 if (!response.ok) {
                     setFlash({ kind: 'error', message: data.message ?? 'Scan rejected.' });
-                    playSound('/sounds/scan-error.mp3'); // ADDED
+                    playSound('/sounds/scan-error.mp3');
                     return;
                 }
 
-                // ADDED — build the object once so it can be reused for both
-                // display and the spoken announcement
                 const internData: ScannedIntern = {
                     internName: data.intern_name,
                     idNumber: data.id_number,
                     programName: data.program_name,
                     hteName: data.hte_name,
+                    photoUrl: data.photo_url,
                     label: data.label,
                     timestamp: data.timestamp,
                     isDuplicate: data.is_duplicate,
@@ -187,10 +167,8 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                 setFlash({ kind: 'success' });
 
                 if (internData.isDuplicate) {
-                    // ADDED — play a different sound for duplicate scans
                     playSound('/sounds/scan-duplicate.mp3');
                 } else {
-                    // CHANGED — separate sound per direction instead of one generic beep
                     playSound(
                         internData.label === 'time_in'
                             ? '/sounds/time-in.mp3'
@@ -250,8 +228,7 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                         )}
                     </div>
 
-                    {/* ID card — persists until the next scan, doesn't
-                        auto-clear like the old flash overlay did */}
+                    {/* ID card — persists until the next scan */}
                     <div
                         className={`mx-auto w-full max-w-sm rounded-lg border-4 p-6 text-white backdrop-blur-sm transition-colors duration-300 ${
                             !lastIntern
@@ -270,9 +247,18 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                             </div>
                         ) : (
                             <div className="flex flex-col gap-4">
-                                {/* Photo placeholder — no photo upload feature exists yet */}
-                                <div className="mx-auto flex size-28 items-center justify-center rounded-full bg-white/10">
-                                    <UserIcon className="size-14 text-white/40" />
+                                {/* Photo — falls back to the generic icon if the
+                                    intern hasn't uploaded one */}
+                                <div className="mx-auto flex size-28 items-center justify-center overflow-hidden rounded-full bg-white/10">
+                                    {lastIntern.photoUrl ? (
+                                        <img
+                                            src={lastIntern.photoUrl}
+                                            alt={lastIntern.internName}
+                                            className="size-full object-cover"
+                                        />
+                                    ) : (
+                                        <UserIcon className="size-14 text-white/40" />
+                                    )}
                                 </div>
 
                                 <div className="text-center">

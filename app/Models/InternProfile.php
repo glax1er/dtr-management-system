@@ -26,6 +26,7 @@ class InternProfile extends Model
         'program_id',
         'status',
         'qr_code_value',
+        'profile_photo_path',
         'registered_at',
         'approved_at',
         'privacy_accepted_at',
@@ -61,6 +62,17 @@ class InternProfile extends Model
     public function program(): BelongsTo
     {
         return $this->belongsTo(Program::class, 'program_id', 'program_id');
+    }
+
+    /**
+     * Public URL for the profile photo, or null if the intern hasn't
+     * uploaded one — the frontend falls back to a generic icon in that case.
+     */
+    public function getProfilePhotoUrlAttribute(): ?string
+    {
+        return $this->profile_photo_path
+            ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->profile_photo_path)
+            : null;
     }
 
     /**

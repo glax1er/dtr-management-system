@@ -9,6 +9,7 @@ use App\Http\Controllers\Intern\DashboardController as InternDashboardController
 use App\Http\Controllers\Intern\DtrReportController;
 use App\Http\Controllers\Supervisor\InternsController;
 use App\Http\Controllers\Admin\KioskController;
+use App\Http\Controllers\Intern\ProfilePhotoController;
 use App\Http\Controllers\Kiosk\ScanController as KioskScanController;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
@@ -61,6 +62,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('dashboard', [InternDashboardController::class, 'index'])->name('dashboard');
         Route::get('dtr-report', [DtrReportController::class, 'download'])->name('dtr-report.download');
         Route::get('qr-code', [QrCodeImageController::class, 'show'])->name('qr-code.show');
+
+        Route::post('profile-photo', [ProfilePhotoController::class, 'store'])->name('profile-photo.store');
+        Route::delete('profile-photo', [ProfilePhotoController::class, 'destroy'])->name('profile-photo.destroy');
     });
 
 });
