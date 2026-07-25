@@ -36,6 +36,7 @@ function makeIntern(Hte $hte, string $status = 'approved', ?string $qrCodeValue 
         'qr_code_value' => $qrCodeValue ?? 'QR-'.$user->id,
         'registered_at' => now(),
         'approved_at' => $status === 'approved' ? now() : null,
+        'privacy_accepted_at' => now(),
     ]);
 
     return $user;
@@ -45,10 +46,11 @@ function makeSupervisor(Hte $hte): User
 {
     $user = User::factory()->create(['role' => 'supervisor']);
 
-    SupervisorProfile::create([
+        SupervisorProfile::create([
         'user_id' => $user->id,
         'hte_id' => $hte->hte_id,
         'status' => 'active',
+        'created_at' => now(),
     ]);
 
     return $user;
