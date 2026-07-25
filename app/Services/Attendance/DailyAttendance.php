@@ -14,22 +14,30 @@ use Illuminate\Support\Carbon;
 final readonly class DailyAttendance
 {
     public function __construct(
-        public string $date,                // 'Y-m-d', in the DTR display timezone
-        public CarbonInterface $timeIn,      // first scan of the day
-        public ?CarbonInterface $timeOut,    // last scan of the day, null if only 1 scan
+        public string $date,                 // 'Y-m-d', in the DTR display timezone
+        public ?CarbonInterface $timeIn,     // null if the day's first scan came in after the cutoff
+        public ?CarbonInterface $timeOut,    // null if only 1 scan and it wasn't after cutoff
         public float $hoursRendered,
         public bool $lunchDeducted,
         public int $rawScanCount,   // total raw scans that day, incl. accidental double-scans
     ) {}
 
     /**
-     * A day with only one scan means the intern timed in but the system
-     * never saw a matching time-out scan (forgot to scan out, or it's
-     * simply still in progress today).
+     * Timed in, but the system never saw a matching time-out scan
+     * (forgot to scan out, or it's simply still in progress today).
      */
     public function isOpen(): bool
     {
-        return $this->timeOut === null;
+        return $this->timeIn !== null && $this->timeOut === null;
+    }
+
+    /**
+     * The day's first scan landed after the configured cutoff, so it
+     * was recorded as a time-out instead — there's no time-in at all.
+     */
+    public function isMissingTimeIn(): bool
+    {
+        return $this->timeIn === null;
     }
 
     /**
@@ -39,14 +47,20 @@ final readonly class DailyAttendance
     {
         $timezone = config('dtr.timezone');
 
+        $status = match (true) {
+            $this->isMissingTimeIn() => 'missing_time_in',
+            $this->isOpen() => 'open',
+            default => 'complete',
+        };
+
         return [
             'date' => $this->date,
             'day' => Carbon::parse($this->date)->format('l'),
-            'time_in' => $this->timeIn->clone()->setTimezone($timezone)->format('H:i:s'),
+            'time_in' => $this->timeIn?->clone()->setTimezone($timezone)->format('H:i:s'),
             'time_out' => $this->timeOut?->clone()->setTimezone($timezone)->format('H:i:s'),
             'hours_rendered' => round($this->hoursRendered, 2),
             'lunch_deducted' => $this->lunchDeducted,
-            'status' => $this->isOpen() ? 'open' : 'complete',
+            'status' => $status,
             'raw_scan_count' => $this->rawScanCount,
         ];
     }

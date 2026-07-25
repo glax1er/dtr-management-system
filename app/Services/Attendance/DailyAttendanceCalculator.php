@@ -77,10 +77,26 @@ class DailyAttendanceCalculator
      */
     private function summarizeDay(string $date, Collection $scansForDay): DailyAttendance
     {
-        $timeIn = $scansForDay->first()->scan_timestamp;
-        $timeOut = $scansForDay->count() > 1 ? $scansForDay->last()->scan_timestamp : null;
+        $timezone = config('dtr.timezone');
 
-        [$hours, $lunchDeducted] = $timeOut !== null
+        $earliestScan = $scansForDay->first()->scan_timestamp;
+        $latestScan = $scansForDay->count() > 1 ? $scansForDay->last()->scan_timestamp : null;
+
+        $cutoff = Carbon::parse($date.' '.config('dtr.time_out_cutoff'), $timezone);
+        $earliestScanLocal = $earliestScan->clone()->setTimezone($timezone);
+
+        if ($earliestScanLocal->gt($cutoff)) {
+            // First scan of the day came in after the cutoff — treat it
+            // (and the day's last scan, if there were more) as a
+            // time-out, not a time-in.
+            $timeIn = null;
+            $timeOut = $scansForDay->last()->scan_timestamp;
+        } else {
+            $timeIn = $earliestScan;
+            $timeOut = $latestScan;
+        }
+
+        [$hours, $lunchDeducted] = ($timeIn !== null && $timeOut !== null)
             ? $this->computeHours($date, $timeIn, $timeOut)
             : [0.0, false];
 

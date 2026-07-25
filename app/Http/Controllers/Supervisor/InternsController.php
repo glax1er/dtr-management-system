@@ -68,11 +68,15 @@ class InternsController extends Controller
 
     /**
      * "On Time" if the day's time-in was at or before the configured
-     * cutoff, "Late" otherwise. Based on time-in only — independent of
-     * whether the day is still open (no time-out yet).
+     * cutoff, "Late" otherwise. "missing_time_in" if the day has no
+     * time-in at all (first scan came in after the time-out cutoff).
      */
     private function computePunctuality(DailyAttendance $day): string
     {
+        if ($day->timeIn === null) {
+            return 'missing_time_in';
+        }
+
         $timezone = config('dtr.timezone');
 
         $cutoff = Carbon::parse($day->date . ' ' . config('dtr.expected_start_time'), $timezone);

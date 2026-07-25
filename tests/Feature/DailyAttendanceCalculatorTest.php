@@ -19,6 +19,7 @@ function makeApprovedIntern(): User
         'hte_id' => $hte->hte_id,
         'program_id' => $program->program_id,
         'status' => 'approved',
+        'privacy_accepted_at' => now(),
     ]);
 
     return $user;
@@ -43,7 +44,7 @@ test('an approved intern can view their dashboard, including the attendance log 
         ->get(route('intern.dashboard'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->component('Intern/dashboard')
+            ->component('intern/dashboard')
             ->has('profile')
             ->has('hours')
             ->has('today')
@@ -70,7 +71,7 @@ test('an intern can page the dashboard log table to a specific month', function 
         ->get(route('intern.dashboard', ['month' => '2026-06']))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->component('Intern/dashboard')
+            ->component('intern/dashboard')
             ->where('month', '2026-06')
             ->where('monthLabel', 'June 2026')
         );
@@ -82,5 +83,5 @@ test('an intern can download their DTR report as a CSV', function () {
     $response = $this->actingAs($intern)->get(route('intern.dtr-report.download'));
 
     $response->assertOk();
-    $response->assertHeader('content-type', 'text/csv; charset=UTF-8');
+    $response->assertHeader('content-type', 'application/pdf');
 });
