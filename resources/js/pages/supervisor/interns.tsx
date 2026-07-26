@@ -15,12 +15,12 @@ interface AttendanceLogRow {
     day: string;
     intern_user_id: number;
     intern_name: string;
-    time_in: string;
+    time_in: string | null;
     time_out: string | null;
     hours_rendered: number;
     lunch_deducted: boolean;
-    status: 'open' | 'complete';
-    punctuality: 'on_time' | 'late';
+    status: 'open' | 'missing_time_in' | 'no_record' | 'complete';
+    punctuality: 'on_time' | 'late' | 'missing_time_in' | 'no_record';
     raw_scan_count: number;
 }
 
@@ -111,7 +111,7 @@ export default function MyInterns({
                                                     </span>
                                                 </td>
                                                 <td className="py-2 pr-4">{log.intern_name}</td>
-                                                <td className="py-2 pr-4">{log.time_in}</td>
+                                                <td className="py-2 pr-4">{log.time_in ?? '—'}</td>
                                                 <td className="py-2 pr-4">{log.time_out ?? '—'}</td>
                                                 <td className="py-2 pr-4 tabular-nums">
                                                     {log.hours_rendered.toFixed(2)}
@@ -119,7 +119,13 @@ export default function MyInterns({
                                                 <td className="py-2 pr-4">{log.lunch_deducted ? 'Yes' : 'No'}</td>
                                                 <td className="py-2">
                                                     <Badge variant={log.punctuality === 'on_time' ? 'default' : 'destructive'}>
-                                                        {log.punctuality === 'on_time' ? 'On Time' : 'Late'}
+                                                        {log.punctuality === 'on_time'
+                                                            ? 'On Time'
+                                                            : log.punctuality === 'missing_time_in'
+                                                              ? 'Missing Time In'
+                                                              : log.punctuality === 'no_record'
+                                                                ? 'No Record'
+                                                                : 'Late'}
                                                     </Badge>
                                                     {log.status === 'open' && (
                                                         <Badge variant="outline" className="ml-1">

@@ -37,6 +37,7 @@ class DashboardController extends Controller
             $user->id,
             from: $month->clone()->startOfMonth(),
             to: $month->clone()->endOfMonth(),
+            approvedAt: $profile->approved_at,
         );
 
         // Today's card is deliberately independent of $monthDays — an
@@ -64,9 +65,14 @@ class DashboardController extends Controller
             ],
             'today' => [
                 'date' => $today->toDateString(),
-                'time_in' => $todayEntry?->timeIn->clone()->setTimezone($timezone)->format('H:i:s'),
+                'time_in' => $todayEntry?->timeIn?->clone()->setTimezone($timezone)->format('H:i:s'),
                 'time_out' => $todayEntry?->timeOut?->clone()->setTimezone($timezone)->format('H:i:s'),
-                'status' => $todayEntry === null ? 'not_started' : ($todayEntry->isOpen() ? 'open' : 'complete'),
+                'status' => match (true) {
+                    $todayEntry === null => 'not_started',
+                    $todayEntry->isMissingTimeIn() => 'missing_time_in',
+                    $todayEntry->isOpen() => 'open',
+                    default => 'complete',
+                },
             ],
             'hours' => [
                 'total_rendered' => $totalHours,

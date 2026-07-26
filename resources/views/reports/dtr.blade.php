@@ -108,7 +108,7 @@
                 @php($row = $day->toArray())
                 <tr>
                     <td>{{ $row['date'] }}</td>
-                    <td>{{ $row['time_in'] }}</td>
+                    <td>{{ $row['time_in'] ?? '' }}</td>
                     <td>{{ $row['time_out'] ?? '' }}</td>
                     <td>{{ number_format($row['hours_rendered'], 2) }}</td>
                     <td class="desc-cell"></td>

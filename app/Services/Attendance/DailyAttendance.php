@@ -41,6 +41,17 @@ final readonly class DailyAttendance
     }
 
     /**
+     * No scans at all that day (a synthetic entry from the calculator's
+     * expected-workday diff, not a real attendance_logs row) — distinct
+     * from isMissingTimeIn(), which can also be true for a day that DID
+     * have a scan, just one that landed after the cutoff.
+     */
+    public function isFullyMissing(): bool
+    {
+        return $this->rawScanCount === 0;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function toArray(): array
@@ -48,6 +59,7 @@ final readonly class DailyAttendance
         $timezone = config('dtr.timezone');
 
         $status = match (true) {
+            $this->isFullyMissing() => 'no_record',
             $this->isMissingTimeIn() => 'missing_time_in',
             $this->isOpen() => 'open',
             default => 'complete',

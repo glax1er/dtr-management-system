@@ -43,6 +43,7 @@ class DtrReportController extends Controller
             $user->id,
             from: $month->clone()->startOfMonth(),
             to: $month->clone()->endOfMonth(),
+            approvedAt: $profile->approved_at,
         );
 
         $html = view('reports.dtr', [

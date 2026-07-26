@@ -33,7 +33,7 @@ class DailyAttendanceCalculator
     /**
      * @return Collection<int, DailyAttendance> ordered oldest date first
      */
-    public function forIntern(int $internUserId, ?Carbon $from = null, ?Carbon $to = null): Collection
+    public function forIntern(int $internUserId, ?Carbon $from = null, ?Carbon $to = null, ?CarbonInterface $approvedAt = null): Collection
     {
         $timezone = config('dtr.timezone');
 
@@ -52,11 +52,67 @@ class DailyAttendanceCalculator
         $scansByDate = $query->get()
             ->groupBy(fn (AttendanceLog $log) => $log->scan_timestamp->clone()->setTimezone($timezone)->toDateString());
 
-        return $scansByDate
-            ->map(fn (Collection $scans, string $date) => $this->summarizeDay($date, $scans))
+        $days = collect(
+            $scansByDate
+                ->map(fn (Collection $scans, string $date) => $this->summarizeDay($date, $scans))
+                ->all()
+        );
+
+        if ($approvedAt !== null) {
+            $days = $days->merge($this->missingWorkdays($days->keys(), $approvedAt, $timezone, $from, $to));
+        }
+
+        return $days
             ->values()
             ->sortBy('date')
             ->values();
+    }
+
+    /**
+     * Diffs expected workdays (Mon-Fri, from approval up to yesterday —
+     * no holiday logic, deliberately deferred) against the dates that
+     * already have at least one scan, and returns a synthetic
+     * DailyAttendance for every gap: a day the intern should have
+     * scanned at all but has zero rows for. Never includes today or any
+     * future date — a day still in progress isn't "missed" yet.
+     *
+     * @param  Collection<int, string>  $existingDates
+     * @return Collection<string, DailyAttendance> keyed by date string
+     */
+    private function missingWorkdays(Collection $existingDates, CarbonInterface $approvedAt, string $timezone, ?Carbon $from, ?Carbon $to): Collection
+    {
+        $yesterday = Carbon::now($timezone)->subDay()->startOfDay();
+
+        $rangeStart = $approvedAt->clone()->setTimezone($timezone)->startOfDay();
+        if ($from !== null) {
+            $rangeStart = $rangeStart->max($from->clone()->setTimezone($timezone)->startOfDay());
+        }
+
+        $rangeEnd = $yesterday;
+        if ($to !== null) {
+            $rangeEnd = $rangeEnd->min($to->clone()->setTimezone($timezone)->startOfDay());
+        }
+
+        $missing = collect();
+
+        if ($rangeStart->gt($rangeEnd)) {
+            return $missing;
+        }
+
+        for ($cursor = $rangeStart->clone(); $cursor->lte($rangeEnd); $cursor = $cursor->addDay()) {
+            if ($cursor->isWeekday() && ! $existingDates->contains($cursor->toDateString())) {
+                $missing->put($cursor->toDateString(), new DailyAttendance(
+                    date: $cursor->toDateString(),
+                    timeIn: null,
+                    timeOut: null,
+                    hoursRendered: 0.0,
+                    lunchDeducted: false,
+                    rawScanCount: 0,
+                ));
+            }
+        }
+
+        return $missing;
     }
 
     /**

@@ -43,6 +43,7 @@ class InternsController extends Controller
                     $intern->user_id,
                     from: $month->clone()->startOfMonth(),
                     to: $month->clone()->endOfMonth(),
+                    approvedAt: $intern->approved_at,
                 );
 
                 return $days->map(fn (DailyAttendance $day) => array_merge(
@@ -68,11 +69,16 @@ class InternsController extends Controller
 
     /**
      * "On Time" if the day's time-in was at or before the configured
-     * cutoff, "Late" otherwise. "missing_time_in" if the day has no
-     * time-in at all (first scan came in after the time-out cutoff).
+     * cutoff, "Late" otherwise. "missing_time_in" if there was a scan
+     * but it landed after the time-out cutoff. "no_record" if there
+     * were no scans at all that day.
      */
     private function computePunctuality(DailyAttendance $day): string
     {
+        if ($day->rawScanCount === 0) {
+            return 'no_record';
+        }
+
         if ($day->timeIn === null) {
             return 'missing_time_in';
         }

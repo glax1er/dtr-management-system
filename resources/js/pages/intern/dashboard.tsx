@@ -85,12 +85,22 @@ export default function InternDashboard({
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-muted-foreground">Status</span>
-                                        <Badge variant={today.status === 'complete' ? 'default' : 'outline'}>
+                                        <Badge
+                                            variant={
+                                                today.status === 'complete'
+                                                    ? 'default'
+                                                    : today.status === 'missing_time_in'
+                                                      ? 'destructive'
+                                                      : 'outline'
+                                            }
+                                        >
                                             {today.status === 'not_started'
                                                 ? 'Not started'
                                                 : today.status === 'open'
                                                   ? 'In progress'
-                                                  : 'Complete'}
+                                                  : today.status === 'missing_time_in'
+                                                    ? 'Missing time in'
+                                                    : 'Complete'}
                                         </Badge>
                                     </div>
                                 </div>
@@ -196,15 +206,29 @@ export default function InternDashboard({
                                                         {log.day.slice(0, 3)}
                                                     </span>
                                                 </td>
-                                                <td className="py-2 pr-4">{log.time_in}</td>
+                                                <td className="py-2 pr-4">{log.time_in ?? '—'}</td>
                                                 <td className="py-2 pr-4">{log.time_out ?? '—'}</td>
                                                 <td className="py-2 pr-4 tabular-nums">
                                                     {log.hours_rendered.toFixed(2)}
                                                 </td>
                                                 <td className="py-2 pr-4">{log.lunch_deducted ? 'Yes' : 'No'}</td>
                                                 <td className="py-2">
-                                                    <Badge variant={log.status === 'complete' ? 'default' : 'outline'}>
-                                                        {log.status === 'complete' ? 'Complete' : 'No time-out'}
+                                                    <Badge
+                                                        variant={
+                                                            log.status === 'complete'
+                                                                ? 'default'
+                                                                : log.status === 'missing_time_in' || log.status === 'no_record'
+                                                                  ? 'destructive'
+                                                                  : 'outline'
+                                                        }
+                                                    >
+                                                        {log.status === 'complete'
+                                                            ? 'Complete'
+                                                            : log.status === 'missing_time_in'
+                                                              ? 'Missing time in'
+                                                              : log.status === 'no_record'
+                                                                ? 'No record'
+                                                                : 'No time-out'}
                                                     </Badge>
                                                 </td>
                                             </tr>
