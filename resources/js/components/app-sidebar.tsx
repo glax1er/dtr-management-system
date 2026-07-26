@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Building, ClipboardCheck, Clock, FolderGit2, GraduationCap, LayoutGrid, MonitorSmartphone, Users } from 'lucide-react';
+import { BookOpen, Building, ClipboardCheck, Clock, FileWarning, FolderGit2, GraduationCap, LayoutGrid, MonitorSmartphone, Users } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -28,6 +28,7 @@ const supervisorNavItems: NavItem[] = [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
     { title: 'My Interns', href: '/supervisor/interns', icon: GraduationCap },
     { title: 'DTR Approvals', href: '/supervisor/approvals', icon: ClipboardCheck },
+    { title: 'Resolution Tickets', href: '/supervisor/resolution-tickets', icon: FileWarning },
 ];
 
 const internNavItems: NavItem[] = [
@@ -59,11 +60,9 @@ export function AppSidebar() {
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarHeader>
-
             <SidebarContent>
                 <NavMain items={mainNavItems} />
             </SidebarContent>
-
             <SidebarFooter>
                 <NavFooter items={footerNavItems} className="mt-auto" />
                 <NavUser />

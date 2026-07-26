@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Intern;
 
 use App\Http\Controllers\Controller;
+use App\Models\ResolutionTicket;
 use App\Services\Attendance\DailyAttendanceCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -37,6 +38,7 @@ class DashboardController extends Controller
             $user->id,
             from: $month->clone()->startOfMonth(),
             to: $month->clone()->endOfMonth(),
+            approvedAt: $profile->approved_at,
         );
 
         // Today's card is deliberately independent of $monthDays — an
@@ -48,6 +50,16 @@ class DashboardController extends Controller
 
         $requiredHours = $profile->program->required_hours ?? config('dtr.default_required_hours');
         $totalHours = $this->calculator->totalHours($user->id);
+
+        // Keyed by date string so it's a cheap lookup per row below —
+        // only ever one pending ticket per date is allowed to exist
+        // (enforced in ResolutionTicketController::store()).
+        $pendingTicketsByDate = ResolutionTicket::query()
+            ->where('intern_user_id', $user->id)
+            ->where('status', ResolutionTicket::STATUS_PENDING)
+            ->whereBetween('date', [$month->clone()->startOfMonth()->toDateString(), $month->clone()->endOfMonth()->toDateString()])
+            ->get()
+            ->mapWithKeys(fn (ResolutionTicket $ticket) => [$ticket->date->toDateString() => $ticket->id]);
 
         return Inertia::render('intern/dashboard', [
             'profile' => [
@@ -65,9 +77,14 @@ class DashboardController extends Controller
             ],
             'today' => [
                 'date' => $today->toDateString(),
-                'time_in' => $todayEntry?->timeIn->clone()->setTimezone($timezone)->format('g:i A'),
+                'time_in' => $todayEntry?->timeIn?->clone()->setTimezone($timezone)->format('g:i A'),
                 'time_out' => $todayEntry?->timeOut?->clone()->setTimezone($timezone)->format('g:i A'),
-                'status' => $todayEntry === null ? 'not_started' : ($todayEntry->isOpen() ? 'open' : 'complete'),
+                'status' => match (true) {
+                    $todayEntry === null => 'not_started',
+                    $todayEntry->isMissingTimeIn() => 'missing_time_in',
+                    $todayEntry->isOpen() => 'open',
+                    default => 'complete',
+                },
             ],
             'hours' => [
                 'total_rendered' => $totalHours,
@@ -78,7 +95,10 @@ class DashboardController extends Controller
             ],
             'month' => $month->format('Y-m'),
             'monthLabel' => $month->format('F Y'),
-            'logs' => $monthDays->map->toArray()->values(),
+            'logs' => $monthDays->map(fn ($day) => [
+                ...$day->toArray(),
+                'pending_ticket_id' => $pendingTicketsByDate->get($day->date),
+            ])->values(),
             'monthTotalHours' => round($monthDays->sum('hoursRendered'), 2),
             'canGoNextMonth' => $month->clone()->addMonthNoOverflow()->lessThanOrEqualTo($today->clone()->startOfMonth()),
         ]);

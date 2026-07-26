@@ -33,7 +33,7 @@ class DailyAttendanceCalculator
     /**
      * @return Collection<int, DailyAttendance> ordered oldest date first
      */
-    public function forIntern(int $internUserId, ?Carbon $from = null, ?Carbon $to = null): Collection
+    public function forIntern(int $internUserId, ?Carbon $from = null, ?Carbon $to = null, ?CarbonInterface $approvedAt = null): Collection
     {
         $timezone = config('dtr.timezone');
 
@@ -42,7 +42,7 @@ class DailyAttendanceCalculator
             ->orderBy('scan_timestamp');
 
         if ($from !== null) {
-        $query->where('scan_timestamp', '>=', $from->clone()->setTimezone($timezone)->startOfDay());
+            $query->where('scan_timestamp', '>=', $from->clone()->setTimezone($timezone)->startOfDay());
         }
 
         if ($to !== null) {
@@ -52,11 +52,67 @@ class DailyAttendanceCalculator
         $scansByDate = $query->get()
             ->groupBy(fn (AttendanceLog $log) => $log->scan_timestamp->clone()->setTimezone($timezone)->toDateString());
 
-        return $scansByDate
-            ->map(fn (Collection $scans, string $date) => $this->summarizeDay($date, $scans))
+        $days = collect(
+            $scansByDate
+                ->map(fn (Collection $scans, string $date) => $this->summarizeDay($date, $scans))
+                ->all()
+        );
+
+        if ($approvedAt !== null) {
+            $days = $days->merge($this->missingWorkdays($days->keys(), $approvedAt, $timezone, $from, $to));
+        }
+
+        return $days
             ->values()
             ->sortBy('date')
             ->values();
+    }
+
+    /**
+     * Diffs expected workdays (Mon-Fri, from approval up to yesterday —
+     * no holiday logic, deliberately deferred) against the dates that
+     * already have at least one scan, and returns a synthetic
+     * DailyAttendance for every gap: a day the intern should have
+     * scanned at all but has zero rows for. Never includes today or any
+     * future date — a day still in progress isn't "missed" yet.
+     *
+     * @param  Collection<int, string>  $existingDates
+     * @return Collection<string, DailyAttendance> keyed by date string
+     */
+    private function missingWorkdays(Collection $existingDates, CarbonInterface $approvedAt, string $timezone, ?Carbon $from, ?Carbon $to): Collection
+    {
+        $yesterday = Carbon::now($timezone)->subDay()->startOfDay();
+
+        $rangeStart = $approvedAt->clone()->setTimezone($timezone)->startOfDay();
+        if ($from !== null) {
+            $rangeStart = $rangeStart->max($from->clone()->setTimezone($timezone)->startOfDay());
+        }
+
+        $rangeEnd = $yesterday;
+        if ($to !== null) {
+            $rangeEnd = $rangeEnd->min($to->clone()->setTimezone($timezone)->startOfDay());
+        }
+
+        $missing = collect();
+
+        if ($rangeStart->gt($rangeEnd)) {
+            return $missing;
+        }
+
+        for ($cursor = $rangeStart->clone(); $cursor->lte($rangeEnd); $cursor = $cursor->addDay()) {
+            if ($cursor->isWeekday() && ! $existingDates->contains($cursor->toDateString())) {
+                $missing->put($cursor->toDateString(), new DailyAttendance(
+                    date: $cursor->toDateString(),
+                    timeIn: null,
+                    timeOut: null,
+                    hoursRendered: 0.0,
+                    lunchDeducted: false,
+                    rawScanCount: 0,
+                ));
+            }
+        }
+
+        return $missing;
     }
 
     /**
@@ -77,10 +133,26 @@ class DailyAttendanceCalculator
      */
     private function summarizeDay(string $date, Collection $scansForDay): DailyAttendance
     {
-        $timeIn = $scansForDay->first()->scan_timestamp;
-        $timeOut = $scansForDay->count() > 1 ? $scansForDay->last()->scan_timestamp : null;
+        $timezone = config('dtr.timezone');
 
-        [$hours, $lunchDeducted] = $timeOut !== null
+        $earliestScan = $scansForDay->first()->scan_timestamp;
+        $latestScan = $scansForDay->count() > 1 ? $scansForDay->last()->scan_timestamp : null;
+
+        $cutoff = Carbon::parse($date.' '.config('dtr.time_out_cutoff'), $timezone);
+        $earliestScanLocal = $earliestScan->clone()->setTimezone($timezone);
+
+        if ($earliestScanLocal->gt($cutoff)) {
+            // First scan of the day came in after the cutoff — treat it
+            // (and the day's last scan, if there were more) as a
+            // time-out, not a time-in.
+            $timeIn = null;
+            $timeOut = $scansForDay->last()->scan_timestamp;
+        } else {
+            $timeIn = $earliestScan;
+            $timeOut = $latestScan;
+        }
+
+        [$hours, $lunchDeducted] = ($timeIn !== null && $timeOut !== null)
             ? $this->computeHours($date, $timeIn, $timeOut)
             : [0.0, false];
 

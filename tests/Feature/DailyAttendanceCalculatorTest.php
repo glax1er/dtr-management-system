@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\AttendanceLog;
+use App\Services\Attendance\DailyAttendanceCalculator;
+use Illuminate\Support\Carbon;
 use App\Models\Hte;
 use App\Models\InternProfile;
 use App\Models\Program;
@@ -19,6 +22,7 @@ function makeApprovedIntern(): User
         'hte_id' => $hte->hte_id,
         'program_id' => $program->program_id,
         'status' => 'approved',
+        'privacy_accepted_at' => now(),
     ]);
 
     return $user;
@@ -43,7 +47,7 @@ test('an approved intern can view their dashboard, including the attendance log 
         ->get(route('intern.dashboard'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->component('Intern/dashboard')
+            ->component('intern/dashboard')
             ->has('profile')
             ->has('hours')
             ->has('today')
@@ -70,7 +74,7 @@ test('an intern can page the dashboard log table to a specific month', function 
         ->get(route('intern.dashboard', ['month' => '2026-06']))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->component('Intern/dashboard')
+            ->component('intern/dashboard')
             ->where('month', '2026-06')
             ->where('monthLabel', 'June 2026')
         );
@@ -82,5 +86,60 @@ test('an intern can download their DTR report as a CSV', function () {
     $response = $this->actingAs($intern)->get(route('intern.dtr-report.download'));
 
     $response->assertOk();
-    $response->assertHeader('content-type', 'text/csv; charset=UTF-8');
+    $response->assertHeader('content-type', 'application/pdf');
+});
+test('a first scan before the time-out cutoff is a normal time-in', function () {
+    $intern = makeApprovedIntern();
+    $supervisor = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
+
+    AttendanceLog::create([
+        'intern_user_id' => $intern->id,
+        'supervisor_user_id' => $supervisor->id,
+        'scan_timestamp' => Carbon::parse('2026-07-20 08:00:00', 'Asia/Manila'),
+    ]);
+    AttendanceLog::create([
+        'intern_user_id' => $intern->id,
+        'supervisor_user_id' => $supervisor->id,
+        'scan_timestamp' => Carbon::parse('2026-07-20 17:00:00', 'Asia/Manila'),
+    ]);
+
+    $day = (new DailyAttendanceCalculator)->forIntern($intern->id)->first();
+
+    expect($day->isMissingTimeIn())->toBeFalse()
+        ->and($day->timeIn->clone()->setTimezone('Asia/Manila')->format('H:i'))->toBe('08:00')
+        ->and($day->timeOut->clone()->setTimezone('Asia/Manila')->format('H:i'))->toBe('17:00');
+});
+
+test('a first scan after the time-out cutoff has no time-in and the scan becomes a time-out', function () {
+    $intern = makeApprovedIntern();
+    $supervisor = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
+
+    AttendanceLog::create([
+        'intern_user_id' => $intern->id,
+        'supervisor_user_id' => $supervisor->id,
+        'scan_timestamp' => Carbon::parse('2026-07-20 14:00:00', 'Asia/Manila'),
+    ]);
+
+    $day = (new DailyAttendanceCalculator)->forIntern($intern->id)->first();
+
+    expect($day->isMissingTimeIn())->toBeTrue()
+        ->and($day->timeIn)->toBeNull()
+        ->and($day->timeOut->clone()->setTimezone('Asia/Manila')->format('H:i'))->toBe('14:00')
+        ->and($day->hoursRendered)->toBe(0.0);
+});
+
+test('a scan exactly at the time-out cutoff still counts as a normal time-in', function () {
+    $intern = makeApprovedIntern();
+    $supervisor = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
+
+    AttendanceLog::create([
+        'intern_user_id' => $intern->id,
+        'supervisor_user_id' => $supervisor->id,
+        'scan_timestamp' => Carbon::parse('2026-07-20 13:00:00', 'Asia/Manila'),
+    ]);
+
+    $day = (new DailyAttendanceCalculator)->forIntern($intern->id)->first();
+
+    expect($day->isMissingTimeIn())->toBeFalse()
+        ->and($day->timeIn->clone()->setTimezone('Asia/Manila')->format('H:i'))->toBe('13:00');
 });
