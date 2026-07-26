@@ -2,14 +2,15 @@
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\HteController;
+use App\Http\Controllers\Admin\InternController;
 use App\Http\Controllers\Admin\InternApprovalController;
 use App\Http\Controllers\Admin\SupervisorController;
+use App\Http\Controllers\Admin\KioskController;
 use App\Http\Controllers\Intern\QrCodeImageController;
 use App\Http\Controllers\Intern\DashboardController as InternDashboardController;
 use App\Http\Controllers\Intern\DtrReportController;
-use App\Http\Controllers\Supervisor\InternsController;
-use App\Http\Controllers\Admin\KioskController;
 use App\Http\Controllers\Intern\ProfilePhotoController;
+use App\Http\Controllers\Supervisor\InternsController;
 use App\Http\Controllers\Kiosk\ScanController as KioskScanController;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
@@ -34,6 +35,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('interns.approve');
         Route::post('interns/{internProfile}/reject', [InternApprovalController::class, 'reject'])
             ->name('interns.reject');
+        Route::get('interns', [InternController::class, 'index'])->name('interns.index');
 
         Route::get('supervisors', [SupervisorController::class, 'index'])->name('supervisors.index');
         Route::post('supervisors', [SupervisorController::class, 'store'])->name('supervisors.store');
@@ -51,6 +53,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('kiosk', [KioskController::class, 'show'])->name('kiosk.show');
         Route::post('kiosk/{kiosk}/regenerate', [KioskController::class, 'regenerate'])->name('kiosk.regenerate');
         Route::post('kiosk/{kiosk}/toggle', [KioskController::class, 'toggleActive'])->name('kiosk.toggle');
+
+        Route::post('interns/{internProfile}/undo', [InternApprovalController::class, 'undo'])
+        ->name('interns.undo');
     });
 
     Route::middleware('role:' . User::ROLE_SUPERVISOR)->prefix('supervisor')->name('supervisor.')->group(function () {

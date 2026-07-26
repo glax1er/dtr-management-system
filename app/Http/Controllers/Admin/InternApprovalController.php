@@ -29,4 +29,15 @@ class InternApprovalController extends Controller
 
         return back()->with('success', "{$internProfile->user->name} has been rejected.");
     }
+
+    public function undo(InternProfile $internProfile): RedirectResponse
+    {
+        $internProfile->update([
+            'status' => 'pending',
+            'approved_at' => null,
+            'qr_code_value' => null,
+        ]);
+
+        return back()->with('success', "{$internProfile->user->name} has been reverted to pending.");
+    }
 }
