@@ -12,6 +12,8 @@ use App\Http\Controllers\Supervisor\DashboardController as SupervisorDashboardCo
 use App\Http\Controllers\Supervisor\InternsController;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Intern\ResolutionTicketController as InternResolutionTicketController;
+use App\Http\Controllers\Supervisor\ResolutionTicketController as SupervisorResolutionTicketController;
 
 Route::redirect('/', '/login')->name('home');
 
@@ -51,12 +53,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::get('dashboard', [\App\Http\Controllers\Supervisor\DashboardController::class, 'index'])->name('dashboard');
         Route::post('scan', [ScanController::class, '__invoke'])->name('scan');
         Route::get('interns', [InternsController::class, 'index'])->name('interns.index');
+        Route::get('resolution-tickets', [SupervisorResolutionTicketController::class, 'index'])
+        ->name('resolution-tickets.index');
+        Route::patch('resolution-tickets/{resolutionTicket}/approve', [SupervisorResolutionTicketController::class, 'approve'])
+        ->name('resolution-tickets.approve');
+        Route::patch('resolution-tickets/{resolutionTicket}/reject', [SupervisorResolutionTicketController::class, 'reject'])
+        ->name('resolution-tickets.reject');
     });
 
     Route::middleware('role:' . User::ROLE_INTERN)->prefix('intern')->name('intern.')->group(function () {
         Route::get('dashboard', [InternDashboardController::class, 'index'])->name('dashboard');
         Route::get('dtr-report', [DtrReportController::class, 'download'])->name('dtr-report.download');
         Route::get('qr-code', [QrCodeImageController::class, 'show'])->name('qr-code.show');
+        Route::post('resolution-tickets', [InternResolutionTicketController::class, 'store'])
+        ->name('resolution-tickets.store');
+        Route::patch('resolution-tickets/{resolutionTicket}/cancel', [InternResolutionTicketController::class, 'cancel'])
+        ->name('resolution-tickets.cancel');
     });
 });
 

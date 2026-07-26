@@ -16,6 +16,7 @@ class AttendanceLog extends Model
         'intern_user_id',
         'supervisor_user_id',
         'scan_timestamp',
+        'resolved_ticket_id',
     ];
 
     protected $casts = [
@@ -53,5 +54,17 @@ class AttendanceLog extends Model
     public function supervisor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'supervisor_user_id', 'id');
+    }
+
+    /**
+     * Null for a real scan. Set only when this row was written back by an
+     * approved resolution ticket instead of an actual QR scan — see
+     * ResolutionTicketController::approve().
+     *
+     * @return BelongsTo<ResolutionTicket, $this>
+     */
+    public function resolutionTicket(): BelongsTo
+    {
+        return $this->belongsTo(ResolutionTicket::class, 'resolved_ticket_id', 'id');
     }
 }
