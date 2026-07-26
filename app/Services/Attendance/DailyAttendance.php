@@ -68,8 +68,8 @@ final readonly class DailyAttendance
         return [
             'date' => $this->date,
             'day' => Carbon::parse($this->date)->format('l'),
-            'time_in' => $this->timeIn?->clone()->setTimezone($timezone)->format('H:i:s'),
-            'time_out' => $this->timeOut?->clone()->setTimezone($timezone)->format('H:i:s'),
+            'time_in' => $this->timeIn?->clone()->setTimezone($timezone)->format('g:i A'),
+            'time_out' => $this->timeOut?->clone()->setTimezone($timezone)->format('g:i A'),
             'hours_rendered' => round($this->hoursRendered, 2),
             'lunch_deducted' => $this->lunchDeducted,
             'status' => $status,

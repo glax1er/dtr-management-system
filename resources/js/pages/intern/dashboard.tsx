@@ -1,6 +1,7 @@
 import { Head, router } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight, Download, QrCode } from 'lucide-react';
 import { HoursProgressRing } from '@/components/hours-progress-ring';
+import { ResolutionRequestDialog } from '@/components/resolution-request-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,6 +31,13 @@ export default function InternDashboard({
 }: InternDashboardProps) {
     const goToMonth = (targetMonth: string) => {
         router.get('/intern/dashboard', { month: targetMonth }, { preserveState: true, preserveScroll: true });
+    };
+
+    const cancelRequest = (ticketId: number) => {
+        if (!confirm('Cancel this resolution request?')) {
+            return;
+        }
+        router.patch(`/intern/resolution-tickets/${ticketId}/cancel`, {}, { preserveScroll: true });
     };
 
     return (
@@ -194,7 +202,8 @@ export default function InternDashboard({
                                             <th className="py-2 pr-4 font-medium">Time Out</th>
                                             <th className="py-2 pr-4 font-medium">Hours</th>
                                             <th className="py-2 pr-4 font-medium">Lunch Deducted</th>
-                                            <th className="py-2 font-medium">Status</th>
+                                            <th className="py-2 pr-4 font-medium">Status</th>
+                                            <th className="py-2 font-medium">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -230,6 +239,30 @@ export default function InternDashboard({
                                                                 ? 'No record'
                                                                 : 'No time-out'}
                                                     </Badge>
+                                                </td>
+                                                <td className="py-2">
+                                                    {log.status === 'complete' ? (
+                                                        <span className="text-muted-foreground">—</span>
+                                                    ) : log.pending_ticket_id !== null ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <Badge variant="secondary">Pending</Badge>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                onClick={() => cancelRequest(log.pending_ticket_id!)}
+                                                            >
+                                                                Cancel
+                                                            </Button>
+                                                        </div>
+                                                    ) : (
+                                                        <ResolutionRequestDialog
+                                                            date={log.date}
+                                                            day={log.day}
+                                                            status={log.status}
+                                                            existingTimeIn={log.time_in}
+                                                            existingTimeOut={log.time_out}
+                                                        />
+                                                    )}
                                                 </td>
                                             </tr>
                                         ))}

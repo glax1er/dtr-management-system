@@ -42,11 +42,11 @@ class DailyAttendanceCalculator
             ->orderBy('scan_timestamp');
 
         if ($from !== null) {
-            $query->where('scan_timestamp', '>=', $from->clone()->setTimezone($timezone)->startOfDay()->setTimezone('UTC'));
+            $query->where('scan_timestamp', '>=', $from->clone()->setTimezone($timezone)->startOfDay());
         }
 
         if ($to !== null) {
-            $query->where('scan_timestamp', '<=', $to->clone()->setTimezone($timezone)->endOfDay()->setTimezone('UTC'));
+           $query->where('scan_timestamp', '<=', $to->clone()->setTimezone($timezone)->endOfDay());
         }
 
         $scansByDate = $query->get()

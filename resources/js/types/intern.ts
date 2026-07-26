@@ -35,6 +35,12 @@ export type AttendanceDay = {
     lunch_deducted: boolean;
     status: 'open' | 'missing_time_in' | 'no_record' | 'complete';
     raw_scan_count: number;
+    /**
+     * A pending resolution ticket's id, if one already exists for this
+     * date — null otherwise. Drives whether the row shows "Request
+     * Resolution" or a "Pending" state with a cancel option.
+     */
+    pending_ticket_id: number | null;
 };
 
 export type InternDashboardProps = {
