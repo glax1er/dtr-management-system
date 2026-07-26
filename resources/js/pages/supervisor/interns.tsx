@@ -121,11 +121,28 @@ function formatLongTime(time: string | null): string {
         return '—';
     }
 
-    const [hours, minutes] = time.split(':').map(Number);
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const hour12 = hours % 12 === 0 ? 12 : hours % 12;
+    const trimmed = time.trim();
+    const amPmMatch = trimmed.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)$/i);
 
-    return `${hour12}:${String(minutes).padStart(2, '0')} ${period}`;
+    if (amPmMatch) {
+        const hours = Number.parseInt(amPmMatch[1], 10);
+        const minutes = Number.parseInt(amPmMatch[2], 10);
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const hour12 = hours % 12 === 0 ? 12 : hours % 12;
+
+        return `${hour12}:${String(minutes).padStart(2, '0')} ${period}`;
+    }
+
+    const [rawHours, rawMinutes] = trimmed.split(':').map((value) => Number.parseInt(value, 10));
+
+    if (Number.isNaN(rawHours) || Number.isNaN(rawMinutes)) {
+        return '—';
+    }
+
+    const period = rawHours >= 12 ? 'PM' : 'AM';
+    const hour12 = rawHours % 12 === 0 ? 12 : rawHours % 12;
+
+    return `${hour12}:${String(rawMinutes).padStart(2, '0')} ${period}`;
 }
 
 /** 8.5 → "8 hours 30 minutes" — spelled out instead of a bare decimal
