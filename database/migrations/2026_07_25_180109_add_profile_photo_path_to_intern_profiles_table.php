@@ -9,14 +9,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('intern_profiles', function (Blueprint $table) {
-            $table->timestamp('privacy_accepted_at')->after('registered_at');
+            $table->string('profile_photo_path')->nullable()->after('qr_code_value');
         });
     }
 
     public function down(): void
     {
         Schema::table('intern_profiles', function (Blueprint $table) {
-            $table->dropColumn('privacy_accepted_at');
+            $table->dropColumn('profile_photo_path');
         });
     }
 };

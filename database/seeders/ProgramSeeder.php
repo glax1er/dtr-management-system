@@ -20,7 +20,10 @@ class ProgramSeeder extends Seeder
         ];
 
         foreach ($programs as $name) {
-            Program::firstOrCreate(['program_name' => $name]);
+            Program::firstOrCreate(
+                ['program_name' => $name],
+                ['created_at' => now()]
+            );
         }
     }
 }

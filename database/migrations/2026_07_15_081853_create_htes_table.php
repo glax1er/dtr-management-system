@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('contact_person', 100)->nullable();
             $table->string('contact_number', 20)->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
-            $table->timestamp('created_at')->now();
+            $table->timestamp('created_at')->useCurrent();
         });
     }
 

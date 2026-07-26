@@ -61,11 +61,12 @@ class DashboardController extends Controller
                 // separately. This flag just tells the UI whether a code
                 // exists yet at all; it never renders the actual image here.
                 'has_qr_code' => $profile->qr_code_value !== null,
+                'photo_url' => $profile->profile_photo_url,
             ],
             'today' => [
                 'date' => $today->toDateString(),
-                'time_in' => $todayEntry?->timeIn->clone()->setTimezone($timezone)->format('H:i:s'),
-                'time_out' => $todayEntry?->timeOut?->clone()->setTimezone($timezone)->format('H:i:s'),
+                'time_in' => $todayEntry?->timeIn->clone()->setTimezone($timezone)->format('g:i A'),
+                'time_out' => $todayEntry?->timeOut?->clone()->setTimezone($timezone)->format('g:i A'),
                 'status' => $todayEntry === null ? 'not_started' : ($todayEntry->isOpen() ? 'open' : 'complete'),
             ],
             'hours' => [

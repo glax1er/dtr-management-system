@@ -1,4 +1,5 @@
 export type InternProfileSummary = {
+    photo_url: string | null;
     name: string;
     email: string;
     id_number: string;

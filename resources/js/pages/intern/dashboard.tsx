@@ -1,5 +1,6 @@
 import { Head, router } from '@inertiajs/react';
-import { ChevronLeft, ChevronRight, Download, QrCode } from 'lucide-react';
+import { useRef } from 'react';
+import { ChevronLeft, ChevronRight, Download, QrCode, Camera, User as UserIcon, X } from 'lucide-react';
 import { HoursProgressRing } from '@/components/hours-progress-ring';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,27 @@ export default function InternDashboard({
         router.get('/intern/dashboard', { month: targetMonth }, { preserveState: true, preserveScroll: true });
     };
 
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('photo', file);
+
+        router.post('/intern/profile-photo', formData, {
+            preserveScroll: true,
+            forceFormData: true,
+        });
+    };
+
+    const handlePhotoRemove = () => {
+        if (confirm('Remove your profile photo?')) {
+            router.delete('/intern/profile-photo', { preserveScroll: true });
+        }
+    };
+
     return (
         <>
             <Head title="Dashboard" />
@@ -48,8 +70,39 @@ export default function InternDashboard({
                     {/* Profile + Today, merged into one card */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>My Profile</CardTitle>
-                            <CardDescription>{profile.id_number}</CardDescription>
+                            <div className="flex items-center gap-4">
+                                <div className="relative">
+                                    <div className="flex size-16 items-center justify-center overflow-hidden rounded-full bg-muted">
+                                        {profile.photo_url ? (
+                                            <img src={profile.photo_url} alt={profile.name} className="size-full object-cover" />
+                                        ) : (
+                                            <UserIcon className="size-8 text-muted-foreground" />
+                                        )}
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="absolute -right-1 -bottom-1 flex size-6 items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground"
+                                        title="Change photo"
+                                    >
+                                        <Camera className="size-3.5" />
+                                    </button>
+
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp"
+                                        className="hidden"
+                                        onChange={handlePhotoSelect}
+                                    />
+                                </div>
+
+                                <div>
+                                    <CardTitle>My Profile</CardTitle>
+                                    <CardDescription>{profile.id_number}</CardDescription>
+                                </div>
+                            </div>
                         </CardHeader>
                         <CardContent className="space-y-2 text-sm">
                             <div className="flex justify-between">
