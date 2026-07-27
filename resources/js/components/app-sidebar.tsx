@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Building, ClipboardCheck, Clock, FileWarning, FolderGit2, GraduationCap, LayoutGrid, MonitorSmartphone, Users } from 'lucide-react';
+import { BookOpen, Building, ClipboardCheck, Clock, FileWarning, FolderGit2, GraduationCap, LayoutGrid, MonitorSmartphone, Users, PenLine } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -46,6 +46,15 @@ const resolutionTicketsNavItem: NavItem = {
     icon: FileWarning,
 };
 
+// Same reasoning as resolutionTicketsNavItem — manual attendance entry is
+// scoped to the supervisor's own HTE (ManualAttendanceController reads
+// supervisorProfile->hte_id directly), which is null for OJT Supervisors.
+const manualAttendanceNavItem: NavItem = {
+    title: 'Manual Attendance',
+    href: '/supervisor/manual-attendance',
+    icon: PenLine,
+};
+
 const internNavItems: NavItem[] = [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
     { title: 'My DTR', href: '/intern/dtr', icon: Clock },
@@ -63,7 +72,11 @@ export function AppSidebar() {
 
     const supervisorNavItems: NavItem[] = isOjtSupervisor
         ? ojtSupervisorNavItems
-        : [...hteSupervisorNavItems, resolutionTicketsNavItem];
+        : [
+              ...hteSupervisorNavItems,
+              resolutionTicketsNavItem,
+              manualAttendanceNavItem,
+          ];
 
     const mainNavItems =
         auth.user.role === 'admin' ? adminNavItems : auth.user.role === 'supervisor' ? supervisorNavItems : internNavItems;
