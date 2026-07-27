@@ -73,8 +73,6 @@ interface MyInternsProps {
     canGoNextMonth: boolean;
     internCount: number;
     filters: Filters;
-    supervisorType?: string;
-    isOjtSupervisor?: boolean;
     scopeName?: string;
 }
 
@@ -178,7 +176,6 @@ export default function MyInterns({
     canGoNextMonth,
     internCount,
     filters,
-    isOjtSupervisor = false,
     scopeName,
 }: MyInternsProps) {
     const [search, setSearch] = useState(filters.search);
@@ -314,9 +311,7 @@ export default function MyInterns({
                         My Interns
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        {isOjtSupervisor
-                            ? `Attendance log for ${internCount} intern${internCount === 1 ? '' : 's'} in the ${scopeName ?? 'selected'} program across all HTEs.`
-                            : `Attendance log for ${internCount} intern${internCount === 1 ? '' : 's'} assigned to your HTE.`}
+                        {`Attendance log for ${internCount} intern${internCount === 1 ? '' : 's'} assigned to ${scopeName ?? 'your HTE'}.`}
                     </p>
                 </div>
 

@@ -5,27 +5,35 @@ namespace App\Http\Controllers\Supervisor;
 
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceLog;
-use App\Models\InternProfile;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function index(): Response
+    public function index(): Response|RedirectResponse
     {
         $supervisor = auth()->user();
-        $hteId = $supervisor->supervisorProfile->hte_id;
+        $supervisorProfile = $supervisor->supervisorProfile;
 
-        $myInternsCount = InternProfile::where('hte_id', $hteId)
+        // OJT Supervisors don't have a dashboard of their own — login and
+        // the generic /dashboard route already send them straight to their
+        // roster, but this catches a direct hit or stale bookmark too.
+        if ($supervisorProfile->isOjtSupervisor()) {
+            return redirect()->route('supervisor.interns.index');
+        }
+
+        $internUserIds = $supervisorProfile->getAssignedInterns()
             ->where('status', 'approved')
-            ->count();
+            ->pluck('user_id');
 
-        // Scope every scan query through the intern's HTE, not a
-        // stored supervisor_user_id — kiosk scans no longer record
-        // who scanned it, only who was scanned.
+        $myInternsCount = $internUserIds->count();
+
+        // Scope every scan query to those interns — kiosk scans no
+        // longer record who scanned it, only who was scanned.
         $baseQuery = fn () => AttendanceLog::query()
-            ->whereHas('internProfile', fn ($q) => $q->where('hte_id', $hteId));
+            ->whereIn('intern_user_id', $internUserIds);
 
         $scansToday = $baseQuery()
             ->whereDate('scan_timestamp', Carbon::today())
@@ -58,6 +66,7 @@ class DashboardController extends Controller
             'scansToday' => $scansToday,
             'scansThisWeek' => $scansThisWeek,
             'recentScans' => $recentScans,
+            'scopeName' => $supervisorProfile->getScopeName(),
         ]);
     }
 }

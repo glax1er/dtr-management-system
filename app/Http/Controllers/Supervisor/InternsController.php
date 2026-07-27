@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Supervisor;
 
 use App\Http\Controllers\Controller;
 use App\Models\InternProfile;
+use App\Models\SupervisorProfile;
 use App\Services\Attendance\DailyAttendance;
 use App\Services\Attendance\DailyAttendanceCalculator;
 use Illuminate\Http\Request;
@@ -18,7 +19,92 @@ class InternsController extends Controller
         private readonly DailyAttendanceCalculator $calculator,
     ) {}
 
+    /**
+     * HTE Supervisors get the full attendance-log view (date/range picker,
+     * time in/out, punctuality). OJT Supervisors get a simple read-only
+     * roster of their program's interns instead — they monitor who's
+     * assigned where, not day-by-day attendance detail.
+     */
     public function index(Request $request): Response
+    {
+        $supervisorProfile = $request->user()->supervisorProfile;
+
+        if ($supervisorProfile->isOjtSupervisor()) {
+            return $this->roster($request, $supervisorProfile);
+        }
+
+        return $this->attendanceLogs($request, $supervisorProfile);
+    }
+
+    /**
+     * Simple, read-only list of every intern in the OJT Supervisor's
+     * program, across every HTE — name, contact info, where they're
+     * assigned, and total hours rendered to date. No date picker, no
+     * internal/admin fields (status, QR value, timestamps, profile
+     * photo) — just what a supervisor needs to see at a glance. Paginated
+     * the same way as the HTE attendance log (InternsController::attendanceLogs)
+     * so both surfaces behave consistently once a roster grows past a page.
+     */
+    private function roster(Request $request, SupervisorProfile $supervisorProfile): Response
+    {
+        $validated = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+        ]);
+
+        $search = trim($validated['search'] ?? '');
+
+        $internsQuery = $supervisorProfile->getAssignedInterns()->with('user', 'hte');
+
+        if ($search !== '') {
+            $internsQuery->whereHas('user', fn ($query) => $query->where('name', 'like', "%{$search}%"));
+        }
+
+        $students = $internsQuery->get()
+            ->map(fn (InternProfile $intern) => [
+                'intern_user_id' => $intern->user_id,
+                'name' => $intern->user->name,
+                'email' => $intern->user->email,
+                'id_number' => $intern->id_number,
+                'contact_number' => $intern->contact_number,
+                'hte_name' => $intern->hte->hte_name,
+                'total_hours' => $this->calculator->totalHours($intern->user_id),
+            ])
+            ->sortBy('name')
+            ->values();
+
+        $perPage = (int) ($validated['per_page'] ?? 20);
+        $total = $students->count();
+        $lastPage = max(1, (int) ceil($total / $perPage));
+        $page = min((int) ($validated['page'] ?? 1), $lastPage);
+
+        $pagedStudents = $students->forPage($page, $perPage)->values();
+
+        return Inertia::render('supervisor/students', [
+            'students' => [
+                'data' => $pagedStudents,
+                'current_page' => $page,
+                'last_page' => $lastPage,
+                'per_page' => $perPage,
+                'total' => $total,
+                'from' => $total === 0 ? null : ($page - 1) * $perPage + 1,
+                'to' => $total === 0 ? null : min($page * $perPage, $total),
+            ],
+            'studentCount' => $total,
+            'scopeName' => $supervisorProfile->getScopeName(),
+            'filters' => [
+                'search' => $search,
+                'per_page' => $perPage,
+            ],
+        ]);
+    }
+
+    /**
+     * Full attendance log for an HTE Supervisor's own HTE — date/range
+     * picker, per-day time in/out, punctuality, and accumulated hours.
+     */
+    private function attendanceLogs(Request $request, SupervisorProfile $supervisorProfile): Response
     {
         $timezone = config('dtr.timezone');
         $today = Carbon::now($timezone);
@@ -53,8 +139,6 @@ class InternsController extends Controller
         $sort = $validated['sort'] ?? 'date';
         $direction = $validated['direction'] ?? 'desc';
         $search = trim($validated['search'] ?? '');
-
-        $supervisorProfile = $request->user()->supervisorProfile;
 
         $internsQuery = $supervisorProfile->getAssignedInterns()
             ->with('user', 'hte', 'program');
@@ -130,8 +214,6 @@ class InternsController extends Controller
                 'direction' => $direction,
                 'per_page' => $perPage,
             ],
-            'supervisorType' => $supervisorProfile->supervisor_type,
-            'isOjtSupervisor' => $supervisorProfile->isOjtSupervisor(),
             'scopeName' => $supervisorProfile->getScopeName(),
         ]);
     }
