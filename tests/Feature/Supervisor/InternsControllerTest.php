@@ -181,7 +181,8 @@ test('an OJT supervisor sees a simple student roster covering every HTE within t
         ->assertInertia(fn ($page) => $page
             ->component('supervisor/students')
             ->where('studentCount', 2)
-            ->has('students', 2)
+            ->has('students.data', 2)
+            ->where('students.total', 2)
         );
 });
 
@@ -199,6 +200,7 @@ test('an OJT supervisor does not see students from a different program', functio
         ->assertInertia(fn ($page) => $page
             ->component('supervisor/students')
             ->where('studentCount', 0)
+            ->has('students.data', 0)
         );
 });
 
@@ -223,7 +225,7 @@ test('the student roster exposes name, email, id number, contact number, assigne
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('supervisor/students')
-            ->has('students', 1, fn ($student) => $student
+            ->has('students.data', 1, fn ($student) => $student
                 ->where('name', $intern->name)
                 ->where('email', $intern->email)
                 ->where('id_number', $intern->internProfile->id_number)
@@ -247,7 +249,7 @@ test('the student roster never exposes status, QR value, or profile timestamps t
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('supervisor/students')
-            ->has('students', 1, fn ($student) => $student
+            ->has('students.data', 1, fn ($student) => $student
                 ->missing('status')
                 ->missing('qr_code_value')
                 ->missing('registered_at')
@@ -257,6 +259,36 @@ test('the student roster never exposes status, QR value, or profile timestamps t
                 ->missing('profile_photo_url')
                 ->etc()
             )
+        );
+});
+
+test('the student roster paginates and honors per_page/page params', function () {
+    $program = Program::create(['program_name' => 'BSIT-BTM-'.uniqid()]);
+    [$supervisor] = makeOjtSupervisorForProgram($program);
+    $hte = Hte::create(['hte_name' => 'HTE A']);
+
+    foreach (range(1, 3) as $i) {
+        makeApprovedInternForHteAndProgram($hte, $program);
+    }
+
+    $this->actingAs($supervisor)
+        ->get(route('supervisor.interns.index', ['per_page' => 2]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('supervisor/students')
+            ->where('studentCount', 3)
+            ->has('students.data', 2)
+            ->where('students.total', 3)
+            ->where('students.last_page', 2)
+            ->where('students.current_page', 1)
+        );
+
+    $this->actingAs($supervisor)
+        ->get(route('supervisor.interns.index', ['per_page' => 2, 'page' => 2]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('students.data', 1)
+            ->where('students.current_page', 2)
         );
 });
 

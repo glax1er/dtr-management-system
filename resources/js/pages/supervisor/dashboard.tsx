@@ -20,7 +20,6 @@ interface SupervisorDashboardProps {
     scansToday: number;
     scansThisWeek: number;
     recentScans: RecentScan[];
-    isOjtSupervisor?: boolean;
     scopeName?: string;
 }
 
@@ -29,7 +28,6 @@ export default function SupervisorDashboard({
     scansToday,
     scansThisWeek,
     recentScans,
-    isOjtSupervisor = false,
     scopeName,
 }: SupervisorDashboardProps) {
     const { auth } = usePage<PageProps>().props;
@@ -49,9 +47,8 @@ export default function SupervisorDashboard({
                         Welcome back, {auth.user.name}
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        {isOjtSupervisor
-                            ? `Viewing and monitoring every intern in the ${scopeName ?? 'program'} program, across all HTEs.`
-                            : 'Attendance is now recorded through the shared scanning station.'}
+                        {scopeName ? `${scopeName} · ` : ''}Attendance is
+                        recorded through the shared scanning station.
                     </p>
                 </div>
 
@@ -80,9 +77,8 @@ export default function SupervisorDashboard({
                     <CardContent>
                         {recentScans.length === 0 ? (
                             <p className="text-sm text-muted-foreground">
-                                {isOjtSupervisor
-                                    ? 'No scans recorded yet — this list fills up as interns in your program scan in.'
-                                    : 'No scans recorded yet — this list fills up as interns from your HTE scan in.'}
+                                No scans recorded yet — this list fills up as
+                                interns from your HTE scan in.
                             </p>
                         ) : (
                             <div className="flex flex-col gap-3">

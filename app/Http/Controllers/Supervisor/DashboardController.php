@@ -5,20 +5,25 @@ namespace App\Http\Controllers\Supervisor;
 
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceLog;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function index(): Response
+    public function index(): Response|RedirectResponse
     {
         $supervisor = auth()->user();
         $supervisorProfile = $supervisor->supervisorProfile;
 
-        // HTE Supervisors are scoped to their own HTE; OJT Supervisors
-        // are scoped to their whole program, across every HTE — same
-        // scoping InternsController uses via getAssignedInterns().
+        // OJT Supervisors don't have a dashboard of their own — login and
+        // the generic /dashboard route already send them straight to their
+        // roster, but this catches a direct hit or stale bookmark too.
+        if ($supervisorProfile->isOjtSupervisor()) {
+            return redirect()->route('supervisor.interns.index');
+        }
+
         $internUserIds = $supervisorProfile->getAssignedInterns()
             ->where('status', 'approved')
             ->pluck('user_id');
@@ -61,7 +66,6 @@ class DashboardController extends Controller
             'scansToday' => $scansToday,
             'scansThisWeek' => $scansThisWeek,
             'recentScans' => $recentScans,
-            'isOjtSupervisor' => $supervisorProfile->isOjtSupervisor(),
             'scopeName' => $supervisorProfile->getScopeName(),
         ]);
     }

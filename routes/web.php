@@ -23,12 +23,7 @@ Route::redirect('/', '/login')->name('home');
 Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('dashboard', function () {
-        return redirect()->route(match (auth()->user()->role) {
-            User::ROLE_ADMIN => 'admin.dashboard',
-            User::ROLE_SUPERVISOR => 'supervisor.dashboard',
-            User::ROLE_INTERN => 'intern.dashboard',
-            default => throw new \UnexpectedValueException('Invalid user role.'),
-        });
+        return redirect()->route(auth()->user()->homeRouteName());
     })->name('dashboard');
 
     Route::middleware('role:' . User::ROLE_ADMIN)->prefix('admin')->name('admin.')->group(function () {

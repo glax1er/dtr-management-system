@@ -24,10 +24,17 @@ const adminNavItems: NavItem[] = [
     { title: 'Kiosk', href: '/admin/kiosk', icon: MonitorSmartphone },
 ];
 
-const baseSupervisorNavItems = (label: string): NavItem[] => [
+// HTE Supervisors get a dashboard; OJT Supervisors don't (they only
+// view/monitor their program's roster) so "My Students" is their landing
+// page and there's no Dashboard link to show.
+const hteSupervisorNavItems: NavItem[] = [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
-    { title: label, href: '/supervisor/interns', icon: GraduationCap },
+    { title: 'My Interns', href: '/supervisor/interns', icon: GraduationCap },
     { title: 'DTR Approvals', href: '/supervisor/approvals', icon: ClipboardCheck },
+];
+
+const ojtSupervisorNavItems: NavItem[] = [
+    { title: 'My Students', href: '/supervisor/interns', icon: GraduationCap },
 ];
 
 // Only HTE Supervisors resolve time conflicts — an OJT Supervisor's role
@@ -55,8 +62,8 @@ export function AppSidebar() {
     const isOjtSupervisor = auth.user.supervisor_type === 'ojt';
 
     const supervisorNavItems: NavItem[] = isOjtSupervisor
-        ? baseSupervisorNavItems('My Students')
-        : [...baseSupervisorNavItems('My Interns'), resolutionTicketsNavItem];
+        ? ojtSupervisorNavItems
+        : [...hteSupervisorNavItems, resolutionTicketsNavItem];
 
     const mainNavItems =
         auth.user.role === 'admin' ? adminNavItems : auth.user.role === 'supervisor' ? supervisorNavItems : internNavItems;

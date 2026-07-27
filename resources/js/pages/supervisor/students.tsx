@@ -1,6 +1,7 @@
 import { Head, router } from '@inertiajs/react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
-import type { FormEvent } from 'react';
+import type { FormEvent, KeyboardEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -10,7 +11,6 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { dashboard } from '@/routes';
 
 interface StudentRow {
     intern_user_id: number;
@@ -22,16 +22,30 @@ interface StudentRow {
     total_hours: number;
 }
 
+interface PaginatedStudents {
+    data: StudentRow[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number | null;
+    to: number | null;
+}
+
 interface Filters {
     search: string;
+    per_page: number;
 }
 
 interface MyStudentsProps {
-    students: StudentRow[];
+    students: PaginatedStudents;
     studentCount: number;
     scopeName?: string;
     filters: Filters;
 }
+
+const MIN_PER_PAGE = 1;
+const MAX_PER_PAGE = 100;
 
 /** 8.5 → "8 hours 30 minutes" — same long-form duration used on the
  * HTE attendance log, so hours read consistently across both views. */
@@ -64,23 +78,54 @@ export default function MyStudents({
     filters,
 }: MyStudentsProps) {
     const [search, setSearch] = useState(filters.search);
+    const [perPageDraft, setPerPageDraft] = useState(String(filters.per_page));
+
+    // Base params shared by every navigation action — anything that
+    // changes what rows match (search) resets back to page 1 by simply
+    // omitting the page param.
+    const baseParams = () => ({
+        search: filters.search || undefined,
+        per_page: String(filters.per_page),
+    });
+
+    const visit = (params: Record<string, string | undefined>) => {
+        router.get('/supervisor/interns', params, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
 
     const applySearch = (e: FormEvent) => {
         e.preventDefault();
-        router.get(
-            '/supervisor/interns',
-            { search: search || undefined },
-            { preserveState: true, preserveScroll: true },
-        );
+        visit({ ...baseParams(), search: search || undefined });
     };
 
     const clearSearch = () => {
         setSearch('');
-        router.get(
-            '/supervisor/interns',
-            {},
-            { preserveState: true, preserveScroll: true },
-        );
+        visit({ ...baseParams(), search: undefined });
+    };
+
+    const commitPerPage = () => {
+        const parsed = parseInt(perPageDraft, 10);
+        const clamped = Number.isNaN(parsed)
+            ? filters.per_page
+            : Math.min(MAX_PER_PAGE, Math.max(MIN_PER_PAGE, parsed));
+
+        setPerPageDraft(String(clamped));
+
+        if (clamped === filters.per_page) {
+            return;
+        }
+
+        visit({ ...baseParams(), per_page: String(clamped) });
+    };
+
+    const goToPage = (page: number) => {
+        if (page < 1 || page > students.last_page) {
+            return;
+        }
+
+        visit({ ...baseParams(), page: String(page) });
     };
 
     return (
@@ -96,11 +141,13 @@ export default function MyStudents({
                     </p>
                 </div>
 
-                <Card className="flex-1">
-                    <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <Card>
+                    <CardHeader>
                         <CardTitle className="text-base">
                             Assigned Interns
                         </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex flex-col gap-5">
                         <form
                             onSubmit={applySearch}
                             className="flex items-end gap-2"
@@ -136,9 +183,8 @@ export default function MyStudents({
                                 </Button>
                             )}
                         </form>
-                    </CardHeader>
-                    <CardContent>
-                        {students.length === 0 ? (
+
+                        {students.data.length === 0 ? (
                             <p className="py-8 text-center text-sm text-muted-foreground">
                                 No interns match{' '}
                                 {filters.search !== ''
@@ -171,7 +217,7 @@ export default function MyStudents({
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {students.map((student) => (
+                                        {students.data.map((student) => (
                                             <tr
                                                 key={student.intern_user_id}
                                                 className="border-b last:border-0 hover:bg-muted/40"
@@ -202,6 +248,81 @@ export default function MyStudents({
                                 </table>
                             </div>
                         )}
+
+                        {students.total > 0 && (
+                            <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                                    <span>
+                                        Showing {students.from}–{students.to}{' '}
+                                        of {students.total} intern
+                                        {students.total === 1 ? '' : 's'}
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <Label
+                                            htmlFor="per-page"
+                                            className="text-xs whitespace-nowrap"
+                                        >
+                                            Rows per page
+                                        </Label>
+                                        <Input
+                                            id="per-page"
+                                            type="number"
+                                            inputMode="numeric"
+                                            min={MIN_PER_PAGE}
+                                            max={MAX_PER_PAGE}
+                                            value={perPageDraft}
+                                            onChange={(e) =>
+                                                setPerPageDraft(e.target.value)
+                                            }
+                                            onBlur={commitPerPage}
+                                            onKeyDown={(
+                                                e: KeyboardEvent<HTMLInputElement>,
+                                            ) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    commitPerPage();
+                                                }
+                                            }}
+                                            className="h-8 w-[4.5rem]"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={students.current_page <= 1}
+                                        onClick={() =>
+                                            goToPage(students.current_page - 1)
+                                        }
+                                    >
+                                        <ChevronLeft className="size-3.5" />
+                                        Previous
+                                    </Button>
+                                    <span className="min-w-24 text-center text-sm text-muted-foreground">
+                                        Page {students.current_page} of{' '}
+                                        {students.last_page}
+                                    </span>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={
+                                            students.current_page >=
+                                            students.last_page
+                                        }
+                                        onClick={() =>
+                                            goToPage(students.current_page + 1)
+                                        }
+                                    >
+                                        Next
+                                        <ChevronRight className="size-3.5" />
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>
@@ -210,8 +331,5 @@ export default function MyStudents({
 }
 
 MyStudents.layout = {
-    breadcrumbs: [
-        { title: 'Dashboard', href: dashboard() },
-        { title: 'My Students', href: '/supervisor/interns' },
-    ],
+    breadcrumbs: [{ title: 'My Students', href: '/supervisor/interns' }],
 };
