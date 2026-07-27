@@ -12,6 +12,7 @@ use App\Http\Controllers\Intern\DtrReportController;
 use App\Http\Controllers\Intern\ProfilePhotoController;
 use App\Http\Controllers\Supervisor\DashboardController as SupervisorDashboardController;
 use App\Http\Controllers\Supervisor\InternsController;
+use App\Http\Controllers\Supervisor\ManualAttendanceController;
 use App\Http\Controllers\Kiosk\ScanController as KioskScanController;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
@@ -69,6 +70,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('resolution-tickets.approve');
         Route::patch('resolution-tickets/{resolutionTicket}/reject', [SupervisorResolutionTicketController::class, 'reject'])
             ->name('resolution-tickets.reject');
+
+        Route::get('manual-attendance', [ManualAttendanceController::class, 'create'])->name('manual-attendance.create');
+        Route::post('manual-attendance/check', [ManualAttendanceController::class, 'checkConflicts'])->name('manual-attendance.check');
+        Route::post('manual-attendance', [ManualAttendanceController::class, 'store'])->name('manual-attendance.store');
     });
 
     Route::middleware('role:' . User::ROLE_INTERN)->prefix('intern')->name('intern.')->group(function () {
