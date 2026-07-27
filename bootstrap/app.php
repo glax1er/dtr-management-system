@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 
 use App\Http\Middleware\EnsureUserRole;
 use App\Http\Middleware\EnsureHteSupervisor;
+use App\Http\Middleware\EnsureOjtSupervisor;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => EnsureUserRole::class,
             'hte-supervisor' => EnsureHteSupervisor::class,
+            'ojt-supervisor' => EnsureOjtSupervisor::class,
         ]);
 
         $middleware->web(append: [

@@ -35,6 +35,7 @@ const hteSupervisorNavItems: NavItem[] = [
 
 const ojtSupervisorNavItems: NavItem[] = [
     { title: 'My Students', href: '/supervisor/interns', icon: GraduationCap },
+    { title: 'HTEs', href: '/supervisor/htes', icon: Building },
 ];
 
 // Only HTE Supervisors resolve time conflicts — an OJT Supervisor's role

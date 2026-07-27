@@ -11,6 +11,7 @@ use App\Http\Controllers\Intern\DashboardController as InternDashboardController
 use App\Http\Controllers\Intern\DtrReportController;
 use App\Http\Controllers\Intern\ProfilePhotoController;
 use App\Http\Controllers\Supervisor\DashboardController as SupervisorDashboardController;
+use App\Http\Controllers\Supervisor\HtesController as SupervisorHtesController;
 use App\Http\Controllers\Supervisor\InternsController;
 use App\Http\Controllers\Supervisor\ManualAttendanceController;
 use App\Http\Controllers\Kiosk\ScanController as KioskScanController;
@@ -59,6 +60,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('role:' . User::ROLE_SUPERVISOR)->prefix('supervisor')->name('supervisor.')->group(function () {
         Route::get('dashboard', [\App\Http\Controllers\Supervisor\DashboardController::class, 'index'])->name('dashboard');
         Route::get('interns', [InternsController::class, 'index'])->name('interns.index');
+
+        // Only an OJT Supervisor oversees a whole program across every
+        // HTE, so only they get a roster of HTEs to look at.
+        Route::middleware('ojt-supervisor')->group(function () {
+            Route::get('htes', [SupervisorHtesController::class, 'index'])->name('htes.index');
+        });
+
         // OJT Supervisors can view/monitor the same as an HTE Supervisor,
         // but only an HTE Supervisor resolves time conflicts or records
         // manual attendance — both are on-site, single-HTE actions.
