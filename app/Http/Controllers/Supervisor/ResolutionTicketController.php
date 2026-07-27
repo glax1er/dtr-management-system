@@ -27,6 +27,13 @@ class ResolutionTicketController extends Controller
         // only sees tickets from interns under their own HTE.
         $supervisorProfile = $request->user()->supervisorProfile;
 
+        // Defense in depth: the 'hte-supervisor' route middleware already
+        // blocks OJT Supervisors from reaching this controller at all, but
+        // this guard keeps the controller safe on its own too.
+        if ($supervisorProfile->isOjtSupervisor()) {
+            abort(403, 'OJT Supervisors cannot resolve time conflicts.');
+        }
+
         $internUserIds = InternProfile::query()
             ->where('hte_id', $supervisorProfile->hte_id)
             ->pluck('user_id');
@@ -194,10 +201,17 @@ class ResolutionTicketController extends Controller
     /**
      * A supervisor can only act on tickets from interns under their own
      * HTE — same scoping InternsController uses for the attendance log.
+     * OJT Supervisors never resolve tickets at all (also enforced by the
+     * 'hte-supervisor' route middleware).
      */
     private function authorizeAccess(Request $request, ResolutionTicket $resolutionTicket): void
     {
         $supervisorProfile = $request->user()->supervisorProfile;
+
+        if ($supervisorProfile->isOjtSupervisor()) {
+            abort(403, 'OJT Supervisors cannot resolve time conflicts.');
+        }
+
         $internHteId = $resolutionTicket->intern->internProfile->hte_id;
 
         if ($internHteId !== $supervisorProfile->hte_id) {

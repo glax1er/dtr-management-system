@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Supervisor;
 
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceLog;
-use App\Models\InternProfile;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -15,17 +14,21 @@ class DashboardController extends Controller
     public function index(): Response
     {
         $supervisor = auth()->user();
-        $hteId = $supervisor->supervisorProfile->hte_id;
+        $supervisorProfile = $supervisor->supervisorProfile;
 
-        $myInternsCount = InternProfile::where('hte_id', $hteId)
+        // HTE Supervisors are scoped to their own HTE; OJT Supervisors
+        // are scoped to their whole program, across every HTE — same
+        // scoping InternsController uses via getAssignedInterns().
+        $internUserIds = $supervisorProfile->getAssignedInterns()
             ->where('status', 'approved')
-            ->count();
+            ->pluck('user_id');
 
-        // Scope every scan query through the intern's HTE, not a
-        // stored supervisor_user_id — kiosk scans no longer record
-        // who scanned it, only who was scanned.
+        $myInternsCount = $internUserIds->count();
+
+        // Scope every scan query to those interns — kiosk scans no
+        // longer record who scanned it, only who was scanned.
         $baseQuery = fn () => AttendanceLog::query()
-            ->whereHas('internProfile', fn ($q) => $q->where('hte_id', $hteId));
+            ->whereIn('intern_user_id', $internUserIds);
 
         $scansToday = $baseQuery()
             ->whereDate('scan_timestamp', Carbon::today())
@@ -58,6 +61,8 @@ class DashboardController extends Controller
             'scansToday' => $scansToday,
             'scansThisWeek' => $scansThisWeek,
             'recentScans' => $recentScans,
+            'isOjtSupervisor' => $supervisorProfile->isOjtSupervisor(),
+            'scopeName' => $supervisorProfile->getScopeName(),
         ]);
     }
 }

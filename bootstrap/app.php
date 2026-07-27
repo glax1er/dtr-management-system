@@ -9,6 +9,7 @@ use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 
 use App\Http\Middleware\EnsureUserRole;
+use App\Http\Middleware\EnsureHteSupervisor;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -21,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'role' => EnsureUserRole::class,
+            'hte-supervisor' => EnsureHteSupervisor::class,
         ]);
 
         $middleware->web(append: [

@@ -35,11 +35,21 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user ? [
+                    ...$user->toArray(),
+                    // Only meaningful for supervisors — lets the UI (e.g.
+                    // the sidebar) hide resolution-ticket actions for OJT
+                    // Supervisors without needing a per-page prop.
+                    'supervisor_type' => $user->isSupervisor()
+                        ? $user->supervisorProfile?->supervisor_type
+                        : null,
+                ] : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

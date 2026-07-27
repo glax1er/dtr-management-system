@@ -24,12 +24,20 @@ const adminNavItems: NavItem[] = [
     { title: 'Kiosk', href: '/admin/kiosk', icon: MonitorSmartphone },
 ];
 
-const supervisorNavItems: NavItem[] = [
+const baseSupervisorNavItems = (label: string): NavItem[] => [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
-    { title: 'My Interns', href: '/supervisor/interns', icon: GraduationCap },
+    { title: label, href: '/supervisor/interns', icon: GraduationCap },
     { title: 'DTR Approvals', href: '/supervisor/approvals', icon: ClipboardCheck },
-    { title: 'Resolution Tickets', href: '/supervisor/resolution-tickets', icon: FileWarning },
 ];
+
+// Only HTE Supervisors resolve time conflicts — an OJT Supervisor's role
+// is viewing/monitoring interns across the whole program, so this link
+// (and the page/routes behind it) stays hidden for them.
+const resolutionTicketsNavItem: NavItem = {
+    title: 'Resolution Tickets',
+    href: '/supervisor/resolution-tickets',
+    icon: FileWarning,
+};
 
 const internNavItems: NavItem[] = [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
@@ -43,6 +51,12 @@ const footerNavItems: NavItem[] = [
 
 export function AppSidebar() {
     const { auth } = usePage<PageProps>().props;
+
+    const isOjtSupervisor = auth.user.supervisor_type === 'ojt';
+
+    const supervisorNavItems: NavItem[] = isOjtSupervisor
+        ? baseSupervisorNavItems('My Students')
+        : [...baseSupervisorNavItems('My Interns'), resolutionTicketsNavItem];
 
     const mainNavItems =
         auth.user.role === 'admin' ? adminNavItems : auth.user.role === 'supervisor' ? supervisorNavItems : internNavItems;
