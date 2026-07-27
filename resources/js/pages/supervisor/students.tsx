@@ -11,6 +11,13 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 interface StudentRow {
     intern_user_id: number;
@@ -32,8 +39,14 @@ interface PaginatedStudents {
     to: number | null;
 }
 
+interface HteOption {
+    hte_id: number;
+    hte_name: string;
+}
+
 interface Filters {
     search: string;
+    hte_id: number | null;
     per_page: number;
 }
 
@@ -41,8 +54,14 @@ interface MyStudentsProps {
     students: PaginatedStudents;
     studentCount: number;
     scopeName?: string;
+    hteOptions: HteOption[];
     filters: Filters;
 }
+
+// Radix's Select doesn't allow an item with an empty-string value, so
+// "every HTE" gets its own sentinel that we translate back to
+// undefined (i.e. no hte_id filter) before it hits the URL.
+const ALL_HTES = 'all';
 
 const MIN_PER_PAGE = 1;
 const MAX_PER_PAGE = 100;
@@ -75,16 +94,18 @@ export default function MyStudents({
     students,
     studentCount,
     scopeName,
+    hteOptions,
     filters,
 }: MyStudentsProps) {
     const [search, setSearch] = useState(filters.search);
     const [perPageDraft, setPerPageDraft] = useState(String(filters.per_page));
 
     // Base params shared by every navigation action — anything that
-    // changes what rows match (search) resets back to page 1 by simply
-    // omitting the page param.
+    // changes what rows match (search/hte_id) resets back to page 1 by
+    // simply omitting the page param.
     const baseParams = () => ({
         search: filters.search || undefined,
+        hte_id: filters.hte_id ? String(filters.hte_id) : undefined,
         per_page: String(filters.per_page),
     });
 
@@ -103,6 +124,13 @@ export default function MyStudents({
     const clearSearch = () => {
         setSearch('');
         visit({ ...baseParams(), search: undefined });
+    };
+
+    const changeHte = (value: string) => {
+        visit({
+            ...baseParams(),
+            hte_id: value === ALL_HTES ? undefined : value,
+        });
     };
 
     const commitPerPage = () => {
@@ -182,13 +210,50 @@ export default function MyStudents({
                                     Clear
                                 </Button>
                             )}
+
+                            <div className="flex flex-col gap-1.5">
+                                <Label
+                                    htmlFor="hte-filter"
+                                    className="text-xs text-muted-foreground"
+                                >
+                                    Assigned HTE
+                                </Label>
+                                <Select
+                                    value={
+                                        filters.hte_id
+                                            ? String(filters.hte_id)
+                                            : ALL_HTES
+                                    }
+                                    onValueChange={changeHte}
+                                >
+                                    <SelectTrigger
+                                        id="hte-filter"
+                                        className="w-48"
+                                    >
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value={ALL_HTES}>
+                                            All HTEs
+                                        </SelectItem>
+                                        {hteOptions.map((hte) => (
+                                            <SelectItem
+                                                key={hte.hte_id}
+                                                value={String(hte.hte_id)}
+                                            >
+                                                {hte.hte_name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </form>
 
                         {students.data.length === 0 ? (
                             <p className="py-8 text-center text-sm text-muted-foreground">
                                 No interns match{' '}
-                                {filters.search !== ''
-                                    ? 'this search.'
+                                {filters.search !== '' || filters.hte_id
+                                    ? 'these filters.'
                                     : 'your program yet.'}
                             </p>
                         ) : (

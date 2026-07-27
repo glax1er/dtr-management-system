@@ -292,6 +292,49 @@ test('the student roster paginates and honors per_page/page params', function ()
         );
 });
 
+test('the student roster hte_id filter narrows to interns at that HTE', function () {
+    $program = Program::create(['program_name' => 'BSIT-BTM-'.uniqid()]);
+    [$supervisor] = makeOjtSupervisorForProgram($program);
+
+    $hteA = Hte::create(['hte_name' => 'HTE A']);
+    $hteB = Hte::create(['hte_name' => 'HTE B']);
+    makeApprovedInternForHteAndProgram($hteA, $program);
+    makeApprovedInternForHteAndProgram($hteB, $program);
+
+    $this->actingAs($supervisor)
+        ->get(route('supervisor.interns.index', ['hte_id' => $hteA->hte_id]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('supervisor/students')
+            ->where('students.total', 1)
+            ->has('students.data', 1, fn ($student) => $student
+                ->where('hte_name', 'HTE A')
+                ->etc()
+            )
+        );
+});
+
+test('the student roster exposes hteOptions scoped to HTEs hosting the OJT supervisor\'s program', function () {
+    $program = Program::create(['program_name' => 'BSIT-BTM-'.uniqid()]);
+    $otherProgram = Program::create(['program_name' => 'BSCS-'.uniqid()]);
+    [$supervisor] = makeOjtSupervisorForProgram($program);
+
+    $hteA = Hte::create(['hte_name' => 'HTE A']);
+    $hteB = Hte::create(['hte_name' => 'HTE B — other program only']);
+    makeApprovedInternForHteAndProgram($hteA, $program);
+    makeApprovedInternForHteAndProgram($hteB, $otherProgram);
+
+    $this->actingAs($supervisor)
+        ->get(route('supervisor.interns.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('hteOptions', 1, fn ($hte) => $hte
+                ->where('hte_name', 'HTE A')
+                ->etc()
+            )
+        );
+});
+
 test('an HTE supervisor still gets the full attendance log view, not the student roster', function () {
     [$supervisor, $hte] = makeSupervisorWithHte();
     makeApprovedInternForHte($hte);
