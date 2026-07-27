@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Supervisor;
 
 use App\Http\Controllers\Controller;
+use App\Models\Hte;
 use App\Models\InternProfile;
 use App\Models\SupervisorProfile;
 use App\Services\Attendance\DailyAttendance;
@@ -49,17 +50,33 @@ class InternsController extends Controller
     {
         $validated = $request->validate([
             'search' => ['nullable', 'string', 'max:255'],
+            'hte_id' => ['nullable', 'integer'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
         $search = trim($validated['search'] ?? '');
+        $hteId = $validated['hte_id'] ?? null;
 
         $internsQuery = $supervisorProfile->getAssignedInterns()->with('user', 'hte');
 
         if ($search !== '') {
             $internsQuery->whereHas('user', fn ($query) => $query->where('name', 'like', "%{$search}%"));
         }
+
+        if ($hteId !== null) {
+            $internsQuery->where('hte_id', $hteId);
+        }
+
+        // Every HTE currently hosting an intern from this program — powers
+        // the "Assigned HTE" filter dropdown. Same scope Hte::index() in
+        // HtesController uses, computed independently of the search/hte_id
+        // filters above so the dropdown's option list never shrinks based
+        // on what's currently filtered.
+        $hteOptions = Hte::query()
+            ->whereHas('internProfiles', fn ($query) => $query->where('program_id', $supervisorProfile->program_id))
+            ->orderBy('hte_name')
+            ->get(['hte_id', 'hte_name']);
 
         $students = $internsQuery->get()
             ->map(fn (InternProfile $intern) => [
@@ -93,8 +110,10 @@ class InternsController extends Controller
             ],
             'studentCount' => $total,
             'scopeName' => $supervisorProfile->getScopeName(),
+            'hteOptions' => $hteOptions,
             'filters' => [
                 'search' => $search,
+                'hte_id' => $hteId,
                 'per_page' => $perPage,
             ],
         ]);

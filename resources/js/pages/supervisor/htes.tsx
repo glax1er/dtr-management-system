@@ -1,6 +1,6 @@
 import { Head, router } from '@inertiajs/react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Fragment, useState } from 'react';
 import type { FormEvent, KeyboardEvent } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,22 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+
+interface HteInternRow {
+    intern_user_id: number;
+    name: string;
+    email: string;
+    id_number: string | null;
+    contact_number: string | null;
+    total_hours: number;
+}
 
 interface HteRow {
     hte_id: number;
@@ -21,6 +37,7 @@ interface HteRow {
     contact_number: string | null;
     status: 'active' | 'inactive';
     interns_count: number;
+    interns: HteInternRow[];
 }
 
 interface PaginatedHtes {
@@ -35,6 +52,7 @@ interface PaginatedHtes {
 
 interface Filters {
     search: string;
+    status: 'active' | 'inactive' | null;
     per_page: number;
 }
 
@@ -48,6 +66,35 @@ interface HtesIndexProps {
 const MIN_PER_PAGE = 1;
 const MAX_PER_PAGE = 100;
 
+// Radix's Select doesn't allow an item with an empty-string value, so
+// "every status" gets its own sentinel that we translate back to
+// undefined (i.e. no status filter) before it hits the URL.
+const ALL_STATUSES = 'all';
+
+/** 8.5 → "8 hours 30 minutes" — same long-form duration used on the
+ * My Students roster, so hours read consistently across both views. */
+function formatLongDuration(hours: number): string {
+    if (hours <= 0) {
+        return '—';
+    }
+
+    const totalMinutes = Math.round(hours * 60);
+    const wholeHours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    const parts: string[] = [];
+
+    if (wholeHours > 0) {
+        parts.push(`${wholeHours} ${wholeHours === 1 ? 'hour' : 'hours'}`);
+    }
+
+    if (minutes > 0) {
+        parts.push(`${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`);
+    }
+
+    return parts.length > 0 ? parts.join(' ') : '0 minutes';
+}
+
 export default function SupervisorHtes({
     htes,
     hteCount,
@@ -56,12 +103,18 @@ export default function SupervisorHtes({
 }: HtesIndexProps) {
     const [search, setSearch] = useState(filters.search);
     const [perPageDraft, setPerPageDraft] = useState(String(filters.per_page));
+    // Which HTE rows are currently expanded to show their intern list —
+    // more than one can be open at once.
+    const [expandedHteIds, setExpandedHteIds] = useState<Set<number>>(
+        new Set(),
+    );
 
     // Base params shared by every navigation action — anything that
-    // changes what rows match (search) resets back to page 1 by simply
-    // omitting the page param.
+    // changes what rows match (search/status) resets back to page 1 by
+    // simply omitting the page param.
     const baseParams = () => ({
         search: filters.search || undefined,
+        status: filters.status ?? undefined,
         per_page: String(filters.per_page),
     });
 
@@ -80,6 +133,13 @@ export default function SupervisorHtes({
     const clearSearch = () => {
         setSearch('');
         visit({ ...baseParams(), search: undefined });
+    };
+
+    const changeStatus = (value: string) => {
+        visit({
+            ...baseParams(),
+            status: value === ALL_STATUSES ? undefined : value,
+        });
     };
 
     const commitPerPage = () => {
@@ -105,6 +165,20 @@ export default function SupervisorHtes({
         visit({ ...baseParams(), page: String(page) });
     };
 
+    const toggleExpanded = (hteId: number) => {
+        setExpandedHteIds((current) => {
+            const next = new Set(current);
+
+            if (next.has(hteId)) {
+                next.delete(hteId);
+            } else {
+                next.add(hteId);
+            }
+
+            return next;
+        });
+    };
+
     return (
         <>
             <Head title="HTEs" />
@@ -127,7 +201,7 @@ export default function SupervisorHtes({
                     <CardContent className="flex flex-col gap-5">
                         <form
                             onSubmit={applySearch}
-                            className="flex items-end gap-2"
+                            className="flex flex-wrap items-end gap-2"
                         >
                             <div className="flex flex-col gap-1.5">
                                 <Label
@@ -142,7 +216,7 @@ export default function SupervisorHtes({
                                     onChange={(e) =>
                                         setSearch(e.target.value)
                                     }
-                                    placeholder="e.g. Acme Corporation"
+                                    placeholder="e.g. USeP"
                                     className="w-52"
                                 />
                             </div>
@@ -159,13 +233,44 @@ export default function SupervisorHtes({
                                     Clear
                                 </Button>
                             )}
+
+                            <div className="flex flex-col gap-1.5">
+                                <Label
+                                    htmlFor="status-filter"
+                                    className="text-xs text-muted-foreground"
+                                >
+                                    Status
+                                </Label>
+                                <Select
+                                    value={filters.status ?? ALL_STATUSES}
+                                    onValueChange={changeStatus}
+                                >
+                                    <SelectTrigger
+                                        id="status-filter"
+                                        className="w-36"
+                                    >
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value={ALL_STATUSES}>
+                                            All statuses
+                                        </SelectItem>
+                                        <SelectItem value="active">
+                                            Active
+                                        </SelectItem>
+                                        <SelectItem value="inactive">
+                                            Inactive
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </form>
 
                         {htes.data.length === 0 ? (
                             <p className="py-8 text-center text-sm text-muted-foreground">
                                 No HTEs match{' '}
-                                {filters.search !== ''
-                                    ? 'this search.'
+                                {filters.search !== '' || filters.status
+                                    ? 'these filters.'
                                     : 'your program yet.'}
                             </p>
                         ) : (
@@ -173,6 +278,7 @@ export default function SupervisorHtes({
                                 <table className="w-full min-w-[720px] text-sm">
                                     <thead>
                                         <tr className="border-b text-left text-muted-foreground">
+                                            <th className="w-8 py-2" />
                                             <th className="py-2 pr-4 font-medium">
                                                 Name
                                             </th>
@@ -194,40 +300,150 @@ export default function SupervisorHtes({
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {htes.data.map((hte) => (
-                                            <tr
-                                                key={hte.hte_id}
-                                                className="border-b last:border-0 hover:bg-muted/40"
-                                            >
-                                                <td className="py-2.5 pr-4 font-medium whitespace-nowrap">
-                                                    {hte.hte_name}
-                                                </td>
-                                                <td className="py-2.5 pr-4 whitespace-nowrap">
-                                                    {hte.address ?? '—'}
-                                                </td>
-                                                <td className="py-2.5 pr-4 whitespace-nowrap">
-                                                    {hte.contact_person ?? '—'}
-                                                </td>
-                                                <td className="py-2.5 pr-4 whitespace-nowrap">
-                                                    {hte.contact_number ?? '—'}
-                                                </td>
-                                                <td className="py-2.5 pr-4 whitespace-nowrap">
-                                                    <Badge
-                                                        variant={
-                                                            hte.status ===
-                                                            'active'
-                                                                ? 'default'
-                                                                : 'secondary'
+                                        {htes.data.map((hte) => {
+                                            const isExpanded =
+                                                expandedHteIds.has(
+                                                    hte.hte_id,
+                                                );
+
+                                            return (
+                                                <Fragment key={hte.hte_id}>
+                                                    <tr
+                                                        onClick={() =>
+                                                            toggleExpanded(
+                                                                hte.hte_id,
+                                                            )
+                                                        }
+                                                        className="cursor-pointer border-b last:border-0 hover:bg-muted/40"
+                                                        aria-expanded={
+                                                            isExpanded
                                                         }
                                                     >
-                                                        {hte.status}
-                                                    </Badge>
-                                                </td>
-                                                <td className="py-2.5 whitespace-nowrap">
-                                                    {hte.interns_count}
-                                                </td>
-                                            </tr>
-                                        ))}
+                                                        <td className="py-2.5 pl-1 text-muted-foreground">
+                                                            <ChevronDown
+                                                                className={`size-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                                            />
+                                                        </td>
+                                                        <td className="py-2.5 pr-4 font-medium whitespace-nowrap">
+                                                            {hte.hte_name}
+                                                        </td>
+                                                        <td className="py-2.5 pr-4 whitespace-nowrap">
+                                                            {hte.address ??
+                                                                '—'}
+                                                        </td>
+                                                        <td className="py-2.5 pr-4 whitespace-nowrap">
+                                                            {hte.contact_person ??
+                                                                '—'}
+                                                        </td>
+                                                        <td className="py-2.5 pr-4 whitespace-nowrap">
+                                                            {hte.contact_number ??
+                                                                '—'}
+                                                        </td>
+                                                        <td className="py-2.5 pr-4 whitespace-nowrap">
+                                                            <Badge
+                                                                variant={
+                                                                    hte.status ===
+                                                                    'active'
+                                                                        ? 'default'
+                                                                        : 'secondary'
+                                                                }
+                                                            >
+                                                                {hte.status}
+                                                            </Badge>
+                                                        </td>
+                                                        <td className="py-2.5 whitespace-nowrap">
+                                                            {
+                                                                hte.interns_count
+                                                            }
+                                                        </td>
+                                                    </tr>
+                                                    {isExpanded && (
+                                                        <tr className="border-b last:border-0 bg-muted/20">
+                                                            <td
+                                                                colSpan={7}
+                                                                className="px-4 py-3"
+                                                            >
+                                                                {hte.interns
+                                                                    .length ===
+                                                                0 ? (
+                                                                    <p className="text-sm text-muted-foreground">
+                                                                        No
+                                                                        interns
+                                                                        from
+                                                                        your
+                                                                        program
+                                                                        here
+                                                                        yet.
+                                                                    </p>
+                                                                ) : (
+                                                                    <table className="w-full text-sm">
+                                                                        <thead>
+                                                                            <tr className="text-left text-xs text-muted-foreground">
+                                                                                <th className="py-1 pr-4 font-medium">
+                                                                                    Name
+                                                                                </th>
+                                                                                <th className="py-1 pr-4 font-medium">
+                                                                                    Email
+                                                                                </th>
+                                                                                <th className="py-1 pr-4 font-medium">
+                                                                                    ID
+                                                                                    Number
+                                                                                </th>
+                                                                                <th className="py-1 pr-4 font-medium">
+                                                                                    Contact
+                                                                                </th>
+                                                                                <th className="py-1 font-medium">
+                                                                                    Hours
+                                                                                    Rendered
+                                                                                </th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            {hte.interns.map(
+                                                                                (
+                                                                                    intern,
+                                                                                ) => (
+                                                                                    <tr
+                                                                                        key={
+                                                                                            intern.intern_user_id
+                                                                                        }
+                                                                                        className="border-t"
+                                                                                    >
+                                                                                        <td className="py-2 pr-4 font-medium whitespace-nowrap">
+                                                                                            {
+                                                                                                intern.name
+                                                                                            }
+                                                                                        </td>
+                                                                                        <td className="py-2 pr-4 whitespace-nowrap">
+                                                                                            {
+                                                                                                intern.email
+                                                                                            }
+                                                                                        </td>
+                                                                                        <td className="py-2 pr-4 whitespace-nowrap">
+                                                                                            {intern.id_number ??
+                                                                                                '—'}
+                                                                                        </td>
+                                                                                        <td className="py-2 pr-4 whitespace-nowrap">
+                                                                                            {intern.contact_number ??
+                                                                                                '—'}
+                                                                                        </td>
+                                                                                        <td className="py-2 whitespace-nowrap">
+                                                                                            {formatLongDuration(
+                                                                                                intern.total_hours,
+                                                                                            )}
+                                                                                        </td>
+                                                                                    </tr>
+                                                                                ),
+                                                                            )}
+                                                                        </tbody>
+                                                                    </table>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </Fragment>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>

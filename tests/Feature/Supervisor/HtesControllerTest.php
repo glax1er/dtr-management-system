@@ -206,3 +206,51 @@ test('an HTE supervisor is forbidden from the OJT-only HTE roster', function () 
         ->get(route('supervisor.htes.index'))
         ->assertForbidden();
 });
+
+test('each HTE row carries its own scoped intern list for the dropdown', function () {
+    $program = Program::create(['program_name' => 'BSIT-BTM-'.uniqid()]);
+    $otherProgram = Program::create(['program_name' => 'BSCS-'.uniqid()]);
+    [$supervisor] = makeOjtSupervisorForHtesTest($program);
+
+    $hte = Hte::create(['hte_name' => 'HTE A']);
+    $intern = makeApprovedInternForHteAndProgramInHtesTest($hte, $program);
+    // A different program's intern at the same HTE shouldn't leak into
+    // this OJT supervisor's dropdown.
+    makeApprovedInternForHteAndProgramInHtesTest($hte, $otherProgram);
+
+    $this->actingAs($supervisor)
+        ->get(route('supervisor.htes.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('htes.data', 1, fn ($row) => $row
+                ->has('interns', 1, fn ($internRow) => $internRow
+                    ->where('intern_user_id', $intern->id)
+                    ->where('name', $intern->name)
+                    ->where('email', $intern->email)
+                    ->etc()
+                )
+                ->etc()
+            )
+        );
+});
+
+test('the HTE roster status filter narrows to active or inactive HTEs', function () {
+    $program = Program::create(['program_name' => 'BSIT-BTM-'.uniqid()]);
+    [$supervisor] = makeOjtSupervisorForHtesTest($program);
+
+    $activeHte = Hte::create(['hte_name' => 'Active HTE', 'status' => 'active']);
+    $inactiveHte = Hte::create(['hte_name' => 'Inactive HTE', 'status' => 'inactive']);
+    makeApprovedInternForHteAndProgramInHtesTest($activeHte, $program);
+    makeApprovedInternForHteAndProgramInHtesTest($inactiveHte, $program);
+
+    $this->actingAs($supervisor)
+        ->get(route('supervisor.htes.index', ['status' => 'inactive']))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('htes.total', 1)
+            ->has('htes.data', 1, fn ($row) => $row
+                ->where('hte_name', 'Inactive HTE')
+                ->etc()
+            )
+        );
+});
