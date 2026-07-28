@@ -75,20 +75,10 @@ export default function AdminKiosk({ kiosk }: KioskProps) {
                         </div>
 
                         <div className="flex gap-2">
-                            <Button
-                                onClick={regenerate}
-                                className="bg-amber-500 text-white border border-amber-700 hover:bg-amber-600"
-                            >
+                            <Button variant="outline" onClick={regenerate}>
                                 Regenerate Link
                             </Button>
-                            <Button
-                                onClick={toggle}
-                                className={
-                                    kiosk.is_active
-                                        ? 'bg-red-500 hover:bg-red-600 text-white border border-red-700'
-                                        : 'bg-emerald-500 hover:bg-emerald-600 text-white border border-emerald-700'
-                                }
-                            >
+                            <Button onClick={toggle}>
                                 {kiosk.is_active ? 'Disable Kiosk' : 'Enable Kiosk'}
                             </Button>
                         </div>

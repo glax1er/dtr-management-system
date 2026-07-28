@@ -31,8 +31,8 @@ interface AttendanceLogRow {
     time_out: string | null;
     hours_rendered: number;
     lunch_deducted: boolean;
-    status: 'open' | 'complete';
-    punctuality: 'on_time' | 'late';
+    status: 'open' | 'missing_time_in' | 'no_record' | 'complete';
+    punctuality: 'on_time' | 'late' | 'missing_time_in' | 'no_record';
     raw_scan_count: number;
 }
 
@@ -73,8 +73,6 @@ interface MyInternsProps {
     canGoNextMonth: boolean;
     internCount: number;
     filters: Filters;
-    supervisorType?: string;
-    isOjtSupervisor?: boolean;
     scopeName?: string;
 }
 
@@ -121,11 +119,32 @@ function formatLongTime(time: string | null): string {
         return '—';
     }
 
-    const [hours, minutes] = time.split(':').map(Number);
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const hour12 = hours % 12 === 0 ? 12 : hours % 12;
+    const trimmed = time.trim();
+    const amPmMatch = trimmed.match(
+        /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)$/i,
+    );
 
-    return `${hour12}:${String(minutes).padStart(2, '0')} ${period}`;
+    if (amPmMatch) {
+        const hours = Number.parseInt(amPmMatch[1], 10);
+        const minutes = Number.parseInt(amPmMatch[2], 10);
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const hour12 = hours % 12 === 0 ? 12 : hours % 12;
+
+        return `${hour12}:${String(minutes).padStart(2, '0')} ${period}`;
+    }
+
+    const [rawHours, rawMinutes] = trimmed
+        .split(':')
+        .map((value) => Number.parseInt(value, 10));
+
+    if (Number.isNaN(rawHours) || Number.isNaN(rawMinutes)) {
+        return '—';
+    }
+
+    const period = rawHours >= 12 ? 'PM' : 'AM';
+    const hour12 = rawHours % 12 === 0 ? 12 : rawHours % 12;
+
+    return `${hour12}:${String(rawMinutes).padStart(2, '0')} ${period}`;
 }
 
 /** 8.5 → "8 hours 30 minutes" — spelled out instead of a bare decimal
@@ -161,7 +180,6 @@ export default function MyInterns({
     canGoNextMonth,
     internCount,
     filters,
-    isOjtSupervisor = false,
     scopeName,
 }: MyInternsProps) {
     const [search, setSearch] = useState(filters.search);
@@ -172,14 +190,19 @@ export default function MyInterns({
     const hasActiveFilters = filters.search !== '' || mode === 'range';
 
     const visit = (params: Record<string, string | undefined>) => {
-        router.get('/supervisor/interns', params, { preserveState: true, preserveScroll: true });
+        router.get('/supervisor/interns', params, {
+            preserveState: true,
+            preserveScroll: true,
+        });
     };
 
     // Base params shared by every navigation action (month vs. range,
     // search, sort). Anything that changes what rows match resets back
     // to page 1 by simply omitting the page param.
     const baseParams = () => ({
-        ...(mode === 'range' ? { from: filters.from, to: filters.to } : { month: month ?? undefined }),
+        ...(mode === 'range'
+            ? { from: filters.from, to: filters.to }
+            : { month: month ?? undefined }),
         search: filters.search || undefined,
         sort: filters.sort,
         direction: filters.direction,
@@ -187,7 +210,12 @@ export default function MyInterns({
     });
 
     const goToMonth = (targetMonth: string) => {
-        visit({ ...baseParams(), from: undefined, to: undefined, month: targetMonth });
+        visit({
+            ...baseParams(),
+            from: undefined,
+            to: undefined,
+            month: targetMonth,
+        });
     };
 
     const applyRange = (e: FormEvent) => {
@@ -197,13 +225,23 @@ export default function MyInterns({
             return;
         }
 
-        visit({ ...baseParams(), from: fromDraft, to: toDraft, month: undefined });
+        visit({
+            ...baseParams(),
+            from: fromDraft,
+            to: toDraft,
+            month: undefined,
+        });
     };
 
     const clearRange = () => {
         setFromDraft('');
         setToDraft('');
-        visit({ ...baseParams(), from: undefined, to: undefined, month: undefined });
+        visit({
+            ...baseParams(),
+            from: undefined,
+            to: undefined,
+            month: undefined,
+        });
     };
 
     const applySearch = (e: FormEvent) => {
@@ -215,12 +253,18 @@ export default function MyInterns({
         setSearch('');
         setFromDraft('');
         setToDraft('');
-        visit({ sort: filters.sort, direction: filters.direction, per_page: String(filters.per_page) });
+        visit({
+            sort: filters.sort,
+            direction: filters.direction,
+            per_page: String(filters.per_page),
+        });
     };
 
     const toggleSort = (field: SortField) => {
         const direction: SortDirection =
-            filters.sort === field && filters.direction === 'asc' ? 'desc' : 'asc';
+            filters.sort === field && filters.direction === 'asc'
+                ? 'desc'
+                : 'asc';
 
         visit({ ...baseParams(), sort: field, direction });
     };
@@ -250,7 +294,9 @@ export default function MyInterns({
 
     const sortIcon = (field: SortField) => {
         if (filters.sort !== field) {
-            return <ArrowUpDown className="ml-1 inline size-3.5 text-muted-foreground" />;
+            return (
+                <ArrowUpDown className="ml-1 inline size-3.5 text-muted-foreground" />
+            );
         }
 
         return filters.direction === 'asc' ? (
@@ -269,76 +315,113 @@ export default function MyInterns({
                         My Interns
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        {isOjtSupervisor
-                            ? `Attendance log for ${internCount} intern${internCount === 1 ? '' : 's'} in the ${scopeName ?? 'selected'} program across all HTEs.`
-                            : `Attendance log for ${internCount} intern${internCount === 1 ? '' : 's'} assigned to your HTE.`}
+                        {`Attendance log for ${internCount} intern${internCount === 1 ? '' : 's'} assigned to ${scopeName ?? 'your HTE'}.`}
                     </p>
                 </div>
 
                 <Card>
-                    <CardContent className="flex flex-col gap-5 pt-6">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-end lg:justify-between">
-                            <form onSubmit={applySearch} className="flex items-end gap-2">
+                    <CardContent className="flex flex-col gap-4 pt-4 sm:pt-5">
+                        <div className="flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-end lg:gap-6">
+                            <form
+                                onSubmit={applySearch}
+                                className="flex flex-col gap-1.5 sm:flex-row sm:items-end sm:gap-2"
+                            >
                                 <div className="flex flex-col gap-1.5">
-                                    <Label htmlFor="search" className="text-xs text-muted-foreground">
+                                    <Label
+                                        htmlFor="search"
+                                        className="text-xs text-muted-foreground"
+                                    >
                                         Search by intern name
                                     </Label>
                                     <Input
                                         id="search"
                                         value={search}
-                                        onChange={(e) => setSearch(e.target.value)}
+                                        onChange={(e) =>
+                                            setSearch(e.target.value)
+                                        }
                                         placeholder="e.g. Juan Dela Cruz"
-                                        className="w-52"
+                                        className="w-full sm:w-52"
                                     />
                                 </div>
-                                <Button type="submit" variant="secondary" size="sm">
+                                <Button
+                                    type="submit"
+                                    variant="secondary"
+                                    size="sm"
+                                    className="w-full sm:w-auto"
+                                >
                                     Search
                                 </Button>
                             </form>
 
-                            <form onSubmit={applyRange} className="flex flex-wrap items-end gap-2">
+                            <form
+                                onSubmit={applyRange}
+                                className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-2"
+                            >
                                 <div className="flex flex-col gap-1.5">
-                                    <Label htmlFor="from" className="text-xs text-muted-foreground">
+                                    <Label
+                                        htmlFor="from"
+                                        className="text-xs text-muted-foreground"
+                                    >
                                         From date
                                     </Label>
                                     <Input
                                         id="from"
                                         type="date"
                                         value={fromDraft}
-                                        onChange={(e) => setFromDraft(e.target.value)}
+                                        onChange={(e) =>
+                                            setFromDraft(e.target.value)
+                                        }
                                         max={toDraft || undefined}
-                                        className="w-40"
+                                        className="w-full sm:w-40"
                                     />
                                 </div>
                                 <div className="flex flex-col gap-1.5">
-                                    <Label htmlFor="to" className="text-xs text-muted-foreground">
+                                    <Label
+                                        htmlFor="to"
+                                        className="text-xs text-muted-foreground"
+                                    >
                                         To date
                                     </Label>
                                     <Input
                                         id="to"
                                         type="date"
                                         value={toDraft}
-                                        onChange={(e) => setToDraft(e.target.value)}
+                                        onChange={(e) =>
+                                            setToDraft(e.target.value)
+                                        }
                                         min={fromDraft || undefined}
-                                        className="w-40"
+                                        className="w-full sm:w-40"
                                     />
                                 </div>
-                                <Button type="submit" size="sm" disabled={!fromDraft || !toDraft}>
+                                <Button
+                                    type="submit"
+                                    size="sm"
+                                    disabled={!fromDraft || !toDraft}
+                                    className="w-full sm:w-auto"
+                                >
                                     View date range
                                 </Button>
                             </form>
                         </div>
 
                         {hasActiveFilters && (
-                            <div className="flex items-center gap-2 border-t pt-3">
-                                <span className="text-xs text-muted-foreground">Active filters:</span>
+                            <div className="flex flex-wrap items-center gap-2 border-t pt-3">
+                                <span className="text-xs text-muted-foreground">
+                                    Active filters:
+                                </span>
                                 {filters.search !== '' && (
-                                    <Badge variant="secondary" className="font-normal">
+                                    <Badge
+                                        variant="secondary"
+                                        className="font-normal"
+                                    >
                                         Name: {filters.search}
                                     </Badge>
                                 )}
                                 {mode === 'range' && (
-                                    <Badge variant="secondary" className="font-normal">
+                                    <Badge
+                                        variant="secondary"
+                                        className="font-normal"
+                                    >
                                         {filters.from} to {filters.to}
                                     </Badge>
                                 )}
@@ -346,7 +429,12 @@ export default function MyInterns({
                                     type="button"
                                     variant="ghost"
                                     size="sm"
-                                    onClick={mode === 'range' && filters.search === '' ? clearRange : clearAllFilters}
+                                    onClick={
+                                        mode === 'range' &&
+                                        filters.search === ''
+                                            ? clearRange
+                                            : clearAllFilters
+                                    }
                                     className="h-6 px-2 text-xs text-muted-foreground"
                                 >
                                     <X className="size-3" />
@@ -360,7 +448,9 @@ export default function MyInterns({
                 {mode === 'range' && (
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-base">Accumulated Hours</CardTitle>
+                            <CardTitle className="text-base">
+                                Accumulated Hours
+                            </CardTitle>
                             <CardDescription>
                                 {formatLongDateRange(filters.from, filters.to)}
                             </CardDescription>
@@ -377,9 +467,13 @@ export default function MyInterns({
                                             key={row.intern_user_id}
                                             className="flex items-center justify-between rounded-lg border px-3 py-2.5"
                                         >
-                                            <span className="text-sm">{row.intern_name}</span>
+                                            <span className="text-sm">
+                                                {row.intern_name}
+                                            </span>
                                             <span className="text-sm font-medium text-muted-foreground">
-                                                {formatLongDuration(row.total_hours)}
+                                                {formatLongDuration(
+                                                    row.total_hours,
+                                                )}
                                             </span>
                                         </div>
                                     ))}
@@ -392,24 +486,39 @@ export default function MyInterns({
                 <Card className="flex-1">
                     <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <CardTitle className="text-base">Attendance Logs</CardTitle>
+                            <CardTitle className="text-base">
+                                Attendance Logs
+                            </CardTitle>
                             {mode === 'range' && (
                                 <CardDescription>
-                                    {formatLongDateRange(filters.from, filters.to)}
+                                    {formatLongDateRange(
+                                        filters.from,
+                                        filters.to,
+                                    )}
                                 </CardDescription>
                             )}
                         </div>
                         {mode === 'month' && month && (
                             <div className="flex items-center gap-2">
-                                <Button variant="outline" size="icon" onClick={() => goToMonth(shiftMonth(month, -1))}>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() =>
+                                        goToMonth(shiftMonth(month, -1))
+                                    }
+                                >
                                     <ChevronLeft />
                                 </Button>
-                                <span className="min-w-32 text-center text-sm font-medium">{monthLabel}</span>
+                                <span className="min-w-32 text-center text-sm font-medium">
+                                    {monthLabel}
+                                </span>
                                 <Button
                                     variant="outline"
                                     size="icon"
                                     disabled={!canGoNextMonth}
-                                    onClick={() => goToMonth(shiftMonth(month, 1))}
+                                    onClick={() =>
+                                        goToMonth(shiftMonth(month, 1))
+                                    }
                                 >
                                     <ChevronRight />
                                 </Button>
@@ -419,7 +528,8 @@ export default function MyInterns({
                     <CardContent className="flex flex-col gap-4">
                         {logs.data.length === 0 ? (
                             <p className="py-8 text-center text-sm text-muted-foreground">
-                                No attendance logs recorded for this {mode === 'month' ? 'month' : 'range'}.
+                                No attendance logs recorded for this{' '}
+                                {mode === 'month' ? 'month' : 'range'}.
                             </p>
                         ) : (
                             <div className="overflow-x-auto">
@@ -429,7 +539,9 @@ export default function MyInterns({
                                             <th className="py-2 pr-4 font-medium">
                                                 <button
                                                     type="button"
-                                                    onClick={() => toggleSort('date')}
+                                                    onClick={() =>
+                                                        toggleSort('date')
+                                                    }
                                                     className="inline-flex items-center hover:text-foreground"
                                                 >
                                                     Date {sortIcon('date')}
@@ -438,17 +550,29 @@ export default function MyInterns({
                                             <th className="py-2 pr-4 font-medium">
                                                 <button
                                                     type="button"
-                                                    onClick={() => toggleSort('name')}
+                                                    onClick={() =>
+                                                        toggleSort('name')
+                                                    }
                                                     className="inline-flex items-center hover:text-foreground"
                                                 >
                                                     Intern {sortIcon('name')}
                                                 </button>
                                             </th>
-                                            <th className="py-2 pr-4 font-medium">Time In</th>
-                                            <th className="py-2 pr-4 font-medium">Time Out</th>
-                                            <th className="py-2 pr-4 font-medium">Hours Rendered</th>
-                                            <th className="py-2 pr-4 font-medium">Lunch Deducted</th>
-                                            <th className="py-2 font-medium">Remarks</th>
+                                            <th className="py-2 pr-4 font-medium">
+                                                Time In
+                                            </th>
+                                            <th className="py-2 pr-4 font-medium">
+                                                Time Out
+                                            </th>
+                                            <th className="py-2 pr-4 font-medium">
+                                                Hours Rendered
+                                            </th>
+                                            <th className="py-2 pr-4 font-medium">
+                                                Lunch Deducted
+                                            </th>
+                                            <th className="py-2 font-medium">
+                                                Remarks
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -458,29 +582,61 @@ export default function MyInterns({
                                                 className="border-b last:border-0 hover:bg-muted/40"
                                             >
                                                 <td className="py-2.5 pr-4 whitespace-nowrap">
-                                                    {formatLongDate(log.date, log.day)}
+                                                    {formatLongDate(
+                                                        log.date,
+                                                        log.day,
+                                                    )}
                                                 </td>
-                                                <td className="py-2.5 pr-4">{log.intern_name}</td>
-                                                <td className="py-2.5 pr-4 whitespace-nowrap">{formatLongTime(log.time_in)}</td>
-                                                <td className="py-2.5 pr-4 whitespace-nowrap">{formatLongTime(log.time_out)}</td>
+                                                <td className="py-2.5 pr-4">
+                                                    {log.intern_name}
+                                                </td>
                                                 <td className="py-2.5 pr-4 whitespace-nowrap">
-                                                    {formatLongDuration(log.hours_rendered)}
+                                                    {formatLongTime(
+                                                        log.time_in,
+                                                    )}
                                                 </td>
-                                                <td className="py-2.5 pr-4">{log.lunch_deducted ? 'Yes' : 'No'}</td>
+                                                <td className="py-2.5 pr-4 whitespace-nowrap">
+                                                    {formatLongTime(
+                                                        log.time_out,
+                                                    )}
+                                                </td>
+                                                <td className="py-2.5 pr-4 whitespace-nowrap">
+                                                    {formatLongDuration(
+                                                        log.hours_rendered,
+                                                    )}
+                                                </td>
+                                                <td className="py-2.5 pr-4">
+                                                    {log.lunch_deducted
+                                                        ? 'Yes'
+                                                        : 'No'}
+                                                </td>
                                                 <td className="py-2.5">
                                                     <div className="flex flex-wrap gap-1">
-                                                        {log.punctuality === 'on_time' ? (
+                                                        {log.punctuality ===
+                                                        'on_time' ? (
                                                             <Badge className="border-transparent bg-green-600 text-white dark:bg-green-600/80">
                                                                 On Time
                                                             </Badge>
+                                                        ) : log.punctuality ===
+                                                          'missing_time_in' ? (
+                                                            <Badge variant="outline">
+                                                                Missing Time In
+                                                            </Badge>
+                                                        ) : log.punctuality ===
+                                                          'no_record' ? (
+                                                            <Badge variant="outline">
+                                                                No Record
+                                                            </Badge>
                                                         ) : (
-                                                            <Badge variant="destructive">Late</Badge>
+                                                            <Badge variant="destructive">
+                                                                Late
+                                                            </Badge>
                                                         )}
-                                                        {!log.time_in && (
-                                                            <Badge variant="outline">No time-in yet</Badge>
-                                                        )}
-                                                        {log.status === 'open' && (
-                                                            <Badge variant="outline">No time-out yet</Badge>
+                                                        {log.status ===
+                                                            'open' && (
+                                                            <Badge variant="outline">
+                                                                No time-out yet
+                                                            </Badge>
                                                         )}
                                                     </div>
                                                 </td>
@@ -495,10 +651,15 @@ export default function MyInterns({
                             <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                                     <span>
-                                        Showing {logs.from}–{logs.to} of {logs.total} entr{logs.total === 1 ? 'y' : 'ies'}
+                                        Showing {logs.from}–{logs.to} of{' '}
+                                        {logs.total} entr
+                                        {logs.total === 1 ? 'y' : 'ies'}
                                     </span>
                                     <div className="flex items-center gap-2">
-                                        <Label htmlFor="per-page" className="text-xs whitespace-nowrap">
+                                        <Label
+                                            htmlFor="per-page"
+                                            className="text-xs whitespace-nowrap"
+                                        >
                                             Rows per page
                                         </Label>
                                         <Input
@@ -508,9 +669,13 @@ export default function MyInterns({
                                             min={MIN_PER_PAGE}
                                             max={MAX_PER_PAGE}
                                             value={perPageDraft}
-                                            onChange={(e) => setPerPageDraft(e.target.value)}
+                                            onChange={(e) =>
+                                                setPerPageDraft(e.target.value)
+                                            }
                                             onBlur={commitPerPage}
-                                            onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+                                            onKeyDown={(
+                                                e: KeyboardEvent<HTMLInputElement>,
+                                            ) => {
                                                 if (e.key === 'Enter') {
                                                     e.preventDefault();
                                                     commitPerPage();
@@ -527,20 +692,27 @@ export default function MyInterns({
                                         variant="outline"
                                         size="sm"
                                         disabled={logs.current_page <= 1}
-                                        onClick={() => goToPage(logs.current_page - 1)}
+                                        onClick={() =>
+                                            goToPage(logs.current_page - 1)
+                                        }
                                     >
                                         <ChevronLeft className="size-3.5" />
                                         Previous
                                     </Button>
                                     <span className="min-w-24 text-center text-sm text-muted-foreground">
-                                        Page {logs.current_page} of {logs.last_page}
+                                        Page {logs.current_page} of{' '}
+                                        {logs.last_page}
                                     </span>
                                     <Button
                                         type="button"
                                         variant="outline"
                                         size="sm"
-                                        disabled={logs.current_page >= logs.last_page}
-                                        onClick={() => goToPage(logs.current_page + 1)}
+                                        disabled={
+                                            logs.current_page >= logs.last_page
+                                        }
+                                        onClick={() =>
+                                            goToPage(logs.current_page + 1)
+                                        }
                                     >
                                         Next
                                         <ChevronRight className="size-3.5" />

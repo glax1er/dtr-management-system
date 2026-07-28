@@ -59,4 +59,19 @@ return [
     */
     'expected_start_time' => env('DTR_EXPECTED_START_TIME', '08:00'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Time-out cutoff
+    |--------------------------------------------------------------------------
+    |
+    | If a day's *first* scan comes in after this time, it's treated as
+    | a time-out instead of a time-in — the intern forgot to scan in
+    | that morning, so there's no time-in to record for that day at all.
+    | Same "hardcoded for now, one-line change later" pattern as the
+    | lunch window above.
+    |
+    */
+    'time_out_cutoff' => env('DTR_TIME_OUT_CUTOFF', '13:00'),
+
+
 ];

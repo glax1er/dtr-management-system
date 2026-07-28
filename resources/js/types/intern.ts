@@ -18,7 +18,7 @@ export type TodayAttendance = {
     date: string;
     time_in: string | null;
     time_out: string | null;
-    status: 'not_started' | 'open' | 'complete';
+    status: 'not_started' | 'open' | 'missing_time_in' | 'complete';
 };
 
 export type HoursSummary = {
@@ -30,12 +30,18 @@ export type HoursSummary = {
 export type AttendanceDay = {
     date: string;
     day: string;
-    time_in: string;
+    time_in: string | null;
     time_out: string | null;
     hours_rendered: number;
     lunch_deducted: boolean;
-    status: 'open' | 'complete';
+    status: 'open' | 'missing_time_in' | 'no_record' | 'complete';
     raw_scan_count: number;
+    /**
+     * A pending resolution ticket's id, if one already exists for this
+     * date — null otherwise. Drives whether the row shows "Request
+     * Resolution" or a "Pending" state with a cancel option.
+     */
+    pending_ticket_id: number | null;
 };
 
 export type InternDashboardProps = {
