@@ -29,8 +29,7 @@ const adminNavItems: NavItem[] = [
 // page and there's no Dashboard link to show.
 const hteSupervisorNavItems: NavItem[] = [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
-    { title: 'My Interns', href: '/supervisor/interns', icon: GraduationCap },
-    { title: 'DTR Approvals', href: '/supervisor/approvals', icon: ClipboardCheck },
+    { title: 'My Interns', href: '/supervisor/interns', icon: GraduationCap },    
 ];
 
 const ojtSupervisorNavItems: NavItem[] = [

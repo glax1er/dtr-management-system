@@ -3,12 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent, KeyboardEvent } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -178,74 +173,82 @@ export default function MyStudents({
                     <CardContent className="flex flex-col gap-5">
                         <form
                             onSubmit={applySearch}
-                            className="flex items-end gap-2"
+                            className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between"
                         >
-                            <div className="flex flex-col gap-1.5">
-                                <Label
-                                    htmlFor="search"
-                                    className="text-xs text-muted-foreground"
-                                >
-                                    Search by name
-                                </Label>
-                                <Input
-                                    id="search"
-                                    value={search}
-                                    onChange={(e) =>
-                                        setSearch(e.target.value)
-                                    }
-                                    placeholder="e.g. Juan Dela Cruz"
-                                    className="w-52"
-                                />
-                            </div>
-                            <Button type="submit" variant="secondary" size="sm">
-                                Search
-                            </Button>
-                            {filters.search !== '' && (
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={clearSearch}
-                                >
-                                    Clear
-                                </Button>
-                            )}
-
-                            <div className="flex flex-col gap-1.5">
-                                <Label
-                                    htmlFor="hte-filter"
-                                    className="text-xs text-muted-foreground"
-                                >
-                                    Assigned HTE
-                                </Label>
-                                <Select
-                                    value={
-                                        filters.hte_id
-                                            ? String(filters.hte_id)
-                                            : ALL_HTES
-                                    }
-                                    onValueChange={changeHte}
-                                >
-                                    <SelectTrigger
-                                        id="hte-filter"
-                                        className="w-48"
+                            <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
+                                <div className="flex flex-col gap-1.5">
+                                    <Label
+                                        htmlFor="search"
+                                        className="text-xs text-muted-foreground"
                                     >
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value={ALL_HTES}>
-                                            All HTEs
-                                        </SelectItem>
-                                        {hteOptions.map((hte) => (
-                                            <SelectItem
-                                                key={hte.hte_id}
-                                                value={String(hte.hte_id)}
+                                        Search by name
+                                    </Label>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            id="search"
+                                            value={search}
+                                            onChange={(e) =>
+                                                setSearch(e.target.value)
+                                            }
+                                            placeholder="e.g. Juan Dela Cruz"
+                                            className="w-full sm:w-52"
+                                        />
+                                        <Button
+                                            type="submit"
+                                            variant="secondary"
+                                            size="sm"
+                                        >
+                                            Search
+                                        </Button>
+                                        {filters.search !== '' && (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={clearSearch}
                                             >
-                                                {hte.hte_name}
+                                                Clear
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col gap-1.5">
+                                    <Label
+                                        htmlFor="hte-filter"
+                                        className="text-xs text-muted-foreground"
+                                    >
+                                        Assigned HTE
+                                    </Label>
+                                    <Select
+                                        value={
+                                            filters.hte_id
+                                                ? String(filters.hte_id)
+                                                : ALL_HTES
+                                        }
+                                        onValueChange={changeHte}
+                                    >
+                                        <SelectTrigger
+                                            id="hte-filter"
+                                            className="w-full sm:w-48"
+                                        >
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value={ALL_HTES}>
+                                                All HTEs
                                             </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                            {hteOptions.map((hte) => (
+                                                <SelectItem
+                                                    key={hte.hte_id}
+                                                    value={String(hte.hte_id)}
+                                                >
+                                                    {hte.hte_name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
                         </form>
 
@@ -258,7 +261,7 @@ export default function MyStudents({
                             </p>
                         ) : (
                             <div className="overflow-x-auto">
-                                <table className="w-full min-w-[720px] text-sm">
+                                <table className="w-full text-sm">
                                     <thead>
                                         <tr className="border-b text-left text-muted-foreground">
                                             <th className="py-2 pr-4 font-medium">
@@ -290,16 +293,23 @@ export default function MyStudents({
                                                 <td className="py-2.5 pr-4 font-medium whitespace-nowrap">
                                                     {student.name}
                                                 </td>
-                                                <td className="py-2.5 pr-4 whitespace-nowrap">
+                                                <td
+                                                    className="max-w-[160px] truncate py-2.5 pr-4"
+                                                    title={student.email}
+                                                >
                                                     {student.email}
                                                 </td>
                                                 <td className="py-2.5 pr-4 whitespace-nowrap">
                                                     {student.id_number ?? '—'}
                                                 </td>
                                                 <td className="py-2.5 pr-4 whitespace-nowrap">
-                                                    {student.contact_number ?? '—'}
+                                                    {student.contact_number ??
+                                                        '—'}
                                                 </td>
-                                                <td className="py-2.5 pr-4 whitespace-nowrap">
+                                                <td
+                                                    className="max-w-[140px] truncate py-2.5 pr-4"
+                                                    title={student.hte_name}
+                                                >
                                                     {student.hte_name}
                                                 </td>
                                                 <td className="py-2.5 whitespace-nowrap">
@@ -318,8 +328,8 @@ export default function MyStudents({
                             <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                                     <span>
-                                        Showing {students.from}–{students.to}{' '}
-                                        of {students.total} intern
+                                        Showing {students.from}–{students.to} of{' '}
+                                        {students.total} intern
                                         {students.total === 1 ? '' : 's'}
                                     </span>
                                     <div className="flex items-center gap-2">

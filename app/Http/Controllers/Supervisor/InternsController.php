@@ -58,7 +58,9 @@ class InternsController extends Controller
         $search = trim($validated['search'] ?? '');
         $hteId = $validated['hte_id'] ?? null;
 
-        $internsQuery = $supervisorProfile->getAssignedInterns()->with('user', 'hte');
+        $internsQuery = $supervisorProfile->getAssignedInterns()
+        ->where('status', 'approved')
+        ->with('user', 'hte');
 
         if ($search !== '') {
             $internsQuery->whereHas('user', fn ($query) => $query->where('name', 'like', "%{$search}%"));

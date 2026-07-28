@@ -120,7 +120,9 @@ function formatLongTime(time: string | null): string {
     }
 
     const trimmed = time.trim();
-    const amPmMatch = trimmed.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)$/i);
+    const amPmMatch = trimmed.match(
+        /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)$/i,
+    );
 
     if (amPmMatch) {
         const hours = Number.parseInt(amPmMatch[1], 10);
@@ -131,7 +133,9 @@ function formatLongTime(time: string | null): string {
         return `${hour12}:${String(minutes).padStart(2, '0')} ${period}`;
     }
 
-    const [rawHours, rawMinutes] = trimmed.split(':').map((value) => Number.parseInt(value, 10));
+    const [rawHours, rawMinutes] = trimmed
+        .split(':')
+        .map((value) => Number.parseInt(value, 10));
 
     if (Number.isNaN(rawHours) || Number.isNaN(rawMinutes)) {
         return '—';
@@ -316,11 +320,11 @@ export default function MyInterns({
                 </div>
 
                 <Card>
-                    <CardContent className="flex flex-col gap-5 pt-6">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-end lg:justify-between">
+                    <CardContent className="flex flex-col gap-4 pt-4 sm:pt-5">
+                        <div className="flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-end lg:gap-6">
                             <form
                                 onSubmit={applySearch}
-                                className="flex items-end gap-2"
+                                className="flex flex-col gap-1.5 sm:flex-row sm:items-end sm:gap-2"
                             >
                                 <div className="flex flex-col gap-1.5">
                                     <Label
@@ -336,13 +340,14 @@ export default function MyInterns({
                                             setSearch(e.target.value)
                                         }
                                         placeholder="e.g. Juan Dela Cruz"
-                                        className="w-52"
+                                        className="w-full sm:w-52"
                                     />
                                 </div>
                                 <Button
                                     type="submit"
                                     variant="secondary"
                                     size="sm"
+                                    className="w-full sm:w-auto"
                                 >
                                     Search
                                 </Button>
@@ -350,7 +355,7 @@ export default function MyInterns({
 
                             <form
                                 onSubmit={applyRange}
-                                className="flex flex-wrap items-end gap-2"
+                                className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-2"
                             >
                                 <div className="flex flex-col gap-1.5">
                                     <Label
@@ -367,7 +372,7 @@ export default function MyInterns({
                                             setFromDraft(e.target.value)
                                         }
                                         max={toDraft || undefined}
-                                        className="w-40"
+                                        className="w-full sm:w-40"
                                     />
                                 </div>
                                 <div className="flex flex-col gap-1.5">
@@ -385,13 +390,14 @@ export default function MyInterns({
                                             setToDraft(e.target.value)
                                         }
                                         min={fromDraft || undefined}
-                                        className="w-40"
+                                        className="w-full sm:w-40"
                                     />
                                 </div>
                                 <Button
                                     type="submit"
                                     size="sm"
                                     disabled={!fromDraft || !toDraft}
+                                    className="w-full sm:w-auto"
                                 >
                                     View date range
                                 </Button>
@@ -399,7 +405,7 @@ export default function MyInterns({
                         </div>
 
                         {hasActiveFilters && (
-                            <div className="flex items-center gap-2 border-t pt-3">
+                            <div className="flex flex-wrap items-center gap-2 border-t pt-3">
                                 <span className="text-xs text-muted-foreground">
                                     Active filters:
                                 </span>

@@ -48,7 +48,7 @@ export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
         <>
             <Head title="Resolution Tickets" />
 
-            <div className="flex flex-1 flex-col gap-4 p-4">
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl px-3 py-4 sm:p-6">
                 <div>
                     <h1 className="text-2xl font-semibold">Resolution Tickets</h1>
                     <p className="text-muted-foreground">
