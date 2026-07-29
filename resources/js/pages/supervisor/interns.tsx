@@ -567,9 +567,6 @@ export default function MyInterns({
                                             <th className="py-2 pr-4 font-medium">
                                                 Hours Rendered
                                             </th>
-                                            <th className="py-2 pr-4 font-medium">
-                                                Lunch Deducted
-                                            </th>
                                             <th className="py-2 font-medium">
                                                 Remarks
                                             </th>
@@ -604,11 +601,6 @@ export default function MyInterns({
                                                     {formatLongDuration(
                                                         log.hours_rendered,
                                                     )}
-                                                </td>
-                                                <td className="py-2.5 pr-4">
-                                                    {log.lunch_deducted
-                                                        ? 'Yes'
-                                                        : 'No'}
                                                 </td>
                                                 <td className="py-2.5">
                                                     <div className="flex flex-wrap gap-1">
