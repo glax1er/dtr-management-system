@@ -164,7 +164,7 @@ export function ResolutionRequestDialog({
                             </DialogDescription>
                         </DialogHeader>
 
-                        <div className="space-y-2 text-sm">
+                        <div className="min-w-0 space-y-2 text-sm">
                             <div className="flex justify-between gap-4">
                                 <span className="shrink-0 text-muted-foreground">Date</span>
                                 <span className="min-w-0 text-right break-words">
@@ -183,9 +183,9 @@ export function ResolutionRequestDialog({
                                     {needsTimeOut ? form.data.proposed_time_out : (existingTimeOut ?? '—')}
                                 </span>
                             </div>
-                            <div className="border-t pt-2">
+                            <div className="min-w-0 border-t pt-2">
                                 <span className="text-muted-foreground">Reason</span>
-                                <p className="mt-1 break-words">{form.data.reason}</p>
+                                <p className="mt-1 min-w-0 break-all">{form.data.reason}</p>
                             </div>
                         </div>
 
