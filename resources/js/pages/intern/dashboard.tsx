@@ -139,26 +139,32 @@ export default function InternDashboard({
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">
+                            <div className="flex justify-between gap-4">
+                                <span className="shrink-0 text-muted-foreground">
                                     Email
                                 </span>
-                                <span>{profile.email}</span>
+                                <span className="min-w-0 text-right break-words">
+                                    {profile.email}
+                                </span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">
+                            <div className="flex justify-between gap-4">
+                                <span className="shrink-0 text-muted-foreground">
                                     HTE
                                 </span>
-                                <span>{profile.hte_name}</span>
+                                <span className="min-w-0 text-right break-words">
+                                    {profile.hte_name}
+                                </span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">
+                            <div className="flex justify-between gap-4">
+                                <span className="shrink-0 text-muted-foreground">
                                     Program
                                 </span>
-                                <span>{profile.program_name}</span>
+                                <span className="min-w-0 text-right break-words">
+                                    {profile.program_name}
+                                </span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">
+                            <div className="flex justify-between gap-4">
+                                <span className="shrink-0 text-muted-foreground">
                                     Status
                                 </span>
                                 <Badge
@@ -178,20 +184,20 @@ export default function InternDashboard({
                                     Today &middot; {today.date}
                                 </p>
                                 <div className="space-y-2">
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">
+                                    <div className="flex justify-between gap-4">
+                                        <span className="shrink-0 text-muted-foreground">
                                             Time In
                                         </span>
-                                        <span>{today.time_in ?? '—'}</span>
+                                        <span className="min-w-0 text-right break-words">{today.time_in ?? '—'}</span>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">
+                                    <div className="flex justify-between gap-4">
+                                        <span className="shrink-0 text-muted-foreground">
                                             Time Out
                                         </span>
-                                        <span>{today.time_out ?? '—'}</span>
+                                        <span className="min-w-0 text-right break-words">{today.time_out ?? '—'}</span>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">
+                                    <div className="flex justify-between gap-4">
+                                        <span className="shrink-0 text-muted-foreground">
                                             Status
                                         </span>
                                         <Badge
@@ -277,7 +283,7 @@ export default function InternDashboard({
 
                 {/* Full attendance log, now full width on its own row */}
                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between gap-2">
+                    <CardHeader className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-2">
                             <Button
                                 variant="outline"
@@ -298,7 +304,7 @@ export default function InternDashboard({
                                 <ChevronRight />
                             </Button>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-3">
                             <span className="text-sm text-muted-foreground">
                                 Total:{' '}
                                 <span className="font-medium text-foreground tabular-nums">
