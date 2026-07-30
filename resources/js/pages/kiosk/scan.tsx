@@ -51,6 +51,9 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
     const scannerRef = useRef<Html5Qrcode | null>(null);
     const inFlightRef = useRef(false);
     const lastProcessedRef = useRef<{ value: string; at: number } | null>(null);
+    // ADDED — monotonically increasing ID; only the response matching the
+    // most recent request is ever allowed to update the screen
+    const requestSeqRef = useRef(0);
     const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const audioRef = useRef<{ [key: string]: HTMLAudioElement }>({});
 
@@ -134,8 +137,11 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
             return;
         }
 
-        inFlightRef.current = true;
+inFlightRef.current = true;
         lastProcessedRef.current = { value: qrCodeValue, at: now };
+
+        // ADDED — this request's own sequence number, captured at send time
+        const mySeq = ++requestSeqRef.current;
 
         fetch(`/kiosk/${token}/scan`, {
             method: 'POST',
@@ -145,6 +151,10 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
         })
             .then(async (response) => {
                 const data = await response.json();
+
+                // ADDED — a newer scan has already started since this one
+                // was sent; this response is stale, ignore it entirely
+                if (mySeq !== requestSeqRef.current) return;
 
                 if (!response.ok) {
                     setFlash({ kind: 'error', message: data.message ?? 'Scan rejected.' });
@@ -178,6 +188,9 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                 speakAnnouncement(internData);
             })
             .catch(() => {
+                // ADDED — same staleness check for the error path
+                if (mySeq !== requestSeqRef.current) return;
+
                 setFlash({
                     kind: 'error',
                     message: 'Could not reach the server. Check your connection and try again.',
@@ -185,6 +198,11 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
             })
             .finally(() => {
                 inFlightRef.current = false;
+
+                // ADDED — only this (still-latest) request gets to manage
+                // the auto-clear timer; a stale one shouldn't reset it
+                if (mySeq !== requestSeqRef.current) return;
+
                 if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
                 flashTimerRef.current = setTimeout(() => {
                     setFlash(null);

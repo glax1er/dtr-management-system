@@ -533,7 +533,7 @@ export default function MyInterns({
                             </p>
                         ) : (
                             <div className="overflow-x-auto">
-                                <table className="w-full min-w-[760px] text-sm">
+                                <table className="w-full min-w-190 text-sm">
                                     <thead>
                                         <tr className="border-b text-left text-muted-foreground">
                                             <th className="py-2 pr-4 font-medium">
@@ -681,7 +681,7 @@ export default function MyInterns({
                                                     commitPerPage();
                                                 }
                                             }}
-                                            className="h-8 w-[4.5rem]"
+                                            className="h-8 w-18"
                                         />
                                     </div>
                                 </div>
