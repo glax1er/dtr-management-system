@@ -279,98 +279,101 @@ export default function MyInterns({
         <>
             <Head title="My Interns" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl px-3 py-4 sm:p-6">
-                <div>
-                    <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-                        My Interns
-                    </h1>
-                    <p className="text-sm text-muted-foreground">
-                        {`Attendance log for ${internCount} intern${internCount === 1 ? '' : 's'} assigned to ${scopeName ?? 'your HTE'}.`}
-                    </p>
-                </div>
-
                 <Card>
                     <CardContent className="flex flex-col gap-4 pt-4 sm:pt-5">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-end lg:gap-6">
-                            <form
-                                onSubmit={applySearch}
-                                className="flex flex-col gap-1.5 sm:flex-row sm:items-end sm:gap-2"
-                            >
-                                <div className="flex flex-col gap-1.5">
-                                    <Label
-                                        htmlFor="search"
-                                        className="text-xs text-muted-foreground"
-                                    >
-                                        Search by intern name
-                                    </Label>
-                                    <Input
-                                        id="search"
-                                        value={search}
-                                        onChange={(e) =>
-                                            setSearch(e.target.value)
-                                        }
-                                        placeholder="e.g. Juan Dela Cruz"
-                                        className="w-full sm:w-52"
-                                    />
-                                </div>
-                                <Button
-                                    type="submit"
-                                    variant="secondary"
-                                    size="sm"
-                                    className="w-full sm:w-auto"
-                                >
-                                    Search
-                                </Button>
-                            </form>
+                        {/* CHANGED — title now shares a row with the filter controls */}
+                        <div className="flex flex-wrap justify-between gap-4">
+                            <div>
+                                <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                                    My Interns
+                                </h1>
+                                <p className="text-sm text-muted-foreground">
+                                    {`Attendance log for ${internCount} intern${internCount === 1 ? '' : 's'} assigned to ${scopeName ?? 'your HTE'}.`}
+                                </p>
+                            </div>
 
-                            <form
-                                onSubmit={applyRange}
-                                className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-2"
-                            >
-                                <div className="flex flex-col gap-1.5">
-                                    <Label
-                                        htmlFor="from"
-                                        className="text-xs text-muted-foreground"
-                                    >
-                                        From date
-                                    </Label>
-                                    <Input
-                                        id="from"
-                                        type="date"
-                                        value={fromDraft}
-                                        onChange={(e) =>
-                                            setFromDraft(e.target.value)
-                                        }
-                                        max={toDraft || undefined}
-                                        className="w-full sm:w-40"
-                                    />
-                                </div>
-                                <div className="flex flex-col gap-1.5">
-                                    <Label
-                                        htmlFor="to"
-                                        className="text-xs text-muted-foreground"
-                                    >
-                                        To date
-                                    </Label>
-                                    <Input
-                                        id="to"
-                                        type="date"
-                                        value={toDraft}
-                                        onChange={(e) =>
-                                            setToDraft(e.target.value)
-                                        }
-                                        min={fromDraft || undefined}
-                                        className="w-full sm:w-40"
-                                    />
-                                </div>
-                                <Button
-                                    type="submit"
-                                    size="sm"
-                                    disabled={!fromDraft || !toDraft}
-                                    className="w-full sm:w-auto"
+                            <div className="flex flex-wrap items-end gap-4">
+                                <form
+                                    onSubmit={applySearch}
+                                    className="flex flex-wrap items-end gap-2"
                                 >
-                                    View date range
-                                </Button>
-                            </form>
+                                    <div className="flex flex-col gap-1.5">
+                                        <Label
+                                            htmlFor="search"
+                                            className="text-xs text-muted-foreground"
+                                        >
+                                            Search by intern name
+                                        </Label>
+                                        <Input
+                                            id="search"
+                                            value={search}
+                                            onChange={(e) =>
+                                                setSearch(e.target.value)
+                                            }
+                                            placeholder="e.g. Juan Dela Cruz"
+                                            className="w-full sm:w-52"
+                                        />
+                                    </div>
+                                    <Button
+                                        type="submit"
+                                        variant="secondary"
+                                        size="sm"
+                                        className="w-full sm:w-auto"
+                                    >
+                                        Search
+                                    </Button>
+                                </form>
+
+                                <form
+                                    onSubmit={applyRange}
+                                    className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-2"
+                                >
+                                    <div className="flex flex-col gap-1.5">
+                                        <Label
+                                            htmlFor="from"
+                                            className="text-xs text-muted-foreground"
+                                        >
+                                            From date
+                                        </Label>
+                                        <Input
+                                            id="from"
+                                            type="date"
+                                            value={fromDraft}
+                                            onChange={(e) =>
+                                                setFromDraft(e.target.value)
+                                            }
+                                            max={toDraft || undefined}
+                                            className="w-full sm:w-40"
+                                        />
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <Label
+                                            htmlFor="to"
+                                            className="text-xs text-muted-foreground"
+                                        >
+                                            To date
+                                        </Label>
+                                        <Input
+                                            id="to"
+                                            type="date"
+                                            value={toDraft}
+                                            onChange={(e) =>
+                                                setToDraft(e.target.value)
+                                            }
+                                            min={fromDraft || undefined}
+                                            className="w-full sm:w-40"
+                                        />
+                                    </div>
+                                    <Button
+                                        type="submit"
+                                        size="sm"
+                                        disabled={!fromDraft || !toDraft}
+                                        className="w-full sm:w-auto"
+                                    >
+                                        View date range
+                                    </Button>
+                                </form>
+                            </div>
                         </div>
 
                         {hasActiveFilters && (
@@ -411,46 +414,48 @@ export default function MyInterns({
                                 </Button>
                             </div>
                         )}
+
+                        {/* CHANGED — Accumulated Hours now lives inside this
+                            same card instead of a separate one below */}
+                        {mode === 'range' && (
+                            <div className="border-t pt-4">
+                                <p className="text-sm font-medium">
+                                    Accumulated Hours
+                                </p>
+                                <p className="mb-3 text-xs text-muted-foreground">
+                                    {formatLongDateRange(
+                                        filters.from,
+                                        filters.to,
+                                    )}
+                                </p>
+
+                                {accumulatedHours.length === 0 ? (
+                                    <p className="py-4 text-center text-sm text-muted-foreground">
+                                        No interns match the current filter.
+                                    </p>
+                                ) : (
+                                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                                        {accumulatedHours.map((row) => (
+                                            <div
+                                                key={row.intern_user_id}
+                                                className="flex items-center justify-between rounded-lg border px-3 py-2.5"
+                                            >
+                                                <span className="text-sm">
+                                                    {row.intern_name}
+                                                </span>
+                                                <span className="text-sm font-medium text-muted-foreground">
+                                                    {formatLongDuration(
+                                                        row.total_hours,
+                                                    )}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
-
-                {mode === 'range' && (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-base">
-                                Accumulated Hours
-                            </CardTitle>
-                            <CardDescription>
-                                {formatLongDateRange(filters.from, filters.to)}
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            {accumulatedHours.length === 0 ? (
-                                <p className="py-4 text-center text-sm text-muted-foreground">
-                                    No interns match the current filter.
-                                </p>
-                            ) : (
-                                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                                    {accumulatedHours.map((row) => (
-                                        <div
-                                            key={row.intern_user_id}
-                                            className="flex items-center justify-between rounded-lg border px-3 py-2.5"
-                                        >
-                                            <span className="text-sm">
-                                                {row.intern_name}
-                                            </span>
-                                            <span className="text-sm font-medium text-muted-foreground">
-                                                {formatLongDuration(
-                                                    row.total_hours,
-                                                )}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                )}
 
                 <Card className="flex-1">
                     <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
