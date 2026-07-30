@@ -112,39 +112,8 @@ function formatLongDateRange(from: string, to: string): string {
     return `${formatMonthDayYear(from)} – ${formatMonthDayYear(to)}`;
 }
 
-/** "08:03:00" → "8:03 AM" — a 12-hour clock reads faster than 24-hour
- * time with seconds most people never need. */
 function formatLongTime(time: string | null): string {
-    if (!time) {
-        return '—';
-    }
-
-    const trimmed = time.trim();
-    const amPmMatch = trimmed.match(
-        /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)$/i,
-    );
-
-    if (amPmMatch) {
-        const hours = Number.parseInt(amPmMatch[1], 10);
-        const minutes = Number.parseInt(amPmMatch[2], 10);
-        const period = hours >= 12 ? 'PM' : 'AM';
-        const hour12 = hours % 12 === 0 ? 12 : hours % 12;
-
-        return `${hour12}:${String(minutes).padStart(2, '0')} ${period}`;
-    }
-
-    const [rawHours, rawMinutes] = trimmed
-        .split(':')
-        .map((value) => Number.parseInt(value, 10));
-
-    if (Number.isNaN(rawHours) || Number.isNaN(rawMinutes)) {
-        return '—';
-    }
-
-    const period = rawHours >= 12 ? 'PM' : 'AM';
-    const hour12 = rawHours % 12 === 0 ? 12 : rawHours % 12;
-
-    return `${hour12}:${String(rawMinutes).padStart(2, '0')} ${period}`;
+    return time ? time.trim() : '—';
 }
 
 /** 8.5 → "8 hours 30 minutes" — spelled out instead of a bare decimal
