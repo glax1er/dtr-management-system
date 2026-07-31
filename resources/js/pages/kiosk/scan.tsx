@@ -285,23 +285,24 @@ inFlightRef.current = true;
                                 </div>
 
                                 <div className="space-y-2 border-t border-white/10 pt-4 text-base">
-                                    <div className="flex justify-between">
-                                        <span className="text-white/50">Program</span>
-                                        <span>{lastIntern.programName}</span>
+                                    <div className="flex justify-between gap-4">
+                                        <span className="shrink-0 text-white/50">Program</span>
+                                        <span className="min-w-0 text-right break-words">{lastIntern.programName}</span>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-white/50">HTE</span>
-                                        <span>{lastIntern.hteName}</span>
+                                    <div className="flex justify-between gap-4">
+                                        <span className="shrink-0 text-white/50">HTE</span>
+                                        <span className="min-w-0 text-right break-words">{lastIntern.hteName}</span>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-white/50">Status</span>
+                                    <div className="flex justify-between gap-4">
+                                        <span className="shrink-0 text-white/50">Status</span>
                                         <span
                                             className={
-                                                lastIntern.isDuplicate
+                                                'min-w-0 text-right break-words ' +
+                                                (lastIntern.isDuplicate
                                                     ? 'font-medium text-red-500'
                                                     : lastIntern.label === 'time_in'
                                                       ? 'font-medium text-emerald-400'
-                                                      : 'font-medium text-amber-400'
+                                                      : 'font-medium text-amber-400')
                                             }
                                         >
                                             {lastIntern.isDuplicate
@@ -311,9 +312,9 @@ inFlightRef.current = true;
                                                   : 'Timed Out'}
                                         </span>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-white/50">Time</span>
-                                        <span>{formatTime(lastIntern.timestamp)}</span>
+                                    <div className="flex justify-between gap-4">
+                                        <span className="shrink-0 text-white/50">Time</span>
+                                        <span className="min-w-0 text-right break-words">{formatTime(lastIntern.timestamp)}</span>
                                     </div>
                                     {lastIntern.isDuplicate && (
                                         <p className="pt-2 text-center text-sm text-red-500">

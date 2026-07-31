@@ -102,9 +102,9 @@ export function ResolutionRequestDialog({
                                     <InputError message={form.errors.proposed_time_in} />
                                 </div>
                             ) : (
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">Time In (already recorded)</span>
-                                    <span>{existingTimeIn ?? '—'}</span>
+                                <div className="flex justify-between gap-4 text-sm">
+                                    <span className="shrink-0 text-muted-foreground">Time In (already recorded)</span>
+                                    <span className="min-w-0 text-right break-words">{existingTimeIn ?? '—'}</span>
                                 </div>
                             )}
 
@@ -120,9 +120,9 @@ export function ResolutionRequestDialog({
                                     <InputError message={form.errors.proposed_time_out} />
                                 </div>
                             ) : (
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">Time Out (already recorded)</span>
-                                    <span>{existingTimeOut ?? '—'}</span>
+                                <div className="flex justify-between gap-4 text-sm">
+                                    <span className="shrink-0 text-muted-foreground">Time Out (already recorded)</span>
+                                    <span className="min-w-0 text-right break-words">{existingTimeOut ?? '—'}</span>
                                 </div>
                             )}
 
@@ -164,24 +164,28 @@ export function ResolutionRequestDialog({
                             </DialogDescription>
                         </DialogHeader>
 
-                        <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Date</span>
-                                <span>
+                        <div className="min-w-0 space-y-2 text-sm">
+                            <div className="flex justify-between gap-4">
+                                <span className="shrink-0 text-muted-foreground">Date</span>
+                                <span className="min-w-0 text-right break-words">
                                     {day}, {date}
                                 </span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Time In</span>
-                                <span>{needsTimeIn ? form.data.proposed_time_in : (existingTimeIn ?? '—')}</span>
+                            <div className="flex justify-between gap-4">
+                                <span className="shrink-0 text-muted-foreground">Time In</span>
+                                <span className="min-w-0 text-right break-words">
+                                    {needsTimeIn ? form.data.proposed_time_in : (existingTimeIn ?? '—')}
+                                </span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Time Out</span>
-                                <span>{needsTimeOut ? form.data.proposed_time_out : (existingTimeOut ?? '—')}</span>
+                            <div className="flex justify-between gap-4">
+                                <span className="shrink-0 text-muted-foreground">Time Out</span>
+                                <span className="min-w-0 text-right break-words">
+                                    {needsTimeOut ? form.data.proposed_time_out : (existingTimeOut ?? '—')}
+                                </span>
                             </div>
-                            <div className="border-t pt-2">
+                            <div className="min-w-0 border-t pt-2">
                                 <span className="text-muted-foreground">Reason</span>
-                                <p className="mt-1">{form.data.reason}</p>
+                                <p className="mt-1 min-w-0 break-all">{form.data.reason}</p>
                             </div>
                         </div>
 
