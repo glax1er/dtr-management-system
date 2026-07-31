@@ -162,6 +162,7 @@ class InternsController extends Controller
         $search = trim($validated['search'] ?? '');
 
         $internsQuery = $supervisorProfile->getAssignedInterns()
+            ->where('status', 'approved')
             ->with('user', 'hte', 'program');
 
         if ($search !== '') {
