@@ -18,19 +18,48 @@ use Inertia\Response;
 
 class SupervisorController extends Controller
 {
-    public function index(): Response
+    private const DEFAULT_PER_PAGE = 10;
+
+    private const MAX_PER_PAGE = 100;
+
+    public function index(Request $request): Response
     {
-        $supervisors = SupervisorProfile::query()
-            ->with(['user:id,name,email', 'hte:hte_id,hte_name', 'program:program_id,program_name'])
-            ->get()
-            ->map(fn (SupervisorProfile $profile) => [
+        $validated = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'type' => ['nullable', 'in:hte,ojt'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:' . self::MAX_PER_PAGE],
+        ]);
+
+        $search = trim($validated['search'] ?? '');
+        $type = $validated['type'] ?? null;
+        $perPage = (int) ($validated['per_page'] ?? self::DEFAULT_PER_PAGE);
+
+        $query = SupervisorProfile::query()
+            ->with(['user:id,name,email', 'hte:hte_id,hte_name', 'program:program_id,program_name']);
+
+        if ($search !== '') {
+            $query->whereHas(
+                'user',
+                fn ($q) => $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%"),
+            );
+        }
+
+        if ($type !== null) {
+            $query->where('supervisor_type', $type);
+        }
+
+        $supervisors = $query
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage, ['*'], 'page', $validated['page'] ?? 1)
+            ->withQueryString()
+            ->through(fn (SupervisorProfile $profile) => [
                 'user_id' => $profile->user_id,
                 'name' => $profile->user->name,
                 'email' => $profile->user->email,
                 'supervisor_type' => $profile->supervisor_type,
                 'scope_name' => $profile->getScopeName(),
-                'hte_name' => $profile->hte?->hte_name,
-                'program_name' => $profile->program?->program_name,
                 'status' => $profile->status,
             ]);
 
@@ -38,6 +67,11 @@ class SupervisorController extends Controller
             'supervisors' => $supervisors,
             'htes' => Hte::where('status', 'active')->orderBy('hte_name')->get(['hte_id', 'hte_name']),
             'programs' => Program::where('is_active', true)->orderBy('program_name')->get(['program_id', 'program_name']),
+            'filters' => [
+                'search' => $search,
+                'type' => $type,
+                'per_page' => $perPage,
+            ],
         ]);
     }
 
