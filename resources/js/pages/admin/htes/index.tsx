@@ -200,7 +200,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                     id="hte-search"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="e.g. USeP"
+                                    placeholder="e.g. Acme Corporation"
                                     className="w-full sm:w-64"
                                 />
                             </div>
@@ -221,53 +221,83 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                 No HTEs match{filters.search !== '' ? ' this search.' : ' yet.'}
                             </p>
                         ) : (
-                            <div className="flex flex-col gap-3">
-                                {htes.data.map((hte) => (
-                                    <div
-                                        key={hte.hte_id}
-                                        className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
-                                    >
-                                        <div className="min-w-0">
-                                            <p className="truncate font-medium">{hte.hte_name}</p>
-                                            <p className="text-muted-foreground truncate text-sm">
-                                                {hte.address ?? 'No address'}
-                                                {hte.contact_number && ` · ${hte.contact_number}`}
-                                            </p>
-                                            <p className="text-muted-foreground truncate text-xs">
-                                                Contact: {hte.contact_person ?? 'No supervisor assigned yet'}
-                                            </p>
-                                            <p className="text-muted-foreground text-xs">
-                                                {hte.interns_count} intern{hte.interns_count !== 1 && 's'} ·{' '}
-                                                {hte.supervisors_count} supervisor{hte.supervisors_count !== 1 && 's'}
-                                            </p>
-                                        </div>
-
-                                        <div className="flex shrink-0 items-center gap-2">
-                                            <Button variant="outline" size="sm" onClick={() => openEditDialog(hte)}>
-                                                Edit
-                                            </Button>
-
-                                            <Select
-                                                value={hte.status}
-                                                onValueChange={(value) => {
-                                                    router.patch(
-                                                        `/admin/htes/${hte.hte_id}/status`,
-                                                        { status: value },
-                                                        { preserveScroll: true, preserveState: true },
-                                                    );
-                                                }}
-                                            >
-                                                <SelectTrigger className="w-27.5">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="active">Active</SelectItem>
-                                                    <SelectItem value="inactive">Inactive</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </div>
-                                ))}
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b text-left text-muted-foreground">
+                                            <th className="py-2 pr-4 font-medium">Name</th>
+                                            <th className="py-2 pr-4 font-medium">Address</th>
+                                            <th className="py-2 pr-4 font-medium">Contact</th>
+                                            <th className="py-2 pr-4 font-medium">Interns</th>
+                                            <th className="py-2 pr-4 font-medium">Supervisors</th>
+                                            <th className="py-2 font-medium">Status</th>
+                                            <th className="py-2 pl-4 font-medium">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {htes.data.map((hte) => (
+                                            <tr key={hte.hte_id} className="border-b last:border-0 hover:bg-muted/40">
+                                                <td className="py-2.5 pr-4 font-medium whitespace-nowrap">
+                                                    {hte.hte_name}
+                                                </td>
+                                                <td
+                                                    className="max-w-[180px] truncate py-2.5 pr-4"
+                                                    title={hte.address ?? undefined}
+                                                >
+                                                    {hte.address ?? 'No address'}
+                                                </td>
+                                                <td className="max-w-[180px] py-2.5 pr-4">
+                                                    <p
+                                                        className="truncate"
+                                                        title={hte.contact_person ?? undefined}
+                                                    >
+                                                        {hte.contact_person ?? 'No supervisor assigned'}
+                                                    </p>
+                                                    {hte.contact_number && (
+                                                        <p className="truncate text-xs text-muted-foreground">
+                                                            {hte.contact_number}
+                                                        </p>
+                                                    )}
+                                                </td>
+                                                <td className="py-2.5 pr-4 whitespace-nowrap">
+                                                    {hte.interns_count}
+                                                </td>
+                                                <td className="py-2.5 pr-4 whitespace-nowrap">
+                                                    {hte.supervisors_count}
+                                                </td>
+                                                <td className="py-2.5">
+                                                    <Select
+                                                        value={hte.status}
+                                                        onValueChange={(value) => {
+                                                            router.patch(
+                                                                `/admin/htes/${hte.hte_id}/status`,
+                                                                { status: value },
+                                                                { preserveScroll: true, preserveState: true },
+                                                            );
+                                                        }}
+                                                    >
+                                                        <SelectTrigger className="h-8 w-[7.5rem]">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="active">Active</SelectItem>
+                                                            <SelectItem value="inactive">Inactive</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </td>
+                                                <td className="py-2.5 pl-4">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => openEditDialog(hte)}
+                                                    >
+                                                        Edit
+                                                    </Button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
                         )}
 

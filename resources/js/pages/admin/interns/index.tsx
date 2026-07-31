@@ -144,54 +144,95 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                     </CardHeader>
                     <CardContent className="flex flex-col gap-4">
                         {interns.data.length === 0 ? (
-                            <p className="text-muted-foreground text-sm">
+                            <p className="py-8 text-center text-sm text-muted-foreground">
                                 No {currentStatus} interns{filters.search ? ' match your search.' : '.'}
                             </p>
                         ) : (
-                            <div className="flex flex-col gap-3">
-                                {interns.data.map((intern) => (
-                                    <div
-                                        key={intern.user_id}
-                                        className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
-                                    >
-                                        <div className="min-w-0">
-                                            <p className="truncate font-medium">{intern.name}</p>
-                                            <p className="text-muted-foreground truncate text-sm">
-                                                {intern.id_number} · {intern.program_name} · {intern.hte_name}
-                                            </p>
-                                            <p className="text-muted-foreground text-xs">
-                                                Registered {intern.registered_at}
-                                            </p>
-                                        </div>
-
-                                        <div className="flex shrink-0 gap-2">
-                                            {intern.status === 'pending' && (
-                                                <>
-                                                    <Button size="sm" onClick={() => approve(intern.user_id)}>
-                                                        Approve
-                                                    </Button>
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={() => reject(intern.user_id)}
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b text-left text-muted-foreground">
+                                            <th className="py-2 pr-4 font-medium">Name</th>
+                                            <th className="py-2 pr-4 font-medium">ID Number</th>
+                                            <th className="py-2 pr-4 font-medium">Program</th>
+                                            <th className="py-2 pr-4 font-medium">HTE</th>
+                                            <th className="py-2 pr-4 font-medium">Registered</th>
+                                            <th className="py-2 font-medium">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {interns.data.map((intern) => (
+                                            <tr
+                                                key={intern.user_id}
+                                                className="border-b last:border-0 hover:bg-muted/40"
+                                            >
+                                                <td className="py-2.5 pr-4">
+                                                    <p className="font-medium whitespace-nowrap">
+                                                        {intern.name}
+                                                    </p>
+                                                    <p
+                                                        className="max-w-[180px] truncate text-xs text-muted-foreground"
+                                                        title={intern.email}
                                                     >
-                                                        Reject
-                                                    </Button>
-                                                </>
-                                            )}
-
-                                            {(intern.status === 'approved' || intern.status === 'rejected') && (
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() => undo(intern.user_id, intern.name)}
+                                                        {intern.email}
+                                                    </p>
+                                                </td>
+                                                <td className="py-2.5 pr-4 whitespace-nowrap">
+                                                    {intern.id_number}
+                                                </td>
+                                                <td
+                                                    className="max-w-[160px] truncate py-2.5 pr-4"
+                                                    title={intern.program_name}
                                                 >
-                                                    Undo
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
+                                                    {intern.program_name}
+                                                </td>
+                                                <td
+                                                    className="max-w-[160px] truncate py-2.5 pr-4"
+                                                    title={intern.hte_name}
+                                                >
+                                                    {intern.hte_name}
+                                                </td>
+                                                <td className="py-2.5 pr-4 whitespace-nowrap text-muted-foreground">
+                                                    {intern.registered_at}
+                                                </td>
+                                                <td className="py-2.5">
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {intern.status === 'pending' && (
+                                                            <>
+                                                                <Button
+                                                                    size="sm"
+                                                                    onClick={() => approve(intern.user_id)}
+                                                                >
+                                                                    Approve
+                                                                </Button>
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    onClick={() => reject(intern.user_id)}
+                                                                >
+                                                                    Reject
+                                                                </Button>
+                                                            </>
+                                                        )}
+
+                                                        {(intern.status === 'approved' ||
+                                                            intern.status === 'rejected') && (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={() =>
+                                                                    undo(intern.user_id, intern.name)
+                                                                }
+                                                            >
+                                                                Undo
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
                         )}
 

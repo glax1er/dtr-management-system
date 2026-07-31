@@ -306,7 +306,7 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                                             <th className="py-2 pr-4 font-medium">Name</th>
                                             <th className="py-2 pr-4 font-medium">Email</th>
                                             <th className="py-2 pr-4 font-medium">Type</th>
-                                            <th className="py-2 pr-4 font-medium">HTE</th>
+                                            <th className="py-2 pr-4 font-medium">Scope</th>
                                             <th className="py-2 font-medium">Status</th>
                                         </tr>
                                     </thead>
