@@ -71,7 +71,7 @@ return [
     | lunch window above.
     |
     */
-    'time_out_cutoff' => env('DTR_TIME_OUT_CUTOFF', '13:00'),
+    'time_out_cutoff' => env('DTR_TIME_OUT_CUTOFF', '16:00'),
 
 
 ];
