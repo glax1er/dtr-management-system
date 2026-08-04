@@ -80,6 +80,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::get('manual-attendance', [ManualAttendanceController::class, 'create'])->name('manual-attendance.create');
             Route::post('manual-attendance/check', [ManualAttendanceController::class, 'checkConflicts'])->name('manual-attendance.check');
+            Route::post('manual-attendance/lookup', [ManualAttendanceController::class, 'lookup'])->name('manual-attendance.lookup');
             Route::post('manual-attendance', [ManualAttendanceController::class, 'store'])->name('manual-attendance.store');
         });
     });
