@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\InternController;
 use App\Http\Controllers\Admin\InternApprovalController;
 use App\Http\Controllers\Admin\SupervisorController;
 use App\Http\Controllers\Admin\KioskController;
+use App\Http\Controllers\Admin\SchedulePeriodController as AdminScheduleController;
 use App\Http\Controllers\Intern\QrCodeImageController;
 use App\Http\Controllers\Intern\DashboardController as InternDashboardController;
 use App\Http\Controllers\Intern\DtrReportController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\Supervisor\DashboardController as SupervisorDashboardCo
 use App\Http\Controllers\Supervisor\HtesController as SupervisorHtesController;
 use App\Http\Controllers\Supervisor\InternsController;
 use App\Http\Controllers\Supervisor\ManualAttendanceController;
+use App\Http\Controllers\Supervisor\SchedulePeriodController as SupervisorScheduleController;
 use App\Http\Controllers\Kiosk\ScanController as KioskScanController;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
@@ -55,6 +57,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::post('interns/{internProfile}/undo', [InternApprovalController::class, 'undo'])
             ->name('interns.undo');
+
+        Route::get('schedule', [AdminScheduleController::class, 'index'])->name('schedule.index');
+        Route::post('schedule', [AdminScheduleController::class, 'store'])->name('schedule.store');
+        Route::delete('schedule/{schedulePeriod}', [AdminScheduleController::class, 'destroy'])->name('schedule.destroy');
+        Route::patch('schedule/{schedulePeriod}', [AdminScheduleController::class, 'update'])->name('schedule.update');
     });
 
     Route::middleware('role:' . User::ROLE_SUPERVISOR)->prefix('supervisor')->name('supervisor.')->group(function () {
@@ -81,7 +88,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('manual-attendance', [ManualAttendanceController::class, 'create'])->name('manual-attendance.create');
             Route::post('manual-attendance/check', [ManualAttendanceController::class, 'checkConflicts'])->name('manual-attendance.check');
             Route::post('manual-attendance', [ManualAttendanceController::class, 'store'])->name('manual-attendance.store');
+
+            Route::get('schedule', [SupervisorScheduleController::class, 'index'])->name('schedule.index');
+            Route::post('schedule', [SupervisorScheduleController::class, 'store'])->name('schedule.store');
+            Route::delete('schedule/{schedulePeriod}', [SupervisorScheduleController::class, 'destroy'])->name('schedule.destroy');
+            Route::patch('schedule/{schedulePeriod}', [SupervisorScheduleController::class, 'update'])->name('schedule.update');
         });
+
     });
 
     Route::middleware('role:' . User::ROLE_INTERN)->prefix('intern')->name('intern.')->group(function () {

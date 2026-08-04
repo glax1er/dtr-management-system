@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Hte;
 use App\Models\InternProfile;
 use App\Models\SupervisorProfile;
+use App\Models\SchedulePeriod;
 use App\Services\Attendance\DailyAttendance;
 use App\Services\Attendance\DailyAttendanceCalculator;
 use Illuminate\Http\Request;
@@ -187,7 +188,7 @@ class InternsController extends Controller
                         'intern_name' => $intern->user->name,
                         'hte_name' => $intern->hte->hte_name,
                         'program_name' => $intern->program->program_name,
-                        'punctuality' => $this->computePunctuality($day),
+                        'punctuality' => $this->computePunctuality($day, $intern->hte_id),
                     ],
                 ));
             });
@@ -259,12 +260,16 @@ class InternsController extends Controller
     }
 
     /**
-     * "On Time" if the day's time-in was at or before the configured
-     * cutoff, "Late" otherwise. "missing_time_in" if there was a scan
-     * but it landed after the time-out cutoff. "no_record" if there
-     * were no scans at all that day.
+     * "On Time" if the day's time-in was at or before that HTE's expected
+     * start time for that specific day of the week (see SchedulePeriod),
+     * plus the grace period. "Late" otherwise. "missing_time_in" if there
+     * was a scan but it landed after the time-out cutoff. "no_record" if
+     * there were no scans at all that day. "unscheduled" if there IS a
+     * scan, but that day has no expected start time configured at all
+     * (e.g. a weekend, or a day this HTE has no schedule for) — hours
+     * still count normally, this only affects the punctuality label.
      */
-    private function computePunctuality(DailyAttendance $day): string
+    private function computePunctuality(DailyAttendance $day, int $hteId): string
     {
         if ($day->rawScanCount === 0) {
             return 'no_record';
@@ -275,8 +280,24 @@ class InternsController extends Controller
         }
 
         $timezone = config('dtr.timezone');
+        $date = Carbon::parse($day->date, $timezone);
 
-        $cutoff = Carbon::parse($day->date . ' ' . config('dtr.expected_start_time'), $timezone);
+        $expectedStart = SchedulePeriod::expectedStartTimeFor($date, $hteId);
+
+        // No schedule configured for this day (e.g. weekend, or a day
+        // this HTE has no expected start time for). The intern still
+        // scanned/rendered hours though, so this isn't hidden as a
+        // normal on-time day — it's labeled distinctly so admins/
+        // supervisors can see it was outside the official schedule.
+        if ($expectedStart === null) {
+            return 'unscheduled';
+        }
+
+        $graceMinutes = config('dtr.grace_period_minutes', 30);
+
+        $cutoff = Carbon::parse($day->date . ' ' . $expectedStart, $timezone)
+            ->addMinutes($graceMinutes);
+
         $localTimeIn = $day->timeIn->clone()->setTimezone($timezone);
 
         return $localTimeIn->lte($cutoff) ? 'on_time' : 'late';

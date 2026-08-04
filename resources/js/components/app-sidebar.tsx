@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Building, ClipboardCheck, Clock, FileWarning, FolderGit2, GraduationCap, LayoutGrid, MonitorSmartphone, Users, PenLine } from 'lucide-react';
+import { BookOpen, Building, CalendarClock, Clock, FileWarning, FolderGit2, GraduationCap, LayoutGrid, MonitorSmartphone, Users, PenLine } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -22,6 +22,7 @@ const adminNavItems: NavItem[] = [
     { title: 'Supervisors', href: '/admin/supervisors', icon: Users },
     { title: 'HTEs', href: '/admin/htes', icon: Building },
     { title: 'Kiosk', href: '/admin/kiosk', icon: MonitorSmartphone },
+    { title: 'Schedule', href: '/admin/schedule', icon: CalendarClock },
 ];
 
 // HTE Supervisors get a dashboard; OJT Supervisors don't (they only
@@ -29,7 +30,8 @@ const adminNavItems: NavItem[] = [
 // page and there's no Dashboard link to show.
 const hteSupervisorNavItems: NavItem[] = [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
-    { title: 'My Interns', href: '/supervisor/interns', icon: GraduationCap },    
+    { title: 'My Interns', href: '/supervisor/interns', icon: GraduationCap },
+    { title: 'Schedule', href: '/supervisor/schedule', icon: CalendarClock },    
 ];
 
 const ojtSupervisorNavItems: NavItem[] = [

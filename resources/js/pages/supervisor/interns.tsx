@@ -32,7 +32,7 @@ interface AttendanceLogRow {
     hours_rendered: number;
     lunch_deducted: boolean;
     status: 'open' | 'missing_time_in' | 'no_record' | 'complete';
-    punctuality: 'on_time' | 'late' | 'missing_time_in' | 'no_record';
+    punctuality: 'on_time' | 'late' | 'missing_time_in' | 'no_record' | 'unscheduled';
     raw_scan_count: number;
 }
 
@@ -590,6 +590,11 @@ export default function MyInterns({
                                                                 On Time
                                                             </Badge>
                                                         ) : log.punctuality ===
+                                                          'unscheduled' ? (
+                                                            <Badge className="border-transparent bg-blue-600 text-white dark:bg-blue-600/80">
+                                                                Unscheduled
+                                                            </Badge>
+                                                        ) : log.punctuality ===
                                                           'missing_time_in' ? (
                                                             <Badge variant="outline">
                                                                 Missing Time In
@@ -599,11 +604,12 @@ export default function MyInterns({
                                                             <Badge variant="outline">
                                                                 No Record
                                                             </Badge>
-                                                        ) : (
+                                                        ) : log.punctuality ===
+                                                          'late' ? (
                                                             <Badge variant="destructive">
                                                                 Late
                                                             </Badge>
-                                                        )}
+                                                        ) : null}
                                                         {log.status ===
                                                             'open' && (
                                                             <Badge variant="outline">
