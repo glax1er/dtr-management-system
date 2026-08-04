@@ -7,6 +7,7 @@ import {
     TrendingUp,
     Users,
 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import PaginationFooter from '@/components/pagination-footer';
 import type { Paginated } from '@/components/pagination-footer';
 import { Badge } from '@/components/ui/badge';
@@ -94,6 +95,17 @@ export default function AdminDashboard({
 }: AdminDashboardProps) {
     const { auth } = usePage<PageProps>().props;
 
+    // Drives the "grow in" animations for bars, rings, and progress
+    // segments below. Charts render at their resting state on the very
+    // first paint (0 height/width, ring at 0%) and flip to `true` a tick
+    // later so the CSS transitions actually animate instead of snapping
+    // straight to the final value.
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        const id = requestAnimationFrame(() => setMounted(true));
+        return () => cancelAnimationFrame(id);
+    }, []);
+
     const stats = [
         {
             label: 'Pending Approvals',
@@ -165,10 +177,11 @@ export default function AdminDashboard({
 
                 {/* Top-line counts */}
                 <div className="grid auto-rows-min grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    {stats.map(({ label, value, icon: Icon, onClick }) => (
+                    {stats.map(({ label, value, icon: Icon, onClick }, i) => (
                         <Card
                             key={label}
-                            className={`py-4 ${onClick ? 'cursor-pointer transition-colors hover:bg-muted/50' : ''}`}
+                            className={`animate-in fade-in-0 slide-in-from-bottom-2 py-4 duration-500 fill-mode-backwards ${onClick ? 'cursor-pointer transition-colors hover:bg-muted/50' : ''}`}
+                            style={{ animationDelay: `${i * 75}ms` }}
                             onClick={onClick}
                         >
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 px-4 pb-1">
@@ -178,8 +191,8 @@ export default function AdminDashboard({
                                 <Icon className="size-4 shrink-0 text-muted-foreground" />
                             </CardHeader>
                             <CardContent className="px-4">
-                                <div className="text-2xl font-bold">
-                                    {value}
+                                <div className="text-2xl font-bold tabular-nums">
+                                    <CountUp value={value} />
                                 </div>
                             </CardContent>
                         </Card>
@@ -188,7 +201,7 @@ export default function AdminDashboard({
 
                 {/* Analytics row 1: registration momentum + right-now attendance */}
                 <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-                    <Card className="py-4 lg:col-span-2">
+                    <Card className="animate-in fade-in-0 slide-in-from-bottom-2 py-4 duration-500 fill-mode-backwards lg:col-span-2">
                         <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 px-4 pb-1">
                             <div>
                                 <CardTitle className="text-sm font-medium">
@@ -209,20 +222,23 @@ export default function AdminDashboard({
                                 </p>
                             ) : (
                                 <div className="flex h-28 items-end gap-1 sm:gap-1.5">
-                                    {registrationsTrend.map((point) => (
+                                    {registrationsTrend.map((point, i) => (
                                         <div
                                             key={point.date}
                                             className="group flex h-full flex-1 flex-col items-center justify-end gap-1"
                                             title={`${point.label}: ${point.count} registration${point.count === 1 ? '' : 's'}`}
                                         >
                                             <div
-                                                className={`w-full rounded-t-sm transition-colors ${
+                                                className={`w-full rounded-t-sm transition-[height] duration-700 ease-out ${
                                                     point.count > 0
-                                                        ? 'bg-chart-1/70 group-hover:bg-chart-1'
+                                                        ? 'bg-chart-1/70 group-hover:bg-chart-1 group-hover:duration-150'
                                                         : 'bg-muted'
                                                 }`}
                                                 style={{
-                                                    height: `${Math.max((point.count / trendMax) * 100, 4)}%`,
+                                                    height: mounted
+                                                        ? `${Math.max((point.count / trendMax) * 100, 4)}%`
+                                                        : '0%',
+                                                    transitionDelay: `${i * 30}ms`,
                                                 }}
                                             />
                                             <span className="hidden text-[10px] text-muted-foreground tabular-nums sm:block">
@@ -235,7 +251,10 @@ export default function AdminDashboard({
                         </CardContent>
                     </Card>
 
-                    <Card className="py-4">
+                    <Card
+                        className="animate-in fade-in-0 slide-in-from-bottom-2 py-4 duration-500 fill-mode-backwards"
+                        style={{ animationDelay: '75ms' }}
+                    >
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 px-4 pb-1">
                             <CardTitle className="text-sm font-medium">
                                 Today's Attendance
@@ -249,7 +268,9 @@ export default function AdminDashboard({
                                 </p>
                             ) : (
                                 <AttendanceRing
-                                    percent={todayAttendance.percent}
+                                    percent={
+                                        mounted ? todayAttendance.percent : 0
+                                    }
                                     checkedIn={todayAttendance.checked_in}
                                     total={todayAttendance.total}
                                 />
@@ -260,7 +281,10 @@ export default function AdminDashboard({
 
                 {/* Analytics row 2: approval pipeline + top HTEs */}
                 <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-                    <Card className="py-4">
+                    <Card
+                        className="animate-in fade-in-0 slide-in-from-bottom-2 py-4 duration-500 fill-mode-backwards"
+                        style={{ animationDelay: '150ms' }}
+                    >
                         <CardHeader className="px-4 pb-1">
                             <CardTitle className="text-sm font-medium">
                                 Approval Pipeline
@@ -270,16 +294,16 @@ export default function AdminDashboard({
                             <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-muted">
                                 {totalStatusCount > 0 &&
                                     statusBreakdown.map(
-                                        (item) =>
+                                        (item, i) =>
                                             item.count > 0 && (
                                                 <div
                                                     key={item.status}
-                                                    className={
-                                                        STATUS_META[item.status]
-                                                            .barClass
-                                                    }
+                                                    className={`transition-[width] duration-700 ease-out ${STATUS_META[item.status].barClass}`}
                                                     style={{
-                                                        width: `${(item.count / totalStatusCount) * 100}%`,
+                                                        width: mounted
+                                                            ? `${(item.count / totalStatusCount) * 100}%`
+                                                            : '0%',
+                                                        transitionDelay: `${150 + i * 80}ms`,
                                                     }}
                                                     title={`${STATUS_META[item.status].label}: ${item.count}`}
                                                 />
@@ -305,7 +329,7 @@ export default function AdminDashboard({
                                             {STATUS_META[item.status].label}
                                         </span>
                                         <span className="font-medium text-muted-foreground tabular-nums">
-                                            {item.count}
+                                            <CountUp value={item.count} />
                                         </span>
                                     </button>
                                 ))}
@@ -313,7 +337,10 @@ export default function AdminDashboard({
                         </CardContent>
                     </Card>
 
-                    <Card className="py-4 lg:col-span-2">
+                    <Card
+                        className="animate-in fade-in-0 slide-in-from-bottom-2 py-4 duration-500 fill-mode-backwards lg:col-span-2"
+                        style={{ animationDelay: '200ms' }}
+                    >
                         <CardHeader className="px-4 pb-1">
                             <CardTitle className="text-sm font-medium">
                                 Top HTEs by Approved Interns
@@ -327,7 +354,7 @@ export default function AdminDashboard({
                                 </p>
                             ) : (
                                 <div className="flex flex-col gap-2.5">
-                                    {topHtes.map((hte) => (
+                                    {topHtes.map((hte, i) => (
                                         <button
                                             key={hte.name}
                                             type="button"
@@ -343,15 +370,21 @@ export default function AdminDashboard({
                                                     {hte.name}
                                                 </span>
                                                 <span className="shrink-0 text-muted-foreground tabular-nums">
-                                                    {hte.count} intern
+                                                    <CountUp
+                                                        value={hte.count}
+                                                    />{' '}
+                                                    intern
                                                     {hte.count === 1 ? '' : 's'}
                                                 </span>
                                             </div>
                                             <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                                                 <div
-                                                    className="h-full rounded-full bg-chart-1"
+                                                    className="h-full rounded-full bg-chart-1 transition-[width] duration-700 ease-out"
                                                     style={{
-                                                        width: `${(hte.count / topHteMax) * 100}%`,
+                                                        width: mounted
+                                                            ? `${(hte.count / topHteMax) * 100}%`
+                                                            : '0%',
+                                                        transitionDelay: `${200 + i * 60}ms`,
                                                     }}
                                                 />
                                             </div>
@@ -479,6 +512,51 @@ export default function AdminDashboard({
 }
 
 /**
+ * Animates a number counting up from 0 to `value` whenever `value`
+ * changes (e.g. on first mount, or after an Inertia partial reload
+ * brings back fresh stats). Uses an ease-out curve over a fixed
+ * duration rather than a fixed increment so small and large numbers
+ * both feel snappy.
+ */
+function CountUp({
+    value,
+    duration = 700,
+}: {
+    value: number;
+    duration?: number;
+}) {
+    const [display, setDisplay] = useState(0);
+    const frame = useRef<number | null>(null);
+
+    useEffect(() => {
+        const start = performance.now();
+        const from = 0;
+
+        const tick = (now: number) => {
+            const elapsed = now - start;
+            const progress = Math.min(1, elapsed / duration);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            setDisplay(Math.round(from + (value - from) * eased));
+
+            if (progress < 1) {
+                frame.current = requestAnimationFrame(tick);
+            }
+        };
+
+        frame.current = requestAnimationFrame(tick);
+
+        return () => {
+            if (frame.current !== null) {
+                cancelAnimationFrame(frame.current);
+            }
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [value, duration]);
+
+    return <>{display}</>;
+}
+
+/**
  * Self-contained progress ring for the "checked in today" metric. Kept
  * local to this page (rather than reusing `HoursProgressRing`) since the
  * label shape here — "3 / 10 interns" against a percentage of the
@@ -531,7 +609,7 @@ function AttendanceRing({
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center px-2">
                 <span className="text-xl font-semibold tabular-nums sm:text-2xl">
-                    {clamped}%
+                    <CountUp value={clamped} />%
                 </span>
                 <span className="text-center text-xs text-muted-foreground">
                     {checkedIn} / {total} interns
