@@ -26,17 +26,20 @@ class DashboardController extends Controller
         $perPage = (int) ($validated['per_page'] ?? self::DEFAULT_PER_PAGE);
 
         $recentRegistrations = InternProfile::query()
-            ->with(['user:id,name', 'hte:hte_id,hte_name', 'program:program_id,program_name'])
+            ->with(['user:id,name,email', 'hte:hte_id,hte_name', 'program:program_id,program_name'])
             ->orderBy('registered_at', 'desc')
             ->paginate($perPage, ['*'], 'page', $validated['page'] ?? 1)
             ->withQueryString()
             ->through(fn (InternProfile $profile) => [
                 'user_id' => $profile->user_id,
                 'name' => $profile->user->name,
+                'email' => $profile->user->email,
+                'id_number' => $profile->id_number,
                 'hte_name' => $profile->hte->hte_name,
                 'program_name' => $profile->program->program_name,
                 'status' => $profile->status,
                 'registered_at' => $profile->registered_at->diffForHumans(),
+                'registered_at_full' => $profile->registered_at->format('M j, Y g:i A'),
             ]);
 
         return Inertia::render('admin/dashboard', [

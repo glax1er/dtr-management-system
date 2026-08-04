@@ -10,10 +10,13 @@ import type { PageProps } from '@/types';
 interface RecentRegistration {
     user_id: number;
     name: string;
+    email: string;
+    id_number: string;
     hte_name: string;
     program_name: string;
     status: 'pending' | 'approved' | 'rejected';
     registered_at: string;
+    registered_at_full: string;
 }
 
 interface AdminDashboardProps {
@@ -103,6 +106,7 @@ export default function AdminDashboard({
                                     <thead>
                                         <tr className="border-b text-left text-muted-foreground">
                                             <th className="py-2 pr-4 font-medium">Name</th>
+                                            <th className="py-2 pr-4 font-medium">ID Number</th>
                                             <th className="py-2 pr-4 font-medium">Program</th>
                                             <th className="py-2 pr-4 font-medium">HTE</th>
                                             <th className="py-2 pr-4 font-medium">Registered</th>
@@ -113,10 +117,24 @@ export default function AdminDashboard({
                                         {recentRegistrations.data.map((intern) => (
                                             <tr
                                                 key={intern.user_id}
-                                                className="border-b last:border-0 hover:bg-muted/40"
+                                                className={`border-b last:border-0 hover:bg-muted/40 ${intern.status === 'pending' ? 'cursor-pointer' : ''}`}
+                                                onClick={
+                                                    intern.status === 'pending'
+                                                        ? () =>
+                                                              router.visit(
+                                                                  `/admin/interns?status=pending&search=${encodeURIComponent(intern.name)}`,
+                                                              )
+                                                        : undefined
+                                                }
                                             >
                                                 <td className="py-2.5 pr-4 font-medium whitespace-nowrap">
-                                                    {intern.name}
+                                                    <div>{intern.name}</div>
+                                                    <div className="text-xs font-normal text-muted-foreground">
+                                                        {intern.email}
+                                                    </div>
+                                                </td>
+                                                <td className="py-2.5 pr-4 whitespace-nowrap text-muted-foreground">
+                                                    {intern.id_number}
                                                 </td>
                                                 <td
                                                     className="max-w-[160px] truncate py-2.5 pr-4"
@@ -130,7 +148,10 @@ export default function AdminDashboard({
                                                 >
                                                     {intern.hte_name}
                                                 </td>
-                                                <td className="py-2.5 pr-4 whitespace-nowrap text-muted-foreground">
+                                                <td
+                                                    className="py-2.5 pr-4 whitespace-nowrap text-muted-foreground"
+                                                    title={intern.registered_at_full}
+                                                >
                                                     {intern.registered_at}
                                                 </td>
                                                 <td className="py-2.5">

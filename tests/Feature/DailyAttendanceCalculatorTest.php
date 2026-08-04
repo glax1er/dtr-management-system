@@ -128,6 +128,53 @@ test('a first scan after the time-out cutoff has no time-in and the scan becomes
         ->and($day->hoursRendered)->toBe(0.0);
 });
 
+test('an early scan-in does not inflate rendered hours before the expected start time', function () {
+    $intern = makeApprovedIntern();
+    $supervisor = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
+
+    // Expected start is 08:00 (config('dtr.expected_start_time') default).
+    // Intern scans in at 06:30 and out at 17:00 — the 1.5 hours before
+    // 08:00 must not be counted as rendered time.
+    AttendanceLog::create([
+        'intern_user_id' => $intern->id,
+        'supervisor_user_id' => $supervisor->id,
+        'scan_timestamp' => Carbon::parse('2026-07-20 06:30:00', 'Asia/Manila'),
+    ]);
+    AttendanceLog::create([
+        'intern_user_id' => $intern->id,
+        'supervisor_user_id' => $supervisor->id,
+        'scan_timestamp' => Carbon::parse('2026-07-20 17:00:00', 'Asia/Manila'),
+    ]);
+
+    $day = (new DailyAttendanceCalculator)->forIntern($intern->id)->first();
+
+    // 08:00 to 17:00 is 9 hours, minus the 1-hour lunch deduction = 8.
+    // (Not 10.5, which is what 06:30-17:00 minus lunch would give.)
+    expect($day->timeIn->clone()->setTimezone('Asia/Manila')->format('H:i'))->toBe('06:30')
+        ->and($day->hoursRendered)->toBe(8.0)
+        ->and($day->lunchDeducted)->toBeTrue();
+});
+
+test('a scan-in at or after the expected start time is unaffected by the clamp', function () {
+    $intern = makeApprovedIntern();
+    $supervisor = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
+
+    AttendanceLog::create([
+        'intern_user_id' => $intern->id,
+        'supervisor_user_id' => $supervisor->id,
+        'scan_timestamp' => Carbon::parse('2026-07-20 08:00:00', 'Asia/Manila'),
+    ]);
+    AttendanceLog::create([
+        'intern_user_id' => $intern->id,
+        'supervisor_user_id' => $supervisor->id,
+        'scan_timestamp' => Carbon::parse('2026-07-20 17:00:00', 'Asia/Manila'),
+    ]);
+
+    $day = (new DailyAttendanceCalculator)->forIntern($intern->id)->first();
+
+    expect($day->hoursRendered)->toBe(8.0);
+});
+
 test('a scan exactly at the time-out cutoff still counts as a normal time-in', function () {
     $intern = makeApprovedIntern();
     $supervisor = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);

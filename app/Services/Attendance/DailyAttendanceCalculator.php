@@ -176,7 +176,17 @@ class DailyAttendanceCalculator
         $localTimeIn = $timeIn->clone()->setTimezone($timezone);
         $localTimeOut = $timeOut->clone()->setTimezone($timezone);
 
-        $rawHours = $localTimeIn->floatDiffInHours($localTimeOut);
+        // Hours only start accruing at the official shift start — an
+        // intern who scans in early (e.g. 6:30 AM for an 8:00 AM shift)
+        // shouldn't have that early arrival counted as rendered time.
+        // Only the later of the two (actual scan-in vs. expected start)
+        // is ever used as the effective time-in for the hours math below.
+        $expectedStart = Carbon::parse($date.' '.config('dtr.expected_start_time'), $timezone);
+        $effectiveTimeIn = $localTimeIn->max($expectedStart);
+
+        $rawHours = $localTimeOut->gt($effectiveTimeIn)
+            ? $effectiveTimeIn->floatDiffInHours($localTimeOut)
+            : 0.0;
 
         $lunchStart = Carbon::parse($date.' '.config('dtr.lunch_start'), $timezone);
         $lunchEnd = Carbon::parse($date.' '.config('dtr.lunch_end'), $timezone);
@@ -185,7 +195,7 @@ class DailyAttendanceCalculator
         // starts before the window ends AND ends after the window starts.
         // This is what keeps half-day / after-lunch-only shifts from
         // being wrongly docked an hour they never actually took.
-        $crossesLunch = $localTimeIn->lt($lunchEnd) && $localTimeOut->gt($lunchStart);
+        $crossesLunch = $effectiveTimeIn->lt($lunchEnd) && $localTimeOut->gt($lunchStart);
 
         if ($crossesLunch) {
             return [max(0.0, $rawHours - 1), true];

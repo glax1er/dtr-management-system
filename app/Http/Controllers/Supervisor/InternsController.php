@@ -135,6 +135,7 @@ class InternsController extends Controller
             'from' => ['nullable', 'required_with:to', 'date_format:Y-m-d'],
             'to' => ['nullable', 'required_with:from', 'date_format:Y-m-d', 'after_or_equal:from'],
             'search' => ['nullable', 'string', 'max:255'],
+            'remarks' => ['nullable', 'in:on_time,late,missing_time_in,no_record,open'],
             'sort' => ['nullable', 'in:date,name'],
             'direction' => ['nullable', 'in:asc,desc'],
             'page' => ['nullable', 'integer', 'min:1'],
@@ -160,6 +161,7 @@ class InternsController extends Controller
         $sort = $validated['sort'] ?? 'date';
         $direction = $validated['direction'] ?? 'desc';
         $search = trim($validated['search'] ?? '');
+        $remarks = $validated['remarks'] ?? null;
 
         $internsQuery = $supervisorProfile->getAssignedInterns()
             ->where('status', 'approved')
@@ -191,6 +193,16 @@ class InternsController extends Controller
                     ],
                 ));
             });
+
+        if ($remarks !== null) {
+            // 'open' ("No time-out yet") is a status flag that can
+            // co-occur with either punctuality badge, so it's matched
+            // against `status` rather than `punctuality`; every other
+            // option is one of the mutually-exclusive punctuality values.
+            $rows = $remarks === 'open'
+                ? $rows->where('status', 'open')
+                : $rows->where('punctuality', $remarks);
+        }
 
         $rows = $this->sortRows($rows, $sort, $direction)->values();
 
@@ -232,6 +244,7 @@ class InternsController extends Controller
                 'from' => $rangeStart->toDateString(),
                 'to' => $rangeEnd->toDateString(),
                 'search' => $search,
+                'remarks' => $remarks,
                 'sort' => $sort,
                 'direction' => $direction,
                 'per_page' => $perPage,
