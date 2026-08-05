@@ -20,6 +20,13 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { dashboard } from '@/routes';
 
 interface AttendanceLogRow {
@@ -54,11 +61,21 @@ interface PaginatedLogs {
 
 type SortField = 'date' | 'name';
 type SortDirection = 'asc' | 'desc';
+type RemarksFilter = 'on_time' | 'late' | 'missing_time_in' | 'no_record' | 'open';
+
+const REMARKS_OPTIONS: { value: RemarksFilter; label: string }[] = [
+    { value: 'on_time', label: 'On Time' },
+    { value: 'late', label: 'Late' },
+    { value: 'missing_time_in', label: 'Missing Time In' },
+    { value: 'no_record', label: 'No Record' },
+    { value: 'open', label: 'No time-out yet' },
+];
 
 interface Filters {
     from: string;
     to: string;
     search: string;
+    remarks: RemarksFilter | null;
     sort: SortField;
     direction: SortDirection;
     per_page: number;
@@ -156,7 +173,8 @@ export default function MyInterns({
     const [toDraft, setToDraft] = useState(filters.to);
     const [perPageDraft, setPerPageDraft] = useState(String(filters.per_page));
 
-    const hasActiveFilters = filters.search !== '' || mode === 'range';
+    const hasActiveFilters =
+        filters.search !== '' || filters.remarks !== null || mode === 'range';
 
     const visit = (params: Record<string, string | undefined>) => {
         router.get('/supervisor/interns', params, {
@@ -173,6 +191,7 @@ export default function MyInterns({
             ? { from: filters.from, to: filters.to }
             : { month: month ?? undefined }),
         search: filters.search || undefined,
+        remarks: filters.remarks ?? undefined,
         sort: filters.sort,
         direction: filters.direction,
         per_page: String(filters.per_page),
@@ -216,6 +235,13 @@ export default function MyInterns({
     const applySearch = (e: FormEvent) => {
         e.preventDefault();
         visit({ ...baseParams(), search: search || undefined });
+    };
+
+    const applyRemarks = (value: string) => {
+        visit({
+            ...baseParams(),
+            remarks: value === 'all' ? undefined : value,
+        });
     };
 
     const clearAllFilters = () => {
@@ -323,6 +349,40 @@ export default function MyInterns({
                             </Button>
                         </form>
 
+                        <div className="flex flex-col gap-1.5">
+                            <Label
+                                htmlFor="remarks-filter"
+                                className="text-xs text-muted-foreground"
+                            >
+                                Filter by remarks
+                            </Label>
+                            <Select
+                                value={filters.remarks ?? 'all'}
+                                onValueChange={applyRemarks}
+                            >
+                                <SelectTrigger
+                                    id="remarks-filter"
+                                    size="sm"
+                                    className="w-full sm:w-44"
+                                >
+                                    <SelectValue placeholder="All remarks" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">
+                                        All remarks
+                                    </SelectItem>
+                                    {REMARKS_OPTIONS.map((option) => (
+                                        <SelectItem
+                                            key={option.value}
+                                            value={option.value}
+                                        >
+                                            {option.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
                         <form
                             onSubmit={applyRange}
                             className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-2"
@@ -399,13 +459,29 @@ export default function MyInterns({
                                             {filters.from} to {filters.to}
                                         </Badge>
                                     )}
+                                    {filters.remarks !== null && (
+                                        <Badge
+                                            variant="secondary"
+                                            className="font-normal"
+                                        >
+                                            Remarks:{' '}
+                                            {
+                                                REMARKS_OPTIONS.find(
+                                                    (option) =>
+                                                        option.value ===
+                                                        filters.remarks,
+                                                )?.label
+                                            }
+                                        </Badge>
+                                    )}
                                     <Button
                                         type="button"
                                         variant="ghost"
                                         size="sm"
                                         onClick={
                                             mode === 'range' &&
-                                            filters.search === ''
+                                            filters.search === '' &&
+                                            filters.remarks === null
                                                 ? clearRange
                                                 : clearAllFilters
                                         }

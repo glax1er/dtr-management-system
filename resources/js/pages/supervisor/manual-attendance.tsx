@@ -2,13 +2,14 @@ import { Head, router } from '@inertiajs/react';
 import {
     AlertTriangle,
     CalendarDays,
+    History,
     Info,
     LoaderCircle,
     Plus,
     Trash2,
     UserRound,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -68,6 +69,15 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
     const [entries, setEntries] = useState<Entry[]>([emptyEntry()]);
     const [processing, setProcessing] = useState(false);
 
+    // Per-row "we found an existing record for this date and pre-filled
+    // it below" hint. Kept as a parallel array (indexed the same as
+    // `entries`) rather than baked into Entry itself, since it's just a
+    // transient UI note, not form data that gets submitted.
+    const [rowNotices, setRowNotices] = useState<(string | null)[]>([null]);
+    // Tracked per row index (not a single shared counter) so a lookup
+    // fired for one row can't invalidate an in-flight lookup for another.
+    const lookupRequestIds = useRef<Record<number, number>>({});
+
     const [conflicts, setConflicts] = useState<Conflict[]>([]);
     const [dialog, setDialog] = useState<'error' | 'conflict' | null>(null);
     const [error, setError] = useState('');
@@ -77,9 +87,16 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
         [internId, interns],
     );
 
-    const completedEntries = entries.filter(
-        (entry) => entry.date && entry.time_in,
-    );
+    // A row only needs a date plus *either* a time in or a time out (or
+    // both) — a supervisor might only know one side of the shift, e.g.
+    // the intern forgot to scan in and only has a time-out on record.
+    const isRowValid = (entry: Entry) =>
+        Boolean(entry.date) && Boolean(entry.time_in || entry.time_out);
+
+    const isRowStarted = (entry: Entry) =>
+        Boolean(entry.date || entry.time_in || entry.time_out);
+
+    const completedEntries = entries.filter(isRowValid);
 
     const conflictDates = [
         ...new Set(conflicts.map((conflict) => conflict.date)),
@@ -100,10 +117,14 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
 
     const addRow = () => {
         setEntries((current) => [...current, emptyEntry()]);
+        setRowNotices((current) => [...current, null]);
     };
 
     const removeRow = (index: number) => {
         setEntries((current) =>
+            current.filter((_, currentIndex) => currentIndex !== index),
+        );
+        setRowNotices((current) =>
             current.filter((_, currentIndex) => currentIndex !== index),
         );
     };
@@ -114,34 +135,125 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
                 currentIndex === index ? { ...entry, [field]: value } : entry,
             ),
         );
+
+        // Any manual edit — including picking a new date — means whatever
+        // was pre-filled no longer necessarily reflects the saved record,
+        // so clear the hint until a fresh lookup (if any) confirms it.
+        setRowNotices((current) =>
+            current.map((notice, currentIndex) =>
+                currentIndex === index ? null : notice,
+            ),
+        );
     };
 
     const readXsrfToken = (): string => {
         const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+
         return match ? decodeURIComponent(match[1]) : '';
+    };
+
+    // When a supervisor picks a date that already has attendance on file
+    // (a kiosk scan or an earlier manual entry), pre-fill that row's time
+    // in / time out from what's already there instead of leaving them to
+    // retype — and re-check whenever they switch interns too, since the
+    // same date can carry a different record per intern.
+    const lookupExisting = async (
+        index: number,
+        date: string,
+        forInternId: string = internId,
+    ) => {
+        if (!forInternId || !date) {
+            return;
+        }
+
+        const requestId = (lookupRequestIds.current[index] =
+            (lookupRequestIds.current[index] ?? 0) + 1);
+
+        try {
+            const response = await fetch(
+                '/supervisor/manual-attendance/lookup',
+                {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                        'X-XSRF-TOKEN': readXsrfToken(),
+                    },
+                    body: JSON.stringify({
+                        intern_user_id: forInternId,
+                        date,
+                    }),
+                },
+            );
+
+            if (!response.ok || requestId !== lookupRequestIds.current[index]) {
+                return;
+            }
+
+            const data: {
+                found: boolean;
+                time_in?: string | null;
+                time_out?: string | null;
+            } = await response.json();
+
+            // Resolve the row either way — when nothing is found we still
+            // need to clear out whatever a previous lookup pre-filled,
+            // otherwise switching to a blank date/intern just leaves the
+            // old values sitting there looking "stuck".
+            setEntries((current) =>
+                current.map((entry, currentIndex) =>
+                    currentIndex === index && entry.date === date
+                        ? {
+                              ...entry,
+                              time_in: data.found ? (data.time_in ?? '') : '',
+                              time_out: data.found
+                                  ? (data.time_out ?? '')
+                                  : '',
+                          }
+                        : entry,
+                ),
+            );
+
+            setRowNotices((current) =>
+                current.map((notice, currentIndex) =>
+                    currentIndex === index
+                        ? data.found
+                            ? 'Existing record found for this date — time in / time out pre-filled below.'
+                            : null
+                        : notice,
+                ),
+            );
+        } catch {
+            // Prefill is a convenience, not a requirement for saving —
+            // fail silently and let the supervisor type it in manually.
+        }
     };
 
     const submit = async (force = false) => {
         if (!internId) {
             showError('Choose an intern before saving attendance records.');
+
             return;
         }
 
         const partiallyFilledRow = entries.some(
-            (entry) => Boolean(entry.date) !== Boolean(entry.time_in),
+            (entry) => isRowStarted(entry) && !isRowValid(entry),
         );
 
         if (partiallyFilledRow) {
             showError(
-                'Each record needs both a date and a time in. Complete or remove unfinished rows before saving.',
+                'Each record needs a date and at least a time in or a time out. Complete or remove unfinished rows before saving.',
             );
+
             return;
         }
 
         if (completedEntries.length === 0) {
             showError(
-                'Add at least one attendance record with a date and time in.',
+                'Add at least one attendance record with a date and a time in or time out.',
             );
+
             return;
         }
 
@@ -196,6 +308,7 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
                     setConflicts(normalizedConflicts);
                     setDialog('conflict');
                     setProcessing(false);
+
                     return;
                 }
             }
@@ -211,6 +324,7 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
                     onSuccess: () => {
                         setConflicts([]);
                         setEntries([emptyEntry()]);
+                        setRowNotices([null]);
                     },
                     onError: () => {
                         showError(
@@ -281,6 +395,22 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
                                     onValueChange={(value) => {
                                         setInternId(value);
                                         setConflicts([]);
+                                        setRowNotices(entries.map(() => null));
+
+                                        // Re-check any rows that already
+                                        // have a date filled in, since a
+                                        // different intern can have a
+                                        // completely different record (or
+                                        // none) for that same day.
+                                        entries.forEach((entry, index) => {
+                                            if (entry.date) {
+                                                void lookupExisting(
+                                                    index,
+                                                    entry.date,
+                                                    value,
+                                                );
+                                            }
+                                        });
                                     }}
                                 >
                                     <SelectTrigger id="intern">
@@ -319,14 +449,14 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
 
                     <Card className="flex min-h-0 flex-col overflow-hidden border-border/70 shadow-sm lg:h-full">
                         <CardHeader className="shrink-0 border-b bg-muted/20">
-                            <div className="flex flex-wrap items-center pb-5 justify-between gap-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2 pb-5">
                                 <div>
                                     <CardTitle className="text-base">
                                         Attendance records
                                     </CardTitle>
                                     <CardDescription className="mt-0.5">
-                                        Time out is optional for an ongoing
-                                        shift.
+                                        Time in and time out are each optional —
+                                        enter whichever was actually recorded.
                                     </CardDescription>
                                 </div>
 
@@ -382,13 +512,19 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
                                                     id={`date-${index}`}
                                                     type="date"
                                                     value={entry.date}
-                                                    onChange={(event) =>
+                                                    onChange={(event) => {
+                                                        const value =
+                                                            event.target.value;
                                                         updateRow(
                                                             index,
                                                             'date',
-                                                            event.target.value,
-                                                        )
-                                                    }
+                                                            value,
+                                                        );
+                                                        void lookupExisting(
+                                                            index,
+                                                            value,
+                                                        );
+                                                    }}
                                                 />
                                             </div>
 
@@ -396,7 +532,10 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
                                                 <Label
                                                     htmlFor={`time-in-${index}`}
                                                 >
-                                                    Time in
+                                                    Time in{' '}
+                                                    <span className="text-muted-foreground">
+                                                        (optional)
+                                                    </span>
                                                 </Label>
                                                 <Input
                                                     id={`time-in-${index}`}
@@ -435,6 +574,13 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
                                                 />
                                             </div>
                                         </div>
+
+                                        {rowNotices[index] && (
+                                            <div className="mt-2.5 flex items-start gap-1.5 rounded-md bg-primary/5 px-2.5 py-1.5 text-xs leading-4 text-primary">
+                                                <History className="mt-0.5 size-3.5 shrink-0" />
+                                                {rowNotices[index]}
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
