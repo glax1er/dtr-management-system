@@ -88,7 +88,6 @@ function DayFields({
                         type="time"
                         value={daySchedule[day]}
                         onChange={(e) => onChange(day, e.target.value)}
-                        disabled={noWork[day]}
                         className="w-36"
                     />
                 </div>
@@ -173,7 +172,7 @@ export default function SupervisorSchedule({ periods, globalPeriods }: ScheduleP
 
         const payload: Record<string, string | null> = {};
         DAYS.forEach((day) => {
-            payload[day] = addForm.noWork[day] ? null : addForm.daySchedule[day] || null;
+            payload[day] = addForm.daySchedule[day] || null;
         });
 
         router.post(
@@ -203,7 +202,7 @@ export default function SupervisorSchedule({ periods, globalPeriods }: ScheduleP
 
         const payload: Record<string, string | null> = {};
         DAYS.forEach((day) => {
-            payload[day] = editForm.noWork[day] ? null : editForm.daySchedule[day] || null;
+            payload[day] = editForm.daySchedule[day] || null;
         });
 
         router.patch(
@@ -228,7 +227,7 @@ export default function SupervisorSchedule({ periods, globalPeriods }: ScheduleP
     return (
         <>
             <Head title="HTE Schedule" />
-            <div className="flex h-full flex-1 flex-col gap-4 p-4">
+            <div className="flex h-full flex-1 flex-col gap-4 px-3 py-4 sm:p-6">
                 <div>
                     <h1 className="text-2xl font-semibold tracking-tight">HTE Schedule</h1>
                     <p className="text-muted-foreground text-sm">

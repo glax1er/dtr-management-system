@@ -86,7 +86,6 @@ function DayFields({
                         type="time"
                         value={daySchedule[day]}
                         onChange={(e) => onChange(day, e.target.value)}
-                        disabled={noWork[day]}
                         className="w-36"
                     />
                 </div>
@@ -128,7 +127,7 @@ export default function AdminSchedule({ periods }: ScheduleProps) {
 
         const payload: Record<string, string | null> = {};
         DAYS.forEach((day) => {
-            payload[day] = addForm.noWork[day] ? null : addForm.daySchedule[day] || null;
+            payload[day] = addForm.daySchedule[day] || null;
         });
 
         router.post(
@@ -158,7 +157,7 @@ export default function AdminSchedule({ periods }: ScheduleProps) {
 
         const payload: Record<string, string | null> = {};
         DAYS.forEach((day) => {
-            payload[day] = editForm.noWork[day] ? null : editForm.daySchedule[day] || null;
+            payload[day] = editForm.daySchedule[day] || null;
         });
 
         router.patch(
