@@ -13,18 +13,38 @@ use Inertia\Response;
 
 class HteController extends Controller
 {
-    public function index(): Response
+    private const DEFAULT_PER_PAGE = 10;
+
+    private const MAX_PER_PAGE = 100;
+
+    public function index(Request $request): Response
     {
-        $htes = Hte::query()
+        $validated = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:' . self::MAX_PER_PAGE],
+        ]);
+
+        $search = trim($validated['search'] ?? '');
+        $perPage = (int) ($validated['per_page'] ?? self::DEFAULT_PER_PAGE);
+
+        $query = Hte::query()
             ->withCount([
                 // only count interns whose registration has actually been
                 // approved, not pending/rejected ones
-                'internProfiles as interns_count' => fn ($query) => $query->where('status', 'approved'),
+                'internProfiles as interns_count' => fn ($q) => $q->where('status', 'approved'),
                 'supervisorProfiles',
-            ])
+            ]);
+
+        if ($search !== '') {
+            $query->where('hte_name', 'like', "%{$search}%");
+        }
+
+        $htes = $query
             ->orderBy('hte_name')
-            ->get()
-            ->map(fn (Hte $hte) => [
+            ->paginate($perPage, ['*'], 'page', $validated['page'] ?? 1)
+            ->withQueryString()
+            ->through(fn (Hte $hte) => [
                 'hte_id' => $hte->hte_id,
                 'hte_name' => $hte->hte_name,
                 'address' => $hte->address,
@@ -37,6 +57,10 @@ class HteController extends Controller
 
         return Inertia::render('admin/htes/index', [
             'htes' => $htes,
+            'filters' => [
+                'search' => $search,
+                'per_page' => $perPage,
+            ],
         ]);
     }
 

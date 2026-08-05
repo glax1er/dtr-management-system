@@ -82,6 +82,7 @@ test('an HTE supervisor can view resolution tickets from their own HTE', functio
         ->assertInertia(fn ($page) => $page
             ->component('supervisor/resolution-tickets')
             ->has('tickets', 1)
+            ->where('tickets.0.proposed_time_in', '7:45 AM')
         );
 });
 

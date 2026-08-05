@@ -1,6 +1,10 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
+import type { FormEvent } from 'react';
 import InputError from '@/components/input-error';
+import PaginationFooter from '@/components/pagination-footer';
+import type { Paginated } from '@/components/pagination-footer';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -36,14 +40,27 @@ interface Supervisor {
     status: 'active' | 'inactive';
 }
 
-interface SupervisorsIndexProps {
-    supervisors: Supervisor[];
-    htes: Hte[];
-    programs: Program[];
+interface Filters {
+    search: string;
+    type: 'hte' | 'ojt' | null;
+    per_page: number;
 }
 
-export default function SupervisorsIndex({ supervisors, htes, programs }: SupervisorsIndexProps) {
+interface SupervisorsIndexProps {
+    supervisors: Paginated<Supervisor>;
+    htes: Hte[];
+    programs: Program[];
+    filters: Filters;
+}
+
+// Radix's Select doesn't allow an item with an empty-string value, so
+// "every type" gets its own sentinel that we translate back to
+// undefined (i.e. no type filter) before it hits the URL.
+const ALL_TYPES = 'all';
+
+export default function SupervisorsIndex({ supervisors, htes, programs, filters }: SupervisorsIndexProps) {
     const [open, setOpen] = useState(false);
+    const [search, setSearch] = useState(filters.search);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
@@ -67,19 +84,58 @@ export default function SupervisorsIndex({ supervisors, htes, programs }: Superv
         });
     };
 
+    // Base params shared by every navigation action. Anything that
+    // changes what rows match (search, type) resets back to page 1 by
+    // simply omitting the page param.
+    const baseParams = () => ({
+        search: filters.search || undefined,
+        type: filters.type ?? undefined,
+        per_page: String(filters.per_page),
+    });
+
+    const visit = (params: Record<string, string | undefined>) => {
+        router.get('/admin/supervisors', params, { preserveState: true, preserveScroll: true });
+    };
+
+    const applySearch = (e: FormEvent) => {
+        e.preventDefault();
+        visit({ ...baseParams(), search: search || undefined });
+    };
+
+    const clearSearch = () => {
+        setSearch('');
+        visit({ ...baseParams(), search: undefined });
+    };
+
+    const changeType = (value: string) => {
+        visit({ ...baseParams(), type: value === ALL_TYPES ? undefined : value });
+    };
+
+    const goToPage = (page: number) => {
+        visit({ ...baseParams(), page: String(page) });
+    };
+
+    const changePerPage = (perPage: number) => {
+        visit({ ...baseParams(), per_page: String(perPage) });
+    };
+
+    const changeStatus = (userId: number, status: string) => {
+        router.patch(`/admin/supervisors/${userId}/status`, { status }, { preserveScroll: true, preserveState: true });
+    };
+
     return (
         <>
             <Head title="Supervisors" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <div className="flex items-center justify-between">
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-3 sm:p-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-semibold tracking-tight">Supervisors</h1>
+                        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Supervisors</h1>
                         <p className="text-muted-foreground text-sm">Manage supervisor accounts and their assigned HTE.</p>
                     </div>
 
                     <Dialog open={open} onOpenChange={setOpen}>
                         <DialogTrigger asChild>
-                            <Button>Add Supervisor</Button>
+                            <Button className="w-full sm:w-auto">Add Supervisor</Button>
                         </DialogTrigger>
                         <DialogContent>
                             <form onSubmit={handleSubmit}>
@@ -107,7 +163,7 @@ export default function SupervisorsIndex({ supervisors, htes, programs }: Superv
                                             </SelectContent>
                                         </Select>
                                     </div>
- 
+
                                     <div className="grid gap-2">
                                         <Label htmlFor="name">Name</Label>
                                         <Input
@@ -118,7 +174,7 @@ export default function SupervisorsIndex({ supervisors, htes, programs }: Superv
                                         />
                                         <InputError message={errors.name} />
                                     </div>
- 
+
                                     <div className="grid gap-2">
                                         <Label htmlFor="email">Email</Label>
                                         <Input
@@ -130,7 +186,7 @@ export default function SupervisorsIndex({ supervisors, htes, programs }: Superv
                                         />
                                         <InputError message={errors.email} />
                                     </div>
- 
+
                                     {data.supervisor_type === 'hte' ? (
                                         <div className="grid gap-2">
                                             <Label htmlFor="hte_id">Host training establishment</Label>
@@ -188,45 +244,117 @@ export default function SupervisorsIndex({ supervisors, htes, programs }: Superv
 
                 <Card className="flex-1">
                     <CardHeader>
-                        <CardTitle>All Supervisors</CardTitle>
+                        <CardTitle className="text-base">All Supervisors</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        {supervisors.length === 0 ? (
-                            <p className="text-muted-foreground text-sm">No supervisors yet.</p>
-                        ) : (
-                            <div className="flex flex-col gap-3">
-                                {supervisors.map((supervisor) => (
-                                    <div
-                                        key={supervisor.user_id}
-                                        className="flex items-center justify-between rounded-lg border p-3"
-                                    >
-                                        <div>
-                                            <p className="font-medium">{supervisor.name}</p>
-                                            <p className="text-muted-foreground text-sm">
-                                                {supervisor.email} · {supervisor.scope_name}{' '}
-                                                <span className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-                                                    {supervisor.supervisor_type === 'ojt' ? 'OJT Supervisor' : 'HTE Supervisor'}
-                                                </span>
-                                            </p>
-                                        </div>
-                                        <Select
-                                            value={supervisor.status}
-                                            onValueChange={(value) => {
-                                                router.patch(`/admin/supervisors/${supervisor.user_id}/status`, { status: value }, { preserveScroll: true });
-                                            }}
-                                        >
-                                            <SelectTrigger className="w-27.5">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="active">Active</SelectItem>
-                                                <SelectItem value="inactive">Inactive</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                    <CardContent className="flex flex-col gap-5">
+                        <form
+                            onSubmit={applySearch}
+                            className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between"
+                        >
+                            <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
+                                <div className="flex flex-col gap-1.5">
+                                    <Label htmlFor="search" className="text-xs text-muted-foreground">
+                                        Search by name or email
+                                    </Label>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            id="search"
+                                            value={search}
+                                            onChange={(e) => setSearch(e.target.value)}
+                                            placeholder="e.g. Juan Dela Cruz"
+                                            className="w-full sm:w-56"
+                                        />
+                                        <Button type="submit" variant="secondary" size="sm" className="shrink-0">
+                                            Search
+                                        </Button>
+                                        {filters.search !== '' && (
+                                            <Button type="button" variant="ghost" size="sm" onClick={clearSearch} className="shrink-0">
+                                                Clear
+                                            </Button>
+                                        )}
                                     </div>
-                                ))}
+                                </div>
+
+                                <div className="flex flex-col gap-1.5">
+                                    <Label htmlFor="type-filter" className="text-xs text-muted-foreground">
+                                        Supervisor type
+                                    </Label>
+                                    <Select value={filters.type ?? ALL_TYPES} onValueChange={changeType}>
+                                        <SelectTrigger id="type-filter" className="w-full sm:w-44">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value={ALL_TYPES}>All types</SelectItem>
+                                            <SelectItem value="hte">HTE Supervisor</SelectItem>
+                                            <SelectItem value="ojt">OJT Supervisor</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                        </form>
+
+                        {supervisors.data.length === 0 ? (
+                            <p className="py-8 text-center text-sm text-muted-foreground">
+                                No supervisors match{' '}
+                                {filters.search !== '' || filters.type ? 'these filters.' : 'yet.'}
+                            </p>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b text-left text-muted-foreground">
+                                            <th className="py-2 pr-4 font-medium">Name</th>
+                                            <th className="py-2 pr-4 font-medium">Email</th>
+                                            <th className="py-2 pr-4 font-medium">Type</th>
+                                            <th className="py-2 pr-4 font-medium">Scope</th>
+                                            <th className="py-2 font-medium">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {supervisors.data.map((supervisor) => (
+                                            <tr key={supervisor.user_id} className="border-b last:border-0 hover:bg-muted/40">
+                                                <td className="py-2.5 pr-4 font-medium whitespace-nowrap">
+                                                    {supervisor.name}
+                                                </td>
+                                                <td className="max-w-[200px] truncate py-2.5 pr-4" title={supervisor.email}>
+                                                    {supervisor.email}
+                                                </td>
+                                                <td className="py-2.5 pr-4 whitespace-nowrap">
+                                                    <Badge variant="outline" className="uppercase tracking-[0.08em]">
+                                                        {supervisor.supervisor_type === 'ojt' ? 'OJT' : 'HTE'}
+                                                    </Badge>
+                                                </td>
+                                                <td className="max-w-[180px] truncate py-2.5 pr-4" title={supervisor.scope_name}>
+                                                    {supervisor.scope_name}
+                                                </td>
+                                                <td className="py-2.5">
+                                                    <Select
+                                                        value={supervisor.status}
+                                                        onValueChange={(value) => changeStatus(supervisor.user_id, value)}
+                                                    >
+                                                        <SelectTrigger className="h-8 w-[7.5rem]">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="active">Active</SelectItem>
+                                                            <SelectItem value="inactive">Inactive</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
                         )}
+
+                        <PaginationFooter
+                            meta={supervisors}
+                            itemLabel="supervisor"
+                            onPageChange={goToPage}
+                            onPerPageChange={changePerPage}
+                            idPrefix="supervisors-per-page"
+                        />
                     </CardContent>
                 </Card>
             </div>

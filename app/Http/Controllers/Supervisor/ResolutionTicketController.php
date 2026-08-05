@@ -58,8 +58,8 @@ class ResolutionTicketController extends Controller
                     $ticket->proposed_time_in !== null => 'missing_time_in',
                     default => 'open',
                 },
-                'proposed_time_in' => $ticket->proposed_time_in?->clone()->setTimezone($timezone)->format('H:i'),
-                'proposed_time_out' => $ticket->proposed_time_out?->clone()->setTimezone($timezone)->format('H:i'),
+                'proposed_time_in' => $ticket->proposed_time_in?->clone()->setTimezone($timezone)->format('g:i A'),
+                'proposed_time_out' => $ticket->proposed_time_out?->clone()->setTimezone($timezone)->format('g:i A'),
                 'reason' => $ticket->reason,
             ]);
 
