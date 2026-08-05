@@ -15,6 +15,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Http\Requests\Admin\UpdateSupervisorRequest;
 
 class SupervisorController extends Controller
 {
@@ -61,6 +62,8 @@ class SupervisorController extends Controller
                 'supervisor_type' => $profile->supervisor_type,
                 'scope_name' => $profile->getScopeName(),
                 'status' => $profile->status,
+                'hte_id' => $profile->hte_id,
+                'program_id' => $profile->program_id,
             ]);
 
         return Inertia::render('admin/supervisors/index', [
@@ -139,5 +142,35 @@ class SupervisorController extends Controller
 
         return redirect()->route('admin.supervisors.index')
             ->with('success', 'OJT Supervisor account created. Default password: '.config('supervisor.default_supervisor_password'));
+    }
+
+    public function update(UpdateSupervisorRequest $request, SupervisorProfile $supervisorProfile): RedirectResponse
+    {
+        DB::transaction(function () use ($request, $supervisorProfile) {
+            $supervisorProfile->user->update([
+                'name' => $request->validated('name'),
+                'email' => $request->validated('email'),
+            ]);
+
+            if ($supervisorProfile->supervisor_type === 'hte') {
+                $supervisorProfile->update(['hte_id' => $request->validated('hte_id')]);
+                $supervisorProfile->hte->refreshContactPerson();
+            } else {
+                $supervisorProfile->update(['program_id' => $request->validated('program_id')]);
+            }
+        });
+
+        return back()->with('success', 'Supervisor updated.');
+    }
+
+    public function destroy(SupervisorProfile $supervisorProfile): RedirectResponse
+    {
+        if ($supervisorProfile->status !== 'inactive') {
+            return back()->with('error', 'Only inactive supervisors can be deleted.');
+        }
+
+        $supervisorProfile->delete();
+
+        return back()->with('success', 'Supervisor removed.');
     }
 }

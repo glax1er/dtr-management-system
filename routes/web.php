@@ -62,6 +62,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('schedule', [AdminScheduleController::class, 'store'])->name('schedule.store');
         Route::delete('schedule/{schedulePeriod}', [AdminScheduleController::class, 'destroy'])->name('schedule.destroy');
         Route::patch('schedule/{schedulePeriod}', [AdminScheduleController::class, 'update'])->name('schedule.update');
+        Route::patch('supervisors/{supervisorProfile}', [SupervisorController::class, 'update'])->name('supervisors.update');
+        Route::delete('supervisors/{supervisorProfile}', [SupervisorController::class, 'destroy'])->name('supervisors.destroy');
+
+        Route::patch('interns/{internProfile}', [InternController::class, 'update'])->name('interns.update');
+        Route::delete('interns/{internProfile}', [InternApprovalController::class, 'destroy'])->name('interns.destroy');
+
+Route::delete('htes/{hte}', [HteController::class, 'destroy'])->name('htes.destroy');
     });
 
     Route::middleware('role:' . User::ROLE_SUPERVISOR)->prefix('supervisor')->name('supervisor.')->group(function () {

@@ -4,9 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+
+
+    // ...rest of the class stays exactly as-is
 
 class Hte extends Model
 {
+    use SoftDeletes;
+
     protected $primaryKey = 'hte_id';
 
     // Only created_at exists on this table. Eloquent will populate it on create

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\InternProfile;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
+use App\Http\Requests\Admin\UpdateSupervisorRequest;
 
 class InternApprovalController extends Controller
 {
@@ -39,5 +40,15 @@ class InternApprovalController extends Controller
         ]);
 
         return back()->with('success', "{$internProfile->user->name} has been reverted to pending.");
+    }
+    public function destroy(InternProfile $internProfile): RedirectResponse
+    {
+        if ($internProfile->status !== 'rejected') {
+            return back()->with('error', 'Only rejected intern records can be deleted.');
+        }
+
+        $internProfile->delete();
+
+        return back()->with('success', "{$internProfile->user->name} has been removed.");
     }
 }

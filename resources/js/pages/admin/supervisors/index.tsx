@@ -38,6 +38,8 @@ interface Supervisor {
     supervisor_type: 'hte' | 'ojt';
     scope_name: string;
     status: 'active' | 'inactive';
+    hte_id: number | null;
+    program_id: number | null;
 }
 
 interface Filters {
@@ -53,19 +55,24 @@ interface SupervisorsIndexProps {
     filters: Filters;
 }
 
-// Radix's Select doesn't allow an item with an empty-string value, so
-// "every type" gets its own sentinel that we translate back to
-// undefined (i.e. no type filter) before it hits the URL.
 const ALL_TYPES = 'all';
 
 export default function SupervisorsIndex({ supervisors, htes, programs, filters }: SupervisorsIndexProps) {
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState(filters.search);
+    const [editingSupervisor, setEditingSupervisor] = useState<Supervisor | null>(null);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
         email: '',
         supervisor_type: 'hte',
+        hte_id: '',
+        program_id: '',
+    });
+
+    const editForm = useForm({
+        name: '',
+        email: '',
         hte_id: '',
         program_id: '',
     });
@@ -84,9 +91,34 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
         });
     };
 
-    // Base params shared by every navigation action. Anything that
-    // changes what rows match (search, type) resets back to page 1 by
-    // simply omitting the page param.
+    const openEditDialog = (supervisor: Supervisor) => {
+        editForm.setData({
+            name: supervisor.name,
+            email: supervisor.email,
+            hte_id: supervisor.hte_id ? String(supervisor.hte_id) : '',
+            program_id: supervisor.program_id ? String(supervisor.program_id) : '',
+        });
+        setEditingSupervisor(supervisor);
+    };
+
+    const handleEditSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingSupervisor) return;
+
+        editForm.patch(`/admin/supervisors/${editingSupervisor.user_id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setEditingSupervisor(null);
+            },
+        });
+    };
+
+    const deleteSupervisor = (userId: number, name: string) => {
+        if (confirm(`Permanently delete ${name}'s supervisor record? This cannot be undone from the UI.`)) {
+            router.delete(`/admin/supervisors/${userId}`, { preserveScroll: true });
+        }
+    };
+
     const baseParams = () => ({
         search: filters.search || undefined,
         type: filters.type ?? undefined,
@@ -307,7 +339,8 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                                             <th className="py-2 pr-4 font-medium">Email</th>
                                             <th className="py-2 pr-4 font-medium">Type</th>
                                             <th className="py-2 pr-4 font-medium">Scope</th>
-                                            <th className="py-2 font-medium">Status</th>
+                                            <th className="py-2 pr-4 font-medium">Status</th>
+                                            <th className="py-2 pl-4 font-medium">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -327,7 +360,7 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                                                 <td className="max-w-[180px] truncate py-2.5 pr-4" title={supervisor.scope_name}>
                                                     {supervisor.scope_name}
                                                 </td>
-                                                <td className="py-2.5">
+                                                <td className="py-2.5 pr-4">
                                                     <Select
                                                         value={supervisor.status}
                                                         onValueChange={(value) => changeStatus(supervisor.user_id, value)}
@@ -340,6 +373,28 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                                                             <SelectItem value="inactive">Inactive</SelectItem>
                                                         </SelectContent>
                                                     </Select>
+                                                </td>
+                                                <td className="py-2.5 pl-4">
+                                                    <div className="flex flex-wrap gap-2">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() => openEditDialog(supervisor)}
+                                                        >
+                                                            Edit
+                                                        </Button>
+                                                        {supervisor.status === 'inactive' && (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="destructive"
+                                                                onClick={() =>
+                                                                    deleteSupervisor(supervisor.user_id, supervisor.name)
+                                                                }
+                                                            >
+                                                                Delete
+                                                            </Button>
+                                                        )}
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -358,6 +413,92 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                     </CardContent>
                 </Card>
             </div>
+
+            <Dialog open={editingSupervisor !== null} onOpenChange={(open) => !open && setEditingSupervisor(null)}>
+                <DialogContent>
+                    <form onSubmit={handleEditSubmit}>
+                        <DialogHeader>
+                            <DialogTitle>Edit Supervisor</DialogTitle>
+                            <DialogDescription>Update this supervisor's account and assignment.</DialogDescription>
+                        </DialogHeader>
+
+                        <div className="grid gap-4 py-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="edit_sup_name">Name</Label>
+                                <Input
+                                    id="edit_sup_name"
+                                    value={editForm.data.name}
+                                    onChange={(e) => editForm.setData('name', e.target.value)}
+                                    required
+                                />
+                                <InputError message={editForm.errors.name} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="edit_sup_email">Email</Label>
+                                <Input
+                                    id="edit_sup_email"
+                                    type="email"
+                                    value={editForm.data.email}
+                                    onChange={(e) => editForm.setData('email', e.target.value)}
+                                    required
+                                />
+                                <InputError message={editForm.errors.email} />
+                            </div>
+
+                            {editingSupervisor?.supervisor_type === 'hte' ? (
+                                <div className="grid gap-2">
+                                    <Label htmlFor="edit_sup_hte_id">Host training establishment</Label>
+                                    <Select
+                                        value={editForm.data.hte_id}
+                                        onValueChange={(value) => editForm.setData('hte_id', value)}
+                                        required
+                                    >
+                                        <SelectTrigger id="edit_sup_hte_id" className="w-full">
+                                            <SelectValue placeholder="Select HTE" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {htes.map((hte) => (
+                                                <SelectItem key={hte.hte_id} value={String(hte.hte_id)}>
+                                                    {hte.hte_name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <InputError message={editForm.errors.hte_id} />
+                                </div>
+                            ) : (
+                                <div className="grid gap-2">
+                                    <Label htmlFor="edit_sup_program_id">Program</Label>
+                                    <Select
+                                        value={editForm.data.program_id}
+                                        onValueChange={(value) => editForm.setData('program_id', value)}
+                                        required
+                                    >
+                                        <SelectTrigger id="edit_sup_program_id" className="w-full">
+                                            <SelectValue placeholder="Select program" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {programs.map((program) => (
+                                                <SelectItem key={program.program_id} value={String(program.program_id)}>
+                                                    {program.program_name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <InputError message={editForm.errors.program_id} />
+                                </div>
+                            )}
+                        </div>
+
+                        <DialogFooter>
+                            <Button type="submit" disabled={editForm.processing}>
+                                Save changes
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
