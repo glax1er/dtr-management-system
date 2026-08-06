@@ -88,7 +88,7 @@ class ManualAttendanceController extends Controller
         $hteId = InternProfile::where('user_id', $validated['intern_user_id'])->value('hte_id');
 
         $existingDay = (new DailyAttendanceCalculator())
-            ->forIntern($validated['intern_user_id'], $day->clone(), $day->clone()->endOfDay(), hteId: $hteId)
+            ->forIntern($validated['intern_user_id'], $hteId, $day->clone(), $day->clone()->endOfDay())
             ->first();
 
         if ($existingDay === null || $existingDay->isFullyMissing()) {

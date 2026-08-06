@@ -118,7 +118,7 @@ class ResolutionTicketController extends Controller
             $hteId = InternProfile::where('user_id', $ticket->intern_user_id)->value('hte_id');
 
             $existingDay = $this->calculator
-                ->forIntern($ticket->intern_user_id, from: Carbon::instance($ticket->date), to: Carbon::instance($ticket->date), hteId: $hteId)
+                ->forIntern($ticket->intern_user_id, $hteId, from: Carbon::instance($ticket->date), to: Carbon::instance($ticket->date))
                 ->first();
 
             if ($finalTimeIn !== null) {

@@ -34,7 +34,7 @@ class DailyAttendanceCalculator
     /**
      * @return Collection<int, DailyAttendance> ordered oldest date first
      */
-    public function forIntern(int $internUserId, ?Carbon $from = null, ?Carbon $to = null, ?CarbonInterface $approvedAt = null, ?int $hteId = null): Collection
+    public function forIntern(int $internUserId, int $hteId, ?Carbon $from = null, ?Carbon $to = null, ?CarbonInterface $approvedAt = null): Collection
     {
         $timezone = config('dtr.timezone');
 
@@ -121,10 +121,10 @@ class DailyAttendanceCalculator
      * from the daily breakdown rather than stored anywhere, so it's
      * always consistent with what the intern sees in their log table.
      */
-    public function totalHours(int $internUserId, ?Carbon $from = null, ?Carbon $to = null, ?int $hteId = null): float
+    public function totalHours(int $internUserId, int $hteId, ?Carbon $from = null, ?Carbon $to = null): float
     {
         return round(
-            $this->forIntern($internUserId, $from, $to, hteId: $hteId)->sum('hoursRendered'),
+            $this->forIntern($internUserId, $hteId, $from, $to)->sum('hoursRendered'),
             2,
         );
     }
@@ -132,7 +132,7 @@ class DailyAttendanceCalculator
     /**
      * @param  Collection<int, AttendanceLog>  $scansForDay
      */
-    private function summarizeDay(string $date, Collection $scansForDay, ?int $hteId): DailyAttendance
+    private function summarizeDay(string $date, Collection $scansForDay, int $hteId): DailyAttendance
     {
         $timezone = config('dtr.timezone');
 
@@ -174,29 +174,33 @@ class DailyAttendanceCalculator
     /**
      * @return array{0: float, 1: bool}
      */
-    private function computeHours(string $date, CarbonInterface $timeIn, CarbonInterface $timeOut, ?int $hteId): array
+    private function computeHours(string $date, CarbonInterface $timeIn, CarbonInterface $timeOut, int $hteId): array
     {
         $timezone = config('dtr.timezone');
 
         $localTimeIn = $timeIn->clone()->setTimezone($timezone);
         $localTimeOut = $timeOut->clone()->setTimezone($timezone);
 
-        // Hours only start accruing at the official shift start — an
-        // intern who scans in early (e.g. right after a morning class,
-        // ahead of their HTE's configured 1:00 PM OJT start) shouldn't
-        // have that early arrival counted as rendered time. The official
-        // start comes from that HTE's SchedulePeriod for this day of the
-        // week when one is configured; otherwise it falls back to the
-        // system-wide default. Only the later of the two (actual scan-in
-        // vs. expected start) is ever used as the effective time-in for
-        // the hours math below.
-        $expectedStartTime = $hteId !== null
-            ? SchedulePeriod::expectedStartTimeFor(Carbon::parse($date, $timezone), $hteId)
-            : null;
-        $expectedStartTime ??= config('dtr.expected_start_time', '08:00');
+        // Hours only start accruing at this HTE's actual expected start
+        // time for this specific day (SchedulePeriod override, then the
+        // global default) — an intern who scans in early shouldn't have
+        // that early arrival counted as rendered time. Only the later of
+        // the two (actual scan-in vs. expected start) is ever used as
+        // the effective time-in for the hours math below.
+        //
+        // If no expected start time is configured at all for this day
+        // (weekend, or an HTE with no schedule for it), don't clamp —
+        // count the full worked span, consistent with that day being
+        // labeled 'unscheduled' rather than silently penalized against
+        // a fake default.
+        $expectedStartTime = SchedulePeriod::expectedStartTimeFor(
+            Carbon::parse($date, $timezone),
+            $hteId,
+        );
 
-        $expectedStart = Carbon::parse($date.' '.$expectedStartTime, $timezone);
-        $effectiveTimeIn = $localTimeIn->max($expectedStart);
+        $effectiveTimeIn = $expectedStartTime === null
+            ? $localTimeIn
+            : $localTimeIn->max(Carbon::parse($date.' '.$expectedStartTime, $timezone));
 
         $rawHours = $localTimeOut->gt($effectiveTimeIn)
             ? $effectiveTimeIn->floatDiffInHours($localTimeOut)

@@ -90,7 +90,7 @@ class HtesController extends Controller
                         'email' => $intern->user->email,
                         'id_number' => $intern->id_number,
                         'contact_number' => $intern->contact_number,
-                        'total_hours' => $this->calculator->totalHours($intern->user_id),
+                        'total_hours' => $this->calculator->totalHours($intern->user_id, $hte->hte_id),
                     ])
                     ->sortBy('name')
                     ->values(),

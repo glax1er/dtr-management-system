@@ -36,21 +36,21 @@ class DashboardController extends Controller
 
         $monthDays = $this->calculator->forIntern(
             $user->id,
+            $profile->hte_id,
             from: $month->clone()->startOfMonth(),
             to: $month->clone()->endOfMonth(),
             approvedAt: $profile->approved_at,
-            hteId: $profile->hte_id,
         );
 
         // Today's card is deliberately independent of $monthDays — an
         // intern paging back to review a previous month shouldn't see
         // their "Today" status disappear.
         $todayEntry = $this->calculator
-            ->forIntern($user->id, from: $today->clone()->startOfDay(), to: $today->clone()->endOfDay(), hteId: $profile->hte_id)
+            ->forIntern($user->id, $profile->hte_id, from: $today->clone()->startOfDay(), to: $today->clone()->endOfDay())
             ->first();
 
         $requiredHours = $profile->program->required_hours ?? config('dtr.default_required_hours');
-        $totalHours = $this->calculator->totalHours($user->id, hteId: $profile->hte_id);
+        $totalHours = $this->calculator->totalHours($user->id, $profile->hte_id);
 
         // Keyed by date string so it's a cheap lookup per row below —
         // only ever one pending ticket per date is allowed to exist
