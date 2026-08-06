@@ -41,7 +41,7 @@ class ResolutionTicketController extends Controller
         // looks like right now — never trust the client's idea of the
         // day's status.
         $day = $this->calculator
-            ->forIntern($user->id, from: $date, to: $date, approvedAt: $profile->approved_at)
+            ->forIntern($user->id, from: $date, to: $date, approvedAt: $profile->approved_at, hteId: $profile->hte_id)
             ->first();
 
         if ($day === null || (! $day->isFullyMissing() && ! $day->isMissingTimeIn() && ! $day->isOpen())) {

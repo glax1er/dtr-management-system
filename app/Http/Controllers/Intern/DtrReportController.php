@@ -44,6 +44,7 @@ class DtrReportController extends Controller
             from: $month->clone()->startOfMonth(),
             to: $month->clone()->endOfMonth(),
             approvedAt: $profile->approved_at,
+            hteId: $profile->hte_id,
         );
 
         $html = view('reports.dtr', [

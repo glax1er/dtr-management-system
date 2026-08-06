@@ -3,6 +3,7 @@
 namespace App\Services\Attendance;
 
 use App\Models\AttendanceLog;
+use App\Models\SchedulePeriod;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -33,7 +34,7 @@ class DailyAttendanceCalculator
     /**
      * @return Collection<int, DailyAttendance> ordered oldest date first
      */
-    public function forIntern(int $internUserId, ?Carbon $from = null, ?Carbon $to = null, ?CarbonInterface $approvedAt = null): Collection
+    public function forIntern(int $internUserId, ?Carbon $from = null, ?Carbon $to = null, ?CarbonInterface $approvedAt = null, ?int $hteId = null): Collection
     {
         $timezone = config('dtr.timezone');
 
@@ -54,7 +55,7 @@ class DailyAttendanceCalculator
 
         $days = collect(
             $scansByDate
-                ->map(fn (Collection $scans, string $date) => $this->summarizeDay($date, $scans))
+                ->map(fn (Collection $scans, string $date) => $this->summarizeDay($date, $scans, $hteId))
                 ->all()
         );
 
@@ -120,10 +121,10 @@ class DailyAttendanceCalculator
      * from the daily breakdown rather than stored anywhere, so it's
      * always consistent with what the intern sees in their log table.
      */
-    public function totalHours(int $internUserId, ?Carbon $from = null, ?Carbon $to = null): float
+    public function totalHours(int $internUserId, ?Carbon $from = null, ?Carbon $to = null, ?int $hteId = null): float
     {
         return round(
-            $this->forIntern($internUserId, $from, $to)->sum('hoursRendered'),
+            $this->forIntern($internUserId, $from, $to, hteId: $hteId)->sum('hoursRendered'),
             2,
         );
     }
@@ -131,13 +132,17 @@ class DailyAttendanceCalculator
     /**
      * @param  Collection<int, AttendanceLog>  $scansForDay
      */
-    private function summarizeDay(string $date, Collection $scansForDay): DailyAttendance
+    private function summarizeDay(string $date, Collection $scansForDay, ?int $hteId): DailyAttendance
     {
         $timezone = config('dtr.timezone');
 
         $earliestScan = $scansForDay->first()->scan_timestamp;
         $latestScan = $scansForDay->count() > 1 ? $scansForDay->last()->scan_timestamp : null;
 
+        // Global time-out cutoff for now — see computeHours() below for
+        // why the *start* side is already schedule-aware; the cutoff
+        // side still needs a per-HTE/day value added to SchedulePeriod
+        // before this can be too (tracked separately).
         $cutoff = Carbon::parse($date.' '.config('dtr.time_out_cutoff'), $timezone);
         $earliestScanLocal = $earliestScan->clone()->setTimezone($timezone);
 
@@ -153,7 +158,7 @@ class DailyAttendanceCalculator
         }
 
         [$hours, $lunchDeducted] = ($timeIn !== null && $timeOut !== null)
-            ? $this->computeHours($date, $timeIn, $timeOut)
+            ? $this->computeHours($date, $timeIn, $timeOut, $hteId)
             : [0.0, false];
 
         return new DailyAttendance(
@@ -169,7 +174,7 @@ class DailyAttendanceCalculator
     /**
      * @return array{0: float, 1: bool}
      */
-    private function computeHours(string $date, CarbonInterface $timeIn, CarbonInterface $timeOut): array
+    private function computeHours(string $date, CarbonInterface $timeIn, CarbonInterface $timeOut, ?int $hteId): array
     {
         $timezone = config('dtr.timezone');
 
@@ -177,11 +182,20 @@ class DailyAttendanceCalculator
         $localTimeOut = $timeOut->clone()->setTimezone($timezone);
 
         // Hours only start accruing at the official shift start — an
-        // intern who scans in early (e.g. 6:30 AM for an 8:00 AM shift)
-        // shouldn't have that early arrival counted as rendered time.
-        // Only the later of the two (actual scan-in vs. expected start)
-        // is ever used as the effective time-in for the hours math below.
-        $expectedStart = Carbon::parse($date.' '.config('dtr.expected_start_time'), $timezone);
+        // intern who scans in early (e.g. right after a morning class,
+        // ahead of their HTE's configured 1:00 PM OJT start) shouldn't
+        // have that early arrival counted as rendered time. The official
+        // start comes from that HTE's SchedulePeriod for this day of the
+        // week when one is configured; otherwise it falls back to the
+        // system-wide default. Only the later of the two (actual scan-in
+        // vs. expected start) is ever used as the effective time-in for
+        // the hours math below.
+        $expectedStartTime = $hteId !== null
+            ? SchedulePeriod::expectedStartTimeFor(Carbon::parse($date, $timezone), $hteId)
+            : null;
+        $expectedStartTime ??= config('dtr.expected_start_time', '08:00');
+
+        $expectedStart = Carbon::parse($date.' '.$expectedStartTime, $timezone);
         $effectiveTimeIn = $localTimeIn->max($expectedStart);
 
         $rawHours = $localTimeOut->gt($effectiveTimeIn)

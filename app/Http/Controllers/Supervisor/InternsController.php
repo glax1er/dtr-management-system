@@ -181,6 +181,7 @@ class InternsController extends Controller
                     from: $rangeStart,
                     to: $rangeEnd,
                     approvedAt: $intern->approved_at,
+                    hteId: $intern->hte_id,
                 );
 
                 return $days->map(fn(DailyAttendance $day) => array_merge(

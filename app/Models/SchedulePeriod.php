@@ -67,6 +67,6 @@ class SchedulePeriod extends Model
             return $global->day_schedule[$dayName] ?? null;
         }
 
-        return config('dtr.default_expected_start_time', '08:00');
+        return config('dtr.expected_start_time', '08:00');
     }
 }
