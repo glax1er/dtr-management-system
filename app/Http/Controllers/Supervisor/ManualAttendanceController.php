@@ -83,11 +83,12 @@ class ManualAttendanceController extends Controller
 
         $this->authorizeIntern($request, $validated['intern_user_id']);
 
+        $supervisorProfile = $request->user()->supervisorProfile;
         $timezone = config('dtr.timezone');
         $day = Carbon::createFromFormat('Y-m-d', $validated['date'], $timezone)->startOfDay();
 
         $existingDay = (new DailyAttendanceCalculator())
-            ->forIntern($validated['intern_user_id'], $day->clone(), $day->clone()->endOfDay())
+            ->forIntern($validated['intern_user_id'], $supervisorProfile->hte_id, $day->clone(), $day->clone()->endOfDay())
             ->first();
 
         if ($existingDay === null || $existingDay->isFullyMissing()) {

@@ -89,7 +89,7 @@ class InternsController extends Controller
                 'id_number' => $intern->id_number,
                 'contact_number' => $intern->contact_number,
                 'hte_name' => $intern->hte->hte_name,
-                'total_hours' => $this->calculator->totalHours($intern->user_id),
+                'total_hours' => $this->calculator->totalHours($intern->user_id, $intern->hte_id),
             ])
             ->sortBy('name')
             ->values();
@@ -178,6 +178,7 @@ class InternsController extends Controller
             ->flatMap(function (InternProfile $intern) use ($rangeStart, $rangeEnd) {
                 $days = $this->calculator->forIntern(
                     $intern->user_id,
+                    $intern->hte_id,
                     from: $rangeStart,
                     to: $rangeEnd,
                     approvedAt: $intern->approved_at,
@@ -218,7 +219,7 @@ class InternsController extends Controller
             ->map(fn(InternProfile $intern) => [
                 'intern_user_id' => $intern->user_id,
                 'intern_name' => $intern->user->name,
-                'total_hours' => $this->calculator->totalHours($intern->user_id, $rangeStart, $rangeEnd),
+                'total_hours' => $this->calculator->totalHours($intern->user_id, $intern->hte_id, $rangeStart, $rangeEnd),
             ])
             ->sortBy('intern_name')
             ->values();

@@ -103,7 +103,7 @@ test('a first scan before the time-out cutoff is a normal time-in', function () 
         'scan_timestamp' => Carbon::parse('2026-07-20 17:00:00', 'Asia/Manila'),
     ]);
 
-    $day = (new DailyAttendanceCalculator)->forIntern($intern->id)->first();
+    $day = (new DailyAttendanceCalculator)->forIntern($intern->id, $intern->internProfile->hte_id)->first();
 
     expect($day->isMissingTimeIn())->toBeFalse()
         ->and($day->timeIn->clone()->setTimezone('Asia/Manila')->format('H:i'))->toBe('08:00')
@@ -117,14 +117,14 @@ test('a first scan after the time-out cutoff has no time-in and the scan becomes
     AttendanceLog::create([
         'intern_user_id' => $intern->id,
         'supervisor_user_id' => $supervisor->id,
-        'scan_timestamp' => Carbon::parse('2026-07-20 14:00:00', 'Asia/Manila'),
+        'scan_timestamp' => Carbon::parse('2026-07-20 17:00:00', 'Asia/Manila'),
     ]);
 
-    $day = (new DailyAttendanceCalculator)->forIntern($intern->id)->first();
+    $day = (new DailyAttendanceCalculator)->forIntern($intern->id, $intern->internProfile->hte_id)->first();
 
     expect($day->isMissingTimeIn())->toBeTrue()
         ->and($day->timeIn)->toBeNull()
-        ->and($day->timeOut->clone()->setTimezone('Asia/Manila')->format('H:i'))->toBe('14:00')
+        ->and($day->timeOut->clone()->setTimezone('Asia/Manila')->format('H:i'))->toBe('17:00')
         ->and($day->hoursRendered)->toBe(0.0);
 });
 
@@ -146,7 +146,7 @@ test('an early scan-in does not inflate rendered hours before the expected start
         'scan_timestamp' => Carbon::parse('2026-07-20 17:00:00', 'Asia/Manila'),
     ]);
 
-    $day = (new DailyAttendanceCalculator)->forIntern($intern->id)->first();
+    $day = (new DailyAttendanceCalculator)->forIntern($intern->id, $intern->internProfile->hte_id)->first();
 
     // 08:00 to 17:00 is 9 hours, minus the 1-hour lunch deduction = 8.
     // (Not 10.5, which is what 06:30-17:00 minus lunch would give.)
@@ -170,7 +170,7 @@ test('a scan-in at or after the expected start time is unaffected by the clamp',
         'scan_timestamp' => Carbon::parse('2026-07-20 17:00:00', 'Asia/Manila'),
     ]);
 
-    $day = (new DailyAttendanceCalculator)->forIntern($intern->id)->first();
+    $day = (new DailyAttendanceCalculator)->forIntern($intern->id, $intern->internProfile->hte_id)->first();
 
     expect($day->hoursRendered)->toBe(8.0);
 });
@@ -185,7 +185,7 @@ test('a scan exactly at the time-out cutoff still counts as a normal time-in', f
         'scan_timestamp' => Carbon::parse('2026-07-20 13:00:00', 'Asia/Manila'),
     ]);
 
-    $day = (new DailyAttendanceCalculator)->forIntern($intern->id)->first();
+    $day = (new DailyAttendanceCalculator)->forIntern($intern->id, $intern->internProfile->hte_id)->first();
 
     expect($day->isMissingTimeIn())->toBeFalse()
         ->and($day->timeIn->clone()->setTimezone('Asia/Manila')->format('H:i'))->toBe('13:00');

@@ -41,6 +41,7 @@ class DtrReportController extends Controller
 
         $days = $this->calculator->forIntern(
             $user->id,
+            $profile->hte_id,
             from: $month->clone()->startOfMonth(),
             to: $month->clone()->endOfMonth(),
             approvedAt: $profile->approved_at,
