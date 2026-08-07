@@ -183,10 +183,13 @@ class DailyAttendanceCalculator
 
         // Hours only start accruing at this HTE's actual expected start
         // time for this specific day (SchedulePeriod override, then the
-        // global default) — an intern who scans in early shouldn't have
-        // that early arrival counted as rendered time. Only the later of
-        // the two (actual scan-in vs. expected start) is ever used as
-        // the effective time-in for the hours math below.
+        // global default), minus a small early-arrival allowance — an
+        // intern who scans in well before their shift shouldn't have all
+        // of that early arrival counted as rendered time, but scanning in
+        // a little early (e.g. settling in before an 8:00 shift) isn't
+        // penalized either. Only the later of the two (actual scan-in vs.
+        // allowance-adjusted expected start) is ever used as the
+        // effective time-in for the hours math below.
         //
         // If no expected start time is configured at all for this day
         // (weekend, or an HTE with no schedule for it), don't clamp —
@@ -198,9 +201,16 @@ class DailyAttendanceCalculator
             $hteId,
         );
 
-        $effectiveTimeIn = $expectedStartTime === null
-            ? $localTimeIn
-            : $localTimeIn->max(Carbon::parse($date.' '.$expectedStartTime, $timezone));
+        if ($expectedStartTime === null) {
+            $effectiveTimeIn = $localTimeIn;
+        } else {
+            $allowanceMinutes = config('dtr.early_arrival_allowance_minutes', 60);
+
+            $earliestCountedTimeIn = Carbon::parse($date.' '.$expectedStartTime, $timezone)
+                ->subMinutes($allowanceMinutes);
+
+            $effectiveTimeIn = $localTimeIn->max($earliestCountedTimeIn);
+        }
 
         $rawHours = $localTimeOut->gt($effectiveTimeIn)
             ? $effectiveTimeIn->floatDiffInHours($localTimeOut)
