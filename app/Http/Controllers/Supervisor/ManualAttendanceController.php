@@ -181,7 +181,8 @@ class ManualAttendanceController extends Controller
             }
         });
 
-        return back()->with('success', 'Attendance records saved.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Attendance records saved.']);
+        return back();
     }
 
     private function authorizeIntern(Request $request, int $internUserId): void
