@@ -14,12 +14,12 @@ export default function AppLogo() {
                 />
             </div>
 
-            <div className="grid flex-1 text-left">
+            <div className="grid flex-1 text-left group-data-[collapsible=icon]:hidden">
                 <span className="text-[11px] font-semibold leading-tight">
                     USeP - CIC
                 </span>
                 <span className="text-[9px] font-normal leading-tight">
-                    Internship Management System 
+                    Internship Management System
                 </span>
             </div>
         </>
