@@ -115,8 +115,10 @@ class ResolutionTicketController extends Controller
             // Whatever's still real for this date — only relevant when the
             // ticket proposed just one side, since the other side already
             // exists as a genuine scan and isn't being touched here.
+            $hteId = InternProfile::where('user_id', $ticket->intern_user_id)->value('hte_id');
+
             $existingDay = $this->calculator
-                ->forIntern($ticket->intern_user_id, $ticket->intern->internProfile->hte_id, from: Carbon::instance($ticket->date), to: Carbon::instance($ticket->date))
+                ->forIntern($ticket->intern_user_id, $hteId, from: Carbon::instance($ticket->date), to: Carbon::instance($ticket->date))
                 ->first();
 
             if ($finalTimeIn !== null) {
