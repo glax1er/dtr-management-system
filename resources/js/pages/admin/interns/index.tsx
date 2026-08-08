@@ -98,51 +98,47 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                     <p className="text-muted-foreground text-sm">Manage intern registrations by status.</p>
                 </div>
 
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="flex flex-wrap gap-2">
-                        {TABS.map((tab) => (
-                            <Button
-                                key={tab.value}
-                                variant={currentStatus === tab.value ? 'default' : 'outline'}
-                                size="sm"
-                                onClick={() => switchTab(tab.value)}
-                            >
-                                {tab.label}
-                            </Button>
-                        ))}
-                    </div>
-
-                    <form onSubmit={applySearch} className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                        <div className="flex flex-col gap-1.5">
-                            <Label htmlFor="search" className="text-xs text-muted-foreground">
-                                Search by name
-                            </Label>
-                            <Input
-                                id="search"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                placeholder="e.g. Juan Dela Cruz"
-                                className="w-full sm:w-56"
-                            />
-                        </div>
-                        <div className="flex gap-2">
-                            <Button type="submit" variant="secondary" size="sm">
-                                Search
-                            </Button>
-                            {filters.search !== '' && (
-                                <Button type="button" variant="ghost" size="sm" onClick={clearSearch}>
-                                    Clear
-                                </Button>
-                            )}
-                        </div>
-                    </form>
+                <div className="flex flex-wrap gap-2">
+                    {TABS.map((tab) => (
+                        <Button
+                            key={tab.value}
+                            variant={currentStatus === tab.value ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => switchTab(tab.value)}
+                        >
+                            {tab.label}
+                        </Button>
+                    ))}
                 </div>
 
                 <Card className="flex-1">
                     <CardHeader>
                         <CardTitle className="capitalize">{currentStatus} Interns</CardTitle>
                     </CardHeader>
-                    <CardContent className="flex flex-col gap-4">
+                    <CardContent className="flex flex-col gap-5">
+                        <form onSubmit={applySearch} className="flex flex-col gap-1.5">
+                            <Label htmlFor="search" className="text-xs text-muted-foreground">
+                                Search by name
+                            </Label>
+                            <div className="flex gap-2">
+                                <Input
+                                    id="search"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="e.g. Juan Dela Cruz"
+                                    className="w-full sm:w-64"
+                                />
+                                <Button type="submit" variant="secondary" size="sm">
+                                    Search
+                                </Button>
+                                {filters.search !== '' && (
+                                    <Button type="button" variant="ghost" size="sm" onClick={clearSearch}>
+                                        Clear
+                                    </Button>
+                                )}
+                            </div>
+                        </form>
+
                         {interns.data.length === 0 ? (
                             <p className="py-8 text-center text-sm text-muted-foreground">
                                 No {currentStatus} interns{filters.search ? ' match your search.' : '.'}
