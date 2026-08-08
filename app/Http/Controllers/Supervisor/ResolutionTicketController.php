@@ -167,6 +167,8 @@ class ResolutionTicketController extends Controller
             ]);
         });
 
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Resolution request approved.']);
+
         return back();
     }
 
@@ -194,6 +196,8 @@ class ResolutionTicketController extends Controller
                 'resolved_at' => Carbon::now(),
             ]);
         });
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Resolution request rejected.']);
 
         return back();
     }

@@ -3,6 +3,7 @@ import { Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import {
     Card,
     CardContent,
@@ -166,7 +167,7 @@ export default function SupervisorSchedule({ periods, globalPeriods }: ScheduleP
 
     const submitAdd = () => {
         if (!addForm.startDate || !addForm.endDate) {
-            alert('Start date and end date are required.');
+            toast.error('Start date and end date are required.');
             return;
         }
 
@@ -196,7 +197,7 @@ export default function SupervisorSchedule({ periods, globalPeriods }: ScheduleP
 
     const submitEdit = () => {
         if (!editingId || !editForm.startDate || !editForm.endDate) {
-            alert('Start date and end date are required.');
+            toast.error('Start date and end date are required.');
             return;
         }
 

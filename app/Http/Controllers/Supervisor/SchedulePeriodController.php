@@ -47,7 +47,8 @@ class SchedulePeriodController extends Controller
             'day_schedule' => $validated['day_schedule'],
         ]);
 
-        return back()->with('success', 'HTE schedule override created.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'HTE schedule override created.']);
+        return back();
     }
 
     public function update(Request $request, SchedulePeriod $schedulePeriod): RedirectResponse
@@ -71,7 +72,8 @@ class SchedulePeriodController extends Controller
             'day_schedule' => $validated['day_schedule'],
         ]);
 
-        return back()->with('success', 'Override updated.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Override updated.']);
+        return back();
     }
 
     public function destroy(Request $request, SchedulePeriod $schedulePeriod): RedirectResponse
@@ -88,7 +90,8 @@ class SchedulePeriodController extends Controller
 
         $schedulePeriod->delete();
 
-        return back()->with('success', 'Override removed.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Override removed.']);
+        return back();
     }
 
     private function toArray(SchedulePeriod $period, string $scope): array

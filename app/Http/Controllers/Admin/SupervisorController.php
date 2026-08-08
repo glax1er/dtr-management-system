@@ -89,7 +89,8 @@ class SupervisorController extends Controller
             $supervisorProfile->hte->refreshContactPerson();
         }
 
-        return back()->with('success', 'Supervisor status updated.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Supervisor status updated.']);
+        return back();
     }
 
     public function store(StoreSupervisorRequest $request): RedirectResponse
@@ -114,8 +115,9 @@ class SupervisorController extends Controller
             $supervisorProfile->hte->refreshContactPerson();
         });
 
-        return redirect()->route('admin.supervisors.index')
-            ->with('success', 'HTE Supervisor account created. Default password: '.config('supervisor.default_supervisor_password'));
+        Inertia::flash('toast', ['type' => 'success', 'message' => "HTE Supervisor account created.\nDefault password: ".config('supervisor.default_supervisor_password')]);
+
+        return redirect()->route('admin.supervisors.index');
     }
 
     public function storeOjtSupervisor(StoreOjtSupervisorRequest $request): RedirectResponse
@@ -137,7 +139,8 @@ class SupervisorController extends Controller
             ]);
         });
 
-        return redirect()->route('admin.supervisors.index')
-            ->with('success', 'OJT Supervisor account created. Default password: '.config('supervisor.default_supervisor_password'));
+        Inertia::flash('toast', ['type' => 'success', 'message' => "OJT Supervisor account created.\nDefault password: " . config('supervisor.default_supervisor_password')]);
+
+        return redirect()->route('admin.supervisors.index');
     }
 }

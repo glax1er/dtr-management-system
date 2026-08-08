@@ -1,4 +1,5 @@
 import { Head, router } from '@inertiajs/react';
+import { toast } from 'sonner';
 import {
     AlertTriangle,
     CalendarDays,
@@ -232,7 +233,7 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
 
     const submit = async (force = false) => {
         if (!internId) {
-            showError('Choose an intern before saving attendance records.');
+            toast.error('Select an intern first.');
 
             return;
         }

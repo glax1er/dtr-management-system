@@ -2,6 +2,7 @@ import { Head, router } from '@inertiajs/react';
 import { Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import {
     Card,
     CardContent,
@@ -121,7 +122,7 @@ export default function AdminSchedule({ periods }: ScheduleProps) {
 
     const submitAdd = () => {
         if (!addForm.startDate || !addForm.endDate) {
-            alert('Start date and end date are required.');
+            toast.error('Start date and end date are required.');
             return;
         }
 
@@ -151,7 +152,7 @@ export default function AdminSchedule({ periods }: ScheduleProps) {
 
     const submitEdit = () => {
         if (!editingId || !editForm.startDate || !editForm.endDate) {
-            alert('Start date and end date are required.');
+            toast.error('Start date and end date are required.');
             return;
         }
 
