@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\InternProfile;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class InternApprovalController extends Controller
 {
