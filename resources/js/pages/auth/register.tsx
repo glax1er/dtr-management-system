@@ -311,7 +311,7 @@ export default function Register({
                                     </Label>
                                     <button
                                         type="button"
-                                        className="cursor-pointer text-black underline underline-offset-2 hover:text-blue-800"
+                                        className="cursor-pointer text-foreground underline underline-offset-2 hover:text-blue-800 dark:text-white"
                                         onClick={() =>
                                             setShowPrivacyDialog(true)
                                         }

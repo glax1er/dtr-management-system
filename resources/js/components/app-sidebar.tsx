@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Building, CalendarClock, Clock, FileWarning, FolderGit2, GraduationCap, LayoutGrid, MonitorSmartphone, Users, PenLine } from 'lucide-react';
+import { BookOpen, Building, CalendarClock, FileWarning, FolderGit2, GraduationCap, LayoutGrid, MonitorSmartphone, Users, PenLine } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -59,7 +59,6 @@ const manualAttendanceNavItem: NavItem = {
 
 const internNavItems: NavItem[] = [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
-    { title: 'My DTR', href: '/intern/dtr', icon: Clock },
 ];
 
 const footerNavItems: NavItem[] = [
