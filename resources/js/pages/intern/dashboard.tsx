@@ -250,7 +250,7 @@ export default function InternDashboard({
                                     >
                                         <a
                                             href="/intern/qr-code"
-                                            download={profile.name}
+                                            download={`${profile.name.replace(/\s+/g, '_')}.png`}
                                         >
                                             <Download className="mr-2 size-4" />
                                             Download PNG
