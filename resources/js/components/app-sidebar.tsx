@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Building, CalendarClock, FileWarning, GraduationCap, LayoutGrid, MonitorSmartphone, Users, PenLine } from 'lucide-react';
+import { Building, CalendarClock, Paperclip, FileWarning, GraduationCap, LayoutGrid, MonitorSmartphone, Users, PenLine } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -59,6 +59,7 @@ const manualAttendanceNavItem: NavItem = {
 
 const internNavItems: NavItem[] = [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
+    { title: 'My Documents', href: '#', icon: Paperclip },
 ];
 
 const footerNavItems: NavItem[] = [];
