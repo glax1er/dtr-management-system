@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 
 class SchedulePeriod extends Model
@@ -44,7 +45,7 @@ class SchedulePeriod extends Model
      * default, then a hardcoded fallback if nothing is configured yet.
      * Returns null if that day is explicitly marked "no work expected."
      */
-    public static function expectedStartTimeFor(Carbon $date, int $hteId): ?string
+    public static function expectedStartTimeFor(CarbonInterface $date, int $hteId): ?string
     {
         $dayName = strtolower($date->englishDayOfWeek);
         $dateStr = $date->toDateString();

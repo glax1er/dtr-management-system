@@ -60,7 +60,7 @@ class DailyAttendanceCalculator
         );
 
         if ($approvedAt !== null) {
-            $days = $days->merge($this->missingWorkdays($days->keys(), $approvedAt, $timezone, $from, $to));
+            $days = $days->merge($this->missingWorkdays($days->keys(), $approvedAt, $timezone, $from, $to, $hteId));
         }
 
         return $days
@@ -80,7 +80,7 @@ class DailyAttendanceCalculator
      * @param  Collection<int, string>  $existingDates
      * @return Collection<string, DailyAttendance> keyed by date string
      */
-    private function missingWorkdays(Collection $existingDates, CarbonInterface $approvedAt, string $timezone, ?Carbon $from, ?Carbon $to): Collection
+    private function missingWorkdays(Collection $existingDates, CarbonInterface $approvedAt, string $timezone, ?Carbon $from, ?Carbon $to, int $hteId): Collection
     {
         $yesterday = Carbon::now($timezone)->subDay()->startOfDay();
 
@@ -101,7 +101,15 @@ class DailyAttendanceCalculator
         }
 
         for ($cursor = $rangeStart->clone(); $cursor->lte($rangeEnd); $cursor = $cursor->addDay()) {
-            if ($cursor->isWeekday() && ! $existingDates->contains($cursor->toDateString())) {
+            // A day only counts as "missed" if this HTE actually expected
+            // work that day (SchedulePeriod override, then global default).
+            // Replaces the old isWeekday() assumption, which had no idea
+            // about the real per-HTE schedule — e.g. it would still flag a
+            // Friday the HTE marked "no work" as a missed day, and could
+            // never flag a scheduled Saturday as missed either.
+            $isScheduledWorkday = SchedulePeriod::expectedStartTimeFor($cursor, $hteId) !== null;
+
+            if ($isScheduledWorkday && ! $existingDates->contains($cursor->toDateString())) {
                 $missing->put($cursor->toDateString(), new DailyAttendance(
                     date: $cursor->toDateString(),
                     timeIn: null,
