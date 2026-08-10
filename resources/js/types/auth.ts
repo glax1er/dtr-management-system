@@ -18,6 +18,10 @@ export type User = {
 
     export type PageProps = {
         auth: Auth;
+            flash?: {
+            success?: string | null;
+            error?: string | null;
+        };
         [key: string]: unknown;
     };
 

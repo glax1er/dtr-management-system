@@ -41,7 +41,8 @@ class SchedulePeriodController extends Controller
             'day_schedule' => $validated['day_schedule'],
         ]);
 
-        return back()->with('success', 'Global schedule period created.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Global schedule period created.']);
+        return back();
     }
 
     public function update(Request $request, SchedulePeriod $schedulePeriod): RedirectResponse
@@ -59,7 +60,8 @@ class SchedulePeriodController extends Controller
             'day_schedule' => $validated['day_schedule'],
         ]);
 
-        return back()->with('success', 'Schedule period updated.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Schedule period updated.']);
+        return back();
     }
 
     public function destroy(SchedulePeriod $schedulePeriod): RedirectResponse
@@ -70,7 +72,8 @@ class SchedulePeriodController extends Controller
 
         $schedulePeriod->delete();
 
-        return back()->with('success', 'Schedule period deleted.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Schedule period deleted.']);
+        return back();
     }
 
     private function validatePayload(Request $request): array

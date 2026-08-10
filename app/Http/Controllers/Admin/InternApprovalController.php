@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\InternProfile;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class InternApprovalController extends Controller
 {
@@ -18,7 +19,8 @@ class InternApprovalController extends Controller
             'qr_code_value' => (string) Str::uuid(), // only a unique random token string, modify if qr generation wil be applied
         ]);
 
-        return back()->with('success', "{$internProfile->user->name} has been approved.");
+        Inertia::flash('toast', ['type' => 'success', 'message' => "{$internProfile->user->name} has been approved."]);
+        return back();
     }
 
     public function reject(InternProfile $internProfile): RedirectResponse
@@ -27,7 +29,8 @@ class InternApprovalController extends Controller
             'status' => 'rejected',
         ]);
 
-        return back()->with('success', "{$internProfile->user->name} has been rejected.");
+        Inertia::flash('toast', ['type' => 'success', 'message' => "{$internProfile->user->name} has been rejected."]);
+        return back();
     }
 
     public function undo(InternProfile $internProfile): RedirectResponse
@@ -38,6 +41,7 @@ class InternApprovalController extends Controller
             'qr_code_value' => null,
         ]);
 
-        return back()->with('success', "{$internProfile->user->name} has been reverted to pending.");
+        Inertia::flash('toast', ['type' => 'success', 'message' => "{$internProfile->user->name} has been reverted to pending."]);
+        return back();
     }
 }

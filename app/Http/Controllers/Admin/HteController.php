@@ -71,14 +71,16 @@ class HteController extends Controller
             'status' => 'active',
         ]);
 
-        return back()->with('success', 'HTE added.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'HTE added.']);
+        return back();
     }
 
     public function update(UpdateHteRequest $request, Hte $hte): RedirectResponse
     {
         $hte->update($request->validated());
 
-        return back()->with('success', 'HTE updated.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'HTE updated.']);
+        return back();
     }
 
     public function updateStatus(Request $request, Hte $hte): RedirectResponse
@@ -89,6 +91,7 @@ class HteController extends Controller
 
         $hte->update(['status' => $validated['status']]);
 
-        return back()->with('success', 'HTE status updated.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'HTE status updated.']);
+        return back();
     }
 }

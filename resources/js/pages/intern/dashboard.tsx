@@ -346,9 +346,6 @@ export default function InternDashboard({
                                                 Hours
                                             </th>
                                             <th className="py-2 pr-4 font-medium">
-                                                Lunch Deducted
-                                            </th>
-                                            <th className="py-2 pr-4 font-medium">
                                                 Status
                                             </th>
                                             <th className="py-2 font-medium">
@@ -378,11 +375,6 @@ export default function InternDashboard({
                                                     {log.hours_rendered.toFixed(
                                                         2,
                                                     )}
-                                                </td>
-                                                <td className="py-2 pr-4">
-                                                    {log.lunch_deducted
-                                                        ? 'Yes'
-                                                        : 'No'}
                                                 </td>
                                                 <td className="py-2">
                                                     <Badge
