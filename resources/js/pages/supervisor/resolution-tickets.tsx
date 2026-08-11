@@ -1,9 +1,8 @@
-import { Head, router } from '@inertiajs/react';
-import { toast } from 'sonner';
-import { ApproveTicketDialog } from '@/components/approve-ticket-dialog';
+import { Head } from '@inertiajs/react'; 
+// Imported badgeStyles from your dialog file here
+import { TicketActions, badgeStyles } from '@/components/approve-ticket-dialog'; 
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; 
 import { dashboard } from '@/routes';
 
 type ResolutionTicketRow = {
@@ -27,23 +26,6 @@ const typeLabel: Record<ResolutionTicketRow['type'], string> = {
 };
 
 export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
-    const reject = (ticketId: number) => {
-        if (!confirm('Reject this resolution request? The day will go back to looking missing.')) {
-            return;
-        }
-
-        router.patch(
-            `/supervisor/resolution-tickets/${ticketId}/reject`,
-            {},
-            {
-                preserveScroll: true,
-                onError: (errors) => {
-                    toast.error(Object.values(errors)[0] ?? 'Could not reject this ticket.');
-                },
-            },
-        );
-    };
-
     return (
         <>
             <Head title="Resolution Tickets" />
@@ -85,7 +67,10 @@ export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
                                                 <td className="py-2 pr-4">{ticket.intern_name}</td>
                                                 <td className="py-2 pr-4">{ticket.date}</td>
                                                 <td className="py-2 pr-4">
-                                                    <Badge variant="outline">{typeLabel[ticket.type]}</Badge>
+                                                    {/* UPDATED BADGE STYLING HERE */}
+                                                    <Badge className={badgeStyles[ticket.type]}>
+                                                        {typeLabel[ticket.type]}
+                                                    </Badge>
                                                 </td>
                                                 <td className="py-2 pr-4">{ticket.proposed_time_in ?? '—'}</td>
                                                 <td className="py-2 pr-4">{ticket.proposed_time_out ?? '—'}</td>
@@ -95,21 +80,12 @@ export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
                                                     </p>
                                                 </td>
                                                 <td className="py-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <ApproveTicketDialog
-                                                            ticketId={ticket.id}
-                                                            type={ticket.type}
-                                                            proposedTimeIn={ticket.proposed_time_in}
-                                                            proposedTimeOut={ticket.proposed_time_out}
-                                                        />
-                                                        <Button
-                                                            size="sm"
-                                                            variant="destructive"
-                                                            onClick={() => reject(ticket.id)}
-                                                        >
-                                                            Reject
-                                                        </Button>
-                                                    </div>
+                                                    <TicketActions
+                                                        ticketId={ticket.id}
+                                                        type={ticket.type}
+                                                        proposedTimeIn={ticket.proposed_time_in}
+                                                        proposedTimeOut={ticket.proposed_time_out}
+                                                    />
                                                 </td>
                                             </tr>
                                         ))}
