@@ -15,7 +15,7 @@ class KioskController extends Controller
         // Only one shared kiosk exists right now — create it on first visit
         // if it doesn't exist yet, so there's nothing to manually seed.
         $kiosk = Kiosk::firstOrCreate(
-            ['name' => 'DTR Management System Kiosk'],
+            ['name' => 'CIMS Attendance Kiosk'],
             ['device_token' => Kiosk::generateToken(), 'is_active' => true],
         );
 
