@@ -188,13 +188,17 @@ export default function InternDashboard({
                                         <span className="shrink-0 text-muted-foreground">
                                             Time In
                                         </span>
-                                        <span className="min-w-0 text-right break-words">{today.time_in ?? '—'}</span>
+                                        <span className="min-w-0 text-right break-words">
+                                            {today.time_in ?? '—'}
+                                        </span>
                                     </div>
                                     <div className="flex justify-between gap-4">
                                         <span className="shrink-0 text-muted-foreground">
                                             Time Out
                                         </span>
-                                        <span className="min-w-0 text-right break-words">{today.time_out ?? '—'}</span>
+                                        <span className="min-w-0 text-right break-words">
+                                            {today.time_out ?? '—'}
+                                        </span>
                                     </div>
                                     <div className="flex justify-between gap-4">
                                         <span className="shrink-0 text-muted-foreground">
@@ -378,16 +382,16 @@ export default function InternDashboard({
                                                 </td>
                                                 <td className="py-2">
                                                     <Badge
-                                                        variant={
+                                                        className={
                                                             log.status ===
                                                             'complete'
-                                                                ? 'default'
+                                                                ? 'bg-emerald-100 text-emerald-400 border-emerald-500'
                                                                 : log.status ===
                                                                         'missing_time_in' ||
                                                                     log.status ===
                                                                         'no_record'
-                                                                  ? 'destructive'
-                                                                  : 'outline'
+                                                                  ? 'bg-red-100 text-red-400 border-red-500'
+                                                                  : 'bg-amber-100 text-amber-400 border-amber-500' // 'No time-out'
                                                         }
                                                     >
                                                         {log.status ===
