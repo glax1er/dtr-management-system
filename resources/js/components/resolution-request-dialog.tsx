@@ -43,6 +43,16 @@ export function ResolutionRequestDialog({
         reason: '',
     });
 
+    // Helper inside the file to format 24h ("17:00") into 12h without leading zeros ("5:00 PM")
+    const formatTo12Hour = (time24: string | null) => {
+        if (!time24) return '—';
+        const [h, m] = time24.split(':');
+        const hours = parseInt(h, 10);
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const displayHours = hours % 12 || 12;
+        return `${displayHours}:${m} ${ampm}`;
+    };
+
     const closeAndReset = () => {
         setOpen(false);
         setStep('form');
@@ -174,27 +184,30 @@ export function ResolutionRequestDialog({
                             <div className="flex justify-between gap-4">
                                 <span className="shrink-0 text-muted-foreground">Time In</span>
                                 <span className="min-w-0 text-right break-words">
-                                    {needsTimeIn ? form.data.proposed_time_in : (existingTimeIn ?? '—')}
+                                    {needsTimeIn ? formatTo12Hour(form.data.proposed_time_in) : (existingTimeIn ?? '—')}
                                 </span>
                             </div>
                             <div className="flex justify-between gap-4">
                                 <span className="shrink-0 text-muted-foreground">Time Out</span>
                                 <span className="min-w-0 text-right break-words">
-                                    {needsTimeOut ? form.data.proposed_time_out : (existingTimeOut ?? '—')}
+                                    {needsTimeOut ? formatTo12Hour(form.data.proposed_time_out) : (existingTimeOut ?? '—')}
                                 </span>
                             </div>
-                            <div className="min-w-0 border-t pt-2">
-                                <span className="text-muted-foreground">Reason</span>
-                                <p className="mt-1 min-w-0 break-all">{form.data.reason}</p>
+                            <div className="min-w-0 border-t pt-2 space-y-1">
+                                <span className="text-muted-foreground block">Reason</span>
+                                    {form.data.reason}
                             </div>
                         </div>
 
                         <DialogFooter>
-                            <Button variant="outline" onClick={() => setStep('form')} disabled={form.processing}>
+                            <Button variant="outline" onClick={() => setStep('form')}>
                                 Back
                             </Button>
-                            <Button onClick={handleSubmit} disabled={form.processing}>
-                                {form.processing ? 'Submitting…' : 'Confirm & Submit'}
+                            <Button 
+                                onClick={handleSubmit} 
+                                disabled={form.processing}
+                            >
+                                {form.processing ? 'Submitting...' : 'Confirm & Submit'}
                             </Button>
                         </DialogFooter>
                     </>
