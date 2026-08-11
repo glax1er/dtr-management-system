@@ -32,22 +32,46 @@ const typeLabel: Record<TicketActionsProps['type'], string> = {
     no_record: 'No Record',
 };
 
-// Helper function to safely format 24h string to 12h AM/PM format
-function formatTo12Hour(timeStr: string | null): string {
+export function formatTo12Hour(timeStr: string | null): string {
     if (!timeStr) return '—';
     
-    // Split the hours and minutes from the time string
-    const [hoursStr, minutesStr] = timeStr.split(':');
-    let hours = parseInt(hoursStr, 10);
-    const minutes = minutesStr ? minutesStr.substring(0, 2) : '00';
-    
-    if (isNaN(hours)) return timeStr; // Fallback if data is weird
+    try {
+        const cleanTime = timeStr.trim();
+        if (/am|pm/i.test(cleanTime)) return cleanTime;
+        const date = new Date(`2000-01-01T${cleanTime}`);
+        if (isNaN(date.getTime())) return cleanTime;
+        
+        return date.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+    } catch (e) {
+        return timeStr;
+    }
+}
 
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12; // The hour '0' should be '12'
-    
-    return `${hours}:${minutes} ${ampm}`;
+// Backend sends proposed_time_in/out as a 12-hour display string
+// (e.g. "1:35 PM"), but the approve endpoint expects 24-hour "H:i"
+// (e.g. "13:35"). Converts correctly, respecting AM/PM — a plain
+// string slice/regex here would silently turn PM times into their
+// AM equivalent (1:35 PM -> wrongly sent as 01:35).
+function to24Hour(timeStr: string | null): string | null {
+    if (!timeStr) return null;
+
+    const match = timeStr.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+    if (!match) return timeStr; // already 24-hour, or unrecognized — pass through
+
+    let [, hoursStr, minutes, meridiem] = match;
+    let hours = parseInt(hoursStr, 10);
+
+    if (meridiem) {
+        const isPM = meridiem.toUpperCase() === 'PM';
+        if (isPM && hours !== 12) hours += 12;
+        if (!isPM && hours === 12) hours = 0;
+    }
+
+    return `${String(hours).padStart(2, '0')}:${minutes}`;
 }
 
 export function TicketActions({ ticketId, type, proposedTimeIn, proposedTimeOut }: TicketActionsProps) {
@@ -63,13 +87,13 @@ export function TicketActions({ ticketId, type, proposedTimeIn, proposedTimeOut 
         router.patch(
             `/supervisor/resolution-tickets/${ticketId}/approve`,
             {
-                ...(needsTimeIn ? { final_time_in: proposedTimeIn } : {}),
-                ...(needsTimeOut ? { final_time_out: proposedTimeOut } : {}),
+                ...(needsTimeIn ? { final_time_in: to24Hour(proposedTimeIn) } : {}),
+                ...(needsTimeOut ? { final_time_out: to24Hour(proposedTimeOut) } : {}),
             },
             {
                 preserveScroll: true,
                 onSuccess: () => setOpenApprove(false),
-                onError: (errors) => toast.error(Object.values(errors) ?? 'Could not approve this ticket.'),
+                onError: (errors) => toast.error(Object.values(errors)[0] ?? 'Could not approve this ticket.'),
                 onFinish: () => setProcessing(false),
             },
         );
@@ -83,7 +107,7 @@ export function TicketActions({ ticketId, type, proposedTimeIn, proposedTimeOut 
             {
                 preserveScroll: true,
                 onSuccess: () => setOpenReject(false),
-                onError: (errors) => toast.error(Object.values(errors) ?? 'Could not reject this ticket.'),
+                onError: (errors) => toast.error(Object.values(errors)[0] ?? 'Could not reject this ticket.'),
                 onFinish: () => setProcessing(false),
             },
         );
