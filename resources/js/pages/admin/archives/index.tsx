@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import PaginationFooter from '@/components/pagination-footer';
 import type { Paginated } from '@/components/pagination-footer';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,12 @@ interface ArchivesIndexProps {
     currentType: 'htes' | 'supervisors' | 'interns';
 }
 
+interface FlashProps {
+    success?: string;
+    error?: string;
+    [key: string]: unknown;
+}
+
 const TABS: { label: string; value: 'htes' | 'supervisors' | 'interns'; detailLabel: string }[] = [
     { label: 'HTEs', value: 'htes', detailLabel: 'Address' },
     { label: 'Supervisors', value: 'supervisors', detailLabel: 'Email' },
@@ -24,6 +30,9 @@ const TABS: { label: string; value: 'htes' | 'supervisors' | 'interns'; detailLa
 ];
 
 export default function ArchivesIndex({ records, currentType }: ArchivesIndexProps) {
+    const { props } = usePage<{ flash: FlashProps }>();
+    const flash = props.flash;
+
     const activeTab = TABS.find((t) => t.value === currentType) ?? TABS[0];
 
     const switchTab = (type: string) => {
@@ -56,6 +65,18 @@ export default function ArchivesIndex({ records, currentType }: ArchivesIndexPro
                         Inactive HTEs, inactive Supervisors, and rejected Interns that have been deleted.
                     </p>
                 </div>
+
+                {flash?.success && (
+                    <div className="rounded-md border border-green-200 bg-green-50 px-4 py-2.5 text-sm text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-300">
+                        {flash.success}
+                    </div>
+                )}
+
+                {flash?.error && (
+                    <div className="rounded-md border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+                        {flash.error}
+                    </div>
+                )}
 
                 <div className="flex flex-wrap gap-2">
                     {TABS.map((tab) => (

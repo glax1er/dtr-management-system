@@ -1,4 +1,3 @@
-// app/Http/Requests/Admin/UpdateInternRequest.php
 <?php
 
 namespace App\Http\Requests\Admin;

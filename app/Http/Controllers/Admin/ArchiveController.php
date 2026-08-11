@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Hte;
 use App\Models\InternProfile;
 use App\Models\SupervisorProfile;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -72,7 +73,18 @@ class ArchiveController extends Controller
 
     public function forceDelete(string $type, int $id): RedirectResponse
     {
-        $this->modelFor($type)::onlyTrashed()->findOrFail($id)->forceDelete();
+        try {
+            $this->modelFor($type)::onlyTrashed()->findOrFail($id)->forceDelete();
+        } catch (QueryException $e) {
+            // SQLite/MySQL foreign key constraint violation — some other
+            // record (e.g. an intern or supervisor still tied to this HTE)
+            // references this row, so the database refuses the delete
+            // rather than leaving orphaned references behind.
+            return back()->with(
+                'error',
+                'This record can\'t be permanently deleted because other records still reference it. Remove or reassign those first.'
+            );
+        }
 
         return back()->with('success', 'Record permanently deleted.');
     }
