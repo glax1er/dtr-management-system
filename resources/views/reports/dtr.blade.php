@@ -38,6 +38,13 @@
         table.log td { padding: 5px 4px; }
         table.log td.desc-cell { text-align: left; }
 
+        /* Ensure table headers repeat when the table spans pages in mPDF */
+        table.log thead { display: table-header-group; }
+        table.log tfoot { display: table-footer-group; }
+        /* Avoid breaking a row across pages and keep groups tidy */
+        tr { page-break-inside: avoid; }
+        tbody { page-break-inside: auto; }
+
         tr.total-row td { font-weight: bold; }
 
         .signature-block { margin-top: 50px; text-align: center; }
@@ -87,7 +94,16 @@
     </table>
 
     {{-- For the period --}}
-    <p style="margin: 6px 0 0; font-size: 10px;">For the month of <strong>{{ $month->format('F Y') }}</strong></p>
+    <p style="margin: 6px 0 0; font-size: 10px;">
+        For the period of
+        <strong>
+            @if(isset($from) && isset($to))
+                {{ $from->format('F j, Y') }} &ndash; {{ $to->format('F j, Y') }}
+            @elseif(isset($month))
+                {{ $month->format('F Y') }}
+            @endif
+        </strong>
+    </p>
 
     {{-- Log table --}}
     <table class="log">
@@ -115,7 +131,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="5">No attendance recorded for this month.</td>
+                    <td colspan="5">No attendance recorded for this period.</td>
                 </tr>
             @endforelse
         </tbody>

@@ -35,21 +35,45 @@ class DtrReportController extends Controller
         $timezone = config('dtr.timezone');
 
         $validated = $request->validated();
-        $month = isset($validated['month'])
-            ? Carbon::createFromFormat('Y-m-d', $validated['month'].'-01', $timezone)->startOfMonth()
-            : Carbon::now($timezone)->startOfMonth();
+
+        // Determine reporting period. Prefer explicit start/end, then a single date (use that week),
+        // then legacy month param; default to current week to support weekly reporting.
+        if (!empty($validated['start']) && !empty($validated['end'])) {
+            $from = Carbon::createFromFormat('Y-m-d', $validated['start'], $timezone)->startOfDay();
+            $to = Carbon::createFromFormat('Y-m-d', $validated['end'], $timezone)->endOfDay();
+            if ($from->gt($to)) {
+                // swap to be safe
+                [$from, $to] = [$to, $from];
+            }
+        } elseif (!empty($validated['date'])) {
+            $d = Carbon::createFromFormat('Y-m-d', $validated['date'], $timezone);
+            // Use ISO week start (Monday) to end (Sunday)
+            $from = $d->copy()->startOfWeek();
+            $to = $d->copy()->endOfWeek();
+        } elseif (!empty($validated['month'])) {
+            $month = Carbon::createFromFormat('Y-m-d', $validated['month'].'-01', $timezone)->startOfMonth();
+            $from = $month->copy()->startOfMonth();
+            $to = $month->copy()->endOfMonth();
+        } else {
+            // Default to current week (Monday - Sunday)
+            $now = Carbon::now($timezone);
+            $from = $now->copy()->startOfWeek();
+            $to = $now->copy()->endOfWeek();
+        }
 
         $days = $this->calculator->forIntern(
             $user->id,
-            from: $month->clone()->startOfMonth(),
-            to: $month->clone()->endOfMonth(),
+            from: $from,
+            to: $to,
             approvedAt: $profile->approved_at,
         );
 
         $html = view('reports.dtr', [
             'user' => $user,
             'profile' => $profile,
-            'month' => $month,
+            // pass explicit period to the view for accurate header text
+            'from' => $from,
+            'to' => $to,
             'days' => $days,
             'totalHours' => $days->sum('hoursRendered'),
         ])->render();
@@ -66,7 +90,7 @@ class DtrReportController extends Controller
         $filename = sprintf(
             'DTR_%s_%s.pdf',
             str_replace(' ', '_', $profile->id_number),
-            $month->format('Y-m'),
+            sprintf('%s-%s', $from->format('Ymd'), $to->format('Ymd')),
         );
 
         return response(
