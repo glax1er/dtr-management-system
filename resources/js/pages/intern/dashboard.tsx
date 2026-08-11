@@ -1,5 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import {
     ChevronLeft,
     ChevronRight,
@@ -47,6 +47,8 @@ export default function InternDashboard({
     };
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [startDate, setStartDate] = useState<string>('');
+    const [endDate, setEndDate] = useState<string>('');
 
     const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -311,15 +313,66 @@ export default function InternDashboard({
                                     {monthTotalHours.toFixed(2)} hrs
                                 </span>
                             </span>
-                            <Button size="sm" asChild>
-                                <a
-                                    href={`/intern/dtr-report?month=${month}`}
-                                    target="_blank"
-                                    rel="noopener"
+
+                            {/* Date range picker for DTR (start / end) */}
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="date"
+                                    className="border rounded px-2 py-1 text-sm"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                    aria-label="DTR start date"
+                                />
+                                <span className="text-sm">to</span>
+                                <input
+                                    type="date"
+                                    className="border rounded px-2 py-1 text-sm"
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                    aria-label="DTR end date"
+                                />
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                        const now = new Date();
+                                        // get Monday as startOfWeek
+                                        const day = now.getDay();
+                                        const diffToMonday = (day + 6) % 7; // 0->6
+                                        const monday = new Date(
+                                            now.getFullYear(),
+                                            now.getMonth(),
+                                            now.getDate() - diffToMonday,
+                                        );
+                                        const sunday = new Date(
+                                            monday.getFullYear(),
+                                            monday.getMonth(),
+                                            monday.getDate() + 6,
+                                        );
+                                        const fmt = (d: Date) => d.toISOString().slice(0, 10);
+                                        setStartDate(fmt(monday));
+                                        setEndDate(fmt(sunday));
+                                    }}
                                 >
-                                    <Download />
-                                    DTR Report
-                                </a>
+                                    This week
+                                </Button>
+                            </div>
+
+                            <Button
+                                size="sm"
+                                onClick={() => {
+                                    const base = '/intern/dtr-report';
+                                    let url = base + '?';
+                                    if (startDate && endDate) {
+                                        url += `start=${startDate}&end=${endDate}`;
+                                    } else {
+                                        url += `month=${month}`;
+                                    }
+                                    window.open(url, '_blank', 'noopener');
+                                }}
+                            >
+                                <Download className="mr-2 size-4" />
+                                DTR Report
                             </Button>
                         </div>
                     </CardHeader>
