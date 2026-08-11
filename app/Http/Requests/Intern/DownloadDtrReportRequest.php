@@ -17,8 +17,13 @@ class DownloadDtrReportRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // 'YYYY-MM', defaults to the current month if omitted
+            // Legacy: 'YYYY-MM' — accepted for backward compatibility
             'month' => ['nullable', 'date_format:Y-m'],
+            // New: explicit start/end date range in 'YYYY-MM-DD'
+            'start' => ['nullable', 'date_format:Y-m-d'],
+            'end' => ['nullable', 'date_format:Y-m-d'],
+            // Single date (the week containing this date will be used)
+            'date' => ['nullable', 'date_format:Y-m-d'],
         ];
     }
 }
