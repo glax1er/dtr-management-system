@@ -7,9 +7,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 
-
-    // ...rest of the class stays exactly as-is
-
 class Hte extends Model
 {
     use SoftDeletes;

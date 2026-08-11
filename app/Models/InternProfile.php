@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class InternProfile extends Model
 {
     use SoftDeletes;
-
     // user_id is the primary key here (one-to-one with users) —
     // it's not an auto-incrementing column of its own, it just
     // borrows the id assigned by the users table.
