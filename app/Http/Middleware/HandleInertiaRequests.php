@@ -49,6 +49,9 @@ class HandleInertiaRequests extends Middleware
                     'supervisor_type' => $user->isSupervisor()
                         ? $user->supervisorProfile?->supervisor_type
                         : null,
+                    'avatar' => $user->isIntern()
+                        ? $user->internProfile?->profile_photo_url
+                        : null,
                 ] : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',

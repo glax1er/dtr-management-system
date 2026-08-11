@@ -45,7 +45,7 @@ export default function AuthCardLayout({
                                 <img
                                     src="/images/cic-logo.png"
                                     alt="App logo"
-                                    className="h-12 w-auto rounded-md object-contain mb-2"
+                                    className="h-12 w-auto rounded-full object-contain mb-2"
                                 />
                             </div>
                             <CardTitle className="text-xl">{title}</CardTitle>
