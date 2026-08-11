@@ -238,7 +238,7 @@ export default function InternDashboard({
                                 <>
                                     <div className="flex aspect-square items-center justify-center rounded-lg border p-4">
                                         <img
-                                            src="/intern/qr-code"
+                                            src={`/intern/qr-code?v=${encodeURIComponent(profile.id_number)}`}
                                             alt="Your QR code"
                                             className="h-full w-full object-contain"
                                         />
@@ -249,7 +249,7 @@ export default function InternDashboard({
                                         className="w-full"
                                     >
                                         <a
-                                            href="/intern/qr-code"
+                                            href={`/intern/qr-code?v=${encodeURIComponent(profile.id_number)}`}
                                             download={`${profile.name.replace(/\s+/g, '_')}.png`}
                                         >
                                             <Download className="mr-2 size-4" />
