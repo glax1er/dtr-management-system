@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\InternProfile;
+use App\Models\ResolutionTicket;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -36,6 +38,40 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user();
+        $notifications = [
+            'count' => 0,
+            'items' => [],
+        ];
+
+        if ($user && $user->isSupervisor() && $user->supervisorProfile?->isHteSupervisor()) {
+            $internUserIds = InternProfile::query()
+                ->where('hte_id', $user->supervisorProfile->hte_id)
+                ->pluck('user_id');
+
+            $ticketCount = ResolutionTicket::query()
+                ->where('status', ResolutionTicket::STATUS_PENDING)
+                ->whereIn('intern_user_id', $internUserIds)
+                ->count();
+
+            $notifications = [
+                'count' => $ticketCount,
+                'items' => ResolutionTicket::query()
+                    ->where('status', ResolutionTicket::STATUS_PENDING)
+                    ->whereIn('intern_user_id', $internUserIds)
+                    ->with('intern')
+                    ->orderBy('date')
+                    ->limit(5)
+                    ->get()
+                    ->map(fn (ResolutionTicket $ticket) => [
+                        'id' => $ticket->id,
+                        'type' => 'resolution_ticket',
+                        'title' => "Resolution request from {$ticket->intern->name}",
+                        'message' => $ticket->date->toDateString(),
+                        'href' => '/supervisor/resolution-tickets',
+                    ])
+                    ->toArray(),
+            ];
+        }
 
         return [
             ...parent::share($request),
@@ -51,6 +87,7 @@ class HandleInertiaRequests extends Middleware
                         : null,
                 ] : null,
             ],
+            'notifications' => $notifications,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }
