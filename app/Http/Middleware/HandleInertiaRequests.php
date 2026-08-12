@@ -71,6 +71,36 @@ class HandleInertiaRequests extends Middleware
                     ])
                     ->toArray(),
             ];
+        } elseif ($user && $user->isIntern()) {
+            $resolvedTickets = ResolutionTicket::query()
+                ->where('intern_user_id', $user->id)
+                ->whereIn('status', [
+                    ResolutionTicket::STATUS_APPROVED,
+                    ResolutionTicket::STATUS_REJECTED,
+                ])
+                ->whereNotNull('resolved_at')
+                ->where('resolved_at', '>=', now()->subDays(14))
+                ->with('resolvedBy')
+                ->orderByDesc('resolved_at')
+                ->limit(5)
+                ->get();
+
+            $notifications = [
+                'count' => $resolvedTickets->count(),
+                'items' => $resolvedTickets
+                    ->map(fn (ResolutionTicket $ticket) => [
+                        'id' => $ticket->id,
+                        'type' => 'resolution_ticket',
+                        'title' => $ticket->status === ResolutionTicket::STATUS_APPROVED
+                            ? "Your resolution request on {$ticket->date->toDateString()} was approved"
+                            : "Your resolution request on {$ticket->date->toDateString()} was rejected",
+                        'message' => $ticket->resolvedBy
+                            ? "Reviewed by {$ticket->resolvedBy->name}"
+                            : 'Reviewed',
+                        'href' => '/intern/dashboard',
+                    ])
+                    ->toArray(),
+            ];
         }
 
         return [

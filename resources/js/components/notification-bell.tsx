@@ -13,9 +13,13 @@ import {
 import type { PageProps, Notification } from '@/types';
 
 export function NotificationBell() {
-    const { notifications } = usePage<PageProps>().props;
+    const { auth, notifications } = usePage<PageProps>().props;
     const count = notifications?.count ?? 0;
     const items = notifications?.items ?? [];
+    const viewAllHref =
+        auth?.user?.role === 'intern'
+            ? '/intern/dashboard'
+            : '/supervisor/resolution-tickets';
 
     return (
         <DropdownMenu>
@@ -91,7 +95,7 @@ export function NotificationBell() {
 
                 <DropdownMenuItem asChild>
                     <Link
-                        href="/supervisor/resolution-tickets"
+                        href={viewAllHref}
                         className="flex items-center justify-between px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent/10"
                     >
                         <span>View all requests</span>
