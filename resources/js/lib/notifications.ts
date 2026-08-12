@@ -47,6 +47,69 @@ export type NotificationTone = {
     badgeClassName: string;
 };
 
+export type NotificationCategory =
+    | 'approved'
+    | 'rejected'
+    | 'pending'
+    | 'general';
+
+export const NOTIFICATION_CATEGORY_LABELS: Record<
+    NotificationCategory,
+    string
+> = {
+    approved: 'Approved',
+    rejected: 'Rejected',
+    pending: 'Pending',
+    general: 'General',
+};
+
+/**
+ * Derives a coarse category from a notification's title, so the same
+ * grouping logic can drive both visual tone and filtering.
+ */
+export function getNotificationCategory(
+    notification: Notification,
+): NotificationCategory {
+    const title = notification.title.toLowerCase();
+
+    if (title.includes('approved')) {
+        return 'approved';
+    }
+
+    if (title.includes('rejected')) {
+        return 'rejected';
+    }
+
+    if (title.includes('request') || title.includes('submitted')) {
+        return 'pending';
+    }
+
+    return 'general';
+}
+
+const NOTIFICATION_CATEGORY_TONES: Record<
+    NotificationCategory,
+    NotificationTone
+> = {
+    approved: {
+        icon: CheckCircle2,
+        badgeClassName:
+            'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+    },
+    rejected: {
+        icon: XCircle,
+        badgeClassName: 'bg-destructive/10 text-destructive',
+    },
+    pending: {
+        icon: Clock3,
+        badgeClassName: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+    },
+    general: {
+        icon: Bell,
+        badgeClassName: 'bg-primary/10 text-primary',
+    },
+};
+
 /**
  * Derives a visual tone (icon + color) for a notification from its title,
  * so approved / rejected / pending / general notifications are always
@@ -55,33 +118,5 @@ export type NotificationTone = {
 export function getNotificationTone(
     notification: Notification,
 ): NotificationTone {
-    const title = notification.title.toLowerCase();
-
-    if (title.includes('approved')) {
-        return {
-            icon: CheckCircle2,
-            badgeClassName:
-                'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-        };
-    }
-
-    if (title.includes('rejected')) {
-        return {
-            icon: XCircle,
-            badgeClassName: 'bg-destructive/10 text-destructive',
-        };
-    }
-
-    if (title.includes('request') || title.includes('submitted')) {
-        return {
-            icon: Clock3,
-            badgeClassName:
-                'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-        };
-    }
-
-    return {
-        icon: Bell,
-        badgeClassName: 'bg-primary/10 text-primary',
-    };
+    return NOTIFICATION_CATEGORY_TONES[getNotificationCategory(notification)];
 }
