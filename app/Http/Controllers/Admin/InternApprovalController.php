@@ -8,6 +8,7 @@ use App\Models\InternProfile;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
+use App\Http\Requests\Admin\UpdateSupervisorRequest;
 
 class InternApprovalController extends Controller
 {
@@ -43,5 +44,16 @@ class InternApprovalController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "{$internProfile->user->name} has been reverted to pending."]);
         return back();
+    }
+
+    public function destroy(InternProfile $internProfile): RedirectResponse
+    {
+        if ($internProfile->status !== 'rejected') {
+            return back()->with('error', 'Only rejected intern records can be archived.');
+        }
+
+        $internProfile->delete();
+
+        return back()->with('success', "{$internProfile->user->name} has been moved to Archives.");
     }
 }

@@ -70,12 +70,6 @@ export default function InternDashboard({
     };
 
     const fileInputRef = useRef<HTMLInputElement>(null);
-    // Default the report range to the current week, so "weekly" is genuinely
-    // the default rather than a fallback to a month-wide report.
-    const defaultWeek = weekRangeOf(new Date());
-    const [startDate, setStartDate] = useState<string>(defaultWeek.start);
-    const [endDate, setEndDate] = useState<string>(defaultWeek.end);
-    const rangeIsValid = Boolean(startDate) && Boolean(endDate) && startDate <= endDate;
 
     const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -217,13 +211,17 @@ export default function InternDashboard({
                                         <span className="shrink-0 text-muted-foreground">
                                             Time In
                                         </span>
-                                        <span className="min-w-0 text-right break-words">{today.time_in ?? '—'}</span>
+                                        <span className="min-w-0 text-right break-words">
+                                            {today.time_in ?? '—'}
+                                        </span>
                                     </div>
                                     <div className="flex justify-between gap-4">
                                         <span className="shrink-0 text-muted-foreground">
                                             Time Out
                                         </span>
-                                        <span className="min-w-0 text-right break-words">{today.time_out ?? '—'}</span>
+                                        <span className="min-w-0 text-right break-words">
+                                            {today.time_out ?? '—'}
+                                        </span>
                                     </div>
                                     <div className="flex justify-between gap-4">
                                         <span className="shrink-0 text-muted-foreground">
@@ -312,122 +310,44 @@ export default function InternDashboard({
 
                 {/* Full attendance log, now full width on its own row */}
                 <Card>
-                    <CardHeader className="flex flex-col gap-4">
-                        {/* Month navigation for the log view below + running total */}
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div className="flex items-center gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() => goToMonth(shiftMonth(month, -1))}
-                                >
-                                    <ChevronLeft />
-                                </Button>
-                                <CardTitle className="min-w-32 text-center text-base">
-                                    {monthLabel}
-                                </CardTitle>
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    disabled={!canGoNextMonth}
-                                    onClick={() => goToMonth(shiftMonth(month, 1))}
-                                >
-                                    <ChevronRight />
-                                </Button>
-                            </div>
+                    <CardHeader className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => goToMonth(shiftMonth(month, -1))}
+                            >
+                                <ChevronLeft />
+                            </Button>
+                            <CardTitle className="min-w-32 text-center text-base">
+                                {monthLabel}
+                            </CardTitle>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                disabled={!canGoNextMonth}
+                                onClick={() => goToMonth(shiftMonth(month, 1))}
+                            >
+                                <ChevronRight />
+                            </Button>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3">
                             <span className="text-sm text-muted-foreground">
                                 Total:{' '}
                                 <span className="font-medium text-foreground tabular-nums">
                                     {monthTotalHours.toFixed(2)} hrs
                                 </span>
                             </span>
-                        </div>
-
-                        {/* DTR report generator — defaults to the current week */}
-                        <div className="rounded-lg border bg-muted/30 p-3 sm:p-4">
-                            <p className="mb-3 text-sm font-medium">
-                                Generate DTR Report
-                            </p>
-                            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-                                <div className="grid grid-cols-2 gap-2 sm:flex sm:items-end sm:gap-2">
-                                    <div className="flex flex-col gap-1">
-                                        <Label htmlFor="dtr-start" className="text-xs text-muted-foreground">
-                                            From
-                                        </Label>
-                                        <Input
-                                            id="dtr-start"
-                                            type="date"
-                                            className="h-9 text-sm"
-                                            value={startDate}
-                                            max={endDate || undefined}
-                                            onChange={(e) => setStartDate(e.target.value)}
-                                            aria-label="DTR start date"
-                                        />
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <Label htmlFor="dtr-end" className="text-xs text-muted-foreground">
-                                            To
-                                        </Label>
-                                        <Input
-                                            id="dtr-end"
-                                            type="date"
-                                            className="h-9 text-sm"
-                                            value={endDate}
-                                            min={startDate || undefined}
-                                            onChange={(e) => setEndDate(e.target.value)}
-                                            aria-label="DTR end date"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => {
-                                            const { start, end } = weekRangeOf(new Date());
-                                            setStartDate(start);
-                                            setEndDate(end);
-                                        }}
-                                    >
-                                        This week
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => {
-                                            const { start, end } = monthRangeOf(month);
-                                            setStartDate(start);
-                                            setEndDate(end);
-                                        }}
-                                    >
-                                        This month
-                                    </Button>
-                                </div>
-
-                                <Button
-                                    size="sm"
-                                    className="sm:ml-auto"
-                                    disabled={!rangeIsValid}
-                                    onClick={() => {
-                                        const url = `/intern/dtr-report?start=${startDate}&end=${endDate}`;
-                                        window.open(url, '_blank', 'noopener');
-                                    }}
+                            <Button size="sm" asChild>
+                                <a
+                                    href={`/intern/dtr-report?month=${month}`}
+                                    target="_blank"
+                                    rel="noopener"
                                 >
-                                    <Download className="mr-2 size-4" />
-                                    Download PDF
-                                </Button>
-                            </div>
-                            {!rangeIsValid && (startDate || endDate) && (
-                                <p className="mt-2 text-xs text-destructive">
-                                    Select a valid start and end date (start must not be after end).
-                                </p>
-                            )}
-                            <p className="mt-2 text-xs text-muted-foreground">
-                                {startDate && endDate
-                                    ? `Report will cover ${startDate} to ${endDate}.`
-                                    : 'Pick a date range to generate the report.'}
-                            </p>
+                                    <Download />
+                                    DTR Report
+                                </a>
+                            </Button>
                         </div>
                     </CardHeader>
                     <CardContent>
@@ -485,16 +405,16 @@ export default function InternDashboard({
                                                 </td>
                                                 <td className="py-2">
                                                     <Badge
-                                                        variant={
+                                                        className={
                                                             log.status ===
                                                             'complete'
-                                                                ? 'default'
+                                                                ? 'bg-emerald-100 text-emerald-400 border-emerald-500'
                                                                 : log.status ===
                                                                         'missing_time_in' ||
                                                                     log.status ===
                                                                         'no_record'
-                                                                  ? 'destructive'
-                                                                  : 'outline'
+                                                                  ? 'bg-red-100 text-red-400 border-red-500'
+                                                                  : 'bg-amber-100 text-amber-400 border-amber-500' // 'No time-out'
                                                         }
                                                     >
                                                         {log.status ===

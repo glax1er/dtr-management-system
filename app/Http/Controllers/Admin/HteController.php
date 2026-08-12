@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Http\Requests\Admin\UpdateSupervisorRequest;
 
 class HteController extends Controller
 {
@@ -93,5 +94,16 @@ class HteController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'HTE status updated.']);
         return back();
+    }
+
+    public function destroy(Hte $hte): RedirectResponse
+    {
+        if ($hte->status !== 'inactive') {
+            return back()->with('error', 'Only inactive HTEs can be deleted.');
+        }
+
+        $hte->delete();
+
+        return back()->with('success', 'HTE removed.');
     }
 }

@@ -89,6 +89,12 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
         }
     };
 
+    const deleteIntern = (userId: number, name: string) => {
+        if (confirm(`Move ${name}'s record to Archives?`)) {
+            router.delete(`/admin/interns/${userId}`, { preserveScroll: true });
+        }
+    };
+
     return (
         <>
             <Head title="Interns" />
@@ -221,6 +227,18 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                                                                 }
                                                             >
                                                                 Undo
+                                                            </Button>
+                                                        )}
+
+                                                        {intern.status === 'rejected' && (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="destructive"
+                                                                onClick={() =>
+                                                                    deleteIntern(intern.user_id, intern.name)
+                                                                }
+                                                            >
+                                                                Delete
                                                             </Button>
                                                         )}
                                                     </div>

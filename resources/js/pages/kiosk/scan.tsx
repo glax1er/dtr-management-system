@@ -214,10 +214,46 @@ inFlightRef.current = true;
     return (
         <>
             <Head title={kioskName} />
-            <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-black p-4">
-                <h1 className="text-lg font-medium text-white">{kioskName}</h1>
+            <div
+                className="relative flex min-h-svh flex-col items-center justify-start gap-6 pt-9 p-4"
+                style={{
+                    backgroundImage: `url('/images/cic-bg.jpg')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                }}
+            >
+                {/* Background image overlay with opacity */}
+                <div className="absolute inset-0 bg-black/90" />
 
-                <div className="flex w-full max-w-4xl flex-col gap-6 md:flex-row">
+                {/* Content wrapper */}
+                <div className="relative flex w-full flex-col items-center gap-6">
+                    {/* Logo Section */}
+                    <div className="flex items-end justify-center">
+                                <img
+                                    src="/images/usep-logo.png"
+                                    alt="USEP logo"
+                                    className="h-12 w-auto object-contain mb-2"
+                                />
+                                <img
+                                    src="/images/cims-logo-light.png"
+                                    alt="CIC logo"
+                                    className="h-27 w-auto object-contain dark:hidden"
+                                />
+                                <img
+                                    src="/images/cims-logo-dark.png"
+                                    className="hidden h-27 w-auto object-contain dark:block"
+                                    alt="CIC logo dark"
+                                />
+                                <img
+                                    src="/images/cic-logo.png"
+                                    alt="App logo"
+                                    className="h-12 w-auto rounded-full object-contain mb-2"
+                                />
+                            </div>
+
+                    <h1 className="text-lg font-medium text-white">{kioskName}</h1>
+
+                    <div className="flex w-full max-w-4xl flex-col gap-6 md:flex-row">
                     {/* Camera */}
                     <div
                         className={`relative mx-auto aspect-square w-full max-w-md overflow-hidden rounded-lg border-2 bg-black transition-colors duration-300 ${
@@ -324,6 +360,7 @@ inFlightRef.current = true;
                                 </div>
                             </div>
                         )}
+                    </div>
                     </div>
                 </div>
             </div>

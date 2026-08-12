@@ -43,7 +43,6 @@ interface HtesIndexProps {
 
 export default function HtesIndex({ htes, filters }: HtesIndexProps) {
     const [addOpen, setAddOpen] = useState(false);
-    // tracks which HTE's edit dialog is open (null = none open)
     const [editingHte, setEditingHte] = useState<Hte | null>(null);
     const [search, setSearch] = useState(filters.search);
 
@@ -91,8 +90,12 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
         });
     };
 
-    // Base params shared by every navigation action. A search change
-    // resets back to page 1 by simply omitting the page param.
+    const deleteHte = (hteId: number, name: string) => {
+        if (confirm(`Permanently delete ${name}? This cannot be undone from the UI.`)) {
+            router.delete(`/admin/htes/${hteId}`, { preserveScroll: true });
+        }
+    };
+
     const baseParams = () => ({
         search: filters.search || undefined,
         per_page: String(filters.per_page),
@@ -286,13 +289,24 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                                     </Select>
                                                 </td>
                                                 <td className="py-2.5 pl-4">
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => openEditDialog(hte)}
-                                                    >
-                                                        Edit
-                                                    </Button>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => openEditDialog(hte)}
+                                                        >
+                                                            Edit
+                                                        </Button>
+                                                        {hte.status === 'inactive' && (
+                                                            <Button
+                                                                variant="destructive"
+                                                                size="sm"
+                                                                onClick={() => deleteHte(hte.hte_id, hte.hte_name)}
+                                                            >
+                                                                Delete
+                                                            </Button>
+                                                        )}
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -312,7 +326,6 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                 </Card>
             </div>
 
-            {/* Edit dialog — opened per-row via openEditDialog(hte) */}
             <Dialog open={editingHte !== null} onOpenChange={(open) => !open && setEditingHte(null)}>
                 <DialogContent>
                     <form onSubmit={handleEditSubmit}>
