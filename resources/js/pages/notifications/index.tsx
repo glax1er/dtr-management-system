@@ -1,9 +1,11 @@
-import { Link, router, usePage } from '@inertiajs/react';
-import { Bell } from 'lucide-react';
+import { router, usePage } from '@inertiajs/react';
+import { BellOff, Check, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import type { PageProps, Notification } from '@/types';
+import { Card } from '@/components/ui/card';
+import { formatRelativeTime, getNotificationTone } from '@/lib/notifications';
+import { cn } from '@/lib/utils';
+import type { Notification, PageProps } from '@/types';
 
 export default function NotificationsPage() {
     const { notifications } = usePage<PageProps>().props;
@@ -29,15 +31,29 @@ export default function NotificationsPage() {
         );
     };
 
+    const openNotification = (notification: Notification) => {
+        router.post(
+            `/notifications/${notification.id}/read`,
+            {},
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => {
+                    router.visit(notification.href);
+                },
+            },
+        );
+    };
+
     return (
-        <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-6">
-            <div className="flex flex-col gap-4 rounded-3xl border border-border bg-card p-6 shadow-sm md:flex-row md:items-center md:justify-between">
+        <div className="mx-auto max-w-3xl space-y-6 p-4 md:p-6">
+            <div className="flex flex-col gap-4 rounded-3xl border border-border bg-card p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <p className="text-sm tracking-[0.2em] text-muted-foreground uppercase">
                         Notifications
                     </p>
 
-                    <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
+                    <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
                         All notifications
                     </h1>
 
@@ -46,14 +62,15 @@ export default function NotificationsPage() {
                     </p>
                 </div>
 
-                <div className="flex flex-col items-start gap-3 sm:items-end">
-                    <Badge variant="secondary">
-                        {count} Unread
+                <div className="flex items-center gap-3 sm:flex-col sm:items-end">
+                    <Badge variant="secondary" className="shrink-0">
+                        {count} unread
                     </Badge>
 
                     {items.length > 0 && (
                         <Button
-                            variant="secondary"
+                            variant="outline"
+                            size="sm"
                             onClick={clearNotifications}
                         >
                             Clear all
@@ -63,69 +80,86 @@ export default function NotificationsPage() {
             </div>
 
             {items.length === 0 ? (
-                <Card>
-                    <CardContent className="p-6 text-center text-sm text-muted-foreground">
+                <Card className="items-center gap-2 py-14 text-center">
+                    <BellOff className="size-6 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
                         You have no notifications.
-                    </CardContent>
+                    </p>
                 </Card>
             ) : (
-                <div className="grid gap-4">
+                <div className="space-y-2">
                     {items.map((notification: Notification) => {
                         const unread = !notification.read_at;
+                        const { icon: Icon, badgeClassName } =
+                            getNotificationTone(notification);
 
                         return (
                             <Card
                                 key={notification.id}
-                                className={
-                                    unread
-                                        ? 'border-primary/40'
-                                        : ''
-                                }
+                                className={cn(
+                                    'flex-row items-start gap-3 p-4 sm:items-center sm:gap-4',
+                                    unread && 'border-primary/40 bg-primary/5',
+                                )}
                             >
-                                <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                    <div className="space-y-1">
-                                        <div className="flex items-center gap-2">
-                                            <p className="text-base font-medium text-foreground">
-                                                {notification.title}
-                                            </p>
+                                <span
+                                    className={cn(
+                                        'flex size-10 shrink-0 items-center justify-center rounded-full',
+                                        badgeClassName,
+                                    )}
+                                >
+                                    <Icon className="size-5" />
+                                </span>
 
-                                            {unread && (
-                                                <Badge>New</Badge>
-                                            )}
-                                        </div>
-
-                                        <p className="text-sm text-muted-foreground">
-                                            {notification.message}
+                                <div className="min-w-0 flex-1 space-y-1">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <p className="truncate text-sm font-medium text-foreground sm:text-base">
+                                            {notification.title}
                                         </p>
-                                    </div>
-
-                                    <div className="flex items-center gap-2">
-                                        <Bell className="size-4 text-muted-foreground" />
 
                                         {unread && (
-                                            <Button
-                                                variant="secondary"
-                                                onClick={() =>
-                                                    markAsRead(notification)
-                                                }
-                                            >
-                                                Mark read
-                                            </Button>
+                                            <Badge className="shrink-0">
+                                                New
+                                            </Badge>
                                         )}
-
-                                        <Link
-                                            href={notification.href}
-                                            onClick={() => {
-                                                if (unread) {
-                                                    markAsRead(notification);
-                                                }
-                                            }}
-                                            className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-                                        >
-                                            View
-                                        </Link>
                                     </div>
-                                </CardHeader>
+
+                                    <p className="text-sm text-muted-foreground">
+                                        {notification.message}
+                                    </p>
+
+                                    <p className="text-xs text-muted-foreground">
+                                        {formatRelativeTime(
+                                            notification.created_at,
+                                        )}
+                                    </p>
+                                </div>
+
+                                <div className="flex shrink-0 flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+                                    {unread && (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() =>
+                                                markAsRead(notification)
+                                            }
+                                        >
+                                            <Check className="size-4" />
+                                            Mark read
+                                        </Button>
+                                    )}
+
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        onClick={() =>
+                                            openNotification(notification)
+                                        }
+                                    >
+                                        View
+                                        <ChevronRight className="size-4" />
+                                    </Button>
+                                </div>
                             </Card>
                         );
                     })}
