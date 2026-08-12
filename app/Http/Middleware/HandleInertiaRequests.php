@@ -35,6 +35,8 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+        
         $notifications = [
             'count' => $user?->unreadNotifications()->count() ?? 0,
 
