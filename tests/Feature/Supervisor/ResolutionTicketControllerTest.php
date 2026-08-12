@@ -86,7 +86,22 @@ test('an HTE supervisor can view resolution tickets from their own HTE', functio
         );
 });
 
-test('an OJT supervisor cannot view the resolution tickets page', function () {
+test('an HTE supervisor receives pending resolution tickets in global notifications', function () {
+    [$supervisor, $hte] = makeHteSupervisor();
+    $program = Program::create(['program_name' => 'BSIT-'.uniqid()]);
+    [$intern, $ticket] = makeInternWithPendingTicket($hte, $program);
+
+    $this->actingAs($supervisor)
+        ->get(route('supervisor.dashboard'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('notifications.count', 1)
+            ->where('notifications.items.0.title', "Resolution request from {$intern->name}")
+            ->where('notifications.items.0.href', '/supervisor/resolution-tickets')
+        );
+});
+
+test('an OJT supervisor does not receive resolution ticket notifications', function () {
     [$supervisor] = makeOjtSupervisor();
 
     $this->actingAs($supervisor)

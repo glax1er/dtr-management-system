@@ -12,13 +12,27 @@ export type User = {
     [key: string]: unknown;
 };
 
+    export type Notification = {
+        id: number;
+        type: 'resolution_ticket' | string;
+        title: string;
+        message: string;
+        href: string;
+    };
+
     export type Auth = {
         user: User;
     };
 
+    export type Notifications = {
+        count: number;
+        items: Notification[];
+    };
+
     export type PageProps = {
         auth: Auth;
-            flash?: {
+        notifications?: Notifications;
+        flash?: {
             success?: string | null;
             error?: string | null;
         };
