@@ -43,21 +43,21 @@ class HandleInertiaRequests extends Middleware
             'items' => [],
         ];
 
+        $notificationsClearedAt = $request->session()->get('notifications_cleared_at');
+
         if ($user && $user->isSupervisor() && $user->supervisorProfile?->isHteSupervisor()) {
             $internUserIds = InternProfile::query()
                 ->where('hte_id', $user->supervisorProfile->hte_id)
                 ->pluck('user_id');
 
-            $ticketCount = ResolutionTicket::query()
+            $pendingTickets = ResolutionTicket::query()
                 ->where('status', ResolutionTicket::STATUS_PENDING)
                 ->whereIn('intern_user_id', $internUserIds)
-                ->count();
+                ->when($notificationsClearedAt, fn ($query) => $query->where('updated_at', '>', $notificationsClearedAt));
 
             $notifications = [
-                'count' => $ticketCount,
-                'items' => ResolutionTicket::query()
-                    ->where('status', ResolutionTicket::STATUS_PENDING)
-                    ->whereIn('intern_user_id', $internUserIds)
+                'count' => $pendingTickets->count(),
+                'items' => $pendingTickets
                     ->with('intern')
                     ->orderBy('date')
                     ->limit(5)
@@ -80,6 +80,7 @@ class HandleInertiaRequests extends Middleware
                 ])
                 ->whereNotNull('resolved_at')
                 ->where('resolved_at', '>=', now()->subDays(14))
+                ->when($notificationsClearedAt, fn ($query) => $query->where('resolved_at', '>', $notificationsClearedAt))
                 ->with('resolvedBy')
                 ->orderByDesc('resolved_at')
                 ->limit(5)

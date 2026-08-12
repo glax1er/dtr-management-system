@@ -166,6 +166,23 @@ test('an intern receives a notification when their resolution request is rejecte
         );
 });
 
+test('notifications can be cleared and will not reappear until there is new activity', function () {
+    [$supervisor, $hte] = makeHteSupervisor();
+    $program = Program::create(['program_name' => 'BSIT-'.uniqid()]);
+    [$intern, $ticket] = makeInternWithPendingTicket($hte, $program);
+
+    $this->actingAs($supervisor)
+        ->post(route('notifications.clear'))
+        ->assertRedirect();
+
+    $this->actingAs($supervisor)
+        ->get(route('supervisor.dashboard'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('notifications.count', 0)
+        );
+});
+
 test('an OJT supervisor does not receive resolution ticket notifications', function () {
     [$supervisor] = makeOjtSupervisor();
 

@@ -17,16 +17,23 @@ use App\Http\Controllers\Supervisor\InternsController;
 use App\Http\Controllers\Supervisor\ManualAttendanceController;
 use App\Http\Controllers\Supervisor\SchedulePeriodController as SupervisorScheduleController;
 use App\Http\Controllers\Kiosk\ScanController as KioskScanController;
-use App\Models\User;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Intern\ResolutionTicketController as InternResolutionTicketController;
 use App\Http\Controllers\Supervisor\ResolutionTicketController as SupervisorResolutionTicketController;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\ArchiveController;
 
 Route::redirect('/', '/login')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-
+ 
+    Route::post('notifications/clear', function (Request $request) {
+        $request->session()->put('notifications_cleared_at', now());
+ 
+        return back();
+    })->name('notifications.clear');
+ 
     Route::get('dashboard', function () {
         return redirect()->route(auth()->user()->homeRouteName());
     })->name('dashboard');

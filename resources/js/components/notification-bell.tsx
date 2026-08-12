@@ -1,4 +1,4 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { Bell, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,19 +7,18 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { PageProps, Notification } from '@/types';
 
 export function NotificationBell() {
-    const { auth, notifications } = usePage<PageProps>().props;
+    const { notifications } = usePage<PageProps>().props;
     const count = notifications?.count ?? 0;
     const items = notifications?.items ?? [];
-    const viewAllHref =
-        auth?.user?.role === 'intern'
-            ? '/intern/dashboard'
-            : '/supervisor/resolution-tickets';
+
+    const clearNotifications = () => {
+        router.post('/notifications/clear');
+    };
 
     return (
         <DropdownMenu>
@@ -36,7 +35,7 @@ export function NotificationBell() {
                             variant="destructive"
                             className={
                                 'absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 rounded-full px-1.5 py-0.5 text-[10px] ' +
-                                (count > 0 ? 'animate-pulse' : '')
+                                'animate-pulse'
                             }
                         >
                             {count}
@@ -46,26 +45,37 @@ export function NotificationBell() {
             </DropdownMenuTrigger>
 
             <DropdownMenuContent className="w-full max-w-[22rem] min-w-[16rem] overflow-hidden rounded-2xl border border-border bg-popover p-0 shadow-lg">
-                <div className="space-y-1 border-b border-border px-4 py-3">
-                    <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-                    <p className="text-xs text-muted-foreground">
-                        {count > 0 ? (
-                            <>
-                                You have{' '}
-                                <span className="font-medium text-foreground">
-                                    {count}
-                                </span>{' '}
-                                pending request{count === 1 ? '' : 's'}
-                            </>
-                        ) : (
-                            'No new notifications'
-                        )}
-                    </p>
+                <div className="flex items-center justify-between border-b border-border px-4 py-3">
+                    <div>
+                        <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                        <p className="text-xs text-muted-foreground">
+                            {count > 0 ? (
+                                <>
+                                    You have{' '}
+                                    <span className="font-medium text-foreground">
+                                        {count}
+                                    </span>{' '}
+                                    new notification{count === 1 ? '' : 's'}
+                                </>
+                            ) : (
+                                'No new notifications'
+                            )}
+                        </p>
+                    </div>
+                    {count > 0 && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={clearNotifications}
+                        >
+                            Clear all
+                        </Button>
+                    )}
                 </div>
 
                 {count === 0 ? (
                     <div className="p-4 text-sm text-muted-foreground">
-                        No pending notifications
+                        No new notifications
                     </div>
                 ) : (
                     <div className="space-y-1 p-2">
@@ -90,18 +100,6 @@ export function NotificationBell() {
                         ))}
                     </div>
                 )}
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem asChild>
-                    <Link
-                        href={viewAllHref}
-                        className="flex items-center justify-between px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent/10"
-                    >
-                        <span>View all requests</span>
-                        <ChevronRight className="size-3 text-muted-foreground" />
-                    </Link>
-                </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
     );
