@@ -1,5 +1,4 @@
 import { Head, router } from '@inertiajs/react';
-import { useRef, useState } from 'react';
 import {
     ChevronLeft,
     ChevronRight,
@@ -9,6 +8,7 @@ import {
     User as UserIcon,
     X,
 } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { HoursProgressRing } from '@/components/hours-progress-ring';
 import { ResolutionRequestDialog } from '@/components/resolution-request-dialog';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +25,7 @@ import type { InternDashboardProps } from '@/types/intern';
 function shiftMonth(month: string, delta: number): string {
     const [year, m] = month.split('-').map(Number);
     const date = new Date(Date.UTC(year, m - 1 + delta, 1));
+
     return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
@@ -52,7 +53,10 @@ export default function InternDashboard({
 
     const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (!file) return;
+
+        if (!file) {
+            return;
+        }
 
         const formData = new FormData();
         formData.append('photo', file);
@@ -73,6 +77,7 @@ export default function InternDashboard({
         if (!confirm('Cancel this resolution request?')) {
             return;
         }
+
         router.patch(
             `/intern/resolution-tickets/${ticketId}/cancel`,
             {},
@@ -80,11 +85,29 @@ export default function InternDashboard({
         );
     };
 
+    const getStatusBadge = (status: string) => {
+        if (status === 'complete') {
+            return { label: 'Complete', variant: 'default' as const };
+        }
+
+        if (status === 'missing_time_in' || status === 'no_record') {
+            return {
+                label:
+                    status === 'missing_time_in'
+                        ? 'Missing time in'
+                        : 'No record',
+                variant: 'destructive' as const,
+            };
+        }
+
+        return { label: 'No time-out', variant: 'outline' as const };
+    };
+
     return (
         <>
             <Head title="Dashboard" />
 
-            <div className="flex flex-1 flex-col gap-4 p-4">
+            <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 p-4">
                 <div>
                     <h1 className="text-2xl font-semibold">
                         Welcome, {profile.name.split(' ')[0]}
@@ -122,6 +145,20 @@ export default function InternDashboard({
                                     >
                                         <Camera className="size-3.5" />
                                     </button>
+
+                                    {profile.photo_url && (
+                                        <button
+                                            type="button"
+                                            onClick={handlePhotoRemove}
+                                            className="absolute -bottom-1 -left-1 flex size-6 items-center justify-center rounded-full border-2 border-background bg-destructive text-destructive-foreground"
+                                            title="Remove photo"
+                                        >
+                                            <span className="sr-only">
+                                                Remove photo
+                                            </span>
+                                            <X className="size-3.5" />
+                                        </button>
+                                    )}
 
                                     <input
                                         ref={fileInputRef}
@@ -296,7 +333,9 @@ export default function InternDashboard({
                                     <Button
                                         variant="outline"
                                         size="icon"
-                                        onClick={() => goToMonth(shiftMonth(month, -1))}
+                                        onClick={() =>
+                                            goToMonth(shiftMonth(month, -1))
+                                        }
                                     >
                                         <ChevronLeft />
                                     </Button>
@@ -307,7 +346,9 @@ export default function InternDashboard({
                                         variant="outline"
                                         size="icon"
                                         disabled={!canGoNextMonth}
-                                        onClick={() => goToMonth(shiftMonth(month, 1))}
+                                        onClick={() =>
+                                            goToMonth(shiftMonth(month, 1))
+                                        }
                                     >
                                         <ChevronRight />
                                     </Button>
@@ -323,15 +364,17 @@ export default function InternDashboard({
                             <Button
                                 variant="outline"
                                 size="icon"
-                                className="absolute right-0 top-[calc(50%-10px)] -translate-y-1/2 sm:hidden"
+                                className="absolute top-[calc(50%-10px)] right-0 -translate-y-1/2 sm:hidden"
                                 onClick={() => {
                                     const base = '/intern/dtr-report';
                                     let url = base + '?';
+
                                     if (startDate && endDate) {
                                         url += `start=${startDate}&end=${endDate}`;
                                     } else {
                                         url += `month=${month}`;
                                     }
+
                                     window.open(url, '_blank', 'noopener');
                                 }}
                                 aria-label="Download DTR report"
@@ -344,15 +387,17 @@ export default function InternDashboard({
                             <div className="flex items-center gap-2">
                                 <input
                                     type="date"
-                                    className="border rounded px-2 py-1 text-sm"
+                                    className="rounded border px-2 py-1 text-sm"
                                     value={startDate}
-                                    onChange={(e) => setStartDate(e.target.value)}
+                                    onChange={(e) =>
+                                        setStartDate(e.target.value)
+                                    }
                                     aria-label="DTR start date"
                                 />
                                 <span className="text-sm">to</span>
                                 <input
                                     type="date"
-                                    className="border rounded px-2 py-1 text-sm"
+                                    className="rounded border px-2 py-1 text-sm"
                                     value={endDate}
                                     onChange={(e) => setEndDate(e.target.value)}
                                     aria-label="DTR end date"
@@ -390,11 +435,13 @@ export default function InternDashboard({
                                 onClick={() => {
                                     const base = '/intern/dtr-report';
                                     let url = base + '?';
+
                                     if (startDate && endDate) {
                                         url += `start=${startDate}&end=${endDate}`;
                                     } else {
                                         url += `month=${month}`;
                                     }
+
                                     window.open(url, '_blank', 'noopener');
                                 }}
                             >
@@ -409,121 +456,242 @@ export default function InternDashboard({
                                 No attendance logs recorded for {monthLabel}.
                             </p>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead>
-                                        <tr className="border-b text-left text-muted-foreground">
-                                            <th className="py-2 pr-4 font-medium">
-                                                Date
-                                            </th>
-                                            <th className="py-2 pr-4 font-medium">
-                                                Time In
-                                            </th>
-                                            <th className="py-2 pr-4 font-medium">
-                                                Time Out
-                                            </th>
-                                            <th className="py-2 pr-4 font-medium">
-                                                Hours
-                                            </th>
-                                            <th className="py-2 pr-4 font-medium">
-                                                Status
-                                            </th>
-                                            <th className="py-2 font-medium">
-                                                Action
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {logs.map((log) => (
-                                            <tr
+                            <div className="space-y-4">
+                                <div className="grid gap-4 sm:hidden">
+                                    {logs.map((log) => {
+                                        const badge = getStatusBadge(
+                                            log.status,
+                                        );
+
+                                        return (
+                                            <div
                                                 key={log.date}
-                                                className="border-b last:border-0"
+                                                className="rounded-3xl border border-border bg-card p-4 shadow-sm"
                                             >
-                                                <td className="py-2 pr-4">
-                                                    {log.date}
-                                                    <span className="ml-1 text-xs text-muted-foreground">
-                                                        {log.day.slice(0, 3)}
-                                                    </span>
-                                                </td>
-                                                <td className="py-2 pr-4">
-                                                    {log.time_in ?? '—'}
-                                                </td>
-                                                <td className="py-2 pr-4">
-                                                    {log.time_out ?? '—'}
-                                                </td>
-                                                <td className="py-2 pr-4 tabular-nums">
-                                                    {log.hours_rendered.toFixed(
-                                                        2,
-                                                    )}
-                                                </td>
-                                                <td className="py-2">
+                                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                                    <div>
+                                                        <p className="text-base font-semibold">
+                                                            {log.date}
+                                                        </p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {log.day.slice(
+                                                                0,
+                                                                3,
+                                                            )}
+                                                        </p>
+                                                    </div>
                                                     <Badge
-                                                        className={
-                                                            log.status ===
-                                                            'complete'
-                                                                ? 'bg-emerald-100 text-emerald-400 border-emerald-500'
-                                                                : log.status ===
-                                                                        'missing_time_in' ||
-                                                                    log.status ===
-                                                                        'no_record'
-                                                                  ? 'bg-red-100 text-red-400 border-red-500'
-                                                                  : 'bg-amber-100 text-amber-400 border-amber-500' // 'No time-out'
-                                                        }
+                                                        variant={badge.variant}
                                                     >
-                                                        {log.status ===
-                                                        'complete'
-                                                            ? 'Complete'
-                                                            : log.status ===
-                                                                'missing_time_in'
-                                                              ? 'Missing time in'
-                                                              : log.status ===
-                                                                  'no_record'
-                                                                ? 'No record'
-                                                                : 'No time-out'}
+                                                        {badge.label}
                                                     </Badge>
-                                                </td>
-                                                <td className="py-2">
-                                                    {log.status ===
-                                                    'complete' ? (
-                                                        <span className="text-muted-foreground">
-                                                            —
-                                                        </span>
-                                                    ) : log.pending_ticket_id !==
-                                                      null ? (
-                                                        <div className="flex items-center gap-2">
-                                                            <Badge variant="secondary">
-                                                                Pending
-                                                            </Badge>
-                                                            <Button
-                                                                size="sm"
-                                                                variant="ghost"
-                                                                onClick={() =>
-                                                                    cancelRequest(
-                                                                        log.pending_ticket_id!,
-                                                                    )
-                                                                }
-                                                            >
-                                                                Cancel
-                                                            </Button>
+                                                </div>
+
+                                                <div className="mt-4 grid gap-3">
+                                                    <div className="rounded-2xl bg-muted p-3">
+                                                        <p className="text-xs tracking-wide text-muted-foreground uppercase">
+                                                            Time In
+                                                        </p>
+                                                        <p className="mt-1 text-sm font-medium">
+                                                            {log.time_in ?? '—'}
+                                                        </p>
+                                                    </div>
+                                                    <div className="rounded-2xl bg-muted p-3">
+                                                        <p className="text-xs tracking-wide text-muted-foreground uppercase">
+                                                            Time Out
+                                                        </p>
+                                                        <p className="mt-1 text-sm font-medium">
+                                                            {log.time_out ??
+                                                                '—'}
+                                                        </p>
+                                                    </div>
+                                                    <div className="rounded-2xl bg-muted p-3">
+                                                        <p className="text-xs tracking-wide text-muted-foreground uppercase">
+                                                            Hours
+                                                        </p>
+                                                        <p className="mt-1 text-sm font-medium tabular-nums">
+                                                            {log.hours_rendered.toFixed(
+                                                                2,
+                                                            )}
+                                                        </p>
+                                                    </div>
+                                                    <div className="rounded-2xl bg-muted p-3">
+                                                        <p className="text-xs tracking-wide text-muted-foreground uppercase">
+                                                            Action
+                                                        </p>
+                                                        <div className="mt-1">
+                                                            {log.status ===
+                                                            'complete' ? (
+                                                                <span className="text-sm text-muted-foreground">
+                                                                    —
+                                                                </span>
+                                                            ) : log.pending_ticket_id !==
+                                                              null ? (
+                                                                <div className="flex flex-wrap items-center gap-2">
+                                                                    <Badge variant="secondary">
+                                                                        Pending
+                                                                    </Badge>
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="ghost"
+                                                                        className="min-w-[6rem]"
+                                                                        onClick={() =>
+                                                                            cancelRequest(
+                                                                                log.pending_ticket_id!,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        Cancel
+                                                                    </Button>
+                                                                </div>
+                                                            ) : (
+                                                                <ResolutionRequestDialog
+                                                                    date={
+                                                                        log.date
+                                                                    }
+                                                                    day={
+                                                                        log.day
+                                                                    }
+                                                                    status={
+                                                                        log.status
+                                                                    }
+                                                                    existingTimeIn={
+                                                                        log.time_in
+                                                                    }
+                                                                    existingTimeOut={
+                                                                        log.time_out
+                                                                    }
+                                                                />
+                                                            )}
                                                         </div>
-                                                    ) : (
-                                                        <ResolutionRequestDialog
-                                                            date={log.date}
-                                                            day={log.day}
-                                                            status={log.status}
-                                                            existingTimeIn={
-                                                                log.time_in
-                                                            }
-                                                            existingTimeOut={
-                                                                log.time_out
-                                                            }
-                                                        />
-                                                    )}
-                                                </td>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                <div className="hidden overflow-x-auto sm:block">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="border-b text-left text-muted-foreground">
+                                                <th className="py-2 pr-4 font-medium">
+                                                    Date
+                                                </th>
+                                                <th className="py-2 pr-4 font-medium">
+                                                    Time In
+                                                </th>
+                                                <th className="py-2 pr-4 font-medium">
+                                                    Time Out
+                                                </th>
+                                                <th className="py-2 pr-4 font-medium">
+                                                    Hours
+                                                </th>
+                                                <th className="py-2 pr-4 font-medium">
+                                                    Status
+                                                </th>
+                                                <th className="py-2 font-medium">
+                                                    Action
+                                                </th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody>
+                                            {logs.map((log) => (
+                                                <tr
+                                                    key={log.date}
+                                                    className="border-b last:border-0"
+                                                >
+                                                    <td className="py-2 pr-4">
+                                                        {log.date}
+                                                        <span className="ml-1 text-xs text-muted-foreground">
+                                                            {log.day.slice(
+                                                                0,
+                                                                3,
+                                                            )}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-2 pr-4">
+                                                        {log.time_in ?? '—'}
+                                                    </td>
+                                                    <td className="py-2 pr-4">
+                                                        {log.time_out ?? '—'}
+                                                    </td>
+                                                    <td className="py-2 pr-4 tabular-nums">
+                                                        {log.hours_rendered.toFixed(
+                                                            2,
+                                                        )}
+                                                    </td>
+                                                    <td className="py-2">
+                                                        <Badge
+                                                            className={
+                                                                log.status ===
+                                                                'complete'
+                                                                    ? 'border-emerald-500 bg-emerald-100 text-emerald-400'
+                                                                    : log.status ===
+                                                                            'missing_time_in' ||
+                                                                        log.status ===
+                                                                            'no_record'
+                                                                      ? 'border-red-500 bg-red-100 text-red-400'
+                                                                      : 'border-amber-500 bg-amber-100 text-amber-400'
+                                                            }
+                                                        >
+                                                            {log.status ===
+                                                            'complete'
+                                                                ? 'Complete'
+                                                                : log.status ===
+                                                                    'missing_time_in'
+                                                                  ? 'Missing time in'
+                                                                  : log.status ===
+                                                                      'no_record'
+                                                                    ? 'No record'
+                                                                    : 'No time-out'}
+                                                        </Badge>
+                                                    </td>
+                                                    <td className="py-2">
+                                                        {log.status ===
+                                                        'complete' ? (
+                                                            <span className="text-muted-foreground">
+                                                                —
+                                                            </span>
+                                                        ) : log.pending_ticket_id !==
+                                                          null ? (
+                                                            <div className="flex items-center gap-2">
+                                                                <Badge variant="secondary">
+                                                                    Pending
+                                                                </Badge>
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    onClick={() =>
+                                                                        cancelRequest(
+                                                                            log.pending_ticket_id!,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    Cancel
+                                                                </Button>
+                                                            </div>
+                                                        ) : (
+                                                            <ResolutionRequestDialog
+                                                                date={log.date}
+                                                                day={log.day}
+                                                                status={
+                                                                    log.status
+                                                                }
+                                                                existingTimeIn={
+                                                                    log.time_in
+                                                                }
+                                                                existingTimeOut={
+                                                                    log.time_out
+                                                                }
+                                                            />
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         )}
                     </CardContent>
