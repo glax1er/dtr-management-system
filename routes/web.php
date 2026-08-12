@@ -19,6 +19,7 @@ use App\Http\Controllers\Supervisor\SchedulePeriodController as SupervisorSchedu
 use App\Http\Controllers\Kiosk\ScanController as KioskScanController;
 use App\Http\Controllers\Intern\ResolutionTicketController as InternResolutionTicketController;
 use App\Http\Controllers\Supervisor\ResolutionTicketController as SupervisorResolutionTicketController;
+use App\Http\Controllers\NotificationController;
 use App\Models\InternProfile;
 use App\Models\ResolutionTicket;
 use App\Models\User;
@@ -30,99 +31,14 @@ use App\Http\Controllers\Admin\ArchiveController;
 Route::redirect('/', '/login')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
- 
-    Route::post('notifications/clear', function (Request $request) {
-        $user = $request->user();
+    Route::get('notifications', [NotificationController::class, 'index'])
+    ->name('notifications.index');
 
-        if ($user) {
-            $user->update(['notifications_cleared_at' => now()]);
-        }
+    Route::post('notifications/{notification}/read', [NotificationController::class, 'markRead'])
+        ->name('notifications.markRead');
 
-        $request->session()->put('notifications_cleared_at', now());
- 
-        return back();
-    })->name('notifications.clear');
-
-    Route::post('notifications/mark-read', function (Request $request) {
-        $user = $request->user();
-
-        if ($user) {
-            $user->update(['notifications_cleared_at' => now()]);
-        }
-
-        return response()->noContent();
-    })->name('notifications.markRead');
-
-    Route::get('notifications', function (Request $request) {
-        $user = $request->user();
-        $notifications = [
-            'count' => 0,
-            'items' => [],
-        ];
-
-        $notificationsClearedAt = $user?->notifications_cleared_at ?? $request->session()->get('notifications_cleared_at');
-
-        if ($user && $user->isSupervisor() && $user->supervisorProfile?->isHteSupervisor()) {
-            $internUserIds = InternProfile::query()
-                ->where('hte_id', $user->supervisorProfile->hte_id)
-                ->pluck('user_id');
-
-            $pendingTickets = ResolutionTicket::query()
-                ->where('status', ResolutionTicket::STATUS_PENDING)
-                ->whereIn('intern_user_id', $internUserIds)
-                ->when($notificationsClearedAt, fn ($query) => $query->where('updated_at', '>', $notificationsClearedAt));
-
-            $notifications = [
-                'count' => $pendingTickets->count(),
-                'items' => $pendingTickets
-                    ->with('intern')
-                    ->orderBy('date')
-                    ->get()
-                    ->map(fn (ResolutionTicket $ticket) => [
-                        'id' => $ticket->id,
-                        'type' => 'resolution_ticket',
-                        'title' => "Resolution request from {$ticket->intern->name}",
-                        'message' => $ticket->date->toDateString(),
-                        'href' => '/supervisor/resolution-tickets',
-                    ])
-                    ->toArray(),
-            ];
-        } elseif ($user && $user->isIntern()) {
-            $resolvedTickets = ResolutionTicket::query()
-                ->where('intern_user_id', $user->id)
-                ->whereIn('status', [
-                    ResolutionTicket::STATUS_APPROVED,
-                    ResolutionTicket::STATUS_REJECTED,
-                ])
-                ->whereNotNull('resolved_at')
-                ->where('resolved_at', '>=', now()->subDays(14))
-                ->when($notificationsClearedAt, fn ($query) => $query->where('resolved_at', '>', $notificationsClearedAt))
-                ->with('resolvedBy')
-                ->orderByDesc('resolved_at')
-                ->get();
-
-            $notifications = [
-                'count' => $resolvedTickets->count(),
-                'items' => $resolvedTickets
-                    ->map(fn (ResolutionTicket $ticket) => [
-                        'id' => $ticket->id,
-                        'type' => 'resolution_ticket',
-                        'title' => $ticket->status === ResolutionTicket::STATUS_APPROVED
-                            ? "Your resolution request on {$ticket->date->toDateString()} was approved"
-                            : "Your resolution request on {$ticket->date->toDateString()} was rejected",
-                        'message' => $ticket->resolvedBy
-                            ? "Reviewed by {$ticket->resolvedBy->name}"
-                            : 'Reviewed',
-                        'href' => '/intern/dashboard',
-                    ])
-                    ->toArray(),
-            ];
-        }
-
-        return Inertia::render('notifications/index', [
-            'notifications' => $notifications,
-        ]);
-    })->name('notifications.index');
+    Route::delete('notifications', [NotificationController::class, 'clear'])
+        ->name('notifications.clear');
  
     Route::get('dashboard', function () {
         return redirect()->route(auth()->user()->homeRouteName());

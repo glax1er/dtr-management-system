@@ -2,8 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\InternProfile;
-use App\Models\ResolutionTicket;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -37,72 +35,27 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        $user = $request->user();
         $notifications = [
-            'count' => 0,
-            'items' => [],
-        ];
- 
-        $notificationsClearedAt = $user?->notifications_cleared_at ?? $request->session()->get('notifications_cleared_at');
- 
-        if ($user && $user->isSupervisor() && $user->supervisorProfile?->isHteSupervisor()) {
-            $internUserIds = InternProfile::query()
-                ->where('hte_id', $user->supervisorProfile->hte_id)
-                ->pluck('user_id');
+            'count' => $user?->unreadNotifications()->count() ?? 0,
 
-            $pendingTickets = ResolutionTicket::query()
-                ->where('status', ResolutionTicket::STATUS_PENDING)
-                ->whereIn('intern_user_id', $internUserIds)
-                ->when($notificationsClearedAt, fn ($query) => $query->where('updated_at', '>', $notificationsClearedAt));
-
-            $notifications = [
-                'count' => $pendingTickets->count(),
-                'items' => $pendingTickets
-                    ->with('intern')
-                    ->orderBy('date')
+            'items' => $user
+                ? $user->unreadNotifications()
+                    ->latest()
                     ->limit(5)
                     ->get()
-                    ->map(fn (ResolutionTicket $ticket) => [
-                        'id' => $ticket->id,
-                        'type' => 'resolution_ticket',
-                        'title' => "Resolution request from {$ticket->intern->name}",
-                        'message' => $ticket->date->toDateString(),
-                        'href' => '/supervisor/resolution-tickets',
+                    ->map(fn ($notification) => [
+                        'id' => $notification->id,
+                        'type' => $notification->data['type'] ?? 'general',
+                        'title' => $notification->data['title'] ?? 'Notification',
+                        'message' => $notification->data['message'] ?? '',
+                        'href' => $notification->data['href'] ?? '/dashboard',
+                        'read_at' => $notification->read_at?->toISOString(),
+                        'created_at' => $notification->created_at?->toISOString(),
                     ])
-                    ->toArray(),
-            ];
-        } elseif ($user && $user->isIntern()) {
-            $resolvedTickets = ResolutionTicket::query()
-                ->where('intern_user_id', $user->id)
-                ->whereIn('status', [
-                    ResolutionTicket::STATUS_APPROVED,
-                    ResolutionTicket::STATUS_REJECTED,
-                ])
-                ->whereNotNull('resolved_at')
-                ->where('resolved_at', '>=', now()->subDays(14))
-                ->when($notificationsClearedAt, fn ($query) => $query->where('resolved_at', '>', $notificationsClearedAt))
-                ->with('resolvedBy')
-                ->orderByDesc('resolved_at')
-                ->limit(5)
-                ->get();
-
-            $notifications = [
-                'count' => $resolvedTickets->count(),
-                'items' => $resolvedTickets
-                    ->map(fn (ResolutionTicket $ticket) => [
-                        'id' => $ticket->id,
-                        'type' => 'resolution_ticket',
-                        'title' => $ticket->status === ResolutionTicket::STATUS_APPROVED
-                            ? "Your resolution request on {$ticket->date->toDateString()} was approved"
-                            : "Your resolution request on {$ticket->date->toDateString()} was rejected",
-                        'message' => $ticket->resolvedBy
-                            ? "Reviewed by {$ticket->resolvedBy->name}"
-                            : 'Reviewed',
-                        'href' => '/intern/dashboard',
-                    ])
-                    ->toArray(),
-            ];
-        }
+                    ->values()
+                    ->all()
+                : [],
+        ];
 
         return [
             ...parent::share($request),

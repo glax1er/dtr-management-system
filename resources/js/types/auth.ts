@@ -12,32 +12,34 @@ export type User = {
     [key: string]: unknown;
 };
 
-    export type Notification = {
-        id: number;
-        type: 'resolution_ticket' | string;
-        title: string;
-        message: string;
-        href: string;
-    };
+export type Notification = {
+    id: string;
+    type: 'resolution_ticket' | string;
+    title: string;
+    message: string;
+    href: string;
+    read_at?: string | null;
+    created_at?: string | null;
+};
 
-    export type Auth = {
-        user: User;
-    };
+export type Auth = {
+    user: User;
+};
 
-    export type Notifications = {
-        count: number;
-        items: Notification[];
-    };
+export type Notifications = {
+    count: number;
+    items: Notification[];
+};
 
-    export type PageProps = {
-        auth: Auth;
-        notifications?: Notifications;
-        flash?: {
-            success?: string | null;
-            error?: string | null;
-        };
-        [key: string]: unknown;
+export type PageProps = {
+    auth: Auth;
+    notifications?: Notifications;
+    flash?: {
+        success?: string | null;
+        error?: string | null;
     };
+    [key: string]: unknown;
+};
 
 /* @chisel-passkeys */
 export type Passkey = {
