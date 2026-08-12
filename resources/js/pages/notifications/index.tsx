@@ -1,18 +1,43 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { Bell } from 'lucide-react';
+import { useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import type { PageProps, Notification } from '@/types';
 
 export default function NotificationsPage() {
-    const { notifications } = usePage<PageProps>().props;
+    const { auth, notifications } = usePage<PageProps>().props;
     const count = notifications?.count ?? 0;
     const items = notifications?.items ?? [];
+    const isSupervisor = auth.user?.role === 'supervisor';
+    const isIntern = auth.user?.role === 'intern';
 
     const clearNotifications = () => {
         router.post('/notifications/clear');
     };
+
+    useEffect(() => {
+        if (count > 0) {
+            router.post('/notifications/mark-read', {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => router.reload(),
+            });
+        }
+    }, [count]);
+
+    const pageDescription = isSupervisor
+        ? 'Review your pending resolution requests and recent responses.'
+        : isIntern
+          ? 'Review your recent request responses.'
+          : 'Currently notifications are only available for HTE supervisors and interns.';
+
+    const emptyMessage = isSupervisor
+        ? 'You have no pending resolution requests.'
+        : isIntern
+          ? 'You have no recent notifications yet.'
+          : 'Notifications are not yet available for your account.';
 
     return (
         <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-6">
@@ -25,8 +50,7 @@ export default function NotificationsPage() {
                         All notifications
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        Review your pending resolution requests and recent
-                        responses.
+                        {pageDescription}
                     </p>
                 </div>
                 <div className="flex flex-col items-start gap-3 sm:items-end">
@@ -42,7 +66,7 @@ export default function NotificationsPage() {
             {count === 0 ? (
                 <Card>
                     <CardContent className="p-6 text-center text-sm text-muted-foreground">
-                        There are no notifications to show right now.
+                        {emptyMessage}
                     </CardContent>
                 </Card>
             ) : (

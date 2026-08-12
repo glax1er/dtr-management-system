@@ -197,6 +197,29 @@ test('notifications have a dedicated view page and show all notifications', func
         );
 });
 
+test('notifications mark-read route updates supervisor cleared timestamp', function () {
+    [$supervisor, $hte] = makeHteSupervisor();
+    $program = Program::create(['program_name' => 'BSIT-'.uniqid()]);
+    [$intern, $ticket] = makeInternWithPendingTicket($hte, $program);
+
+    $this->actingAs($supervisor)
+        ->post(route('notifications.markRead'))
+        ->assertNoContent();
+
+    $this->assertNotNull($supervisor->fresh()->notifications_cleared_at);
+});
+
+test('admin notification page shows no notifications and does not reference resolution requests', function () {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+
+    $this->actingAs($admin)
+        ->get(route('notifications.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('notifications.count', 0)
+        );
+});
+
 test('an OJT supervisor does not receive resolution ticket notifications', function () {
     [$supervisor] = makeOjtSupervisor();
 

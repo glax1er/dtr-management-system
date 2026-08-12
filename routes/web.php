@@ -43,6 +43,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return back();
     })->name('notifications.clear');
 
+    Route::post('notifications/mark-read', function (Request $request) {
+        $user = $request->user();
+
+        if ($user) {
+            $user->update(['notifications_cleared_at' => now()]);
+        }
+
+        return response()->noContent();
+    })->name('notifications.markRead');
+
     Route::get('notifications', function (Request $request) {
         $user = $request->user();
         $notifications = [
