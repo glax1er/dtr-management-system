@@ -21,6 +21,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Intern\ResolutionTicketController as InternResolutionTicketController;
 use App\Http\Controllers\Supervisor\ResolutionTicketController as SupervisorResolutionTicketController;
+use App\Http\Controllers\Admin\ArchiveController;
 
 Route::redirect('/', '/login')->name('home');
 
@@ -62,6 +63,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('schedule', [AdminScheduleController::class, 'store'])->name('schedule.store');
         Route::delete('schedule/{schedulePeriod}', [AdminScheduleController::class, 'destroy'])->name('schedule.destroy');
         Route::patch('schedule/{schedulePeriod}', [AdminScheduleController::class, 'update'])->name('schedule.update');
+
+        Route::get('archives', [ArchiveController::class, 'index'])->name('archives.index');
+        Route::post('archives/{type}/{id}/restore', [ArchiveController::class, 'restore'])->name('archives.restore');
+        Route::delete('archives/{type}/{id}', [ArchiveController::class, 'forceDelete'])->name('archives.forceDelete');
+
+        Route::patch('supervisors/{supervisorProfile}', [SupervisorController::class, 'update'])->name('supervisors.update');
+        Route::delete('supervisors/{supervisorProfile}', [SupervisorController::class, 'destroy'])->name('supervisors.destroy');
+        Route::patch('interns/{internProfile}', [InternController::class, 'update'])->name('interns.update');
+        Route::delete('interns/{internProfile}', [InternApprovalController::class, 'destroy'])->name('interns.destroy');
+        Route::delete('htes/{hte}', [HteController::class, 'destroy'])->name('htes.destroy');
     });
 
     Route::middleware('role:' . User::ROLE_SUPERVISOR)->prefix('supervisor')->name('supervisor.')->group(function () {

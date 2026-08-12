@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Building, CalendarClock, Paperclip, FileWarning, GraduationCap, LayoutGrid, MonitorSmartphone, Users, PenLine } from 'lucide-react';
+import { Building, CalendarClock, Paperclip, FileWarning, GraduationCap, LayoutGrid, MonitorSmartphone, Users, PenLine, Archive } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -23,6 +23,7 @@ const adminNavItems: NavItem[] = [
     { title: 'HTEs', href: '/admin/htes', icon: Building },
     { title: 'Kiosk', href: '/admin/kiosk', icon: MonitorSmartphone },
     { title: 'Schedule', href: '/admin/schedule', icon: CalendarClock },
+    { title: 'Archives', href: '/admin/archives', icon: Archive },
 ];
 
 // HTE Supervisors get a dashboard; OJT Supervisors don't (they only
