@@ -42,9 +42,9 @@ class HandleInertiaRequests extends Middleware
             'count' => 0,
             'items' => [],
         ];
-
-        $notificationsClearedAt = $request->session()->get('notifications_cleared_at');
-
+ 
+        $notificationsClearedAt = $user?->notifications_cleared_at ?? $request->session()->get('notifications_cleared_at');
+ 
         if ($user && $user->isSupervisor() && $user->supervisorProfile?->isHteSupervisor()) {
             $internUserIds = InternProfile::query()
                 ->where('hte_id', $user->supervisorProfile->hte_id)

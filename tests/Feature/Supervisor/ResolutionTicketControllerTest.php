@@ -175,11 +175,25 @@ test('notifications can be cleared and will not reappear until there is new acti
         ->post(route('notifications.clear'))
         ->assertRedirect();
 
-    $this->actingAs($supervisor)
+    $this->actingAs($supervisor->fresh())
         ->get(route('supervisor.dashboard'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->where('notifications.count', 0)
+        );
+});
+
+test('notifications have a dedicated view page and show all notifications', function () {
+    [$supervisor, $hte] = makeHteSupervisor();
+    $program = Program::create(['program_name' => 'BSIT-'.uniqid()]);
+    [$intern, $ticket] = makeInternWithPendingTicket($hte, $program);
+
+    $this->actingAs($supervisor)
+        ->get(route('notifications.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('notifications.count', 1)
+            ->where('notifications.items.0.title', "Resolution request from {$intern->name}")
         );
 });
 

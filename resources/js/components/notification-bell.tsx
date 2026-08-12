@@ -7,6 +7,7 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { PageProps, Notification } from '@/types';
@@ -100,6 +101,16 @@ export function NotificationBell() {
                         ))}
                     </div>
                 )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                    <Link
+                        href="/notifications"
+                        className="flex items-center justify-between px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent/10"
+                    >
+                        <span>View all notifications</span>
+                        <ChevronRight className="size-3 text-muted-foreground" />
+                    </Link>
+                </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
     );
