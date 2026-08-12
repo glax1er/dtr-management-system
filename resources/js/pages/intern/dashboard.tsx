@@ -20,35 +20,12 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import type { InternDashboardProps } from '@/types/intern';
 
 function shiftMonth(month: string, delta: number): string {
     const [year, m] = month.split('-').map(Number);
     const date = new Date(Date.UTC(year, m - 1 + delta, 1));
     return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
-}
-
-const fmtDate = (d: Date) => d.toISOString().slice(0, 10);
-
-/** Monday–Sunday range containing `date`. */
-function weekRangeOf(date: Date): { start: string; end: string } {
-    const day = date.getDay();
-    const diffToMonday = (day + 6) % 7; // Sun(0) -> 6, Mon(1) -> 0, ...
-    const monday = new Date(date.getFullYear(), date.getMonth(), date.getDate() - diffToMonday);
-    const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
-
-    return { start: fmtDate(monday), end: fmtDate(sunday) };
-}
-
-/** First–last day of the given 'YYYY-MM' month string. */
-function monthRangeOf(month: string): { start: string; end: string } {
-    const [year, m] = month.split('-').map(Number);
-    const first = new Date(year, m - 1, 1);
-    const last = new Date(year, m, 0);
-
-    return { start: fmtDate(first), end: fmtDate(last) };
 }
 
 export default function InternDashboard({
@@ -70,6 +47,8 @@ export default function InternDashboard({
     };
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [startDate, setStartDate] = useState<string>('');
+    const [endDate, setEndDate] = useState<string>('');
 
     const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -310,43 +289,117 @@ export default function InternDashboard({
 
                 {/* Full attendance log, now full width on its own row */}
                 <Card>
-                    <CardHeader className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center gap-2">
+                    <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="relative flex w-full justify-center sm:w-auto">
+                            <div className="flex flex-col items-center gap-1">
+                                <div className="flex items-center gap-2 pr-10 sm:pr-0">
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => goToMonth(shiftMonth(month, -1))}
+                                    >
+                                        <ChevronLeft />
+                                    </Button>
+                                    <CardTitle className="min-w-32 text-center text-base">
+                                        {monthLabel}
+                                    </CardTitle>
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        disabled={!canGoNextMonth}
+                                        onClick={() => goToMonth(shiftMonth(month, 1))}
+                                    >
+                                        <ChevronRight />
+                                    </Button>
+                                </div>
+                                <div className="text-center text-[11px] text-muted-foreground">
+                                    Total:{' '}
+                                    <span className="font-medium text-foreground tabular-nums">
+                                        {monthTotalHours.toFixed(2)} hrs
+                                    </span>
+                                </div>
+                            </div>
+
                             <Button
                                 variant="outline"
                                 size="icon"
-                                onClick={() => goToMonth(shiftMonth(month, -1))}
+                                className="absolute right-0 top-[calc(50%-10px)] -translate-y-1/2 sm:hidden"
+                                onClick={() => {
+                                    const base = '/intern/dtr-report';
+                                    let url = base + '?';
+                                    if (startDate && endDate) {
+                                        url += `start=${startDate}&end=${endDate}`;
+                                    } else {
+                                        url += `month=${month}`;
+                                    }
+                                    window.open(url, '_blank', 'noopener');
+                                }}
+                                aria-label="Download DTR report"
                             >
-                                <ChevronLeft />
-                            </Button>
-                            <CardTitle className="min-w-32 text-center text-base">
-                                {monthLabel}
-                            </CardTitle>
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                disabled={!canGoNextMonth}
-                                onClick={() => goToMonth(shiftMonth(month, 1))}
-                            >
-                                <ChevronRight />
+                                <Download className="size-4" />
                             </Button>
                         </div>
-                        <div className="flex flex-wrap items-center gap-3">
-                            <span className="text-sm text-muted-foreground">
-                                Total:{' '}
-                                <span className="font-medium text-foreground tabular-nums">
-                                    {monthTotalHours.toFixed(2)} hrs
-                                </span>
-                            </span>
-                            <Button size="sm" asChild>
-                                <a
-                                    href={`/intern/dtr-report?month=${month}`}
-                                    target="_blank"
-                                    rel="noopener"
+                        <div className="flex w-full flex-wrap items-center justify-center gap-3 sm:w-auto sm:justify-end">
+                            {/* Date range picker for DTR (start / end) */}
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="date"
+                                    className="border rounded px-2 py-1 text-sm"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                    aria-label="DTR start date"
+                                />
+                                <span className="text-sm">to</span>
+                                <input
+                                    type="date"
+                                    className="border rounded px-2 py-1 text-sm"
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                    aria-label="DTR end date"
+                                />
+                                {/* <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                        const now = new Date();
+                                        // get Monday as startOfWeek
+                                        const day = now.getDay();
+                                        const diffToMonday = (day + 6) % 7; // 0->6
+                                        const monday = new Date(
+                                            now.getFullYear(),
+                                            now.getMonth(),
+                                            now.getDate() - diffToMonday,
+                                        );
+                                        const sunday = new Date(
+                                            monday.getFullYear(),
+                                            monday.getMonth(),
+                                            monday.getDate() + 6,
+                                        );
+                                        const fmt = (d: Date) => d.toISOString().slice(0, 10);
+                                        setStartDate(fmt(monday));
+                                        setEndDate(fmt(sunday));
+                                    }}
                                 >
-                                    <Download />
-                                    DTR Report
-                                </a>
+                                    This week
+                                </Button> */}
+                            </div>
+
+                            <Button
+                                size="sm"
+                                className="hidden sm:inline-flex"
+                                onClick={() => {
+                                    const base = '/intern/dtr-report';
+                                    let url = base + '?';
+                                    if (startDate && endDate) {
+                                        url += `start=${startDate}&end=${endDate}`;
+                                    } else {
+                                        url += `month=${month}`;
+                                    }
+                                    window.open(url, '_blank', 'noopener');
+                                }}
+                            >
+                                <Download className="mr-2 size-4" />
+                                DTR Report
                             </Button>
                         </div>
                     </CardHeader>
