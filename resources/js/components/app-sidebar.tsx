@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Building, CalendarClock, Paperclip, FileWarning, GraduationCap, LayoutGrid, MonitorSmartphone, Users, PenLine, Archive } from 'lucide-react';
+import { Building, CalendarClock, Paperclip, FileWarning, GraduationCap, LayoutGrid, MonitorSmartphone, Users, PenLine, Archive, BookOpen } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -21,6 +21,7 @@ const adminNavItems: NavItem[] = [
     { title: 'Interns', href: '/admin/interns', icon: GraduationCap },
     { title: 'Supervisors', href: '/admin/supervisors', icon: Users },
     { title: 'HTEs', href: '/admin/htes', icon: Building },
+    { title: 'Programs', href: '/admin/programs', icon: BookOpen },
     { title: 'Kiosk', href: '/admin/kiosk', icon: MonitorSmartphone },
     { title: 'Schedule', href: '/admin/schedule', icon: CalendarClock },
     { title: 'Archives', href: '/admin/archives', icon: Archive },
