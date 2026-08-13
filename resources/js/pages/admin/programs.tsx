@@ -151,7 +151,7 @@ export default function AdminPrograms({ programs }: ProgramsProps) {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="px-6 text-left">Program</TableHead>
+                                        <TableHead className="px-6 text-center">Program</TableHead>
                                         <TableHead className="px-6 text-center">Status</TableHead>
                                         <TableHead className="px-6 text-center">Required Hours</TableHead>
                                         <TableHead className="px-6 text-center">Approved Interns</TableHead>
