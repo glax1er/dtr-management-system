@@ -151,7 +151,7 @@ export default function AdminPrograms({ programs }: ProgramsProps) {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="px-6 text-center">Program</TableHead>
+                                        <TableHead className="px-6 text-left">Program</TableHead>
                                         <TableHead className="px-6 text-center">Status</TableHead>
                                         <TableHead className="px-6 text-center">Required Hours</TableHead>
                                         <TableHead className="px-6 text-center">Approved Interns</TableHead>
@@ -162,7 +162,7 @@ export default function AdminPrograms({ programs }: ProgramsProps) {
                                 <TableBody>
                                     {programs.map((program) => (
                                         <TableRow key={program.program_id}>
-                                            <TableCell className="px-6 text-center font-medium">
+                                            <TableCell className="px-6 text-left font-medium">
                                                 {program.program_name}
                                             </TableCell>
                                             <TableCell className="px-6 text-center">
