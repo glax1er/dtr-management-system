@@ -1,11 +1,15 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import { Archive, Building2, LayoutGrid, Pencil, Power, PowerOff, Table as TableIcon } from 'lucide-react';
+import { toast } from 'sonner';
 import InputError from '@/components/input-error';
 import PaginationFooter from '@/components/pagination-footer';
 import type { Paginated } from '@/components/pagination-footer';
+import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import {
     Dialog,
     DialogContent,
@@ -13,11 +17,19 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { dashboard } from '@/routes';
 
 interface Hte {
@@ -41,10 +53,16 @@ interface HtesIndexProps {
     filters: Filters;
 }
 
+type ViewMode = 'table' | 'grid';
+
 export default function HtesIndex({ htes, filters }: HtesIndexProps) {
+    const [view, setView] = useState<ViewMode>('table');
     const [addOpen, setAddOpen] = useState(false);
     const [editingHte, setEditingHte] = useState<Hte | null>(null);
     const [search, setSearch] = useState(filters.search);
+    const [archiveOpen, setArchiveOpen] = useState(false);
+    const [archiveHteId, setArchiveHteId] = useState<number | null>(null);
+    const [archiveHteName, setArchiveHteName] = useState('');
 
     const addForm = useForm({
         hte_name: '',
@@ -90,9 +108,18 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
         });
     };
 
-    const deleteHte = (hteId: number, name: string) => {
-        if (confirm(`Permanently delete ${name}? This cannot be undone from the UI.`)) {
-            router.delete(`/admin/htes/${hteId}`, { preserveScroll: true });
+    const openArchiveDialog = (hteId: number, name: string) => {
+        setArchiveHteId(hteId);
+        setArchiveHteName(name);
+        setArchiveOpen(true);
+    };
+
+    const submitArchive = () => {
+        if (archiveHteId !== null) {
+            router.delete(`/admin/htes/${archiveHteId}`, { preserveScroll: true });
+            setArchiveOpen(false);
+            setArchiveHteId(null);
+            setArchiveHteName('');
         }
     };
 
@@ -126,216 +153,255 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
     return (
         <>
             <Head title="HTEs" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-3 sm:p-4">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex h-full flex-1 flex-col gap-4 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Host Training Establishments</h1>
-                        <p className="text-muted-foreground text-sm">Manage HTEs that interns and supervisors are assigned to.</p>
+                        <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
+                            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                                <Building2 className="size-5" />
+                            </div>
+                            <span>Host Training Establishments</span>
+                        </h1>
                     </div>
-
-                    <Dialog open={addOpen} onOpenChange={setAddOpen}>
-                        <DialogTrigger asChild>
-                            <Button className="w-full sm:w-auto">Add HTE</Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <form onSubmit={handleAddSubmit}>
-                                <DialogHeader>
-                                    <DialogTitle>Add HTE</DialogTitle>
-                                    <DialogDescription>
-                                        This HTE will become available for assigning interns and supervisors.
-                                    </DialogDescription>
-                                </DialogHeader>
-
-                                <div className="grid gap-4 py-4">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="hte_name">Name</Label>
-                                        <Input
-                                            id="hte_name"
-                                            value={addForm.data.hte_name}
-                                            onChange={(e) => addForm.setData('hte_name', e.target.value)}
-                                            required
-                                        />
-                                        <InputError message={addForm.errors.hte_name} />
-                                    </div>
-
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="address">Address</Label>
-                                        <Input
-                                            id="address"
-                                            value={addForm.data.address}
-                                            onChange={(e) => addForm.setData('address', e.target.value)}
-                                        />
-                                        <InputError message={addForm.errors.address} />
-                                    </div>
-
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="contact_number">Contact number</Label>
-                                        <Input
-                                            id="contact_number"
-                                            value={addForm.data.contact_number}
-                                            onChange={(e) => addForm.setData('contact_number', e.target.value)}
-                                        />
-                                        <InputError message={addForm.errors.contact_number} />
-                                    </div>
-                                </div>
-
-                                <DialogFooter>
-                                    <Button type="submit" disabled={addForm.processing}>
-                                        Create HTE
-                                    </Button>
-                                </DialogFooter>
-                            </form>
-                        </DialogContent>
-                    </Dialog>
+                    <div className="flex items-center gap-2">
+                        <Tabs value={view} onValueChange={(v) => setView(v as ViewMode)}>
+                            <TabsList>
+                                <TabsTrigger value="table">
+                                    <TableIcon className="size-4" />
+                                </TabsTrigger>
+                                <TabsTrigger value="grid">
+                                    <LayoutGrid className="size-4" />
+                                </TabsTrigger>
+                            </TabsList>
+                        </Tabs>
+                        <Button onClick={() => setAddOpen(true)}>Add HTE</Button>
+                    </div>
                 </div>
 
-                <Card className="flex-1">
-                    <CardHeader>
-                        <CardTitle className="text-base">All HTEs</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-col gap-5">
-                        <form onSubmit={applySearch} className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                            <div className="flex flex-col gap-1.5">
-                                <Label htmlFor="hte-search" className="text-xs text-muted-foreground">
-                                    Search by HTE name
-                                </Label>
-                                <Input
-                                    id="hte-search"
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="e.g. Acme Corporation"
-                                    className="w-full sm:w-64"
-                                />
-                            </div>
-                            <div className="flex gap-2">
-                                <Button type="submit" variant="secondary" size="sm">
-                                    Search
-                                </Button>
-                                {filters.search !== '' && (
-                                    <Button type="button" variant="ghost" size="sm" onClick={clearSearch}>
-                                        Clear
-                                    </Button>
-                                )}
-                            </div>
-                        </form>
-
-                        {htes.data.length === 0 ? (
-                            <p className="py-8 text-center text-sm text-muted-foreground">
-                                No HTEs match{filters.search !== '' ? ' this search.' : ' yet.'}
-                            </p>
-                        ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead>
-                                        <tr className="border-b text-left text-muted-foreground">
-                                            <th className="py-2 pr-4 font-medium">Name</th>
-                                            <th className="py-2 pr-4 font-medium">Address</th>
-                                            <th className="py-2 pr-4 font-medium">Contact</th>
-                                            <th className="py-2 pr-4 font-medium">Interns</th>
-                                            <th className="py-2 pr-4 font-medium">Supervisors</th>
-                                            <th className="py-2 font-medium">Status</th>
-                                            <th className="py-2 pl-4 font-medium">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {htes.data.map((hte) => (
-                                            <tr key={hte.hte_id} className="border-b last:border-0 hover:bg-muted/40">
-                                                <td className="py-2.5 pr-4 font-medium whitespace-nowrap">
-                                                    {hte.hte_name}
-                                                </td>
-                                                <td
-                                                    className="max-w-[180px] truncate py-2.5 pr-4"
-                                                    title={hte.address ?? undefined}
-                                                >
-                                                    {hte.address ?? 'No address'}
-                                                </td>
-                                                <td className="max-w-[180px] py-2.5 pr-4">
-                                                    <p
-                                                        className="truncate"
-                                                        title={hte.contact_person ?? undefined}
-                                                    >
-                                                        {hte.contact_person ?? 'No supervisor assigned'}
+                {htes.data.length === 0 ? (
+                    <Card>
+                        <CardContent className="py-8 text-center text-sm text-muted-foreground">
+                            No HTEs match{filters.search !== '' ? ' this search.' : ' yet.'}
+                        </CardContent>
+                    </Card>
+                ) : view === 'table' ? (
+                    <Card>
+                        <CardContent className="p-0">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="px-6 text-center">Host Training Establishment</TableHead>
+                                        <TableHead className="px-6 text-center">Address</TableHead>
+                                        <TableHead className="px-6 text-center">Contact</TableHead>
+                                        <TableHead className="px-6 text-center">Status</TableHead>
+                                        <TableHead className="px-6 text-center">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {htes.data.map((hte) => (
+                                        <TableRow key={hte.hte_id}>
+                                            <TableCell className="px-6 font-medium">{hte.hte_name}</TableCell>
+                                            <TableCell
+                                                className="max-w-xs truncate px-6 text-center text-muted-foreground"
+                                                title={hte.address ?? undefined}
+                                            >
+                                                {hte.address ?? '—'}
+                                            </TableCell>
+                                            <TableCell className="px-6 text-center">
+                                                <div>
+                                                    <p className="truncate" title={hte.contact_person ?? undefined}>
+                                                        {hte.contact_person ?? '—'}
                                                     </p>
                                                     {hte.contact_number && (
                                                         <p className="truncate text-xs text-muted-foreground">
                                                             {hte.contact_number}
                                                         </p>
                                                     )}
-                                                </td>
-                                                <td className="py-2.5 pr-4 whitespace-nowrap">
-                                                    {hte.interns_count}
-                                                </td>
-                                                <td className="py-2.5 pr-4 whitespace-nowrap">
-                                                    {hte.supervisors_count}
-                                                </td>
-                                                <td className="py-2.5">
-                                                    <Select
-                                                        value={hte.status}
-                                                        onValueChange={(value) => {
-                                                            router.patch(
-                                                                `/admin/htes/${hte.hte_id}/status`,
-                                                                { status: value },
-                                                                { preserveScroll: true, preserveState: true },
-                                                            );
-                                                        }}
-                                                    >
-                                                        <SelectTrigger className="h-8 w-[7.5rem]">
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="active">Active</SelectItem>
-                                                            <SelectItem value="inactive">Inactive</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </td>
-                                                <td className="py-2.5 pl-4">
-                                                    <div className="flex flex-wrap gap-2">
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="px-6 text-center">
+                                                <StatusBadge status={hte.status} />
+                                            </TableCell>
+                                            <TableCell className="px-6 text-center">
+                                                <div className="flex justify-center gap-1">
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => openEditDialog(hte)}
+                                                            >
+                                                                <Pencil className="size-4 text-blue-600" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>Edit</TooltipContent>
+                                                    </Tooltip>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => {
+                                                                    router.patch(
+                                                                        `/admin/htes/${hte.hte_id}/status`,
+                                                                        { status: hte.status === 'active' ? 'inactive' : 'active' },
+                                                                        { preserveScroll: true, preserveState: true },
+                                                                    );
+                                                                }}
+                                                            >
+                                                                {hte.status === 'active' ? (
+                                                                    <PowerOff className="size-4 text-destructive" />
+                                                                ) : (
+                                                                    <Power className="size-4 text-emerald-600" />
+                                                                )}
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            {hte.status === 'active' ? 'Deactivate' : 'Activate'}
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                disabled={hte.status === 'active'}
+                                                                onClick={() => openArchiveDialog(hte.hte_id, hte.hte_name)}
+                                                            >
+                                                                <Archive className="size-4 text-orange-600" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            {hte.status === 'active'
+                                                                ? 'Archive inactive HTEs only'
+                                                                : 'Archive to collection'}
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                            <div className="border-t px-6 py-4">
+                                <PaginationFooter
+                                    meta={htes}
+                                    itemLabel="HTE"
+                                    onPageChange={goToPage}
+                                    onPerPageChange={changePerPage}
+                                    idPrefix="htes-per-page"
+                                />
+                            </div>
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <div className="flex flex-col gap-4">
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            {htes.data.map((hte) => (
+                                <Card key={hte.hte_id}>
+                                    <CardHeader>
+                                        <div className="flex items-start justify-between">
+                                            <div>
+                                                <CardTitle className="text-base">{hte.hte_name}</CardTitle>
+                                                <StatusBadge status={hte.status} />
+                                            </div>
+                                            <div className="flex gap-1">
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
                                                         <Button
-                                                            variant="outline"
-                                                            size="sm"
+                                                            variant="ghost"
+                                                            size="icon"
                                                             onClick={() => openEditDialog(hte)}
                                                         >
-                                                            Edit
+                                                            <Pencil className="size-4 text-blue-600" />
                                                         </Button>
-                                                        {hte.status === 'inactive' && (
-                                                            <Button
-                                                                variant="destructive"
-                                                                size="sm"
-                                                                onClick={() => deleteHte(hte.hte_id, hte.hte_name)}
-                                                            >
-                                                                Delete
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-
-                        <PaginationFooter
-                            meta={htes}
-                            itemLabel="HTE"
-                            onPageChange={goToPage}
-                            onPerPageChange={changePerPage}
-                            idPrefix="htes-per-page"
-                        />
-                    </CardContent>
-                </Card>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>Edit</TooltipContent>
+                                                </Tooltip>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => {
+                                                                router.patch(
+                                                                    `/admin/htes/${hte.hte_id}/status`,
+                                                                    { status: hte.status === 'active' ? 'inactive' : 'active' },
+                                                                    { preserveScroll: true, preserveState: true },
+                                                                );
+                                                            }}
+                                                        >
+                                                            {hte.status === 'active' ? (
+                                                                <PowerOff className="size-4 text-destructive" />
+                                                            ) : (
+                                                                <Power className="size-4 text-emerald-600" />
+                                                            )}
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        {hte.status === 'active' ? 'Deactivate' : 'Activate'}
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            disabled={hte.status === 'active'}
+                                                            onClick={() => openArchiveDialog(hte.hte_id, hte.hte_name)}
+                                                        >
+                                                            <Archive className="size-4 text-orange-600" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        {hte.status === 'active'
+                                                            ? 'Archive inactive HTEs only'
+                                                            : 'Archive to collection'}
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </div>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="space-y-2 text-sm">
+                                        <div className="flex justify-between gap-2">
+                                            <span className="shrink-0 text-muted-foreground">Address</span>
+                                            <span className="text-right" title={hte.address ?? undefined}>
+                                                {hte.address ?? '—'}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between gap-2">
+                                            <span className="shrink-0 text-muted-foreground">Contact Person</span>
+                                            <span className="text-right">{hte.contact_person ?? '—'}</span>
+                                        </div>
+                                        <div className="flex justify-between gap-2">
+                                            <span className="shrink-0 text-muted-foreground">Contact Number</span>
+                                            <span className="text-right">{hte.contact_number ?? '—'}</span>
+                                        </div>
+                                        <div className="flex justify-between gap-2">
+                                            <span className="shrink-0 text-muted-foreground">Interns</span>
+                                            <span>{hte.interns_count}</span>
+                                        </div>
+                                        <div className="flex justify-between gap-2">
+                                            <span className="shrink-0 text-muted-foreground">Supervisors</span>
+                                            <span>{hte.supervisors_count}</span>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
 
             <Dialog open={editingHte !== null} onOpenChange={(open) => !open && setEditingHte(null)}>
                 <DialogContent>
-                    <form onSubmit={handleEditSubmit}>
-                        <DialogHeader>
-                            <DialogTitle>Edit HTE</DialogTitle>
-                            <DialogDescription>Update this HTE's details.</DialogDescription>
-                        </DialogHeader>
-
-                        <div className="grid gap-4 py-4">
-                            <div className="grid gap-2">
+                    <DialogHeader>
+                        <DialogTitle>Edit HTE</DialogTitle>
+                        <DialogDescription>Update this HTE's details.</DialogDescription>
+                    </DialogHeader>
+                    {editingHte && (
+                        <form onSubmit={handleEditSubmit} className="flex flex-col gap-4">
+                            <div className="grid gap-1.5">
                                 <Label htmlFor="edit_hte_name">Name</Label>
                                 <Input
                                     id="edit_hte_name"
@@ -346,7 +412,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                 <InputError message={editForm.errors.hte_name} />
                             </div>
 
-                            <div className="grid gap-2">
+                            <div className="grid gap-1.5">
                                 <Label htmlFor="edit_address">Address</Label>
                                 <Input
                                     id="edit_address"
@@ -356,8 +422,8 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                 <InputError message={editForm.errors.address} />
                             </div>
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="edit_contact_number">Contact number</Label>
+                            <div className="grid gap-1.5">
+                                <Label htmlFor="edit_contact_number">Contact Number</Label>
                                 <Input
                                     id="edit_contact_number"
                                     value={editForm.data.contact_number}
@@ -365,16 +431,80 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                 />
                                 <InputError message={editForm.errors.contact_number} />
                             </div>
+
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setEditingHte(null)} type="button">
+                                    Cancel
+                                </Button>
+                                <Button type="submit" disabled={editForm.processing}>
+                                    Save Changes
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={addOpen} onOpenChange={setAddOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Add HTE</DialogTitle>
+                        <DialogDescription>
+                            This HTE will become available for assigning interns and supervisors.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleAddSubmit} className="flex flex-col gap-4">
+                        <div className="grid gap-1.5">
+                            <Label htmlFor="hte_name">Name</Label>
+                            <Input
+                                id="hte_name"
+                                value={addForm.data.hte_name}
+                                onChange={(e) => addForm.setData('hte_name', e.target.value)}
+                                required
+                            />
+                            <InputError message={addForm.errors.hte_name} />
+                        </div>
+
+                        <div className="grid gap-1.5">
+                            <Label htmlFor="address">Address</Label>
+                            <Input
+                                id="address"
+                                value={addForm.data.address}
+                                onChange={(e) => addForm.setData('address', e.target.value)}
+                            />
+                            <InputError message={addForm.errors.address} />
+                        </div>
+
+                        <div className="grid gap-1.5">
+                            <Label htmlFor="contact_number">Contact Number</Label>
+                            <Input
+                                id="contact_number"
+                                value={addForm.data.contact_number}
+                                onChange={(e) => addForm.setData('contact_number', e.target.value)}
+                            />
+                            <InputError message={addForm.errors.contact_number} />
                         </div>
 
                         <DialogFooter>
-                            <Button type="submit" disabled={editForm.processing}>
-                                Save changes
+                            <Button variant="outline" onClick={() => setAddOpen(false)} type="button">
+                                Cancel
+                            </Button>
+                            <Button type="submit" disabled={addForm.processing}>
+                                Create HTE
                             </Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>
+
+            <ConfirmationDialog
+                open={archiveOpen}
+                onOpenChange={setArchiveOpen}
+                title="Archive HTE"
+                description={`Archive "${archiveHteName}"? It will be moved to the archives and can be restored later.`}
+                onConfirm={submitArchive}
+                confirmText="Archive"
+            />
         </>
     );
 }
