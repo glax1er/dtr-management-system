@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Hte;
 use App\Models\InternProfile;
+use App\Models\Program;
 use App\Models\SupervisorProfile;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
@@ -19,7 +20,7 @@ class ArchiveController extends Controller
     public function index(Request $request): Response
     {
         $validated = $request->validate([
-            'type' => ['nullable', 'in:htes,supervisors,interns'],
+            'type' => ['nullable', 'in:htes,supervisors,interns,programs'],
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
 
@@ -55,6 +56,15 @@ class ArchiveController extends Controller
                     'name' => $profile->user->name,
                     'detail' => $profile->id_number,
                     'deleted_at' => $profile->deleted_at->format('M d, Y h:i A'),
+                ]),
+            'programs' => Program::onlyTrashed()
+                ->orderBy('deleted_at', 'desc')
+                ->paginate(self::PER_PAGE, ['*'], 'page', $page)
+                ->through(fn (Program $program) => [
+                    'id' => $program->program_id,
+                    'name' => $program->program_name,
+                    'detail' => $program->required_hours ? "{$program->required_hours} hrs" : 'No hours set',
+                    'deleted_at' => $program->deleted_at->format('M d, Y h:i A'),
                 ]),
         };
 
@@ -95,6 +105,7 @@ class ArchiveController extends Controller
             'htes' => Hte::class,
             'supervisors' => SupervisorProfile::class,
             'interns' => InternProfile::class,
+            'programs' => Program::class,
             default => abort(404),
         };
     }

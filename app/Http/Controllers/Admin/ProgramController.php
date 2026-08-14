@@ -90,4 +90,13 @@ class ProgramController extends Controller
 
         return back();
     }
+
+    public function destroy(Program $program): RedirectResponse
+    {
+        $program->delete();
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Program archived.']);
+
+        return back();
+    }
 }

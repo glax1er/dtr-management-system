@@ -79,6 +79,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('programs', [ProgramController::class, 'store'])->name('programs.store');
         Route::patch('programs/{program}', [ProgramController::class, 'update'])->name('programs.update');
         Route::patch('programs/{program}/status', [ProgramController::class, 'updateStatus'])->name('programs.updateStatus');
+        Route::delete('programs/{program}', [ProgramController::class, 'destroy'])->name('programs.destroy');
     });
 
     Route::middleware('role:' . User::ROLE_SUPERVISOR)->prefix('supervisor')->name('supervisor.')->group(function () {

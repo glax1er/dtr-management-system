@@ -1,10 +1,11 @@
 import { Head, router } from '@inertiajs/react';
-import { BookOpen, LayoutGrid, Pencil, Power, PowerOff, Table as TableIcon } from 'lucide-react';
+import { Archive, BookOpen, LayoutGrid, Pencil, Power, PowerOff, Table as TableIcon } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import {
     Dialog,
     DialogContent,
@@ -53,6 +54,10 @@ export default function AdminPrograms({ programs }: ProgramsProps) {
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editName, setEditName] = useState('');
     const [editHours, setEditHours] = useState('');
+
+    const [archiveOpen, setArchiveOpen] = useState(false);
+    const [archiveId, setArchiveId] = useState<number | null>(null);
+    const [archiveName, setArchiveName] = useState('');
 
     const submitAdd = () => {
         if (!addName || !addHours) {
@@ -106,6 +111,21 @@ export default function AdminPrograms({ programs }: ProgramsProps) {
             { is_active: !program.is_active },
             { preserveScroll: true },
         );
+    };
+
+    const openArchiveDialog = (id: number, name: string) => {
+        setArchiveId(id);
+        setArchiveName(name);
+        setArchiveOpen(true);
+    };
+
+    const submitArchive = () => {
+        if (archiveId !== null) {
+            router.delete(`/admin/programs/${archiveId}`, { preserveScroll: true });
+            setArchiveOpen(false);
+            setArchiveId(null);
+            setArchiveName('');
+        }
     };
 
     const supervisorLabel = (names: string[]) =>
@@ -209,6 +229,23 @@ export default function AdminPrograms({ programs }: ProgramsProps) {
                                                             {program.is_active ? 'Deactivate' : 'Activate'}
                                                         </TooltipContent>
                                                     </Tooltip>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                disabled={program.is_active}
+                                                                onClick={() => openArchiveDialog(program.program_id, program.program_name)}
+                                                            >
+                                                                <Archive className="size-4 text-orange-600" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            {program.is_active
+                                                                ? 'Archive inactive programs only'
+                                                                : 'Archive to collection'}
+                                                        </TooltipContent>
+                                                    </Tooltip>
                                                 </div>
                                             </TableCell>
                                         </TableRow>
@@ -258,6 +295,23 @@ export default function AdminPrograms({ programs }: ProgramsProps) {
                                                 </TooltipTrigger>
                                                 <TooltipContent>
                                                     {program.is_active ? 'Deactivate' : 'Activate'}
+                                                </TooltipContent>
+                                            </Tooltip>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        disabled={program.is_active}
+                                                        onClick={() => openArchiveDialog(program.program_id, program.program_name)}
+                                                    >
+                                                        <Archive className="size-4 text-orange-600" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    {program.is_active
+                                                        ? 'Archive inactive programs only'
+                                                        : 'Archive to collection'}
                                                 </TooltipContent>
                                             </Tooltip>
                                         </div>
@@ -346,6 +400,15 @@ export default function AdminPrograms({ programs }: ProgramsProps) {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <ConfirmationDialog
+                open={archiveOpen}
+                onOpenChange={setArchiveOpen}
+                title="Archive Program"
+                description={`Archive "${archiveName}"? It will be moved to the archives and can be restored later.`}
+                onConfirm={submitArchive}
+                confirmText="Archive"
+            />
         </>
     );
 }
