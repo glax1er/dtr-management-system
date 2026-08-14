@@ -1,11 +1,34 @@
 import { Head, router } from '@inertiajs/react';
-import { Archive, BookOpen, LayoutGrid, Pencil, Power, PowerOff, Table as TableIcon } from 'lucide-react';
-import { useState } from 'react';
+import {
+    Archive,
+    BookOpen,
+    LayoutGrid,
+    Pencil,
+    Plus,
+    Power,
+    PowerOff,
+    Search,
+    SlidersHorizontal,
+    Table as TableIcon,
+    X,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
 import { toast } from 'sonner';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from '@/components/ui/pagination';
+import type { Paginated } from '@/components/pagination-footer';
 import {
     Dialog,
     DialogContent,
@@ -25,7 +48,18 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { dashboard } from '@/routes';
 
 interface Program {
@@ -37,14 +71,209 @@ interface Program {
     ojt_supervisors: string[];
 }
 
+interface Filters {
+    search: string;
+    status: string;
+    per_page: number;
+}
+
 interface ProgramsProps {
-    programs: Program[];
+    programs: Paginated<Program>;
+    filters: Filters;
 }
 
 type ViewMode = 'table' | 'grid';
 
-export default function AdminPrograms({ programs }: ProgramsProps) {
+function ProgramsPagination({
+    meta,
+    onPageChange,
+    onPerPageChange,
+}: {
+    meta: Paginated<Program>;
+    onPageChange: (page: number) => void;
+    onPerPageChange: (perPage: number) => void;
+}) {
+    const {
+        current_page: currentPage,
+        last_page: lastPage,
+        from,
+        to,
+        total,
+        per_page: perPage,
+    } = meta;
+
+    const [perPageInput, setPerPageInput] = useState(String(perPage));
+
+useEffect(() => {
+    setPerPageInput(String(perPage));
+}, [perPage]);
+
+const submitPerPage = () => {
+    const nextPerPage = Number(perPageInput);
+
+    if (!Number.isInteger(nextPerPage) || nextPerPage < 1) {
+        setPerPageInput(String(perPage));
+        return;
+    }
+
+    onPerPageChange(nextPerPage);
+};
+
+if (meta.total === 0) return null;
+
+const pages: (number | 'ellipsis')[] = [];
+
+    if (lastPage <= 7) {
+        for (let page = 1; page <= lastPage; page += 1) {
+            pages.push(page);
+        }
+    } else {
+        pages.push(1);
+
+        if (currentPage > 3) {
+            pages.push('ellipsis');
+        }
+
+        for (
+            let page = Math.max(2, currentPage - 1);
+            page <= Math.min(lastPage - 1, currentPage + 1);
+            page += 1
+        ) {
+            pages.push(page);
+        }
+
+        if (currentPage < lastPage - 2) {
+            pages.push('ellipsis');
+        }
+
+        pages.push(lastPage);
+    }
+
+    return (
+    <div className="grid w-full gap-3 border-t px-4 pt-4 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center sm:px-6">
+        {/* Left */}
+        <div className="order-2 flex justify-center sm:order-1 sm:justify-start">
+    <form
+        onSubmit={(event) => {
+            event.preventDefault();
+            submitPerPage();
+        }}
+        className="flex items-center gap-1.5 text-sm text-muted-foreground"
+    >
+        <label htmlFor="programs-per-page" className="text-xs">
+            Rows
+        </label>
+
+        <Input
+            id="programs-per-page"
+            type="number"
+            min={1}
+            inputMode="numeric"
+            value={perPageInput}
+            onChange={(event) => setPerPageInput(event.target.value)}
+            onBlur={submitPerPage}
+            className="h-7 w-16 px-2 text-xs"
+            aria-label="Rows per page"
+        />
+    </form>
+</div>
+
+        {/* Center */}
+        <Pagination className="order-1 w-full sm:order-2 sm:w-auto">
+            <PaginationContent>
+                <PaginationItem>
+    <PaginationPrevious
+        href="#"
+        aria-disabled={currentPage <= 1}
+        tabIndex={currentPage <= 1 ? -1 : undefined}
+        className={
+            currentPage <= 1
+                ? 'pointer-events-none opacity-40'
+                : 'cursor-pointer'
+        }
+        onClick={(event) => {
+            event.preventDefault();
+
+            if (currentPage > 1) {
+                onPageChange(currentPage - 1);
+            }
+        }}
+    />
+</PaginationItem>
+
+{pages.map((page, index) => {
+    if (page === 'ellipsis') {
+        return (
+            <PaginationItem
+                key={`ellipsis-${index}`}
+                className="hidden sm:list-item"
+            >
+                <PaginationEllipsis />
+            </PaginationItem>
+        );
+    }
+
+    const hideOnMobile =
+        page !== 1 &&
+        page !== currentPage &&
+        page !== lastPage;
+
+    return (
+        <PaginationItem
+            key={page}
+            className={hideOnMobile ? 'hidden sm:list-item' : ''}
+        >
+            <PaginationLink
+                href="#"
+                isActive={page === currentPage}
+                className="cursor-pointer"
+                onClick={(event) => {
+                    event.preventDefault();
+                    onPageChange(page);
+                }}
+            >
+                {page}
+            </PaginationLink>
+        </PaginationItem>
+    );
+})}
+
+<PaginationItem>
+    <PaginationNext
+        href="#"
+        aria-disabled={currentPage >= lastPage}
+        tabIndex={currentPage >= lastPage ? -1 : undefined}
+        className={
+            currentPage >= lastPage
+                ? 'pointer-events-none opacity-40'
+                : 'cursor-pointer'
+        }
+        onClick={(event) => {
+            event.preventDefault();
+
+            if (currentPage < lastPage) {
+                onPageChange(currentPage + 1);
+            }
+        }}
+    />
+</PaginationItem>
+            </PaginationContent>
+        </Pagination>
+
+        {/* Right */}
+        <p className="order-3 justify-self-center text-center text-sm text-muted-foreground sm:justify-self-end sm:text-right">
+            Showing {from}–{to} of {total} program
+            {total === 1 ? '' : 's'}
+        </p>
+    </div>
+);
+}
+
+export default function AdminPrograms({ programs, filters }: ProgramsProps) {
     const [view, setView] = useState<ViewMode>('table');
+    const [search, setSearch] = useState(filters.search);
+    const [status, setStatus] = useState(filters.status);
+    const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
     const [addOpen, setAddOpen] = useState(false);
     const [addName, setAddName] = useState('');
@@ -59,15 +288,74 @@ export default function AdminPrograms({ programs }: ProgramsProps) {
     const [archiveId, setArchiveId] = useState<number | null>(null);
     const [archiveName, setArchiveName] = useState('');
 
+    const visit = (params: Record<string, string | undefined>) => {
+        router.get('/admin/programs', params, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
+    const baseParams = () => ({
+        search: search || undefined,
+        status: status || undefined,
+        per_page: String(filters.per_page),
+    });
+
+    const applySearch = (event: FormEvent) => {
+        event.preventDefault();
+        visit({ ...baseParams(), page: undefined });
+    };
+
+    const clearSearch = () => {
+        setSearch('');
+        visit({
+            status: status || undefined,
+            per_page: String(filters.per_page),
+            page: undefined,
+        });
+    };
+
+    const applyStatus = (value: string) => {
+        const nextStatus = value === 'all' ? '' : value;
+
+        setStatus(nextStatus);
+
+        visit({
+            search: search || undefined,
+            status: nextStatus || undefined,
+            per_page: String(filters.per_page),
+            page: undefined,
+        });
+    };
+
+    const goToPage = (page: number) => {
+        visit({
+            ...baseParams(),
+            page: String(page),
+        });
+    };
+
+    const changePerPage = (perPage: number) => {
+        visit({
+            search: search || undefined,
+            status: status || undefined,
+            per_page: String(perPage),
+            page: undefined,
+        });
+    };
+
     const submitAdd = () => {
-        if (!addName || !addHours) {
+        if (!addName.trim() || !addHours) {
             toast.error('Program name and required hours are required.');
             return;
         }
 
         router.post(
             '/admin/programs',
-            { program_name: addName, required_hours: addHours },
+            {
+                program_name: addName.trim(),
+                required_hours: addHours,
+            },
             {
                 preserveScroll: true,
                 onSuccess: () => {
@@ -87,14 +375,17 @@ export default function AdminPrograms({ programs }: ProgramsProps) {
     };
 
     const submitEdit = () => {
-        if (!editingId || !editName || !editHours) {
+        if (!editingId || !editName.trim() || !editHours) {
             toast.error('Program name and required hours are required.');
             return;
         }
 
         router.patch(
             `/admin/programs/${editingId}`,
-            { program_name: editName, required_hours: editHours },
+            {
+                program_name: editName.trim(),
+                required_hours: editHours,
+            },
             {
                 preserveScroll: true,
                 onSuccess: () => {
@@ -113,19 +404,22 @@ export default function AdminPrograms({ programs }: ProgramsProps) {
         );
     };
 
-    const openArchiveDialog = (id: number, name: string) => {
-        setArchiveId(id);
-        setArchiveName(name);
+    const openArchiveDialog = (program: Program) => {
+        setArchiveId(program.program_id);
+        setArchiveName(program.program_name);
         setArchiveOpen(true);
     };
 
     const submitArchive = () => {
-        if (archiveId !== null) {
-            router.delete(`/admin/programs/${archiveId}`, { preserveScroll: true });
-            setArchiveOpen(false);
-            setArchiveId(null);
-            setArchiveName('');
-        }
+        if (archiveId === null) return;
+
+        router.delete(`/admin/programs/${archiveId}`, {
+            preserveScroll: true,
+        });
+
+        setArchiveOpen(false);
+        setArchiveId(null);
+        setArchiveName('');
     };
 
     const supervisorLabel = (names: string[]) =>
@@ -134,89 +428,392 @@ export default function AdminPrograms({ programs }: ProgramsProps) {
     return (
         <>
             <Head title="Programs" />
+
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                        <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
-                            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-                                <BookOpen className="size-5" />
-                            </div>
-                            <span>Programs</span>
-                        </h1>
-                    </div>
+                    <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                            <BookOpen className="size-5" />
+                        </span>
+                        Programs
+                    </h1>
+
                     <div className="flex items-center gap-2">
-                        <Tabs value={view} onValueChange={(v) => setView(v as ViewMode)}>
-                            <TabsList>
-                                <TabsTrigger value="table">
-                                    <TableIcon className="size-4" />
-                                </TabsTrigger>
-                                <TabsTrigger value="grid">
-                                    <LayoutGrid className="size-4" />
-                                </TabsTrigger>
-                            </TabsList>
-                        </Tabs>
-                        <Button onClick={() => setAddOpen(true)}>Add Program</Button>
+                        <form
+                            onSubmit={applySearch}
+                            className="relative hidden sm:block"
+                        >
+                            <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+
+                            <input
+                                type="text"
+                                value={search}
+                                onChange={(event) =>
+                                    setSearch(event.target.value)
+                                }
+                                placeholder="Search programs…"
+                                className="h-9 w-44 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
+                            />
+
+                            {search && (
+                                <button
+                                    type="button"
+                                    onClick={clearSearch}
+                                    className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                >
+                                    <X className="size-3.5" />
+                                </button>
+                            )}
+                        </form>
+
+                        <button
+                            type="button"
+                            onClick={() => setMobileSearchOpen((open) => !open)}
+                            className="inline-flex size-9 items-center justify-center rounded-md border bg-background text-muted-foreground hover:text-foreground sm:hidden"
+                            aria-label="Toggle search"
+                        >
+                            {mobileSearchOpen ? (
+                                <X className="size-4" />
+                            ) : (
+                                <Search className="size-4" />
+                            )}
+                        </button>
+
+                        <div className="hidden sm:block">
+                            <Select
+                                value={status || 'all'}
+                                onValueChange={applyStatus}
+                            >
+                                <SelectTrigger className="h-9 w-36">
+                                    <SlidersHorizontal className="mr-1 size-3.5 shrink-0 text-muted-foreground" />
+                                    <SelectValue placeholder="All Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">
+                                        All Status
+                                    </SelectItem>
+                                    <SelectItem value="active">
+                                        Active
+                                    </SelectItem>
+                                    <SelectItem value="inactive">
+                                        Inactive
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="sm:hidden">
+                            <Select
+                                value={status || 'all'}
+                                onValueChange={applyStatus}
+                            >
+                                <SelectTrigger className="inline-flex size-9 items-center justify-center p-0 [&>span]:hidden [&>svg:last-child]:hidden">
+                                    <SlidersHorizontal className="size-4 text-muted-foreground" />
+                                </SelectTrigger>
+                                <SelectContent align="end">
+                                    <SelectItem value="all">
+                                        All Status
+                                    </SelectItem>
+                                    <SelectItem value="active">
+                                        Active
+                                    </SelectItem>
+                                    <SelectItem value="inactive">
+                                        Inactive
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="hidden sm:block">
+                            <Tabs
+                                value={view}
+                                onValueChange={(value) =>
+                                    setView(value as ViewMode)
+                                }
+                            >
+                                <TabsList>
+                                    <TabsTrigger value="table">
+                                        <TableIcon className="size-4" />
+                                    </TabsTrigger>
+                                    <TabsTrigger value="grid">
+                                        <LayoutGrid className="size-4" />
+                                    </TabsTrigger>
+                                </TabsList>
+                            </Tabs>
+                        </div>
+
+                        <Button onClick={() => setAddOpen(true)}>
+                            <Plus className="size-4" />
+                            <span className="hidden sm:inline">
+                                Add Program
+                            </span>
+                        </Button>
                     </div>
                 </div>
 
-                {programs.length === 0 ? (
+                {mobileSearchOpen && (
+                    <form
+                        onSubmit={(event) => {
+                            applySearch(event);
+                            setMobileSearchOpen(false);
+                        }}
+                        className="flex items-center gap-2 sm:hidden"
+                    >
+                        <div className="relative flex-1">
+                            <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+
+                            <input
+                                autoFocus
+                                type="text"
+                                value={search}
+                                onChange={(event) =>
+                                    setSearch(event.target.value)
+                                }
+                                placeholder="Search programs…"
+                                className="h-9 w-full rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
+                            />
+
+                            {search && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        clearSearch();
+                                        setMobileSearchOpen(false);
+                                    }}
+                                    className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                >
+                                    <X className="size-3.5" />
+                                </button>
+                            )}
+                        </div>
+
+                        <Button type="submit" size="sm">
+                            Search
+                        </Button>
+                    </form>
+                )}
+
+                {programs.data.length === 0 ? (
                     <Card>
                         <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                            No programs yet.
+                            No programs
+                            {filters.search || filters.status
+                                ? ' match this filter.'
+                                : ' yet.'}
                         </CardContent>
                     </Card>
-                ) : view === 'table' ? (
-                    <Card>
-                        <CardContent className="p-0">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="px-6 text-center">Program</TableHead>
-                                        <TableHead className="px-6 text-center">Status</TableHead>
-                                        <TableHead className="px-6 text-center">Required Hours</TableHead>
-                                        <TableHead className="px-6 text-center">Approved Interns</TableHead>
-                                        <TableHead className="px-6 text-center">OJT Supervisor(s)</TableHead>
-                                        <TableHead className="px-6 text-center">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {programs.map((program) => (
-                                        <TableRow key={program.program_id}>
-                                            <TableCell className="px-6 text-left font-medium">
-                                                {program.program_name}
-                                            </TableCell>
-                                            <TableCell className="px-6 text-center">
-                                                <StatusBadge status={program.is_active ? 'active' : 'inactive'} />
-                                            </TableCell>
-                                            <TableCell className="px-6 text-center">
-                                                {program.required_hours} hrs
-                                            </TableCell>
-                                            <TableCell className="px-6 text-center">
-                                                {program.approved_intern_count}
-                                            </TableCell>
-                                            <TableCell className="px-6 text-center text-muted-foreground">
-                                                {supervisorLabel(program.ojt_supervisors)}
-                                            </TableCell>
-                                            <TableCell className="px-6 text-center">
-                                                <div className="flex justify-center gap-1">
+                ) : (
+                    <>
+                        {view === 'table' && (
+                            <div className="hidden sm:block">
+                                <Card>
+                                    <CardContent className="p-0">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="px-6 text-center">
+                                                        Program
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        Status
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        Required Hours
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        Approved Interns
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        OJT Supervisor(s)
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        Actions
+                                                    </TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+
+                                            <TableBody>
+                                                {programs.data.map(
+                                                    (program) => (
+                                                        <TableRow
+                                                            key={
+                                                                program.program_id
+                                                            }
+                                                        >
+                                                            <TableCell className="px-6 font-medium">
+                                                                {
+                                                                    program.program_name
+                                                                }
+                                                            </TableCell>
+                                                            <TableCell className="px-6 text-center">
+                                                                <StatusBadge
+                                                                    status={
+                                                                        program.is_active
+                                                                            ? 'active'
+                                                                            : 'inactive'
+                                                                    }
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell className="px-6 text-center">
+                                                                {
+                                                                    program.required_hours
+                                                                }{' '}
+                                                                hrs
+                                                            </TableCell>
+                                                            <TableCell className="px-6 text-center">
+                                                                {
+                                                                    program.approved_intern_count
+                                                                }
+                                                            </TableCell>
+                                                            <TableCell className="px-6 text-center text-muted-foreground">
+                                                                {supervisorLabel(
+                                                                    program.ojt_supervisors,
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell className="px-6 text-center">
+                                                                <div className="flex justify-center gap-1">
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger
+                                                                            asChild
+                                                                        >
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                onClick={() =>
+                                                                                    openEdit(
+                                                                                        program,
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                <Pencil className="size-4 text-blue-600" />
+                                                                            </Button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                            Edit
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger
+                                                                            asChild
+                                                                        >
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                onClick={() =>
+                                                                                    toggleActive(
+                                                                                        program,
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                {program.is_active ? (
+                                                                                    <PowerOff className="size-4 text-destructive" />
+                                                                                ) : (
+                                                                                    <Power className="size-4 text-emerald-600" />
+                                                                                )}
+                                                                            </Button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                            {program.is_active
+                                                                                ? 'Deactivate'
+                                                                                : 'Activate'}
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger
+                                                                            asChild
+                                                                        >
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                disabled={
+                                                                                    program.is_active
+                                                                                }
+                                                                                onClick={() =>
+                                                                                    openArchiveDialog(
+                                                                                        program,
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                <Archive className="size-4 text-orange-600" />
+                                                                            </Button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                            {program.is_active
+                                                                                ? 'Archive inactive programs only'
+                                                                                : 'Archive'}
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+                                                                </div>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ),
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                        <ProgramsPagination
+                                            meta={programs}
+                                            onPageChange={goToPage}
+                                            onPerPageChange={changePerPage}
+                                        />
+                                    </CardContent>
+                                </Card>
+                                <div className="mt-4"></div>
+                            </div>
+                        )}
+
+                        <div className={view === 'table' ? 'sm:hidden' : ''}>
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                {programs.data.map((program) => (
+                                    <Card key={program.program_id}>
+                                        <CardHeader>
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div>
+                                                    <CardTitle className="text-base">
+                                                        {program.program_name}
+                                                    </CardTitle>
+                                                    <div className="mt-2">
+                                                        <StatusBadge
+                                                            status={
+                                                                program.is_active
+                                                                    ? 'active'
+                                                                    : 'inactive'
+                                                            }
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex shrink-0 gap-1">
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
                                                             <Button
                                                                 variant="ghost"
                                                                 size="icon"
-                                                                onClick={() => openEdit(program)}
+                                                                onClick={() =>
+                                                                    openEdit(
+                                                                        program,
+                                                                    )
+                                                                }
                                                             >
                                                                 <Pencil className="size-4 text-blue-600" />
                                                             </Button>
                                                         </TooltipTrigger>
-                                                        <TooltipContent>Edit</TooltipContent>
+                                                        <TooltipContent>
+                                                            Edit
+                                                        </TooltipContent>
                                                     </Tooltip>
+
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
                                                             <Button
                                                                 variant="ghost"
                                                                 size="icon"
-                                                                onClick={() => toggleActive(program)}
+                                                                onClick={() =>
+                                                                    toggleActive(
+                                                                        program,
+                                                                    )
+                                                                }
                                                             >
                                                                 {program.is_active ? (
                                                                     <PowerOff className="size-4 text-destructive" />
@@ -226,16 +823,25 @@ export default function AdminPrograms({ programs }: ProgramsProps) {
                                                             </Button>
                                                         </TooltipTrigger>
                                                         <TooltipContent>
-                                                            {program.is_active ? 'Deactivate' : 'Activate'}
+                                                            {program.is_active
+                                                                ? 'Deactivate'
+                                                                : 'Activate'}
                                                         </TooltipContent>
                                                     </Tooltip>
+
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
                                                             <Button
                                                                 variant="ghost"
                                                                 size="icon"
-                                                                disabled={program.is_active}
-                                                                onClick={() => openArchiveDialog(program.program_id, program.program_name)}
+                                                                disabled={
+                                                                    program.is_active
+                                                                }
+                                                                onClick={() =>
+                                                                    openArchiveDialog(
+                                                                        program,
+                                                                    )
+                                                                }
                                                             >
                                                                 <Archive className="size-4 text-orange-600" />
                                                             </Button>
@@ -243,97 +849,58 @@ export default function AdminPrograms({ programs }: ProgramsProps) {
                                                         <TooltipContent>
                                                             {program.is_active
                                                                 ? 'Archive inactive programs only'
-                                                                : 'Archive to collection'}
+                                                                : 'Archive'}
                                                         </TooltipContent>
                                                     </Tooltip>
                                                 </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {programs.map((program) => (
-                            <Card key={program.program_id}>
-                                <CardHeader>
-                                    <div className="flex items-start justify-between">
-                                        <div>
-                                            <CardTitle className="text-base">{program.program_name}</CardTitle>
-                                            <StatusBadge
-                                                status={program.is_active ? 'active' : 'inactive'}
-                                            />
-                                        </div>
-                                        <div className="flex gap-1">
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => openEdit(program)}
-                                                    >
-                                                        <Pencil className="size-4 text-blue-600" />
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>Edit</TooltipContent>
-                                            </Tooltip>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => toggleActive(program)}
-                                                    >
-                                                        {program.is_active ? (
-                                                            <PowerOff className="size-4 text-destructive" />
-                                                        ) : (
-                                                            <Power className="size-4 text-emerald-600" />
-                                                        )}
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    {program.is_active ? 'Deactivate' : 'Activate'}
-                                                </TooltipContent>
-                                            </Tooltip>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        disabled={program.is_active}
-                                                        onClick={() => openArchiveDialog(program.program_id, program.program_name)}
-                                                    >
-                                                        <Archive className="size-4 text-orange-600" />
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    {program.is_active
-                                                        ? 'Archive inactive programs only'
-                                                        : 'Archive to collection'}
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </div>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="space-y-2 text-sm">
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Required Hours</span>
-                                        <span>{program.required_hours} hrs</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Approved Interns</span>
-                                        <span>{program.approved_intern_count}</span>
-                                    </div>
-                                    <div className="flex justify-between gap-2">
-                                        <span className="shrink-0 text-muted-foreground">OJT Supervisor(s)</span>
-                                        <span className="text-right">{supervisorLabel(program.ojt_supervisors)}</span>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
+                                            </div>
+                                        </CardHeader>
+
+                                        <CardContent className="space-y-2 text-sm">
+                                            <div className="flex justify-between gap-2">
+                                                <span className="text-muted-foreground">
+                                                    Required Hours
+                                                </span>
+                                                <span>
+                                                    {program.required_hours} hrs
+                                                </span>
+                                            </div>
+
+                                            <div className="flex justify-between gap-2">
+                                                <span className="text-muted-foreground">
+                                                    Approved Interns
+                                                </span>
+                                                <span>
+                                                    {
+                                                        program.approved_intern_count
+                                                    }
+                                                </span>
+                                            </div>
+
+                                            <div className="flex justify-between gap-2">
+                                                <span className="shrink-0 text-muted-foreground">
+                                                    OJT Supervisor(s)
+                                                </span>
+                                                <span className="text-right">
+                                                    {supervisorLabel(
+                                                        program.ojt_supervisors,
+                                                    )}
+                                                </span>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+
+                            <div className="mt-4">
+                                <ProgramsPagination
+                                    meta={programs}
+                                    onPageChange={goToPage}
+                                    onPerPageChange={changePerPage}
+                                />
+                            </div>
+                        </div>
+                    </>
                 )}
             </div>
 
@@ -341,26 +908,42 @@ export default function AdminPrograms({ programs }: ProgramsProps) {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Add Program</DialogTitle>
-                        <DialogDescription>Create a new program with its required OJT hours.</DialogDescription>
+                        <DialogDescription>
+                            Create a new program with its required OJT hours.
+                        </DialogDescription>
                     </DialogHeader>
+
                     <div className="flex flex-col gap-4">
                         <div className="grid gap-1.5">
                             <Label>Program Name</Label>
-                            <Input value={addName} onChange={(e) => setAddName(e.target.value)} placeholder="e.g. BSIT" />
+                            <Input
+                                value={addName}
+                                onChange={(event) =>
+                                    setAddName(event.target.value)
+                                }
+                                placeholder="e.g. BSIT"
+                            />
                         </div>
+
                         <div className="grid gap-1.5">
                             <Label>Required Hours</Label>
                             <Input
                                 type="number"
                                 min={1}
                                 value={addHours}
-                                onChange={(e) => setAddHours(e.target.value)}
+                                onChange={(event) =>
+                                    setAddHours(event.target.value)
+                                }
                                 placeholder="e.g. 486"
                             />
                         </div>
                     </div>
+
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setAddOpen(false)}>
+                        <Button
+                            variant="outline"
+                            onClick={() => setAddOpen(false)}
+                        >
                             Cancel
                         </Button>
                         <Button onClick={submitAdd}>Save</Button>
@@ -373,27 +956,40 @@ export default function AdminPrograms({ programs }: ProgramsProps) {
                     <DialogHeader>
                         <DialogTitle>Edit Program</DialogTitle>
                         <DialogDescription>
-                            Changing required hours immediately affects every enrolled intern's hours-rendered
-                            progress ring.
+                            Changing required hours immediately affects every
+                            enrolled intern&apos;s hours-rendered progress ring.
                         </DialogDescription>
                     </DialogHeader>
+
                     <div className="flex flex-col gap-4">
                         <div className="grid gap-1.5">
                             <Label>Program Name</Label>
-                            <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+                            <Input
+                                value={editName}
+                                onChange={(event) =>
+                                    setEditName(event.target.value)
+                                }
+                            />
                         </div>
+
                         <div className="grid gap-1.5">
                             <Label>Required Hours</Label>
                             <Input
                                 type="number"
                                 min={1}
                                 value={editHours}
-                                onChange={(e) => setEditHours(e.target.value)}
+                                onChange={(event) =>
+                                    setEditHours(event.target.value)
+                                }
                             />
                         </div>
                     </div>
+
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setEditOpen(false)}>
+                        <Button
+                            variant="outline"
+                            onClick={() => setEditOpen(false)}
+                        >
                             Cancel
                         </Button>
                         <Button onClick={submitEdit}>Save Changes</Button>
