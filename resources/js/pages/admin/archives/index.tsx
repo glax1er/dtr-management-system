@@ -14,7 +14,7 @@ interface ArchivedRecord {
 
 interface ArchivesIndexProps {
     records: Paginated<ArchivedRecord>;
-    currentType: 'htes' | 'supervisors' | 'interns';
+    currentType: 'htes' | 'supervisors' | 'interns' | 'programs';
 }
 
 interface FlashProps {
@@ -23,10 +23,11 @@ interface FlashProps {
     [key: string]: unknown;
 }
 
-const TABS: { label: string; value: 'htes' | 'supervisors' | 'interns'; detailLabel: string }[] = [
+const TABS: { label: string; value: 'htes' | 'supervisors' | 'interns' | 'programs'; detailLabel: string }[] = [
     { label: 'HTEs', value: 'htes', detailLabel: 'Address' },
     { label: 'Supervisors', value: 'supervisors', detailLabel: 'Email' },
     { label: 'Interns', value: 'interns', detailLabel: 'ID Number' },
+    { label: 'Programs', value: 'programs', detailLabel: 'Required Hours' },
 ];
 
 export default function ArchivesIndex({ records, currentType }: ArchivesIndexProps) {

@@ -21,13 +21,15 @@ class HteController extends Controller
     public function index(Request $request): Response
     {
         $validated = $request->validate([
-            'search' => ['nullable', 'string', 'max:255'],
-            'page' => ['nullable', 'integer', 'min:1'],
+            'search'   => ['nullable', 'string', 'max:255'],
+            'status'   => ['nullable', 'string', 'in:active,inactive'],
+            'page'     => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:' . self::MAX_PER_PAGE],
         ]);
 
-        $search = trim($validated['search'] ?? '');
-        $perPage = (int) ($validated['per_page'] ?? self::DEFAULT_PER_PAGE);
+        $search   = trim($validated['search'] ?? '');
+        $status   = $validated['status'] ?? '';
+        $perPage  = (int) ($validated['per_page'] ?? self::DEFAULT_PER_PAGE);
 
         $query = Hte::query()
             ->withCount([
@@ -41,25 +43,30 @@ class HteController extends Controller
             $query->where('hte_name', 'like', "%{$search}%");
         }
 
+        if ($status !== '') {
+            $query->where('status', $status);
+        }
+
         $htes = $query
             ->orderBy('hte_name')
             ->paginate($perPage, ['*'], 'page', $validated['page'] ?? 1)
             ->withQueryString()
             ->through(fn (Hte $hte) => [
-                'hte_id' => $hte->hte_id,
-                'hte_name' => $hte->hte_name,
-                'address' => $hte->address,
-                'contact_person' => $hte->contact_person,
-                'contact_number' => $hte->contact_number,
-                'status' => $hte->status,
-                'interns_count' => $hte->interns_count,
-                'supervisors_count' => $hte->supervisor_profiles_count,
+                'hte_id'           => $hte->hte_id,
+                'hte_name'         => $hte->hte_name,
+                'address'          => $hte->address,
+                'contact_person'   => $hte->contact_person,
+                'contact_number'   => $hte->contact_number,
+                'status'           => $hte->status,
+                'interns_count'    => $hte->interns_count,
+                'supervisors_count'=> $hte->supervisor_profiles_count,
             ]);
 
         return Inertia::render('admin/htes/index', [
-            'htes' => $htes,
+            'htes'    => $htes,
             'filters' => [
-                'search' => $search,
+                'search'   => $search,
+                'status'   => $status,
                 'per_page' => $perPage,
             ],
         ]);
