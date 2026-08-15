@@ -1,10 +1,22 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Archive, Building2, LayoutGrid, Pencil, Power, PowerOff, Table as TableIcon } from 'lucide-react';
+import {
+    Archive,
+    Building2,
+    LayoutGrid,
+    Pencil,
+    Plus,
+    Power,
+    PowerOff,
+    Search,
+    SlidersHorizontal,
+    Table as TableIcon,
+    X,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import InputError from '@/components/input-error';
-import PaginationFooter from '@/components/pagination-footer';
+import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
@@ -20,6 +32,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Table,
@@ -45,6 +64,7 @@ interface Hte {
 
 interface Filters {
     search: string;
+    status: string;
     per_page: number;
 }
 
@@ -57,9 +77,13 @@ type ViewMode = 'table' | 'grid';
 
 export default function HtesIndex({ htes, filters }: HtesIndexProps) {
     const [view, setView] = useState<ViewMode>('table');
+    const [search, setSearch] = useState(filters.search);
+    const [status, setStatus] = useState(filters.status);
+    const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
     const [addOpen, setAddOpen] = useState(false);
     const [editingHte, setEditingHte] = useState<Hte | null>(null);
-    const [search, setSearch] = useState(filters.search);
+
     const [archiveOpen, setArchiveOpen] = useState(false);
     const [archiveHteId, setArchiveHteId] = useState<number | null>(null);
     const [archiveHteName, setArchiveHteName] = useState('');
@@ -76,6 +100,56 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
         contact_number: '',
     });
 
+    // ── Navigation helpers ─────────────────────────────────────────────────────
+    const visit = (params: Record<string, string | undefined>) => {
+        router.get('/admin/htes', params, { preserveState: true, preserveScroll: true });
+    };
+
+    const baseParams = () => ({
+        search: search || undefined,
+        status: status || undefined,
+        per_page: String(filters.per_page),
+    });
+
+    const applySearch = (event: FormEvent) => {
+        event.preventDefault();
+        visit({ ...baseParams(), page: undefined });
+    };
+
+    const clearSearch = () => {
+        setSearch('');
+        visit({
+            status: status || undefined,
+            per_page: String(filters.per_page),
+            page: undefined,
+        });
+    };
+
+    const applyStatus = (value: string) => {
+        const nextStatus = value === 'all' ? '' : value;
+        setStatus(nextStatus);
+        visit({
+            search: search || undefined,
+            status: nextStatus || undefined,
+            per_page: String(filters.per_page),
+            page: undefined,
+        });
+    };
+
+    const goToPage = (page: number) => {
+        visit({ ...baseParams(), page: String(page) });
+    };
+
+    const changePerPage = (perPage: number) => {
+        visit({
+            search: search || undefined,
+            status: status || undefined,
+            per_page: String(perPage),
+            page: undefined,
+        });
+    };
+
+    // ── CRUD helpers ───────────────────────────────────────────────────────────
     const handleAddSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         addForm.post('/admin/htes', {
@@ -99,13 +173,18 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
     const handleEditSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingHte) return;
-
         editForm.patch(`/admin/htes/${editingHte.hte_id}`, {
             preserveScroll: true,
-            onSuccess: () => {
-                setEditingHte(null);
-            },
+            onSuccess: () => setEditingHte(null),
         });
+    };
+
+    const toggleStatus = (hte: Hte) => {
+        router.patch(
+            `/admin/htes/${hte.hte_id}/status`,
+            { status: hte.status === 'active' ? 'inactive' : 'active' },
+            { preserveScroll: true, preserveState: true },
+        );
     };
 
     const openArchiveDialog = (hteId: number, name: string) => {
@@ -123,276 +202,323 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
         }
     };
 
-    const baseParams = () => ({
-        search: filters.search || undefined,
-        per_page: String(filters.per_page),
-    });
+    // ── HTE action buttons (reused in table and grid) ──────────────────────────
+    const HteActions = ({ hte }: { hte: Hte }) => (
+        <div className="flex justify-center gap-1">
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={() => openEditDialog(hte)}>
+                        <Pencil className="size-4 text-blue-600" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>Edit</TooltipContent>
+            </Tooltip>
 
-    const visit = (params: Record<string, string | undefined>) => {
-        router.get('/admin/htes', params, { preserveState: true, preserveScroll: true });
-    };
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={() => toggleStatus(hte)}>
+                        {hte.status === 'active' ? (
+                            <PowerOff className="size-4 text-destructive" />
+                        ) : (
+                            <Power className="size-4 text-emerald-600" />
+                        )}
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    {hte.status === 'active' ? 'Deactivate' : 'Activate'}
+                </TooltipContent>
+            </Tooltip>
 
-    const applySearch = (e: FormEvent) => {
-        e.preventDefault();
-        visit({ ...baseParams(), search: search || undefined });
-    };
-
-    const clearSearch = () => {
-        setSearch('');
-        visit({ ...baseParams(), search: undefined });
-    };
-
-    const goToPage = (page: number) => {
-        visit({ ...baseParams(), page: String(page) });
-    };
-
-    const changePerPage = (perPage: number) => {
-        visit({ ...baseParams(), per_page: String(perPage) });
-    };
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={hte.status === 'active'}
+                        onClick={() => openArchiveDialog(hte.hte_id, hte.hte_name)}
+                    >
+                        <Archive className="size-4 text-orange-600" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    {hte.status === 'active' ? 'Archive inactive HTEs only' : 'Archive to collection'}
+                </TooltipContent>
+            </Tooltip>
+        </div>
+    );
 
     return (
         <>
             <Head title="HTEs" />
+
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
+                {/* ── Header toolbar ──────────────────────────────────────────── */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                        <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
-                            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-                                <Building2 className="size-5" />
-                            </div>
-                            <span>Host Training Establishments</span>
-                        </h1>
-                    </div>
+                    <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                            <Building2 className="size-5" />
+                        </span>
+                        Host Training Establishments
+                    </h1>
+
                     <div className="flex items-center gap-2">
-                        <Tabs value={view} onValueChange={(v) => setView(v as ViewMode)}>
-                            <TabsList>
-                                <TabsTrigger value="table">
-                                    <TableIcon className="size-4" />
-                                </TabsTrigger>
-                                <TabsTrigger value="grid">
-                                    <LayoutGrid className="size-4" />
-                                </TabsTrigger>
-                            </TabsList>
-                        </Tabs>
-                        <Button onClick={() => setAddOpen(true)}>Add HTE</Button>
+                        {/* Desktop: full search input */}
+                        <form onSubmit={applySearch} className="relative hidden sm:block">
+                            <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                            <input
+                                type="text"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder="Search HTEs…"
+                                className="h-9 w-44 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
+                            />
+                            {search && (
+                                <button
+                                    type="button"
+                                    onClick={clearSearch}
+                                    className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                >
+                                    <X className="size-3.5" />
+                                </button>
+                            )}
+                        </form>
+
+                        {/* Mobile: search icon toggle */}
+                        <button
+                            type="button"
+                            onClick={() => setMobileSearchOpen((o) => !o)}
+                            className="inline-flex size-9 items-center justify-center rounded-md border bg-background text-muted-foreground hover:text-foreground sm:hidden"
+                            aria-label="Toggle search"
+                        >
+                            {mobileSearchOpen ? <X className="size-4" /> : <Search className="size-4" />}
+                        </button>
+
+                        {/* Status filter — full on sm+, icon-only on mobile */}
+                        <div className="hidden sm:block">
+                            <Select value={status || 'all'} onValueChange={applyStatus}>
+                                <SelectTrigger className="h-9 w-36">
+                                    <SlidersHorizontal className="mr-1 size-3.5 shrink-0 text-muted-foreground" />
+                                    <SelectValue placeholder="All Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Status</SelectItem>
+                                    <SelectItem value="active">Active</SelectItem>
+                                    <SelectItem value="inactive">Inactive</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="sm:hidden">
+                            <Select value={status || 'all'} onValueChange={applyStatus}>
+                                <SelectTrigger className="inline-flex size-9 items-center justify-center p-0 [&>span]:hidden [&>svg:last-child]:hidden">
+                                    <SlidersHorizontal className="size-4 text-muted-foreground" />
+                                </SelectTrigger>
+                                <SelectContent align="end">
+                                    <SelectItem value="all">All Status</SelectItem>
+                                    <SelectItem value="active">Active</SelectItem>
+                                    <SelectItem value="inactive">Inactive</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* View toggle — desktop only */}
+                        <div className="hidden sm:block">
+                            <Tabs value={view} onValueChange={(v) => setView(v as ViewMode)}>
+                                <TabsList>
+                                    <TabsTrigger value="table">
+                                        <TableIcon className="size-4" />
+                                    </TabsTrigger>
+                                    <TabsTrigger value="grid">
+                                        <LayoutGrid className="size-4" />
+                                    </TabsTrigger>
+                                </TabsList>
+                            </Tabs>
+                        </div>
+
+                        {/* Add HTE — icon+text on desktop, icon-only on mobile */}
+                        <Button onClick={() => setAddOpen(true)}>
+                            <Plus className="size-4" />
+                            <span className="hidden sm:inline">Add HTE</span>
+                        </Button>
                     </div>
                 </div>
 
+                {/* Mobile inline search bar */}
+                {mobileSearchOpen && (
+                    <form
+                        onSubmit={(e) => {
+                            applySearch(e);
+                            setMobileSearchOpen(false);
+                        }}
+                        className="flex items-center gap-2 sm:hidden"
+                    >
+                        <div className="relative flex-1">
+                            <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                            <input
+                                autoFocus
+                                type="text"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder="Search HTEs…"
+                                className="h-9 w-full rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
+                            />
+                            {search && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        clearSearch();
+                                        setMobileSearchOpen(false);
+                                    }}
+                                    className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                >
+                                    <X className="size-3.5" />
+                                </button>
+                            )}
+                        </div>
+                        <Button type="submit" size="sm">Search</Button>
+                    </form>
+                )}
+
+                {/* ── Content ─────────────────────────────────────────────────── */}
                 {htes.data.length === 0 ? (
                     <Card>
                         <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                            No HTEs match{filters.search !== '' ? ' this search.' : ' yet.'}
+                            No HTEs{filters.search || filters.status ? ' match this filter.' : ' yet.'}
                         </CardContent>
                     </Card>
-                ) : view === 'table' ? (
-                    <Card>
-                        <CardContent className="p-0">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="px-6 text-center">Host Training Establishment</TableHead>
-                                        <TableHead className="px-6 text-center">Address</TableHead>
-                                        <TableHead className="px-6 text-center">Contact</TableHead>
-                                        <TableHead className="px-6 text-center">Status</TableHead>
-                                        <TableHead className="px-6 text-center">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {htes.data.map((hte) => (
-                                        <TableRow key={hte.hte_id}>
-                                            <TableCell className="px-6 font-medium">{hte.hte_name}</TableCell>
-                                            <TableCell
-                                                className="max-w-xs truncate px-6 text-center text-muted-foreground"
-                                                title={hte.address ?? undefined}
-                                            >
-                                                {hte.address ?? '—'}
-                                            </TableCell>
-                                            <TableCell className="px-6 text-center">
+                ) : (
+                    <>
+                        {/* Table view — desktop only */}
+                        {view === 'table' && (
+                            <div className="hidden sm:block">
+                                <Card>
+                                    <CardContent className="p-0">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="px-6">
+                                                        Host Training Establishment
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">Address</TableHead>
+                                                    <TableHead className="px-6 text-center">Contact</TableHead>
+                                                    <TableHead className="px-6 text-center">Status</TableHead>
+                                                    <TableHead className="px-6 text-center">Interns</TableHead>
+                                                    <TableHead className="px-6 text-center">Supervisors</TableHead>
+                                                    <TableHead className="px-6 text-center">Actions</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {htes.data.map((hte) => (
+                                                    <TableRow key={hte.hte_id}>
+                                                        <TableCell className="px-6 font-medium">
+                                                            {hte.hte_name}
+                                                        </TableCell>
+                                                        <TableCell
+                                                            className="max-w-xs truncate px-6 text-center text-muted-foreground"
+                                                            title={hte.address ?? undefined}
+                                                        >
+                                                            {hte.address ?? '—'}
+                                                        </TableCell>
+                                                        <TableCell className="px-6 text-center">
+                                                            <p className="truncate" title={hte.contact_person ?? undefined}>
+                                                                {hte.contact_person ?? '—'}
+                                                            </p>
+                                                            {hte.contact_number && (
+                                                                <p className="truncate text-xs text-muted-foreground">
+                                                                    {hte.contact_number}
+                                                                </p>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="px-6 text-center">
+                                                            <StatusBadge status={hte.status} />
+                                                        </TableCell>
+                                                        <TableCell className="px-6 text-center">
+                                                            {hte.interns_count}
+                                                        </TableCell>
+                                                        <TableCell className="px-6 text-center">
+                                                            {hte.supervisors_count}
+                                                        </TableCell>
+                                                        <TableCell className="px-6 text-center">
+                                                            <HteActions hte={hte} />
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                        <NumberedPagination
+                                            meta={htes}
+                                            itemLabel="HTE"
+                                            onPageChange={goToPage}
+                                            onPerPageChange={changePerPage}
+                                            idPrefix="htes-table-per-page"
+                                        />
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )}
+
+                        {/* Grid view — always on mobile, desktop only when grid tab selected */}
+                        <div className={view === 'table' ? 'sm:hidden' : ''}>
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                {htes.data.map((hte) => (
+                                    <Card key={hte.hte_id}>
+                                        <CardHeader>
+                                            <div className="flex items-start justify-between gap-2">
                                                 <div>
-                                                    <p className="truncate" title={hte.contact_person ?? undefined}>
-                                                        {hte.contact_person ?? '—'}
-                                                    </p>
-                                                    {hte.contact_number && (
-                                                        <p className="truncate text-xs text-muted-foreground">
-                                                            {hte.contact_number}
-                                                        </p>
-                                                    )}
+                                                    <CardTitle className="text-base">
+                                                        {hte.hte_name}
+                                                    </CardTitle>
+                                                    <div className="mt-2">
+                                                        <StatusBadge status={hte.status} />
+                                                    </div>
                                                 </div>
-                                            </TableCell>
-                                            <TableCell className="px-6 text-center">
-                                                <StatusBadge status={hte.status} />
-                                            </TableCell>
-                                            <TableCell className="px-6 text-center">
-                                                <div className="flex justify-center gap-1">
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() => openEditDialog(hte)}
-                                                            >
-                                                                <Pencil className="size-4 text-blue-600" />
-                                                            </Button>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent>Edit</TooltipContent>
-                                                    </Tooltip>
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() => {
-                                                                    router.patch(
-                                                                        `/admin/htes/${hte.hte_id}/status`,
-                                                                        { status: hte.status === 'active' ? 'inactive' : 'active' },
-                                                                        { preserveScroll: true, preserveState: true },
-                                                                    );
-                                                                }}
-                                                            >
-                                                                {hte.status === 'active' ? (
-                                                                    <PowerOff className="size-4 text-destructive" />
-                                                                ) : (
-                                                                    <Power className="size-4 text-emerald-600" />
-                                                                )}
-                                                            </Button>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent>
-                                                            {hte.status === 'active' ? 'Deactivate' : 'Activate'}
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                disabled={hte.status === 'active'}
-                                                                onClick={() => openArchiveDialog(hte.hte_id, hte.hte_name)}
-                                                            >
-                                                                <Archive className="size-4 text-orange-600" />
-                                                            </Button>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent>
-                                                            {hte.status === 'active'
-                                                                ? 'Archive inactive HTEs only'
-                                                                : 'Archive to collection'}
-                                                        </TooltipContent>
-                                                    </Tooltip>
+                                                <div className="shrink-0">
+                                                    <HteActions hte={hte} />
                                                 </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                            <div className="border-t px-6 py-4">
-                                <PaginationFooter
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent className="space-y-2 text-sm">
+                                            <div className="flex justify-between gap-2">
+                                                <span className="shrink-0 text-muted-foreground">Address</span>
+                                                <span className="text-right" title={hte.address ?? undefined}>
+                                                    {hte.address ?? '—'}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between gap-2">
+                                                <span className="shrink-0 text-muted-foreground">Contact Person</span>
+                                                <span className="text-right">{hte.contact_person ?? '—'}</span>
+                                            </div>
+                                            <div className="flex justify-between gap-2">
+                                                <span className="shrink-0 text-muted-foreground">Contact Number</span>
+                                                <span className="text-right">{hte.contact_number ?? '—'}</span>
+                                            </div>
+                                            <div className="flex justify-between gap-2">
+                                                <span className="shrink-0 text-muted-foreground">Interns</span>
+                                                <span>{hte.interns_count}</span>
+                                            </div>
+                                            <div className="flex justify-between gap-2">
+                                                <span className="shrink-0 text-muted-foreground">Supervisors</span>
+                                                <span>{hte.supervisors_count}</span>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+
+                            <div className="mt-4">
+                                <NumberedPagination
                                     meta={htes}
                                     itemLabel="HTE"
                                     onPageChange={goToPage}
                                     onPerPageChange={changePerPage}
-                                    idPrefix="htes-per-page"
+                                    idPrefix="htes-grid-per-page"
                                 />
                             </div>
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <div className="flex flex-col gap-4">
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            {htes.data.map((hte) => (
-                                <Card key={hte.hte_id}>
-                                    <CardHeader>
-                                        <div className="flex items-start justify-between">
-                                            <div>
-                                                <CardTitle className="text-base">{hte.hte_name}</CardTitle>
-                                                <StatusBadge status={hte.status} />
-                                            </div>
-                                            <div className="flex gap-1">
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => openEditDialog(hte)}
-                                                        >
-                                                            <Pencil className="size-4 text-blue-600" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>Edit</TooltipContent>
-                                                </Tooltip>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => {
-                                                                router.patch(
-                                                                    `/admin/htes/${hte.hte_id}/status`,
-                                                                    { status: hte.status === 'active' ? 'inactive' : 'active' },
-                                                                    { preserveScroll: true, preserveState: true },
-                                                                );
-                                                            }}
-                                                        >
-                                                            {hte.status === 'active' ? (
-                                                                <PowerOff className="size-4 text-destructive" />
-                                                            ) : (
-                                                                <Power className="size-4 text-emerald-600" />
-                                                            )}
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        {hte.status === 'active' ? 'Deactivate' : 'Activate'}
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            disabled={hte.status === 'active'}
-                                                            onClick={() => openArchiveDialog(hte.hte_id, hte.hte_name)}
-                                                        >
-                                                            <Archive className="size-4 text-orange-600" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        {hte.status === 'active'
-                                                            ? 'Archive inactive HTEs only'
-                                                            : 'Archive to collection'}
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            </div>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="space-y-2 text-sm">
-                                        <div className="flex justify-between gap-2">
-                                            <span className="shrink-0 text-muted-foreground">Address</span>
-                                            <span className="text-right" title={hte.address ?? undefined}>
-                                                {hte.address ?? '—'}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between gap-2">
-                                            <span className="shrink-0 text-muted-foreground">Contact Person</span>
-                                            <span className="text-right">{hte.contact_person ?? '—'}</span>
-                                        </div>
-                                        <div className="flex justify-between gap-2">
-                                            <span className="shrink-0 text-muted-foreground">Contact Number</span>
-                                            <span className="text-right">{hte.contact_number ?? '—'}</span>
-                                        </div>
-                                        <div className="flex justify-between gap-2">
-                                            <span className="shrink-0 text-muted-foreground">Interns</span>
-                                            <span>{hte.interns_count}</span>
-                                        </div>
-                                        <div className="flex justify-between gap-2">
-                                            <span className="shrink-0 text-muted-foreground">Supervisors</span>
-                                            <span>{hte.supervisors_count}</span>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
                         </div>
-                    </div>
+                    </>
                 )}
             </div>
 
+            {/* ── Edit dialog ───────────────────────────────────────────────── */}
             <Dialog open={editingHte !== null} onOpenChange={(open) => !open && setEditingHte(null)}>
                 <DialogContent>
                     <DialogHeader>
@@ -411,7 +537,6 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                 />
                                 <InputError message={editForm.errors.hte_name} />
                             </div>
-
                             <div className="grid gap-1.5">
                                 <Label htmlFor="edit_address">Address</Label>
                                 <Input
@@ -421,7 +546,6 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                 />
                                 <InputError message={editForm.errors.address} />
                             </div>
-
                             <div className="grid gap-1.5">
                                 <Label htmlFor="edit_contact_number">Contact Number</Label>
                                 <Input
@@ -431,9 +555,8 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                 />
                                 <InputError message={editForm.errors.contact_number} />
                             </div>
-
                             <DialogFooter>
-                                <Button variant="outline" onClick={() => setEditingHte(null)} type="button">
+                                <Button variant="outline" type="button" onClick={() => setEditingHte(null)}>
                                     Cancel
                                 </Button>
                                 <Button type="submit" disabled={editForm.processing}>
@@ -445,6 +568,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                 </DialogContent>
             </Dialog>
 
+            {/* ── Add dialog ────────────────────────────────────────────────── */}
             <Dialog open={addOpen} onOpenChange={setAddOpen}>
                 <DialogContent>
                     <DialogHeader>
@@ -464,7 +588,6 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                             />
                             <InputError message={addForm.errors.hte_name} />
                         </div>
-
                         <div className="grid gap-1.5">
                             <Label htmlFor="address">Address</Label>
                             <Input
@@ -474,7 +597,6 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                             />
                             <InputError message={addForm.errors.address} />
                         </div>
-
                         <div className="grid gap-1.5">
                             <Label htmlFor="contact_number">Contact Number</Label>
                             <Input
@@ -484,9 +606,8 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                             />
                             <InputError message={addForm.errors.contact_number} />
                         </div>
-
                         <DialogFooter>
-                            <Button variant="outline" onClick={() => setAddOpen(false)} type="button">
+                            <Button variant="outline" type="button" onClick={() => setAddOpen(false)}>
                                 Cancel
                             </Button>
                             <Button type="submit" disabled={addForm.processing}>
@@ -497,6 +618,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                 </DialogContent>
             </Dialog>
 
+            {/* ── Archive confirmation ──────────────────────────────────────── */}
             <ConfirmationDialog
                 open={archiveOpen}
                 onOpenChange={setArchiveOpen}
