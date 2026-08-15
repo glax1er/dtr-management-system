@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Intern;
 
+use App\Models\User;
+use App\Notifications\ResolutionTicketNotification;
 use App\Http\Controllers\Controller;
 use App\Models\ResolutionTicket;
 use App\Services\Attendance\DailyAttendanceCalculator;
@@ -114,7 +116,7 @@ class ResolutionTicketController extends Controller
             ]);
         }
 
-        ResolutionTicket::create([
+        $ticket = ResolutionTicket::create([
             'intern_user_id' => $user->id,
             'date' => $validated['date'],
             'proposed_time_in' => $proposedTimeIn,
@@ -122,6 +124,25 @@ class ResolutionTicketController extends Controller
             'reason' => $validated['reason'],
             'status' => ResolutionTicket::STATUS_PENDING,
         ]);
+
+        $ticket->load('intern');
+
+        User::query()
+            ->where('role', User::ROLE_SUPERVISOR)
+            ->whereHas('supervisorProfile', function ($query) use ($profile) {
+                $query
+                    ->where('supervisor_type', 'hte')
+                    ->where('hte_id', $profile->hte_id);
+            })
+            ->get()
+            ->each(function (User $supervisor) use ($ticket) {
+                $supervisor->notify(
+                    new ResolutionTicketNotification(
+                        $ticket,
+                        ResolutionTicketNotification::REQUEST_SUBMITTED,
+                    )
+                );
+            });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Resolution request submitted for supervisor review.']);
 

@@ -18,16 +18,29 @@ use App\Http\Controllers\Supervisor\InternsController;
 use App\Http\Controllers\Supervisor\ManualAttendanceController;
 use App\Http\Controllers\Supervisor\SchedulePeriodController as SupervisorScheduleController;
 use App\Http\Controllers\Kiosk\ScanController as KioskScanController;
-use App\Models\User;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Intern\ResolutionTicketController as InternResolutionTicketController;
 use App\Http\Controllers\Supervisor\ResolutionTicketController as SupervisorResolutionTicketController;
+use App\Http\Controllers\NotificationController;
+use App\Models\InternProfile;
+use App\Models\ResolutionTicket;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 use App\Http\Controllers\Admin\ArchiveController;
 
 Route::redirect('/', '/login')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('notifications', [NotificationController::class, 'index'])
+    ->name('notifications.index');
 
+    Route::post('notifications/{notification}/read', [NotificationController::class, 'markRead'])
+        ->name('notifications.markRead');
+
+    Route::delete('notifications', [NotificationController::class, 'clear'])
+        ->name('notifications.clear');
+ 
     Route::get('dashboard', function () {
         return redirect()->route(auth()->user()->homeRouteName());
     })->name('dashboard');
