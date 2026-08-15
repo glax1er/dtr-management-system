@@ -3,6 +3,7 @@
 namespace App\Services\Attendance;
 
 use App\Models\AttendanceLog;
+use App\Models\SchedulePeriod;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -33,7 +34,7 @@ class DailyAttendanceCalculator
     /**
      * @return Collection<int, DailyAttendance> ordered oldest date first
      */
-    public function forIntern(int $internUserId, ?Carbon $from = null, ?Carbon $to = null, ?CarbonInterface $approvedAt = null): Collection
+    public function forIntern(int $internUserId, int $hteId, ?Carbon $from = null, ?Carbon $to = null, ?CarbonInterface $approvedAt = null): Collection
     {
         $timezone = config('dtr.timezone');
 
@@ -54,12 +55,12 @@ class DailyAttendanceCalculator
 
         $days = collect(
             $scansByDate
-                ->map(fn (Collection $scans, string $date) => $this->summarizeDay($date, $scans))
+                ->map(fn (Collection $scans, string $date) => $this->summarizeDay($date, $scans, $hteId))
                 ->all()
         );
 
         if ($approvedAt !== null) {
-            $days = $days->merge($this->missingWorkdays($days->keys(), $approvedAt, $timezone, $from, $to));
+            $days = $days->merge($this->missingWorkdays($days->keys(), $approvedAt, $timezone, $from, $to, $hteId));
         }
 
         return $days
@@ -79,7 +80,7 @@ class DailyAttendanceCalculator
      * @param  Collection<int, string>  $existingDates
      * @return Collection<string, DailyAttendance> keyed by date string
      */
-    private function missingWorkdays(Collection $existingDates, CarbonInterface $approvedAt, string $timezone, ?Carbon $from, ?Carbon $to): Collection
+    private function missingWorkdays(Collection $existingDates, CarbonInterface $approvedAt, string $timezone, ?Carbon $from, ?Carbon $to, int $hteId): Collection
     {
         $yesterday = Carbon::now($timezone)->subDay()->startOfDay();
 
@@ -100,7 +101,15 @@ class DailyAttendanceCalculator
         }
 
         for ($cursor = $rangeStart->clone(); $cursor->lte($rangeEnd); $cursor = $cursor->addDay()) {
-            if ($cursor->isWeekday() && ! $existingDates->contains($cursor->toDateString())) {
+            // A day only counts as "missed" if this HTE actually expected
+            // work that day (SchedulePeriod override, then global default).
+            // Replaces the old isWeekday() assumption, which had no idea
+            // about the real per-HTE schedule — e.g. it would still flag a
+            // Friday the HTE marked "no work" as a missed day, and could
+            // never flag a scheduled Saturday as missed either.
+            $isScheduledWorkday = SchedulePeriod::expectedStartTimeFor($cursor, $hteId) !== null;
+
+            if ($isScheduledWorkday && ! $existingDates->contains($cursor->toDateString())) {
                 $missing->put($cursor->toDateString(), new DailyAttendance(
                     date: $cursor->toDateString(),
                     timeIn: null,
@@ -120,10 +129,10 @@ class DailyAttendanceCalculator
      * from the daily breakdown rather than stored anywhere, so it's
      * always consistent with what the intern sees in their log table.
      */
-    public function totalHours(int $internUserId, ?Carbon $from = null, ?Carbon $to = null): float
+    public function totalHours(int $internUserId, int $hteId, ?Carbon $from = null, ?Carbon $to = null): float
     {
         return round(
-            $this->forIntern($internUserId, $from, $to)->sum('hoursRendered'),
+            $this->forIntern($internUserId, $hteId, $from, $to)->sum('hoursRendered'),
             2,
         );
     }
@@ -131,13 +140,17 @@ class DailyAttendanceCalculator
     /**
      * @param  Collection<int, AttendanceLog>  $scansForDay
      */
-    private function summarizeDay(string $date, Collection $scansForDay): DailyAttendance
+    private function summarizeDay(string $date, Collection $scansForDay, int $hteId): DailyAttendance
     {
         $timezone = config('dtr.timezone');
 
         $earliestScan = $scansForDay->first()->scan_timestamp;
         $latestScan = $scansForDay->count() > 1 ? $scansForDay->last()->scan_timestamp : null;
 
+        // Global time-out cutoff for now — see computeHours() below for
+        // why the *start* side is already schedule-aware; the cutoff
+        // side still needs a per-HTE/day value added to SchedulePeriod
+        // before this can be too (tracked separately).
         $cutoff = Carbon::parse($date.' '.config('dtr.time_out_cutoff'), $timezone);
         $earliestScanLocal = $earliestScan->clone()->setTimezone($timezone);
 
@@ -153,7 +166,7 @@ class DailyAttendanceCalculator
         }
 
         [$hours, $lunchDeducted] = ($timeIn !== null && $timeOut !== null)
-            ? $this->computeHours($date, $timeIn, $timeOut)
+            ? $this->computeHours($date, $timeIn, $timeOut, $hteId)
             : [0.0, false];
 
         return new DailyAttendance(
@@ -169,20 +182,43 @@ class DailyAttendanceCalculator
     /**
      * @return array{0: float, 1: bool}
      */
-    private function computeHours(string $date, CarbonInterface $timeIn, CarbonInterface $timeOut): array
+    private function computeHours(string $date, CarbonInterface $timeIn, CarbonInterface $timeOut, int $hteId): array
     {
         $timezone = config('dtr.timezone');
 
         $localTimeIn = $timeIn->clone()->setTimezone($timezone);
         $localTimeOut = $timeOut->clone()->setTimezone($timezone);
 
-        // Hours only start accruing at the official shift start — an
-        // intern who scans in early (e.g. 6:30 AM for an 8:00 AM shift)
-        // shouldn't have that early arrival counted as rendered time.
-        // Only the later of the two (actual scan-in vs. expected start)
-        // is ever used as the effective time-in for the hours math below.
-        $expectedStart = Carbon::parse($date.' '.config('dtr.expected_start_time'), $timezone);
-        $effectiveTimeIn = $localTimeIn->max($expectedStart);
+        // Hours only start accruing at this HTE's actual expected start
+        // time for this specific day (SchedulePeriod override, then the
+        // global default), minus a small early-arrival allowance — an
+        // intern who scans in well before their shift shouldn't have all
+        // of that early arrival counted as rendered time, but scanning in
+        // a little early (e.g. settling in before an 8:00 shift) isn't
+        // penalized either. Only the later of the two (actual scan-in vs.
+        // allowance-adjusted expected start) is ever used as the
+        // effective time-in for the hours math below.
+        //
+        // If no expected start time is configured at all for this day
+        // (weekend, or an HTE with no schedule for it), don't clamp —
+        // count the full worked span, consistent with that day being
+        // labeled 'unscheduled' rather than silently penalized against
+        // a fake default.
+        $expectedStartTime = SchedulePeriod::expectedStartTimeFor(
+            Carbon::parse($date, $timezone),
+            $hteId,
+        );
+
+        if ($expectedStartTime === null) {
+            $effectiveTimeIn = $localTimeIn;
+        } else {
+            $allowanceMinutes = config('dtr.early_arrival_allowance_minutes', 60);
+
+            $earliestCountedTimeIn = Carbon::parse($date.' '.$expectedStartTime, $timezone)
+                ->subMinutes($allowanceMinutes);
+
+            $effectiveTimeIn = $localTimeIn->max($earliestCountedTimeIn);
+        }
 
         $rawHours = $localTimeOut->gt($effectiveTimeIn)
             ? $effectiveTimeIn->floatDiffInHours($localTimeOut)

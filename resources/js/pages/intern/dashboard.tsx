@@ -1,5 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import {
     ChevronLeft,
     ChevronRight,
@@ -47,6 +47,8 @@ export default function InternDashboard({
     };
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [startDate, setStartDate] = useState<string>('');
+    const [endDate, setEndDate] = useState<string>('');
 
     const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -188,13 +190,17 @@ export default function InternDashboard({
                                         <span className="shrink-0 text-muted-foreground">
                                             Time In
                                         </span>
-                                        <span className="min-w-0 text-right break-words">{today.time_in ?? '—'}</span>
+                                        <span className="min-w-0 text-right break-words">
+                                            {today.time_in ?? '—'}
+                                        </span>
                                     </div>
                                     <div className="flex justify-between gap-4">
                                         <span className="shrink-0 text-muted-foreground">
                                             Time Out
                                         </span>
-                                        <span className="min-w-0 text-right break-words">{today.time_out ?? '—'}</span>
+                                        <span className="min-w-0 text-right break-words">
+                                            {today.time_out ?? '—'}
+                                        </span>
                                     </div>
                                     <div className="flex justify-between gap-4">
                                         <span className="shrink-0 text-muted-foreground">
@@ -238,7 +244,7 @@ export default function InternDashboard({
                                 <>
                                     <div className="flex aspect-square items-center justify-center rounded-lg border p-4">
                                         <img
-                                            src="/intern/qr-code"
+                                            src={`/intern/qr-code?v=${encodeURIComponent(profile.id_number)}`}
                                             alt="Your QR code"
                                             className="h-full w-full object-contain"
                                         />
@@ -249,8 +255,8 @@ export default function InternDashboard({
                                         className="w-full"
                                     >
                                         <a
-                                            href="/intern/qr-code"
-                                            download={profile.name}
+                                            href={`/intern/qr-code?v=${encodeURIComponent(profile.id_number)}`}
+                                            download={`${profile.name.replace(/\s+/g, '_')}.png`}
                                         >
                                             <Download className="mr-2 size-4" />
                                             Download PNG
@@ -283,43 +289,117 @@ export default function InternDashboard({
 
                 {/* Full attendance log, now full width on its own row */}
                 <Card>
-                    <CardHeader className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center gap-2">
+                    <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="relative flex w-full justify-center sm:w-auto">
+                            <div className="flex flex-col items-center gap-1">
+                                <div className="flex items-center gap-2 pr-10 sm:pr-0">
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => goToMonth(shiftMonth(month, -1))}
+                                    >
+                                        <ChevronLeft />
+                                    </Button>
+                                    <CardTitle className="min-w-32 text-center text-base">
+                                        {monthLabel}
+                                    </CardTitle>
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        disabled={!canGoNextMonth}
+                                        onClick={() => goToMonth(shiftMonth(month, 1))}
+                                    >
+                                        <ChevronRight />
+                                    </Button>
+                                </div>
+                                <div className="text-center text-[11px] text-muted-foreground">
+                                    Total:{' '}
+                                    <span className="font-medium text-foreground tabular-nums">
+                                        {monthTotalHours.toFixed(2)} hrs
+                                    </span>
+                                </div>
+                            </div>
+
                             <Button
                                 variant="outline"
                                 size="icon"
-                                onClick={() => goToMonth(shiftMonth(month, -1))}
+                                className="absolute right-0 top-[calc(50%-10px)] -translate-y-1/2 sm:hidden"
+                                onClick={() => {
+                                    const base = '/intern/dtr-report';
+                                    let url = base + '?';
+                                    if (startDate && endDate) {
+                                        url += `start=${startDate}&end=${endDate}`;
+                                    } else {
+                                        url += `month=${month}`;
+                                    }
+                                    window.open(url, '_blank', 'noopener');
+                                }}
+                                aria-label="Download DTR report"
                             >
-                                <ChevronLeft />
-                            </Button>
-                            <CardTitle className="min-w-32 text-center text-base">
-                                {monthLabel}
-                            </CardTitle>
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                disabled={!canGoNextMonth}
-                                onClick={() => goToMonth(shiftMonth(month, 1))}
-                            >
-                                <ChevronRight />
+                                <Download className="size-4" />
                             </Button>
                         </div>
-                        <div className="flex flex-wrap items-center gap-3">
-                            <span className="text-sm text-muted-foreground">
-                                Total:{' '}
-                                <span className="font-medium text-foreground tabular-nums">
-                                    {monthTotalHours.toFixed(2)} hrs
-                                </span>
-                            </span>
-                            <Button size="sm" asChild>
-                                <a
-                                    href={`/intern/dtr-report?month=${month}`}
-                                    target="_blank"
-                                    rel="noopener"
+                        <div className="flex w-full flex-wrap items-center justify-center gap-3 sm:w-auto sm:justify-end">
+                            {/* Date range picker for DTR (start / end) */}
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="date"
+                                    className="border rounded px-2 py-1 text-sm"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                    aria-label="DTR start date"
+                                />
+                                <span className="text-sm">to</span>
+                                <input
+                                    type="date"
+                                    className="border rounded px-2 py-1 text-sm"
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                    aria-label="DTR end date"
+                                />
+                                {/* <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                        const now = new Date();
+                                        // get Monday as startOfWeek
+                                        const day = now.getDay();
+                                        const diffToMonday = (day + 6) % 7; // 0->6
+                                        const monday = new Date(
+                                            now.getFullYear(),
+                                            now.getMonth(),
+                                            now.getDate() - diffToMonday,
+                                        );
+                                        const sunday = new Date(
+                                            monday.getFullYear(),
+                                            monday.getMonth(),
+                                            monday.getDate() + 6,
+                                        );
+                                        const fmt = (d: Date) => d.toISOString().slice(0, 10);
+                                        setStartDate(fmt(monday));
+                                        setEndDate(fmt(sunday));
+                                    }}
                                 >
-                                    <Download />
-                                    DTR Report
-                                </a>
+                                    This week
+                                </Button> */}
+                            </div>
+
+                            <Button
+                                size="sm"
+                                className="hidden sm:inline-flex"
+                                onClick={() => {
+                                    const base = '/intern/dtr-report';
+                                    let url = base + '?';
+                                    if (startDate && endDate) {
+                                        url += `start=${startDate}&end=${endDate}`;
+                                    } else {
+                                        url += `month=${month}`;
+                                    }
+                                    window.open(url, '_blank', 'noopener');
+                                }}
+                            >
+                                <Download className="mr-2 size-4" />
+                                DTR Report
                             </Button>
                         </div>
                     </CardHeader>
@@ -344,9 +424,6 @@ export default function InternDashboard({
                                             </th>
                                             <th className="py-2 pr-4 font-medium">
                                                 Hours
-                                            </th>
-                                            <th className="py-2 pr-4 font-medium">
-                                                Lunch Deducted
                                             </th>
                                             <th className="py-2 pr-4 font-medium">
                                                 Status
@@ -379,23 +456,18 @@ export default function InternDashboard({
                                                         2,
                                                     )}
                                                 </td>
-                                                <td className="py-2 pr-4">
-                                                    {log.lunch_deducted
-                                                        ? 'Yes'
-                                                        : 'No'}
-                                                </td>
                                                 <td className="py-2">
                                                     <Badge
-                                                        variant={
+                                                        className={
                                                             log.status ===
                                                             'complete'
-                                                                ? 'default'
+                                                                ? 'bg-emerald-100 text-emerald-400 border-emerald-500'
                                                                 : log.status ===
                                                                         'missing_time_in' ||
                                                                     log.status ===
                                                                         'no_record'
-                                                                  ? 'destructive'
-                                                                  : 'outline'
+                                                                  ? 'bg-red-100 text-red-400 border-red-500'
+                                                                  : 'bg-amber-100 text-amber-400 border-amber-500' // 'No time-out'
                                                         }
                                                     >
                                                         {log.status ===

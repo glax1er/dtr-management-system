@@ -3,10 +3,16 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\UpdateInternRequest;
+use App\Models\Hte;
 use App\Models\InternProfile;
+use App\Models\Program;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Http\Requests\Admin\UpdateSupervisorRequest;
 
 class InternController extends Controller
 {
@@ -57,6 +63,28 @@ class InternController extends Controller
                 'search' => $search,
                 'per_page' => $perPage,
             ],
+            'htes' => Hte::where('status', 'active')->orderBy('hte_name')->get(['hte_id', 'hte_name']),
+            'programs' => Program::where('is_active', true)->orderBy('program_name')->get(['program_id', 'program_name']),
         ]);
+    }
+
+    public function update(UpdateInternRequest $request, InternProfile $internProfile): RedirectResponse
+    {
+        DB::transaction(function () use ($request, $internProfile) {
+            $internProfile->user->update([
+                'name' => $request->validated('name'),
+                'email' => $request->validated('email'),
+            ]);
+
+            $internProfile->update([
+                'id_number' => $request->validated('id_number'),
+                'contact_number' => $request->validated('contact_number'),
+                'sex' => $request->validated('sex'),
+                'hte_id' => $request->validated('hte_id'),
+                'program_id' => $request->validated('program_id'),
+            ]);
+        });
+
+        return back()->with('success', 'Intern updated.');
     }
 }

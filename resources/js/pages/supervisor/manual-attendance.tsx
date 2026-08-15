@@ -1,4 +1,5 @@
 import { Head, router } from '@inertiajs/react';
+import { toast } from 'sonner';
 import {
     AlertTriangle,
     CalendarDays,
@@ -232,7 +233,7 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
 
     const submit = async (force = false) => {
         if (!internId) {
-            showError('Choose an intern before saving attendance records.');
+            toast.error('Select an intern first.');
 
             return;
         }
@@ -533,9 +534,6 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
                                                     htmlFor={`time-in-${index}`}
                                                 >
                                                     Time in{' '}
-                                                    <span className="text-muted-foreground">
-                                                        (optional)
-                                                    </span>
                                                 </Label>
                                                 <Input
                                                     id={`time-in-${index}`}
@@ -556,9 +554,6 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
                                                     htmlFor={`time-out-${index}`}
                                                 >
                                                     Time out{' '}
-                                                    <span className="text-muted-foreground">
-                                                        (optional)
-                                                    </span>
                                                 </Label>
                                                 <Input
                                                     id={`time-out-${index}`}

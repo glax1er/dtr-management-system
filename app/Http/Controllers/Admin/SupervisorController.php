@@ -15,6 +15,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Http\Requests\Admin\UpdateSupervisorRequest;
 
 class SupervisorController extends Controller
 {
@@ -61,6 +62,8 @@ class SupervisorController extends Controller
                 'supervisor_type' => $profile->supervisor_type,
                 'scope_name' => $profile->getScopeName(),
                 'status' => $profile->status,
+                'hte_id' => $profile->hte_id,
+                'program_id' => $profile->program_id,
             ]);
 
         return Inertia::render('admin/supervisors/index', [
@@ -89,7 +92,8 @@ class SupervisorController extends Controller
             $supervisorProfile->hte->refreshContactPerson();
         }
 
-        return back()->with('success', 'Supervisor status updated.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Supervisor status updated.']);
+        return back();
     }
 
     public function store(StoreSupervisorRequest $request): RedirectResponse
@@ -114,8 +118,9 @@ class SupervisorController extends Controller
             $supervisorProfile->hte->refreshContactPerson();
         });
 
-        return redirect()->route('admin.supervisors.index')
-            ->with('success', 'HTE Supervisor account created. Default password: '.config('supervisor.default_supervisor_password'));
+        Inertia::flash('toast', ['type' => 'success', 'message' => "HTE Supervisor account created.\nDefault password: ".config('supervisor.default_supervisor_password')]);
+
+        return redirect()->route('admin.supervisors.index');
     }
 
     public function storeOjtSupervisor(StoreOjtSupervisorRequest $request): RedirectResponse
@@ -137,7 +142,38 @@ class SupervisorController extends Controller
             ]);
         });
 
-        return redirect()->route('admin.supervisors.index')
-            ->with('success', 'OJT Supervisor account created. Default password: '.config('supervisor.default_supervisor_password'));
+        Inertia::flash('toast', ['type' => 'success', 'message' => "OJT Supervisor account created.\nDefault password: " . config('supervisor.default_supervisor_password')]);
+
+        return redirect()->route('admin.supervisors.index');
+    }
+
+    public function update(UpdateSupervisorRequest $request, SupervisorProfile $supervisorProfile): RedirectResponse
+    {
+        DB::transaction(function () use ($request, $supervisorProfile) {
+            $supervisorProfile->user->update([
+                'name' => $request->validated('name'),
+                'email' => $request->validated('email'),
+            ]);
+
+            if ($supervisorProfile->supervisor_type === 'hte') {
+                $supervisorProfile->update(['hte_id' => $request->validated('hte_id')]);
+                $supervisorProfile->hte->refreshContactPerson();
+            } else {
+                $supervisorProfile->update(['program_id' => $request->validated('program_id')]);
+            }
+        });
+
+        return back()->with('success', 'Supervisor updated.');
+    }
+
+    public function destroy(SupervisorProfile $supervisorProfile): RedirectResponse
+    {
+        if ($supervisorProfile->status !== 'inactive') {
+            return back()->with('error', 'Only inactive supervisors can be deleted.');
+        }
+
+        $supervisorProfile->delete();
+
+        return back()->with('success', 'Supervisor removed.');
     }
 }

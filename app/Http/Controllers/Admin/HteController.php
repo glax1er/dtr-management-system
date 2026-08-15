@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Http\Requests\Admin\UpdateSupervisorRequest;
 
 class HteController extends Controller
 {
@@ -20,13 +21,15 @@ class HteController extends Controller
     public function index(Request $request): Response
     {
         $validated = $request->validate([
-            'search' => ['nullable', 'string', 'max:255'],
-            'page' => ['nullable', 'integer', 'min:1'],
+            'search'   => ['nullable', 'string', 'max:255'],
+            'status'   => ['nullable', 'string', 'in:active,inactive'],
+            'page'     => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:' . self::MAX_PER_PAGE],
         ]);
 
-        $search = trim($validated['search'] ?? '');
-        $perPage = (int) ($validated['per_page'] ?? self::DEFAULT_PER_PAGE);
+        $search   = trim($validated['search'] ?? '');
+        $status   = $validated['status'] ?? '';
+        $perPage  = (int) ($validated['per_page'] ?? self::DEFAULT_PER_PAGE);
 
         $query = Hte::query()
             ->withCount([
@@ -40,25 +43,30 @@ class HteController extends Controller
             $query->where('hte_name', 'like', "%{$search}%");
         }
 
+        if ($status !== '') {
+            $query->where('status', $status);
+        }
+
         $htes = $query
             ->orderBy('hte_name')
             ->paginate($perPage, ['*'], 'page', $validated['page'] ?? 1)
             ->withQueryString()
             ->through(fn (Hte $hte) => [
-                'hte_id' => $hte->hte_id,
-                'hte_name' => $hte->hte_name,
-                'address' => $hte->address,
-                'contact_person' => $hte->contact_person,
-                'contact_number' => $hte->contact_number,
-                'status' => $hte->status,
-                'interns_count' => $hte->interns_count,
-                'supervisors_count' => $hte->supervisor_profiles_count,
+                'hte_id'           => $hte->hte_id,
+                'hte_name'         => $hte->hte_name,
+                'address'          => $hte->address,
+                'contact_person'   => $hte->contact_person,
+                'contact_number'   => $hte->contact_number,
+                'status'           => $hte->status,
+                'interns_count'    => $hte->interns_count,
+                'supervisors_count'=> $hte->supervisor_profiles_count,
             ]);
 
         return Inertia::render('admin/htes/index', [
-            'htes' => $htes,
+            'htes'    => $htes,
             'filters' => [
-                'search' => $search,
+                'search'   => $search,
+                'status'   => $status,
                 'per_page' => $perPage,
             ],
         ]);
@@ -71,14 +79,16 @@ class HteController extends Controller
             'status' => 'active',
         ]);
 
-        return back()->with('success', 'HTE added.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'HTE added.']);
+        return back();
     }
 
     public function update(UpdateHteRequest $request, Hte $hte): RedirectResponse
     {
         $hte->update($request->validated());
 
-        return back()->with('success', 'HTE updated.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'HTE updated.']);
+        return back();
     }
 
     public function updateStatus(Request $request, Hte $hte): RedirectResponse
@@ -89,6 +99,18 @@ class HteController extends Controller
 
         $hte->update(['status' => $validated['status']]);
 
-        return back()->with('success', 'HTE status updated.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'HTE status updated.']);
+        return back();
+    }
+
+    public function destroy(Hte $hte): RedirectResponse
+    {
+        if ($hte->status !== 'inactive') {
+            return back()->with('error', 'Only inactive HTEs can be deleted.');
+        }
+
+        $hte->delete();
+
+        return back()->with('success', 'HTE removed.');
     }
 }

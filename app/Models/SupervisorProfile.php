@@ -5,9 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SupervisorProfile extends Model
 {
+    use SoftDeletes;
     // user_id is the primary key here (one-to-one with users) —
     // same reasoning as InternProfile.
     protected $primaryKey = 'user_id';

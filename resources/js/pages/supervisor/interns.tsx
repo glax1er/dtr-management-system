@@ -662,33 +662,33 @@ export default function MyInterns({
                                                     <div className="flex flex-wrap gap-1">
                                                         {log.punctuality ===
                                                         'on_time' ? (
-                                                            <Badge className="border-transparent bg-green-600 text-white dark:bg-green-600/80">
+                                                            <Badge className="bg-green-100 text-green-400 border-green-500">
                                                                 On Time
                                                             </Badge>
                                                         ) : log.punctuality ===
                                                           'unscheduled' ? (
-                                                            <Badge className="border-transparent bg-blue-600 text-white dark:bg-blue-600/80">
+                                                            <Badge className="bg-teal-100 text-teal-400 border-teal-500">
                                                                 Unscheduled
                                                             </Badge>
                                                         ) : log.punctuality ===
                                                           'missing_time_in' ? (
-                                                            <Badge variant="outline">
+                                                            <Badge className="bg-yellow-100 text-yellow-400 border-yellow-500">
                                                                 Missing Time In
                                                             </Badge>
                                                         ) : log.punctuality ===
                                                           'no_record' ? (
-                                                            <Badge variant="outline">
+                                                            <Badge className="bg-red-100 text-red-400 border-red-500">
                                                                 No Record
                                                             </Badge>
                                                         ) : log.punctuality ===
                                                           'late' ? (
-                                                            <Badge variant="destructive">
+                                                            <Badge className="bg-orange-100 text-orange-400 border-orange-500">
                                                                 Late
                                                             </Badge>
                                                         ) : null}
                                                         {log.status ===
                                                             'open' && (
-                                                            <Badge variant="outline">
+                                                            <Badge className="bg-gray-100 text-gray-400 border-gray-500">
                                                                 No time-out yet
                                                             </Badge>
                                                         )}

@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
 
 class ResolutionTicketController extends Controller
 {
@@ -41,7 +42,7 @@ class ResolutionTicketController extends Controller
         // looks like right now — never trust the client's idea of the
         // day's status.
         $day = $this->calculator
-            ->forIntern($user->id, from: $date, to: $date, approvedAt: $profile->approved_at)
+            ->forIntern($user->id, $profile->hte_id, from: $date, to: $date, approvedAt: $profile->approved_at)
             ->first();
 
         if ($day === null || (! $day->isFullyMissing() && ! $day->isMissingTimeIn() && ! $day->isOpen())) {
@@ -122,6 +123,8 @@ class ResolutionTicketController extends Controller
             'status' => ResolutionTicket::STATUS_PENDING,
         ]);
 
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Resolution request submitted for supervisor review.']);
+
         return back();
     }
 
@@ -140,6 +143,8 @@ class ResolutionTicketController extends Controller
         }
 
         $resolutionTicket->update(['status' => ResolutionTicket::STATUS_CANCELLED]);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Resolution request cancelled.']);
 
         return back();
     }

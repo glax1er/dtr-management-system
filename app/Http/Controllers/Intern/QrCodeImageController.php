@@ -37,6 +37,16 @@ class QrCodeImageController extends Controller
 
         return response($result->getString(), 200, [
             'Content-Type' => $result->getMimeType(),
+            // This route is a static URL (/intern/qr-code) shared by every
+            // intern. Without an explicit no-store, the browser's HTTP
+            // cache keys the response by URL alone — not by session/user —
+            // so a second intern logging in on the same browser/machine
+            // can be served the FIRST intern's cached PNG even though the
+            // server would have rendered the correct one. That mismatch
+            // (stale image, correct DB qr_code_value) is what causes scans
+            // to resolve to the wrong intern. Do not remove this header.
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, private',
+            'Pragma' => 'no-cache',
         ]);
     }
 }

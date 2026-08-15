@@ -85,9 +85,10 @@ class ManualAttendanceController extends Controller
 
         $timezone = config('dtr.timezone');
         $day = Carbon::createFromFormat('Y-m-d', $validated['date'], $timezone)->startOfDay();
+        $hteId = InternProfile::where('user_id', $validated['intern_user_id'])->value('hte_id');
 
         $existingDay = (new DailyAttendanceCalculator())
-            ->forIntern($validated['intern_user_id'], $day->clone(), $day->clone()->endOfDay())
+            ->forIntern($validated['intern_user_id'], $hteId, $day->clone(), $day->clone()->endOfDay())
             ->first();
 
         if ($existingDay === null || $existingDay->isFullyMissing()) {
@@ -180,7 +181,8 @@ class ManualAttendanceController extends Controller
             }
         });
 
-        return back()->with('success', 'Attendance records saved.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Attendance records saved.']);
+        return back();
     }
 
     private function authorizeIntern(Request $request, int $internUserId): void
