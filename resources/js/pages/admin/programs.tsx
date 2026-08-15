@@ -1,33 +1,22 @@
 import { Head, router } from '@inertiajs/react';
 import {
-    Archive,
     BookOpen,
     LayoutGrid,
-    Pencil,
     Plus,
-    Power,
-    PowerOff,
     Search,
     SlidersHorizontal,
     Table as TableIcon,
     X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { toast } from 'sonner';
+import { NumberedPagination } from '@/components/numbered-pagination';
+import { ProgramActions } from '@/components/program-actions';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
-import {
-    Pagination,
-    PaginationContent,
-    PaginationEllipsis,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious,
-} from '@/components/ui/pagination';
 import type { Paginated } from '@/components/pagination-footer';
 import {
     Dialog,
@@ -48,11 +37,6 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
 import {
     Select,
     SelectContent,
@@ -83,191 +67,6 @@ interface ProgramsProps {
 }
 
 type ViewMode = 'table' | 'grid';
-
-function ProgramsPagination({
-    meta,
-    onPageChange,
-    onPerPageChange,
-}: {
-    meta: Paginated<Program>;
-    onPageChange: (page: number) => void;
-    onPerPageChange: (perPage: number) => void;
-}) {
-    const {
-        current_page: currentPage,
-        last_page: lastPage,
-        from,
-        to,
-        total,
-        per_page: perPage,
-    } = meta;
-
-    const [perPageInput, setPerPageInput] = useState(String(perPage));
-
-useEffect(() => {
-    setPerPageInput(String(perPage));
-}, [perPage]);
-
-const submitPerPage = () => {
-    const nextPerPage = Number(perPageInput);
-
-    if (!Number.isInteger(nextPerPage) || nextPerPage < 1) {
-        setPerPageInput(String(perPage));
-        return;
-    }
-
-    onPerPageChange(nextPerPage);
-};
-
-if (meta.total === 0) return null;
-
-const pages: (number | 'ellipsis')[] = [];
-
-    if (lastPage <= 7) {
-        for (let page = 1; page <= lastPage; page += 1) {
-            pages.push(page);
-        }
-    } else {
-        pages.push(1);
-
-        if (currentPage > 3) {
-            pages.push('ellipsis');
-        }
-
-        for (
-            let page = Math.max(2, currentPage - 1);
-            page <= Math.min(lastPage - 1, currentPage + 1);
-            page += 1
-        ) {
-            pages.push(page);
-        }
-
-        if (currentPage < lastPage - 2) {
-            pages.push('ellipsis');
-        }
-
-        pages.push(lastPage);
-    }
-
-    return (
-    <div className="grid w-full gap-3 border-t px-4 pt-4 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center sm:px-6">
-        {/* Left */}
-        <div className="order-2 flex justify-center sm:order-1 sm:justify-start">
-    <form
-        onSubmit={(event) => {
-            event.preventDefault();
-            submitPerPage();
-        }}
-        className="flex items-center gap-1.5 text-sm text-muted-foreground"
-    >
-        <label htmlFor="programs-per-page" className="text-xs">
-            Rows
-        </label>
-
-        <Input
-            id="programs-per-page"
-            type="number"
-            min={1}
-            inputMode="numeric"
-            value={perPageInput}
-            onChange={(event) => setPerPageInput(event.target.value)}
-            onBlur={submitPerPage}
-            className="h-7 w-16 px-2 text-xs"
-            aria-label="Rows per page"
-        />
-    </form>
-</div>
-
-        {/* Center */}
-        <Pagination className="order-1 w-full sm:order-2 sm:w-auto">
-            <PaginationContent>
-                <PaginationItem>
-    <PaginationPrevious
-        href="#"
-        aria-disabled={currentPage <= 1}
-        tabIndex={currentPage <= 1 ? -1 : undefined}
-        className={
-            currentPage <= 1
-                ? 'pointer-events-none opacity-40'
-                : 'cursor-pointer'
-        }
-        onClick={(event) => {
-            event.preventDefault();
-
-            if (currentPage > 1) {
-                onPageChange(currentPage - 1);
-            }
-        }}
-    />
-</PaginationItem>
-
-{pages.map((page, index) => {
-    if (page === 'ellipsis') {
-        return (
-            <PaginationItem
-                key={`ellipsis-${index}`}
-                className="hidden sm:list-item"
-            >
-                <PaginationEllipsis />
-            </PaginationItem>
-        );
-    }
-
-    const hideOnMobile =
-        page !== 1 &&
-        page !== currentPage &&
-        page !== lastPage;
-
-    return (
-        <PaginationItem
-            key={page}
-            className={hideOnMobile ? 'hidden sm:list-item' : ''}
-        >
-            <PaginationLink
-                href="#"
-                isActive={page === currentPage}
-                className="cursor-pointer"
-                onClick={(event) => {
-                    event.preventDefault();
-                    onPageChange(page);
-                }}
-            >
-                {page}
-            </PaginationLink>
-        </PaginationItem>
-    );
-})}
-
-<PaginationItem>
-    <PaginationNext
-        href="#"
-        aria-disabled={currentPage >= lastPage}
-        tabIndex={currentPage >= lastPage ? -1 : undefined}
-        className={
-            currentPage >= lastPage
-                ? 'pointer-events-none opacity-40'
-                : 'cursor-pointer'
-        }
-        onClick={(event) => {
-            event.preventDefault();
-
-            if (currentPage < lastPage) {
-                onPageChange(currentPage + 1);
-            }
-        }}
-    />
-</PaginationItem>
-            </PaginationContent>
-        </Pagination>
-
-        {/* Right */}
-        <p className="order-3 justify-self-center text-center text-sm text-muted-foreground sm:justify-self-end sm:text-right">
-            Showing {from}–{to} of {total} program
-            {total === 1 ? '' : 's'}
-        </p>
-    </div>
-);
-}
 
 export default function AdminPrograms({ programs, filters }: ProgramsProps) {
     const [view, setView] = useState<ViewMode>('table');
@@ -671,89 +470,21 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
                                                                 )}
                                                             </TableCell>
                                                             <TableCell className="px-6 text-center">
-                                                                <div className="flex justify-center gap-1">
-                                                                    <Tooltip>
-                                                                        <TooltipTrigger
-                                                                            asChild
-                                                                        >
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                size="icon"
-                                                                                onClick={() =>
-                                                                                    openEdit(
-                                                                                        program,
-                                                                                    )
-                                                                                }
-                                                                            >
-                                                                                <Pencil className="size-4 text-blue-600" />
-                                                                            </Button>
-                                                                        </TooltipTrigger>
-                                                                        <TooltipContent>
-                                                                            Edit
-                                                                        </TooltipContent>
-                                                                    </Tooltip>
-
-                                                                    <Tooltip>
-                                                                        <TooltipTrigger
-                                                                            asChild
-                                                                        >
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                size="icon"
-                                                                                onClick={() =>
-                                                                                    toggleActive(
-                                                                                        program,
-                                                                                    )
-                                                                                }
-                                                                            >
-                                                                                {program.is_active ? (
-                                                                                    <PowerOff className="size-4 text-destructive" />
-                                                                                ) : (
-                                                                                    <Power className="size-4 text-emerald-600" />
-                                                                                )}
-                                                                            </Button>
-                                                                        </TooltipTrigger>
-                                                                        <TooltipContent>
-                                                                            {program.is_active
-                                                                                ? 'Deactivate'
-                                                                                : 'Activate'}
-                                                                        </TooltipContent>
-                                                                    </Tooltip>
-
-                                                                    <Tooltip>
-                                                                        <TooltipTrigger
-                                                                            asChild
-                                                                        >
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                size="icon"
-                                                                                disabled={
-                                                                                    program.is_active
-                                                                                }
-                                                                                onClick={() =>
-                                                                                    openArchiveDialog(
-                                                                                        program,
-                                                                                    )
-                                                                                }
-                                                                            >
-                                                                                <Archive className="size-4 text-orange-600" />
-                                                                            </Button>
-                                                                        </TooltipTrigger>
-                                                                        <TooltipContent>
-                                                                            {program.is_active
-                                                                                ? 'Archive inactive programs only'
-                                                                                : 'Archive'}
-                                                                        </TooltipContent>
-                                                                    </Tooltip>
-                                                                </div>
+                                                                <ProgramActions
+                                                                    program={program}
+                                                                    onEdit={openEdit}
+                                                                    onToggleActive={toggleActive}
+                                                                    onArchive={openArchiveDialog}
+                                                                />
                                                             </TableCell>
                                                         </TableRow>
                                                     ),
                                                 )}
                                             </TableBody>
                                         </Table>
-                                        <ProgramsPagination
+                                        <NumberedPagination
                                             meta={programs}
+                                            itemLabel="program"
                                             onPageChange={goToPage}
                                             onPerPageChange={changePerPage}
                                         />
@@ -784,74 +515,13 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
                                                     </div>
                                                 </div>
 
-                                                <div className="flex shrink-0 gap-1">
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() =>
-                                                                    openEdit(
-                                                                        program,
-                                                                    )
-                                                                }
-                                                            >
-                                                                <Pencil className="size-4 text-blue-600" />
-                                                            </Button>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent>
-                                                            Edit
-                                                        </TooltipContent>
-                                                    </Tooltip>
-
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() =>
-                                                                    toggleActive(
-                                                                        program,
-                                                                    )
-                                                                }
-                                                            >
-                                                                {program.is_active ? (
-                                                                    <PowerOff className="size-4 text-destructive" />
-                                                                ) : (
-                                                                    <Power className="size-4 text-emerald-600" />
-                                                                )}
-                                                            </Button>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent>
-                                                            {program.is_active
-                                                                ? 'Deactivate'
-                                                                : 'Activate'}
-                                                        </TooltipContent>
-                                                    </Tooltip>
-
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                disabled={
-                                                                    program.is_active
-                                                                }
-                                                                onClick={() =>
-                                                                    openArchiveDialog(
-                                                                        program,
-                                                                    )
-                                                                }
-                                                            >
-                                                                <Archive className="size-4 text-orange-600" />
-                                                            </Button>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent>
-                                                            {program.is_active
-                                                                ? 'Archive inactive programs only'
-                                                                : 'Archive'}
-                                                        </TooltipContent>
-                                                    </Tooltip>
+                                                <div className="shrink-0">
+                                                    <ProgramActions
+                                                        program={program}
+                                                        onEdit={openEdit}
+                                                        onToggleActive={toggleActive}
+                                                        onArchive={openArchiveDialog}
+                                                    />
                                                 </div>
                                             </div>
                                         </CardHeader>
@@ -893,8 +563,9 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
                             </div>
 
                             <div className="mt-4">
-                                <ProgramsPagination
+                                <NumberedPagination
                                     meta={programs}
+                                    itemLabel="program"
                                     onPageChange={goToPage}
                                     onPerPageChange={changePerPage}
                                 />
