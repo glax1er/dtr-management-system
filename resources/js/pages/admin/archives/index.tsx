@@ -62,9 +62,6 @@ export default function ArchivesIndex({ records, currentType }: ArchivesIndexPro
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-3 sm:p-4">
                 <div>
                     <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Archives</h1>
-                    <p className="text-muted-foreground text-sm">
-                        Inactive HTEs, inactive Supervisors, and rejected Interns that have been deleted.
-                    </p>
                 </div>
 
                 {flash?.success && (
