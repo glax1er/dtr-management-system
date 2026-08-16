@@ -90,9 +90,9 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
     const [addOpen, setAddOpen] = useState(false);
     const [editingSupervisor, setEditingSupervisor] = useState<Supervisor | null>(null);
 
-    const [deleteOpen, setDeleteOpen] = useState(false);
-    const [deleteId, setDeleteId] = useState<number | null>(null);
-    const [deleteName, setDeleteName] = useState('');
+    const [archiveOpen, setArchiveOpen] = useState(false);
+    const [archiveId, setArchiveId] = useState<number | null>(null);
+    const [archiveName, setArchiveName] = useState('');
 
     const addForm = useForm({
         name: '',
@@ -171,21 +171,20 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
     const changeStatus = (userId: number, status: string) =>
         router.patch(`/admin/supervisors/${userId}/status`, { status }, {
             preserveScroll: true,
-            preserveState: true,
         });
 
-    const openDeleteDialog = (supervisor: Supervisor) => {
-        setDeleteId(supervisor.user_id);
-        setDeleteName(supervisor.name);
-        setDeleteOpen(true);
+    const openArchiveDialog = (supervisor: Supervisor) => {
+        setArchiveId(supervisor.user_id);
+        setArchiveName(supervisor.name);
+        setArchiveOpen(true);
     };
 
-    const submitDelete = () => {
-        if (deleteId === null) return;
-        router.delete(`/admin/supervisors/${deleteId}`, { preserveScroll: true });
-        setDeleteOpen(false);
-        setDeleteId(null);
-        setDeleteName('');
+    const submitArchive = () => {
+        if (archiveId === null) return;
+        router.delete(`/admin/supervisors/${archiveId}`, { preserveScroll: true });
+        setArchiveOpen(false);
+        setArchiveId(null);
+        setArchiveName('');
     };
 
     // ── Per-row actions (shared between table and grid) ────────────────────
@@ -217,7 +216,7 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                         variant="ghost"
                         size="icon"
                         disabled={supervisor.status === 'active'}
-                        onClick={() => openDeleteDialog(supervisor)}
+                        onClick={() => openArchiveDialog(supervisor)}
                     >
                         <Archive className="size-4 text-orange-600" />
                     </Button>
@@ -642,14 +641,14 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                 </DialogContent>
             </Dialog>
 
-            {/* ── Delete confirmation ──────────────────────────────────────── */}
+            {/* ── Archive confirmation ──────────────────────────────────────── */}
             <ConfirmationDialog
-                open={deleteOpen}
-                onOpenChange={setDeleteOpen}
-                title="Delete Supervisor"
-                description={`Permanently delete ${deleteName}'s supervisor record? This cannot be undone.`}
-                onConfirm={submitDelete}
-                confirmText="Delete"
+                open={archiveOpen}
+                onOpenChange={setArchiveOpen}
+                title="Archive Supervisor"
+                description={`Archive "${archiveName}"? It will be moved to the archives and can be restored later.`}
+                onConfirm={submitArchive}
+                confirmText="Archive"
             />
         </>
     );

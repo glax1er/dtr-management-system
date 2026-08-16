@@ -163,7 +163,8 @@ class SupervisorController extends Controller
             }
         });
 
-        return back()->with('success', 'Supervisor updated.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Supervisor updated.']);
+        return back();
     }
 
     public function destroy(SupervisorProfile $supervisorProfile): RedirectResponse
@@ -174,6 +175,7 @@ class SupervisorController extends Controller
 
         $supervisorProfile->delete();
 
-        return back()->with('success', 'Supervisor removed.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Supervisor archived.']);
+        return back();
     }
 }
