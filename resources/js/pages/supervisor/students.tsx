@@ -13,6 +13,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { InternDocumentsDialog } from '@/components/intern-documents-dialog';
 
 interface StudentRow {
     intern_user_id: number;
@@ -279,8 +280,11 @@ export default function MyStudents({
                                             <th className="py-2 pr-4 font-medium">
                                                 Assigned HTE
                                             </th>
-                                            <th className="py-2 font-medium">
+                                            <th className="py-2 pr-4 font-medium">
                                                 Hours Rendered
+                                            </th>
+                                            <th className="py-2 font-medium">
+                                                Actions
                                             </th>
                                         </tr>
                                     </thead>
@@ -312,10 +316,16 @@ export default function MyStudents({
                                                 >
                                                     {student.hte_name}
                                                 </td>
-                                                <td className="py-2.5 whitespace-nowrap">
+                                                <td className="py-2.5 pr-4 whitespace-nowrap">
                                                     {formatLongDuration(
                                                         student.total_hours,
                                                     )}
+                                                </td>
+                                                <td className="py-2.5 whitespace-nowrap">
+                                                    <InternDocumentsDialog
+                                                        internUserId={student.intern_user_id}
+                                                        internName={student.name}
+                                                    />
                                                 </td>
                                             </tr>
                                         ))}

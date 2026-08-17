@@ -27,6 +27,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { InternDocumentsDialog } from '@/components/intern-documents-dialog';
 import { dashboard } from '@/routes';
 
 interface AttendanceLogRow {
@@ -519,16 +520,22 @@ export default function MyInterns({
                                             {accumulatedHours.map((row) => (
                                                 <div
                                                     key={row.intern_user_id}
-                                                    className="flex items-center justify-between rounded-lg border px-3 py-2.5"
+                                                    className="flex items-center justify-between gap-2 rounded-lg border px-3 py-2.5"
                                                 >
-                                                    <span className="text-sm">
-                                                        {row.intern_name}
-                                                    </span>
-                                                    <span className="text-sm font-medium text-muted-foreground">
-                                                        {formatLongDuration(
-                                                            row.total_hours,
-                                                        )}
-                                                    </span>
+                                                    <div className="flex flex-col min-w-0">
+                                                        <span className="text-sm font-medium truncate">
+                                                            {row.intern_name}
+                                                        </span>
+                                                        <span className="text-xs text-muted-foreground">
+                                                            {formatLongDuration(
+                                                                row.total_hours,
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                    <InternDocumentsDialog
+                                                        internUserId={row.intern_user_id}
+                                                        internName={row.intern_name}
+                                                    />
                                                 </div>
                                             ))}
                                         </div>

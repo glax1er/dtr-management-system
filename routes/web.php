@@ -28,6 +28,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Admin\ArchiveController;
+use App\Http\Controllers\Intern\DocumentController as InternDocumentController;
+use App\Http\Controllers\Supervisor\DocumentTemplateController as SupervisorDocumentTemplateController;
+use App\Http\Controllers\DocumentReviewController;
 
 Route::redirect('/', '/login')->name('home');
 
@@ -100,9 +103,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('interns', [InternsController::class, 'index'])->name('interns.index');
 
         // Only an OJT Supervisor oversees a whole program across every
-        // HTE, so only they get a roster of HTEs to look at.
+        // HTE, so only they get a roster of HTEs and Document Templates to manage.
         Route::middleware('ojt-supervisor')->group(function () {
             Route::get('htes', [SupervisorHtesController::class, 'index'])->name('htes.index');
+            Route::get('document-templates', [SupervisorDocumentTemplateController::class, 'index'])->name('document-templates.index');
+            Route::post('document-templates', [SupervisorDocumentTemplateController::class, 'store'])->name('document-templates.store');
+            Route::get('document-templates/{documentTemplate}/download', [SupervisorDocumentTemplateController::class, 'download'])->name('document-templates.download');
+            Route::delete('document-templates/{documentTemplate}', [SupervisorDocumentTemplateController::class, 'destroy'])->name('document-templates.destroy');
         });
 
         // OJT Supervisors can view/monitor the same as an HTE Supervisor,
@@ -141,6 +148,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('resolution-tickets.store');
         Route::patch('resolution-tickets/{resolutionTicket}/cancel', [InternResolutionTicketController::class, 'cancel'])
             ->name('resolution-tickets.cancel');
+
+        Route::get('documents', [InternDocumentController::class, 'index'])->name('documents.index');
+        Route::post('documents', [InternDocumentController::class, 'store'])->name('documents.store');
+        Route::get('documents/{internDocument}/preview', [InternDocumentController::class, 'preview'])->name('documents.preview');
+        Route::get('documents/{internDocument}/download', [InternDocumentController::class, 'download'])->name('documents.download');
+        Route::delete('documents/{internDocument}', [InternDocumentController::class, 'destroy'])->name('documents.destroy');
+        Route::get('documents/templates/{documentTemplate}/download', [InternDocumentController::class, 'downloadTemplate'])->name('documents.template.download');
+    });
+
+    Route::prefix('documents')->name('documents.')->group(function () {
+        Route::get('intern/{internUserId}', [DocumentReviewController::class, 'showInternDocuments'])->name('review.intern');
+        Route::get('{internDocument}/preview', [DocumentReviewController::class, 'preview'])->name('review.preview');
+        Route::get('{internDocument}/download', [DocumentReviewController::class, 'download'])->name('review.download');
+        Route::post('{internDocument}/approve', [DocumentReviewController::class, 'approve'])->name('review.approve');
+        Route::post('{internDocument}/reject', [DocumentReviewController::class, 'reject'])->name('review.reject');
     });
 
 });
