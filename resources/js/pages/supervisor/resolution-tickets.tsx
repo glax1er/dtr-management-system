@@ -1,8 +1,17 @@
-import { Head } from '@inertiajs/react'; 
-// Imported badgeStyles from your dialog file here
-import { TicketActions, badgeStyles } from '@/components/approve-ticket-dialog'; 
+import { Head } from '@inertiajs/react';
+import { Calendar, Clock, FileText, TicketCheck, User } from 'lucide-react';
+import { TicketActions, badgeStyles } from '@/components/approve-ticket-dialog';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; 
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { dashboard } from '@/routes';
 
 type ResolutionTicketRow = {
@@ -30,70 +39,143 @@ export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
         <>
             <Head title="Resolution Tickets" />
 
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl px-3 py-4 sm:p-6">
-                <div>
-                    <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-                        Resolution Tickets
-                    </h1>
-                    <p className="text-sm text-muted-foreground">
-                        Pending requests from interns for missing Time In/Out on their DTR.
-                    </p>
+            <div className="flex h-full flex-1 flex-col gap-4 p-4">
+                {/* Header banner */}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h1 className="flex items-center gap-3 text-xl font-semibold tracking-tight sm:text-2xl text-black dark:text-white">
+                            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                                <TicketCheck className="size-5" />
+                            </span>
+                            Resolution Tickets
+                        </h1>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            Pending requests from interns for missing Time In/Out on their DTR.
+                        </p>
+                    </div>
+
+                    <Badge variant="secondary" className="px-3 py-1 font-medium text-xs">
+                        {tickets.length} Pending
+                    </Badge>
                 </div>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-base">Pending ({tickets.length})</CardTitle>
+                {/* Content */}
+                <Card className="flex-1">
+                    <CardHeader className="px-6 py-4">
+                        <CardTitle className="text-base font-semibold">
+                            Pending Requests ({tickets.length})
+                        </CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-0">
                         {tickets.length === 0 ? (
                             <p className="py-8 text-center text-sm text-muted-foreground">
                                 No pending resolution requests.
                             </p>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead>
-                                        <tr className="border-b text-left text-muted-foreground">
-                                            <th className="py-2 pr-4 font-medium">Intern</th>
-                                            <th className="py-2 pr-4 font-medium">Date</th>
-                                            <th className="py-2 pr-4 font-medium">Type</th>
-                                            <th className="py-2 pr-4 font-medium">Proposed Time In</th>
-                                            <th className="py-2 pr-4 font-medium">Proposed Time Out</th>
-                                            <th className="py-2 pr-4 font-medium">Reason</th>
-                                            <th className="py-2 font-medium">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {tickets.map((ticket) => (
-                                            <tr key={ticket.id} className="border-b last:border-0">
-                                                <td className="py-2 pr-4">{ticket.intern_name}</td>
-                                                <td className="py-2 pr-4">{ticket.date}</td>
-                                                <td className="py-2 pr-4">
-                                                    {/* UPDATED BADGE STYLING HERE */}
-                                                    <Badge className={badgeStyles[ticket.type]}>
-                                                        {typeLabel[ticket.type]}
-                                                    </Badge>
-                                                </td>
-                                                <td className="py-2 pr-4">{ticket.proposed_time_in ?? '—'}</td>
-                                                <td className="py-2 pr-4">{ticket.proposed_time_out ?? '—'}</td>
-                                                <td className="max-w-64 py-2 pr-4">
-                                                    <p className="truncate" title={ticket.reason}>
-                                                        {ticket.reason}
-                                                    </p>
-                                                </td>
-                                                <td className="py-2">
-                                                    <TicketActions
-                                                        ticketId={ticket.id}
-                                                        type={ticket.type}
-                                                        proposedTimeIn={ticket.proposed_time_in}
-                                                        proposedTimeOut={ticket.proposed_time_out}
-                                                    />
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                            <>
+                                {/* Table — desktop only */}
+                                <div className="hidden sm:block">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead className="px-6">Intern</TableHead>
+                                                <TableHead className="px-6">Date</TableHead>
+                                                <TableHead className="px-6 text-center">Type</TableHead>
+                                                <TableHead className="px-6 text-center">Proposed Time In</TableHead>
+                                                <TableHead className="px-6 text-center">Proposed Time Out</TableHead>
+                                                <TableHead className="px-6">Reason</TableHead>
+                                                <TableHead className="px-6 text-center">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {tickets.map((ticket) => (
+                                                <TableRow key={ticket.id}>
+                                                    <TableCell className="px-6 font-medium whitespace-nowrap">
+                                                        {ticket.intern_name}
+                                                    </TableCell>
+                                                    <TableCell className="px-6 whitespace-nowrap text-muted-foreground">
+                                                        {ticket.date}
+                                                    </TableCell>
+                                                    <TableCell className="px-6 text-center whitespace-nowrap">
+                                                        <Badge className={badgeStyles[ticket.type]}>
+                                                            {typeLabel[ticket.type]}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="px-6 text-center whitespace-nowrap">
+                                                        {ticket.proposed_time_in ?? '—'}
+                                                    </TableCell>
+                                                    <TableCell className="px-6 text-center whitespace-nowrap">
+                                                        {ticket.proposed_time_out ?? '—'}
+                                                    </TableCell>
+                                                    <TableCell className="max-w-xs px-6">
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <p className="truncate text-muted-foreground cursor-default">
+                                                                    {ticket.reason}
+                                                                </p>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent className="max-w-sm">
+                                                                {ticket.reason}
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TableCell>
+                                                    <TableCell className="px-6 text-center whitespace-nowrap">
+                                                        <TicketActions
+                                                            ticketId={ticket.id}
+                                                            type={ticket.type}
+                                                            proposedTimeIn={ticket.proposed_time_in}
+                                                            proposedTimeOut={ticket.proposed_time_out}
+                                                        />
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+
+                                {/* Mobile cards list */}
+                                <div className="divide-y sm:hidden">
+                                    {tickets.map((ticket) => (
+                                        <div key={ticket.id} className="flex flex-col gap-3 p-4">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div>
+                                                    <p className="font-semibold text-sm">{ticket.intern_name}</p>
+                                                    <p className="text-xs text-muted-foreground">{ticket.date}</p>
+                                                </div>
+                                                <Badge className={badgeStyles[ticket.type]}>
+                                                    {typeLabel[ticket.type]}
+                                                </Badge>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-2 text-xs bg-muted/20 p-2.5 rounded-lg border">
+                                                <div>
+                                                    <span className="text-muted-foreground">Proposed In: </span>
+                                                    <span className="font-medium">{ticket.proposed_time_in ?? '—'}</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-muted-foreground">Proposed Out: </span>
+                                                    <span className="font-medium">{ticket.proposed_time_out ?? '—'}</span>
+                                                </div>
+                                            </div>
+
+                                            {ticket.reason && (
+                                                <p className="text-xs text-muted-foreground bg-muted/10 p-2 rounded-md italic">
+                                                    "{ticket.reason}"
+                                                </p>
+                                            )}
+
+                                            <div className="flex justify-end pt-1">
+                                                <TicketActions
+                                                    ticketId={ticket.id}
+                                                    type={ticket.type}
+                                                    proposedTimeIn={ticket.proposed_time_in}
+                                                    proposedTimeOut={ticket.proposed_time_out}
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
                         )}
                     </CardContent>
                 </Card>

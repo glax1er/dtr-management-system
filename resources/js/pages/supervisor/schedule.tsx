@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
     Dialog,
     DialogContent,
@@ -126,21 +127,20 @@ function PeriodForm({
                 </div>
                 <div className="grid gap-1.5">
                     <Label>Start Date</Label>
-                    <Input
-                        type="date"
-                        value={form.startDate}
-                        onChange={(e) =>
-                            onChange({ startDate: e.target.value })
-                        }
+                    <DatePicker
+                        date={form.startDate}
+                        onDateChange={(d) => onChange({ startDate: d })}
+                        placeholder="Select start date"
+                        maxDate={form.endDate || undefined}
                     />
                 </div>
                 <div className="grid gap-1.5">
                     <Label>End Date</Label>
-                    <Input
-                        type="date"
-                        value={form.endDate}
-                        min={form.startDate || undefined}
-                        onChange={(e) => onChange({ endDate: e.target.value })}
+                    <DatePicker
+                        date={form.endDate}
+                        onDateChange={(d) => onChange({ endDate: d })}
+                        placeholder="Select end date"
+                        minDate={form.startDate || undefined}
                     />
                 </div>
             </div>

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
     Card,
     CardContent,
@@ -509,13 +510,11 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
                                                 >
                                                     Date
                                                 </Label>
-                                                <Input
+                                                <DatePicker
                                                     id={`date-${index}`}
-                                                    type="date"
-                                                    value={entry.date}
-                                                    onChange={(event) => {
-                                                        const value =
-                                                            event.target.value;
+                                                    date={entry.date}
+                                                    placeholder="Select date"
+                                                    onDateChange={(value) => {
                                                         updateRow(
                                                             index,
                                                             'date',

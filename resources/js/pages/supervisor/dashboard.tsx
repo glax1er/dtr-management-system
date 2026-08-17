@@ -1,21 +1,36 @@
-import { Head, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import {
     CalendarCheck2,
     ClipboardCheck,
     Clock,
     GraduationCap,
+    LayoutDashboard,
     TrendingUp,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { AttendanceRing, CountUp } from '@/components/dashboard-analytics';
+import { NumberedPagination } from '@/components/numbered-pagination';
+import type { Paginated } from '@/components/pagination-footer';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import type { PageProps } from '@/types';
 import { dashboard } from '@/routes';
 
 interface RecentScan {
+    id: number;
     intern_name: string;
+    id_number?: string | null;
     label: 'time_in' | 'time_out';
     scanned_at: string;
+    scanned_at_full: string;
 }
 
 interface TrendPoint {
@@ -45,7 +60,7 @@ interface SupervisorDashboardProps {
     scansToday: number;
     scansThisWeek: number;
     pendingTickets: number;
-    recentScans: RecentScan[];
+    recentScans: Paginated<RecentScan>;
     scansTrend: TrendPoint[];
     todayAttendance: TodayAttendance;
     ticketBreakdown: TicketStatusCount[];
@@ -89,10 +104,6 @@ export default function SupervisorDashboard({
     const { auth } = usePage<PageProps>().props;
 
     // Drives the "grow in" animations for bars and the ring below.
-    // Charts render at their resting state on the very first paint (0
-    // height/width, ring at 0%) and flip to `true` a tick later so the
-    // CSS transitions actually animate instead of snapping straight to
-    // the final value.
     const [mounted, setMounted] = useState(false);
     useEffect(() => {
         const id = requestAnimationFrame(() => setMounted(true));
@@ -101,15 +112,39 @@ export default function SupervisorDashboard({
     }, []);
 
     const stats = [
-        { label: 'My Interns', value: myInternsCount, icon: GraduationCap },
+        {
+            label: 'My Interns',
+            value: myInternsCount,
+            icon: GraduationCap,
+            onClick: () => router.visit('/supervisor/interns'),
+        },
         { label: 'Scans Today', value: scansToday, icon: ClipboardCheck },
         { label: 'Scans This Week', value: scansThisWeek, icon: Clock },
         {
             label: 'Pending Tickets',
             value: pendingTickets,
             icon: CalendarCheck2,
+            onClick: () => router.visit('/supervisor/resolution-tickets'),
         },
     ];
+
+    const visit = (params: Record<string, string | undefined>) => {
+        router.get('/supervisor/dashboard', params, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
+    const goToPage = (page: number) => {
+        visit({
+            page: String(page),
+            per_page: String(recentScans.per_page),
+        });
+    };
+
+    const changePerPage = (perPage: number) => {
+        visit({ per_page: String(perPage) });
+    };
 
     const totalTicketCount = ticketBreakdown.reduce(
         (sum, s) => sum + s.count,
@@ -122,23 +157,39 @@ export default function SupervisorDashboard({
     return (
         <>
             <Head title="Supervisor Dashboard" />
-            <div className="flex h-full flex-1 flex-col gap-3 overflow-x-auto rounded-xl p-3 sm:p-4">
-                <div>
-                    <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-                        Welcome back, {auth.user.name}
+            <div className="flex h-full flex-1 flex-col gap-4 p-4">
+                {/* Header banner */}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h1 className="flex items-center gap-3 text-xl font-semibold tracking-tight sm:text-2xl text-black dark:text-white">
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                            <LayoutDashboard className="size-5" />
+                        </span>
+                        <span>
+                            Welcome back, {auth.user.name}
+                        </span>
                     </h1>
-                    <p className="text-sm text-muted-foreground">
-                        {scopeName ? `${scopeName} · ` : ''}Attendance is
-                        recorded through the shared scanning station.
-                    </p>
+                    <div className="flex items-center gap-2">
+                        {scopeName && (
+                            <Badge variant="secondary" className="px-3 py-1 font-medium text-xs">
+                                {scopeName}
+                            </Badge>
+                        )}
+                    </div>
                 </div>
+
+                <p className="-mt-2 text-sm text-muted-foreground">
+                    Attendance is recorded through the shared scanning station.
+                </p>
 
                 {/* Top-line counts */}
                 <div className="grid auto-rows-min grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    {stats.map(({ label, value, icon: Icon }, i) => (
+                    {stats.map(({ label, value, icon: Icon, onClick }, i) => (
                         <Card
                             key={label}
-                            className="animate-in py-4 duration-500 fade-in-0 fill-mode-backwards slide-in-from-bottom-2"
+                            onClick={onClick}
+                            className={`animate-in py-4 duration-500 fade-in-0 fill-mode-backwards slide-in-from-bottom-2 ${
+                                onClick ? 'cursor-pointer transition-colors hover:bg-muted/40' : ''
+                            }`}
                             style={{ animationDelay: `${i * 75}ms` }}
                         >
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 px-4 pb-1">
@@ -344,39 +395,102 @@ export default function SupervisorDashboard({
                     </Card>
                 </div>
 
-                <Card className="flex-1 py-4">
-                    <CardHeader className="px-4 pb-1">
-                        <CardTitle className="text-sm font-medium sm:text-base">
+                {/* Recent Scans with Pagination */}
+                <Card className="flex-1">
+                    <CardHeader className="px-6 py-4">
+                        <CardTitle className="text-base font-semibold">
                             Recent Scans
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="flex flex-col gap-4 px-4">
-                        {recentScans.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">
+                    <CardContent className="p-0">
+                        {recentScans.data.length === 0 ? (
+                            <p className="py-8 text-center text-sm text-muted-foreground">
                                 No scans recorded yet — this list fills up as
                                 interns from your HTE scan in.
                             </p>
                         ) : (
-                            <div className="flex flex-col gap-3">
-                                {recentScans.map((scan, i) => (
-                                    <div
-                                        key={i}
-                                        className="flex items-center justify-between rounded-lg border p-3"
-                                    >
-                                        <div>
-                                            <p className="font-medium">
-                                                {scan.intern_name}
-                                            </p>
-                                            <p className="text-sm text-muted-foreground">
-                                                {scan.label === 'time_in'
-                                                    ? 'Timed In'
-                                                    : 'Timed Out'}{' '}
-                                                · {scan.scanned_at}
-                                            </p>
+                            <>
+                                {/* Table — desktop only */}
+                                <div className="hidden sm:block">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead className="px-6">Intern Name</TableHead>
+                                                <TableHead className="px-6">ID Number</TableHead>
+                                                <TableHead className="px-6 text-center">Type</TableHead>
+                                                <TableHead className="px-6 text-right">Scanned At</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {recentScans.data.map((scan) => (
+                                                <TableRow key={scan.id}>
+                                                    <TableCell className="px-6 font-medium">
+                                                        {scan.intern_name}
+                                                    </TableCell>
+                                                    <TableCell className="px-6 text-muted-foreground">
+                                                        {scan.id_number ?? '—'}
+                                                    </TableCell>
+                                                    <TableCell className="px-6 text-center">
+                                                        <Badge
+                                                            className={
+                                                                scan.label === 'time_in'
+                                                                    ? 'bg-emerald-100 text-emerald-600 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400'
+                                                                    : 'bg-blue-100 text-blue-600 border-blue-300 dark:bg-blue-950/40 dark:text-blue-400'
+                                                            }
+                                                        >
+                                                            {scan.label === 'time_in' ? 'Time In' : 'Time Out'}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell
+                                                        className="px-6 text-right text-muted-foreground whitespace-nowrap"
+                                                        title={scan.scanned_at_full}
+                                                    >
+                                                        {scan.scanned_at}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+
+                                {/* Card list — mobile only */}
+                                <div className="divide-y sm:hidden">
+                                    {recentScans.data.map((scan) => (
+                                        <div
+                                            key={scan.id}
+                                            className="flex items-center justify-between p-4"
+                                        >
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="font-medium text-sm">
+                                                    {scan.intern_name}
+                                                </span>
+                                                <span className="text-xs text-muted-foreground" title={scan.scanned_at_full}>
+                                                    {scan.scanned_at}
+                                                </span>
+                                            </div>
+                                            <Badge
+                                                className={
+                                                    scan.label === 'time_in'
+                                                        ? 'bg-emerald-100 text-emerald-600 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400'
+                                                        : 'bg-blue-100 text-blue-600 border-blue-300 dark:bg-blue-950/40 dark:text-blue-400'
+                                                }
+                                            >
+                                                {scan.label === 'time_in' ? 'Time In' : 'Time Out'}
+                                            </Badge>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+
+                                <div className="pb-4">
+                                    <NumberedPagination
+                                        meta={recentScans}
+                                        itemLabel="scan"
+                                        onPageChange={goToPage}
+                                        onPerPageChange={changePerPage}
+                                        idPrefix="dashboard-recent-scans-per-page"
+                                    />
+                                </div>
+                            </>
                         )}
                     </CardContent>
                 </Card>

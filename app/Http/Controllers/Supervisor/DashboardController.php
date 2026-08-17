@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AttendanceLog;
 use App\Models\ResolutionTicket;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -15,13 +16,17 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
+    private const DEFAULT_PER_PAGE = 8;
+
+    private const MAX_PER_PAGE = 50;
+
     /** How many days of scan history to chart on the dashboard. */
     private const TREND_DAYS = 14;
 
     /** How many interns to surface in the "Top Interns" ranking. */
     private const TOP_INTERN_LIMIT = 5;
 
-    public function index(): Response|RedirectResponse
+    public function index(Request $request): Response|RedirectResponse
     {
         $supervisor = auth()->user();
         $supervisorProfile = $supervisor->supervisorProfile;
@@ -32,6 +37,13 @@ class DashboardController extends Controller
         if ($supervisorProfile->isOjtSupervisor()) {
             return redirect()->route('supervisor.interns.index');
         }
+
+        $validated = $request->validate([
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:' . self::MAX_PER_PAGE],
+        ]);
+
+        $perPage = (int) ($validated['per_page'] ?? self::DEFAULT_PER_PAGE);
 
         $internUserIds = $supervisorProfile->getAssignedInterns()
             ->where('status', 'approved')
@@ -53,20 +65,23 @@ class DashboardController extends Controller
             ->count();
 
         $recentScans = $baseQuery()
-            ->with('intern:id,name')
+            ->with(['intern:id,name', 'intern.internProfile'])
             ->latest('scan_timestamp')
-            ->limit(8)
-            ->get()
-            ->map(function (AttendanceLog $log) {
+            ->paginate($perPage, ['*'], 'page', $validated['page'] ?? 1)
+            ->withQueryString()
+            ->through(function (AttendanceLog $log) {
                 $scansUpToThisOneToday = AttendanceLog::where('intern_user_id', $log->intern_user_id)
                     ->whereDate('scan_timestamp', $log->scan_timestamp)
                     ->where('scan_timestamp', '<=', $log->scan_timestamp)
                     ->count();
 
                 return [
+                    'id' => $log->id,
                     'intern_name' => $log->intern->name,
+                    'id_number' => $log->intern->internProfile?->id_number,
                     'label' => $scansUpToThisOneToday <= 1 ? 'time_in' : 'time_out',
                     'scanned_at' => $log->scan_timestamp->diffForHumans(),
+                    'scanned_at_full' => $log->scan_timestamp->clone()->setTimezone(config('dtr.timezone'))->format('M j, Y g:i A'),
                 ];
             });
 

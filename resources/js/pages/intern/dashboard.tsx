@@ -13,6 +13,7 @@ import { HoursProgressRing } from '@/components/hours-progress-ring';
 import { ResolutionRequestDialog } from '@/components/resolution-request-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
     Card,
     CardContent,
@@ -395,26 +396,28 @@ export default function InternDashboard({
                         </div>
                         <div className="flex w-full flex-wrap items-center justify-center gap-3 sm:w-auto sm:justify-end">
                             {/* Date range picker for DTR (start / end) */}
-                            <div className="flex items-center gap-2">
-                                <Input
-                                    type="date"
-                                    className="h-9 w-auto text-sm"
-                                    value={startDate}
-                                    onChange={(e) =>
-                                        setStartDate(e.target.value)
-                                    }
-                                    aria-label="DTR start date"
-                                />
+                            <div className="flex flex-wrap items-center gap-2">
+                                <div className="w-36">
+                                    <DatePicker
+                                        date={startDate}
+                                        onDateChange={(d) => setStartDate(d)}
+                                        placeholder="Start date"
+                                        maxDate={endDate || undefined}
+                                        className="h-9 text-xs"
+                                    />
+                                </div>
                                 <span className="text-sm text-muted-foreground">
                                     to
                                 </span>
-                                <Input
-                                    type="date"
-                                    className="h-9 w-auto text-sm"
-                                    value={endDate}
-                                    onChange={(e) => setEndDate(e.target.value)}
-                                    aria-label="DTR end date"
-                                />
+                                <div className="w-36">
+                                    <DatePicker
+                                        date={endDate}
+                                        onDateChange={(d) => setEndDate(d)}
+                                        placeholder="End date"
+                                        minDate={startDate || undefined}
+                                        className="h-9 text-xs"
+                                    />
+                                </div>
                                 {/* <Button
                                     size="sm"
                                     variant="outline"
