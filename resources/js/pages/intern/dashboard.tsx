@@ -1,4 +1,5 @@
 import { Head, router } from '@inertiajs/react';
+import { toast } from 'sonner';
 import {
     CalendarCheck2,
     Camera,
@@ -107,12 +108,21 @@ export default function InternDashboard({
         router.post('/intern/profile-photo', formData, {
             preserveScroll: true,
             forceFormData: true,
+            onSuccess: () => toast.success('Profile photo updated.'),
+            onError: (errors) =>
+                toast.error(
+                    Object.values(errors)[0] ?? 'Could not upload photo.',
+                ),
         });
     };
 
     const handlePhotoRemove = () => {
         if (confirm('Remove your profile photo?')) {
-            router.delete('/intern/profile-photo', { preserveScroll: true });
+            router.delete('/intern/profile-photo', {
+                preserveScroll: true,
+                onSuccess: () => toast.success('Profile photo removed.'),
+                onError: () => toast.error('Could not remove photo.'),
+            });
         }
     };
 
@@ -124,7 +134,13 @@ export default function InternDashboard({
         router.patch(
             `/intern/resolution-tickets/${ticketId}/cancel`,
             {},
-            { preserveScroll: true },
+            {
+                preserveScroll: true,
+                onSuccess: () =>
+                    toast.success('Resolution request cancelled.'),
+                onError: () =>
+                    toast.error('Could not cancel resolution request.'),
+            },
         );
     };
 

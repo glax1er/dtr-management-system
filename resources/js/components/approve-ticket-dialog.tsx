@@ -92,7 +92,10 @@ export function TicketActions({ ticketId, type, proposedTimeIn, proposedTimeOut 
             },
             {
                 preserveScroll: true,
-                onSuccess: () => setOpenApprove(false),
+                onSuccess: () => {
+                    toast.success('Resolution request approved.');
+                    setOpenApprove(false);
+                },
                 onError: (errors) => toast.error(Object.values(errors)[0] ?? 'Could not approve this ticket.'),
                 onFinish: () => setProcessing(false),
             },
@@ -106,7 +109,10 @@ export function TicketActions({ ticketId, type, proposedTimeIn, proposedTimeOut 
             {},
             {
                 preserveScroll: true,
-                onSuccess: () => setOpenReject(false),
+                onSuccess: () => {
+                    toast.success('Resolution request rejected.');
+                    setOpenReject(false);
+                },
                 onError: (errors) => toast.error(Object.values(errors)[0] ?? 'Could not reject this ticket.'),
                 onFinish: () => setProcessing(false),
             },

@@ -24,11 +24,13 @@ class ManualAttendanceController extends Controller
         $interns = InternProfile::query()
             ->where('hte_id', $supervisorProfile->hte_id)
             ->where('status', 'approved')
-            ->with('user:id,name')
+            ->with(['user:id,name', 'program:program_id,program_name'])
             ->get()
             ->map(fn (InternProfile $profile) => [
                 'user_id' => $profile->user_id,
                 'name' => $profile->user->name,
+                'id_number' => $profile->id_number,
+                'program_name' => $profile->program?->program_name,
             ])
             ->sortBy('name')
             ->values();
