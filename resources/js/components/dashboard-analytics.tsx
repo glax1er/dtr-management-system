@@ -50,11 +50,12 @@ export function CountUp({
 
 /**
  * Modern shadcn KPI Stat Card with icon container, count-up animation,
- * and optional click action / description.
+ * and optional click action / description / custom display value.
  */
 export function StatCard({
     label,
     value,
+    displayValue,
     icon: Icon,
     onClick,
     description,
@@ -62,7 +63,8 @@ export function StatCard({
     index = 0,
 }: {
     label: string;
-    value: number;
+    value?: number;
+    displayValue?: React.ReactNode;
     icon: LucideIcon;
     onClick?: () => void;
     description?: string;
@@ -100,7 +102,7 @@ export function StatCard({
             </CardHeader>
             <CardContent className="pt-0">
                 <div className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground tabular-nums">
-                    <CountUp value={value} />
+                    {displayValue !== undefined ? displayValue : value !== undefined ? <CountUp value={value} /> : null}
                 </div>
                 {description && (
                     <p className="text-xs text-muted-foreground mt-1">
