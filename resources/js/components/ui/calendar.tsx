@@ -16,42 +16,47 @@ function Calendar({
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      className={cn("p-3", className)}
+      className={cn("p-3 select-none", className)}
       classNames={{
-        months: "flex flex-col sm:flex-row gap-4",
-        month: "flex flex-col gap-4",
-        month_caption: "flex justify-center pt-1 relative items-center w-full",
-        caption_label: "text-sm font-medium",
-        nav: "flex items-center gap-1",
+        months: "flex flex-col sm:flex-row gap-4 relative",
+        month: "flex flex-col gap-3",
+        month_caption: "flex justify-center items-center h-8 relative w-full",
+        caption_label: "text-sm font-semibold tracking-tight text-foreground select-none",
+        nav: "flex items-center justify-between absolute inset-x-0 top-0 h-8 px-1 z-10 pointer-events-none",
         button_previous: cn(
           buttonVariants({ variant: "outline" }),
-          "size-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute left-1"
+          "size-7 bg-background p-0 opacity-70 hover:opacity-100 hover:bg-accent pointer-events-auto rounded-md shadow-xs"
         ),
         button_next: cn(
           buttonVariants({ variant: "outline" }),
-          "size-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute right-1"
+          "size-7 bg-background p-0 opacity-70 hover:opacity-100 hover:bg-accent pointer-events-auto rounded-md shadow-xs"
         ),
-        month_grid: "w-full border-collapse space-x-1",
-        weekdays: "flex",
+        month_grid: "w-full border-collapse space-y-1 select-none",
+        weekdays: "flex justify-between w-full mb-1",
         weekday:
-          "text-muted-foreground rounded-md w-8 font-normal text-[0.8rem] text-center",
-        week: "flex w-full mt-2",
-        day: cn(
-          "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-accent [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected].day-range-middle)]:rounded-none first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md"
-        ),
+          "text-muted-foreground w-9 text-center font-medium text-[0.8rem] py-1 select-none",
+        weeks: "flex flex-col gap-1 w-full",
+        week: "flex w-full justify-between mt-0.5",
+        day: "h-9 w-9 p-0 text-center text-sm relative flex items-center justify-center focus-within:relative focus-within:z-20",
         day_button: cn(
           buttonVariants({ variant: "ghost" }),
-          "size-8 p-0 font-normal aria-selected:opacity-100"
+          "size-9 p-0 font-normal rounded-lg text-foreground transition-all hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring select-none text-xs sm:text-sm"
         ),
         selected:
-          "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-        today: "bg-accent text-accent-foreground",
+          "[&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:font-medium [&>button]:hover:bg-primary [&>button]:hover:text-primary-foreground [&>button]:shadow-xs rounded-lg",
+        today:
+          "[&:not([data-selected])>button]:bg-accent/70 [&:not([data-selected])>button]:text-accent-foreground [&:not([data-selected])>button]:font-bold [&:not([data-selected])>button]:border [&:not([data-selected])>button]:border-primary/40",
         outside:
-          "day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
-        disabled: "text-muted-foreground opacity-50",
+          "opacity-35 [&>button]:text-muted-foreground [&>button]:opacity-40 [&>button]:hover:bg-transparent [&>button]:hover:text-muted-foreground",
+        disabled:
+          "opacity-25 [&>button]:text-muted-foreground [&>button]:cursor-not-allowed [&>button]:pointer-events-none",
+        range_start:
+          "rounded-l-lg [&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:rounded-l-lg [&>button]:rounded-r-none",
+        range_end:
+          "rounded-r-lg [&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:rounded-r-lg [&>button]:rounded-l-none",
         range_middle:
-          "aria-selected:bg-accent aria-selected:text-accent-foreground",
-        hidden: "invisible",
+          "bg-accent text-accent-foreground rounded-none [&>button]:bg-transparent [&>button]:text-accent-foreground [&>button]:rounded-none [&>button]:hover:bg-accent/80",
+        hidden: "invisible pointer-events-none",
         ...classNames,
       }}
       components={{

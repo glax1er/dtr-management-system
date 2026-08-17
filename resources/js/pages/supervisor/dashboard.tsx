@@ -8,11 +8,23 @@ import {
     TrendingUp,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { AttendanceRing, CountUp } from '@/components/dashboard-analytics';
+import {
+    AttendanceRing,
+    CountUp,
+    RankedList,
+    StatCard,
+    TrendBarChart,
+} from '@/components/dashboard-analytics';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import {
     Table,
     TableBody,
@@ -74,13 +86,13 @@ const TICKET_STATUS_META: Record<
 > = {
     approved: {
         label: 'Approved',
-        barClass: 'bg-chart-2',
-        dotClass: 'bg-chart-2',
+        barClass: 'bg-emerald-500',
+        dotClass: 'bg-emerald-500',
     },
     pending: {
         label: 'Pending',
-        barClass: 'bg-chart-4',
-        dotClass: 'bg-chart-4',
+        barClass: 'bg-amber-500',
+        dotClass: 'bg-amber-500',
     },
     rejected: {
         label: 'Rejected',
@@ -103,7 +115,6 @@ export default function SupervisorDashboard({
 }: SupervisorDashboardProps) {
     const { auth } = usePage<PageProps>().props;
 
-    // Drives the "grow in" animations for bars and the ring below.
     const [mounted, setMounted] = useState(false);
     useEffect(() => {
         const id = requestAnimationFrame(() => setMounted(true));
@@ -116,14 +127,30 @@ export default function SupervisorDashboard({
             label: 'My Interns',
             value: myInternsCount,
             icon: GraduationCap,
+            variant: 'primary' as const,
+            description: 'Assigned to your establishment',
             onClick: () => router.visit('/supervisor/interns'),
         },
-        { label: 'Scans Today', value: scansToday, icon: ClipboardCheck },
-        { label: 'Scans This Week', value: scansThisWeek, icon: Clock },
+        {
+            label: 'Scans Today',
+            value: scansToday,
+            icon: ClipboardCheck,
+            variant: 'success' as const,
+            description: 'Total check-ins & check-outs',
+        },
+        {
+            label: 'Scans This Week',
+            value: scansThisWeek,
+            icon: Clock,
+            variant: 'default' as const,
+            description: 'Weekly cumulative activity',
+        },
         {
             label: 'Pending Tickets',
             value: pendingTickets,
             icon: CalendarCheck2,
+            variant: 'warning' as const,
+            description: pendingTickets > 0 ? 'Awaiting resolution' : 'Zero pending requests',
             onClick: () => router.visit('/supervisor/resolution-tickets'),
         },
     ];
@@ -151,128 +178,89 @@ export default function SupervisorDashboard({
         0,
     );
     const scansTotal = scansTrend.reduce((sum, point) => sum + point.count, 0);
-    const trendMax = Math.max(1, ...scansTrend.map((point) => point.count));
-    const topInternMax = Math.max(1, ...topInterns.map((i) => i.count));
 
     return (
         <>
             <Head title="Supervisor Dashboard" />
-            <div className="flex h-full flex-1 flex-col gap-4 p-4">
+            <div className="flex h-full flex-1 flex-col gap-5 p-4 sm:p-6">
                 {/* Header banner */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h1 className="flex items-center gap-3 text-xl font-semibold tracking-tight sm:text-2xl text-black dark:text-white">
-                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-                            <LayoutDashboard className="size-5" />
-                        </span>
-                        <span>
+                    <div className="flex flex-col gap-1">
+                        <h1 className="flex items-center gap-2.5 text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
                             Welcome back, {auth.user.name}
-                        </span>
-                    </h1>
-                    <div className="flex items-center gap-2">
-                        {scopeName && (
-                            <Badge variant="secondary" className="px-3 py-1 font-medium text-xs">
-                                {scopeName}
-                            </Badge>
-                        )}
+                        </h1>
+                        <p className="text-sm text-muted-foreground">
+                            Attendance tracking, real-time kiosk scans, and resolution requests.
+                        </p>
                     </div>
+                    {scopeName && (
+                        <Badge variant="secondary" className="px-3 py-1 font-medium text-xs shadow-xs">
+                            {scopeName}
+                        </Badge>
+                    )}
                 </div>
 
-                <p className="-mt-2 text-sm text-muted-foreground">
-                    Attendance is recorded through the shared scanning station.
-                </p>
-
-                {/* Top-line counts */}
-                <div className="grid auto-rows-min grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    {stats.map(({ label, value, icon: Icon, onClick }, i) => (
-                        <Card
-                            key={label}
-                            onClick={onClick}
-                            className={`animate-in py-4 duration-500 fade-in-0 fill-mode-backwards slide-in-from-bottom-2 ${
-                                onClick ? 'cursor-pointer transition-colors hover:bg-muted/40' : ''
-                            }`}
-                            style={{ animationDelay: `${i * 75}ms` }}
-                        >
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 px-4 pb-1">
-                                <CardTitle className="text-sm font-medium">
-                                    {label}
-                                </CardTitle>
-                                <Icon className="size-4 shrink-0 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent className="px-4">
-                                <div className="text-2xl font-bold tabular-nums">
-                                    <CountUp value={value} />
-                                </div>
-                            </CardContent>
-                        </Card>
+                {/* Top-line KPI Stat Cards */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {stats.map((stat, i) => (
+                        <StatCard
+                            key={stat.label}
+                            label={stat.label}
+                            value={stat.value}
+                            icon={stat.icon}
+                            variant={stat.variant}
+                            description={stat.description}
+                            onClick={stat.onClick}
+                            index={i}
+                        />
                     ))}
                 </div>
 
                 {/* Analytics row 1: scan momentum + right-now attendance */}
-                <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-                    <Card className="animate-in py-4 duration-500 fade-in-0 fill-mode-backwards slide-in-from-bottom-2 lg:col-span-2">
-                        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 px-4 pb-1">
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                    <Card className="lg:col-span-2 shadow-xs">
+                        <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
                             <div>
-                                <CardTitle className="text-sm font-medium">
-                                    Scans, last 14 days
+                                <CardTitle className="text-base font-semibold">
+                                    Scan Momentum (Last 14 Days)
                                 </CardTitle>
-                                <p className="text-xs text-muted-foreground">
+                                <CardDescription>
                                     {scansTotal} scan
-                                    {scansTotal === 1 ? '' : 's'} in this window
-                                </p>
+                                    {scansTotal === 1 ? '' : 's'} recorded in this window
+                                </CardDescription>
                             </div>
-                            <TrendingUp className="size-4 shrink-0 text-muted-foreground" />
+                            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                                <TrendingUp className="size-4" />
+                            </div>
                         </CardHeader>
-                        <CardContent className="px-4">
-                            {scansTotal === 0 ? (
-                                <p className="py-8 text-center text-sm text-muted-foreground">
-                                    No scans in the last 14 days.
-                                </p>
-                            ) : (
-                                <div className="flex h-28 items-end gap-1 sm:gap-1.5">
-                                    {scansTrend.map((point, i) => (
-                                        <div
-                                            key={point.date}
-                                            className="group flex h-full flex-1 flex-col items-center justify-end gap-1"
-                                            title={`${point.label}: ${point.count} scan${point.count === 1 ? '' : 's'}`}
-                                        >
-                                            <div
-                                                className={`w-full rounded-t-sm transition-[height] duration-700 ease-out ${
-                                                    point.count > 0
-                                                        ? 'bg-chart-1/70 group-hover:bg-chart-1 group-hover:duration-150'
-                                                        : 'bg-muted'
-                                                }`}
-                                                style={{
-                                                    height: mounted
-                                                        ? `${Math.max((point.count / trendMax) * 100, 4)}%`
-                                                        : '0%',
-                                                    transitionDelay: `${i * 30}ms`,
-                                                }}
-                                            />
-                                            <span className="hidden text-[10px] text-muted-foreground tabular-nums sm:block">
-                                                {point.label.split(' ')[1]}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                        <CardContent className="pt-2">
+                            <TrendBarChart
+                                data={scansTrend}
+                                mounted={mounted}
+                                barColor="bg-primary"
+                            />
                         </CardContent>
                     </Card>
 
-                    <Card
-                        className="animate-in py-4 duration-500 fade-in-0 fill-mode-backwards slide-in-from-bottom-2"
-                        style={{ animationDelay: '75ms' }}
-                    >
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 px-4 pb-1">
-                            <CardTitle className="text-sm font-medium">
-                                Today's Attendance
-                            </CardTitle>
-                            <CalendarCheck2 className="size-4 shrink-0 text-muted-foreground" />
+                    <Card className="shadow-xs flex flex-col justify-between">
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <div>
+                                <CardTitle className="text-base font-semibold">
+                                    Today's Attendance
+                                </CardTitle>
+                                <CardDescription>
+                                    Live check-in progress
+                                </CardDescription>
+                            </div>
+                            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                                <CalendarCheck2 className="size-4" />
+                            </div>
                         </CardHeader>
-                        <CardContent className="flex flex-col items-center px-4">
+                        <CardContent className="flex flex-col items-center justify-center py-4">
                             {todayAttendance.total === 0 ? (
-                                <p className="py-8 text-center text-sm text-muted-foreground">
-                                    No approved interns yet.
-                                </p>
+                                <div className="py-8 text-center text-sm text-muted-foreground">
+                                    No approved interns assigned yet.
+                                </div>
                             ) : (
                                 <AttendanceRing
                                     percent={
@@ -280,6 +268,7 @@ export default function SupervisorDashboard({
                                     }
                                     checkedIn={todayAttendance.checked_in}
                                     total={todayAttendance.total}
+                                    subtitle="interns checked in"
                                 />
                             )}
                         </CardContent>
@@ -287,18 +276,19 @@ export default function SupervisorDashboard({
                 </div>
 
                 {/* Analytics row 2: ticket pipeline + top interns */}
-                <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-                    <Card
-                        className="animate-in py-4 duration-500 fade-in-0 fill-mode-backwards slide-in-from-bottom-2"
-                        style={{ animationDelay: '150ms' }}
-                    >
-                        <CardHeader className="px-4 pb-1">
-                            <CardTitle className="text-sm font-medium">
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                    <Card className="shadow-xs">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-base font-semibold">
                                 Resolution Ticket Pipeline
                             </CardTitle>
+                            <CardDescription>
+                                Status distribution of attendance change requests
+                            </CardDescription>
                         </CardHeader>
-                        <CardContent className="flex flex-col gap-3 px-4">
-                            <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                        <CardContent className="flex flex-col gap-4">
+                            {/* Segmented multi-color progress bar */}
+                            <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted shadow-inner">
                                 {totalTicketCount > 0 &&
                                     ticketBreakdown.map(
                                         (item, i) =>
@@ -317,132 +307,110 @@ export default function SupervisorDashboard({
                                             ),
                                     )}
                             </div>
-                            <div className="flex flex-col gap-0.5">
+
+                            {/* Status items */}
+                            <div className="flex flex-col gap-1.5">
                                 {ticketBreakdown.map((item) => (
                                     <div
                                         key={item.status}
-                                        className="flex items-center justify-between rounded-md px-1.5 py-1.5 text-sm"
+                                        className="flex items-center justify-between rounded-lg p-2 text-sm transition-colors hover:bg-muted/60"
                                     >
-                                        <span className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2.5">
                                             <span
-                                                className={`size-2.5 shrink-0 rounded-full ${TICKET_STATUS_META[item.status].dotClass}`}
+                                                className={`size-3 shrink-0 rounded-full ${TICKET_STATUS_META[item.status].dotClass}`}
                                             />
-                                            {
-                                                TICKET_STATUS_META[item.status]
-                                                    .label
-                                            }
-                                        </span>
-                                        <span className="font-medium text-muted-foreground tabular-nums">
-                                            <CountUp value={item.count} />
-                                        </span>
+                                            <span className="font-medium text-foreground">
+                                                {TICKET_STATUS_META[item.status].label}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-semibold text-foreground tabular-nums">
+                                                <CountUp value={item.count} />
+                                            </span>
+                                            <span className="text-xs text-muted-foreground">
+                                                ({totalTicketCount > 0 ? Math.round((item.count / totalTicketCount) * 100) : 0}%)
+                                            </span>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card
-                        className="animate-in py-4 duration-500 fade-in-0 fill-mode-backwards slide-in-from-bottom-2 lg:col-span-2"
-                        style={{ animationDelay: '200ms' }}
-                    >
-                        <CardHeader className="px-4 pb-1">
-                            <CardTitle className="text-sm font-medium">
-                                Top Interns by Scans (last 14 days)
+                    <Card className="lg:col-span-2 shadow-xs">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-base font-semibold">
+                                Top Interns by Scans (Last 14 Days)
                             </CardTitle>
+                            <CardDescription>
+                                Interns with the highest scanning activity
+                            </CardDescription>
                         </CardHeader>
-                        <CardContent className="px-4">
-                            {topInterns.length === 0 ? (
-                                <p className="py-6 text-center text-sm text-muted-foreground">
-                                    No scans recorded in the last 14 days.
-                                </p>
-                            ) : (
-                                <div className="flex flex-col gap-2.5">
-                                    {topInterns.map((intern, i) => (
-                                        <div
-                                            key={intern.name}
-                                            className="flex flex-col gap-1 px-1.5 py-1"
-                                        >
-                                            <div className="flex items-center justify-between gap-2 text-sm">
-                                                <span className="truncate font-medium">
-                                                    {intern.name}
-                                                </span>
-                                                <span className="shrink-0 text-muted-foreground tabular-nums">
-                                                    <CountUp
-                                                        value={intern.count}
-                                                    />{' '}
-                                                    scan
-                                                    {intern.count === 1
-                                                        ? ''
-                                                        : 's'}
-                                                </span>
-                                            </div>
-                                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                                                <div
-                                                    className="h-full rounded-full bg-chart-1 transition-[width] duration-700 ease-out"
-                                                    style={{
-                                                        width: mounted
-                                                            ? `${(intern.count / topInternMax) * 100}%`
-                                                            : '0%',
-                                                        transitionDelay: `${200 + i * 60}ms`,
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                        <CardContent>
+                            <RankedList
+                                items={topInterns}
+                                mounted={mounted}
+                                emptyMessage="No scans recorded in the last 14 days."
+                                itemLabel="scan"
+                            />
                         </CardContent>
                     </Card>
                 </div>
 
-                {/* Recent Scans with Pagination */}
-                <Card className="flex-1">
-                    <CardHeader className="px-6 py-4">
-                        <CardTitle className="text-base font-semibold">
-                            Recent Scans
-                        </CardTitle>
+                {/* Recent Scans with Shadcn UI Table & NumberedPagination */}
+                <Card className="shadow-xs">
+                    <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle className="text-base font-semibold">
+                                    Recent Scans
+                                </CardTitle>
+                                <CardDescription>
+                                    Live activity log from the HTE scanning station
+                                </CardDescription>
+                            </div>
+                            <Badge variant="outline" className="text-xs font-normal">
+                                Total {recentScans.total}
+                            </Badge>
+                        </div>
                     </CardHeader>
-                    <CardContent className="p-0">
+                    <CardContent className="flex flex-col gap-4">
                         {recentScans.data.length === 0 ? (
-                            <p className="py-8 text-center text-sm text-muted-foreground">
-                                No scans recorded yet — this list fills up as
-                                interns from your HTE scan in.
-                            </p>
+                            <div className="py-12 text-center text-sm text-muted-foreground">
+                                No scans recorded yet — this list fills up as interns from your HTE scan in.
+                            </div>
                         ) : (
                             <>
-                                {/* Table — desktop only */}
-                                <div className="hidden sm:block">
+                                {/* Table — desktop view */}
+                                <div className="hidden sm:block rounded-lg border overflow-hidden">
                                     <Table>
-                                        <TableHeader>
+                                        <TableHeader className="bg-muted/40">
                                             <TableRow>
-                                                <TableHead className="px-6">Intern Name</TableHead>
-                                                <TableHead className="px-6">ID Number</TableHead>
-                                                <TableHead className="px-6 text-center">Type</TableHead>
-                                                <TableHead className="px-6 text-right">Scanned At</TableHead>
+                                                <TableHead className="font-semibold">Intern Name</TableHead>
+                                                <TableHead className="font-semibold">ID Number</TableHead>
+                                                <TableHead className="font-semibold text-center">Type</TableHead>
+                                                <TableHead className="font-semibold text-right">Scanned At</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {recentScans.data.map((scan) => (
                                                 <TableRow key={scan.id}>
-                                                    <TableCell className="px-6 font-medium">
+                                                    <TableCell className="font-medium text-foreground">
                                                         {scan.intern_name}
                                                     </TableCell>
-                                                    <TableCell className="px-6 text-muted-foreground">
+                                                    <TableCell className="text-muted-foreground tabular-nums">
                                                         {scan.id_number ?? '—'}
                                                     </TableCell>
-                                                    <TableCell className="px-6 text-center">
+                                                    <TableCell className="text-center">
                                                         <Badge
-                                                            className={
-                                                                scan.label === 'time_in'
-                                                                    ? 'bg-emerald-100 text-emerald-600 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400'
-                                                                    : 'bg-blue-100 text-blue-600 border-blue-300 dark:bg-blue-950/40 dark:text-blue-400'
-                                                            }
+                                                            variant={scan.label === 'time_in' ? 'default' : 'secondary'}
+                                                            className="font-medium text-xs shadow-xs"
                                                         >
                                                             {scan.label === 'time_in' ? 'Time In' : 'Time Out'}
                                                         </Badge>
                                                     </TableCell>
                                                     <TableCell
-                                                        className="px-6 text-right text-muted-foreground whitespace-nowrap"
+                                                        className="text-right text-muted-foreground whitespace-nowrap text-xs"
                                                         title={scan.scanned_at_full}
                                                     >
                                                         {scan.scanned_at}
@@ -453,15 +421,15 @@ export default function SupervisorDashboard({
                                     </Table>
                                 </div>
 
-                                {/* Card list — mobile only */}
-                                <div className="divide-y sm:hidden">
+                                {/* Mobile card list */}
+                                <div className="divide-y rounded-lg border sm:hidden">
                                     {recentScans.data.map((scan) => (
                                         <div
                                             key={scan.id}
-                                            className="flex items-center justify-between p-4"
+                                            className="flex items-center justify-between p-3.5"
                                         >
                                             <div className="flex flex-col gap-0.5">
-                                                <span className="font-medium text-sm">
+                                                <span className="font-medium text-sm text-foreground">
                                                     {scan.intern_name}
                                                 </span>
                                                 <span className="text-xs text-muted-foreground" title={scan.scanned_at_full}>
@@ -469,11 +437,8 @@ export default function SupervisorDashboard({
                                                 </span>
                                             </div>
                                             <Badge
-                                                className={
-                                                    scan.label === 'time_in'
-                                                        ? 'bg-emerald-100 text-emerald-600 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400'
-                                                        : 'bg-blue-100 text-blue-600 border-blue-300 dark:bg-blue-950/40 dark:text-blue-400'
-                                                }
+                                                variant={scan.label === 'time_in' ? 'default' : 'secondary'}
+                                                className="font-medium text-xs"
                                             >
                                                 {scan.label === 'time_in' ? 'Time In' : 'Time Out'}
                                             </Badge>
@@ -481,15 +446,13 @@ export default function SupervisorDashboard({
                                     ))}
                                 </div>
 
-                                <div className="pb-4">
-                                    <NumberedPagination
-                                        meta={recentScans}
-                                        itemLabel="scan"
-                                        onPageChange={goToPage}
-                                        onPerPageChange={changePerPage}
-                                        idPrefix="dashboard-recent-scans-per-page"
-                                    />
-                                </div>
+                                <NumberedPagination
+                                    meta={recentScans}
+                                    itemLabel="scan"
+                                    onPageChange={goToPage}
+                                    onPerPageChange={changePerPage}
+                                    idPrefix="dashboard-recent-scans-per-page"
+                                />
                             </>
                         )}
                     </CardContent>

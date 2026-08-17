@@ -514,6 +514,7 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
                                                     id={`date-${index}`}
                                                     date={entry.date}
                                                     placeholder="Select date"
+                                                    clearable
                                                     onDateChange={(value) => {
                                                         updateRow(
                                                             index,

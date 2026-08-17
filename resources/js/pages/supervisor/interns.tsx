@@ -434,27 +434,29 @@ export default function MyInterns({
 
                 {/* Date range filter card / Active filters */}
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card p-3 shadow-xs">
-                    <form onSubmit={applyRange} className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                    <form onSubmit={applyRange} className="flex flex-wrap items-center gap-2.5">
+                        <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5 shrink-0">
                             <Calendar className="size-3.5" /> Date range:
                         </span>
-                        <div className="w-40">
+                        <div className="w-40 sm:w-44">
                             <DatePicker
                                 date={fromDraft}
                                 onDateChange={(d) => setFromDraft(d)}
                                 placeholder="From date"
                                 maxDate={toDraft || undefined}
-                                className="h-8 text-xs"
+                                className="h-9 text-xs sm:text-sm"
+                                clearable
                             />
                         </div>
-                        <span className="text-xs text-muted-foreground">to</span>
-                        <div className="w-40">
+                        <span className="text-xs text-muted-foreground shrink-0">to</span>
+                        <div className="w-40 sm:w-44">
                             <DatePicker
                                 date={toDraft}
                                 onDateChange={(d) => setToDraft(d)}
                                 placeholder="To date"
                                 minDate={fromDraft || undefined}
-                                className="h-8 text-xs"
+                                className="h-9 text-xs sm:text-sm"
+                                clearable
                             />
                         </div>
                         <Button
@@ -462,7 +464,7 @@ export default function MyInterns({
                             size="sm"
                             variant="secondary"
                             disabled={!fromDraft || !toDraft}
-                            className="h-8 text-xs"
+                            className="h-9 px-3 text-xs sm:text-sm"
                         >
                             Apply Range
                         </Button>
@@ -472,7 +474,7 @@ export default function MyInterns({
                                 variant="ghost"
                                 size="sm"
                                 onClick={clearRange}
-                                className="h-8 text-xs text-muted-foreground"
+                                className="h-9 px-3 text-xs sm:text-sm text-muted-foreground hover:text-foreground"
                             >
                                 Switch to Month
                             </Button>

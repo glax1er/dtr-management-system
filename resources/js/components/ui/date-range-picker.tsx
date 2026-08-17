@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { format, parseISO } from 'date-fns';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, X } from 'lucide-react';
 import type { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ export interface DateRangePickerProps {
     className?: string;
     placeholder?: string;
     disabled?: boolean;
+    clearable?: boolean;
 }
 
 export function DateRangePicker({
@@ -27,6 +28,7 @@ export function DateRangePicker({
     className,
     placeholder = 'Pick a date range',
     disabled = false,
+    clearable = false,
 }: DateRangePickerProps) {
     const [open, setOpen] = React.useState(false);
 
@@ -53,7 +55,15 @@ export function DateRangePicker({
                 format(newRange.from, 'yyyy-MM-dd'),
                 format(newRange.to, 'yyyy-MM-dd'),
             );
+        } else if (!newRange?.from && !newRange?.to) {
+            onRangeChange('', '');
         }
+    };
+
+    const handleClear = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setSelectedRange(undefined);
+        onRangeChange('', '');
     };
 
     return (
@@ -63,27 +73,44 @@ export function DateRangePicker({
                     variant="outline"
                     disabled={disabled}
                     className={cn(
-                        'w-full justify-start text-left font-normal text-xs sm:text-sm h-9 bg-background',
+                        'w-full justify-start text-left font-normal text-xs sm:text-sm h-9 bg-background px-2.5 transition-colors',
                         (!from || !to) && 'text-muted-foreground',
                         className,
                     )}
                 >
                     <CalendarIcon className="mr-2 size-3.5 shrink-0 text-muted-foreground" />
-                    {selectedRange?.from ? (
-                        selectedRange.to ? (
-                            <>
-                                {format(selectedRange.from, 'LLL dd, y')} –{' '}
-                                {format(selectedRange.to, 'LLL dd, y')}
-                            </>
+                    <span className="truncate flex-1">
+                        {selectedRange?.from ? (
+                            selectedRange.to ? (
+                                <>
+                                    {format(selectedRange.from, 'MMM dd, yyyy')} –{' '}
+                                    {format(selectedRange.to, 'MMM dd, yyyy')}
+                                </>
+                            ) : (
+                                format(selectedRange.from, 'MMM dd, yyyy')
+                            )
                         ) : (
-                            format(selectedRange.from, 'LLL dd, y')
-                        )
-                    ) : (
-                        <span>{placeholder}</span>
+                            placeholder
+                        )}
+                    </span>
+                    {clearable && (from || to) && !disabled && (
+                        <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={handleClear}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    handleClear(e as unknown as React.MouseEvent);
+                                }
+                            }}
+                            className="ml-1 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+                        >
+                            <X className="size-3" />
+                        </span>
                     )}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
+            <PopoverContent className="w-auto p-0 shadow-lg" align="start">
                 <Calendar
                     mode="range"
                     defaultMonth={selectedRange?.from}
