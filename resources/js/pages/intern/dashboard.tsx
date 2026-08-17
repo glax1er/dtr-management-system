@@ -20,7 +20,36 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import type { InternDashboardProps } from '@/types/intern';
+import { Input } from '@/components/ui/input';
+import type { AttendanceDay, InternDashboardProps } from '@/types/intern';
+
+/**
+ * Single source of truth for how each attendance status is labeled and
+ * colored. Shared between the mobile card list and the desktop table so
+ * the two views never drift out of sync, and matches the color scheme
+ * used on the supervisor attendance table (green/amber/red/slate).
+ */
+const STATUS_META: Record<
+    AttendanceDay['status'],
+    { label: string; className: string }
+> = {
+    complete: {
+        label: 'Complete',
+        className: 'border-emerald-500 bg-emerald-100 text-emerald-400',
+    },
+    missing_time_in: {
+        label: 'Missing time in',
+        className: 'border-amber-500 bg-amber-100 text-amber-400',
+    },
+    no_record: {
+        label: 'No record',
+        className: 'border-red-500 bg-red-100 text-red-400',
+    },
+    open: {
+        label: 'No time-out',
+        className: 'border-slate-400 bg-slate-100 text-slate-500',
+    },
+};
 
 function shiftMonth(month: string, delta: number): string {
     const [year, m] = month.split('-').map(Number);
@@ -83,24 +112,6 @@ export default function InternDashboard({
             {},
             { preserveScroll: true },
         );
-    };
-
-    const getStatusBadge = (status: string) => {
-        if (status === 'complete') {
-            return { label: 'Complete', variant: 'default' as const };
-        }
-
-        if (status === 'missing_time_in' || status === 'no_record') {
-            return {
-                label:
-                    status === 'missing_time_in'
-                        ? 'Missing time in'
-                        : 'No record',
-                variant: 'destructive' as const,
-            };
-        }
-
-        return { label: 'No time-out', variant: 'outline' as const };
     };
 
     return (
@@ -385,19 +396,21 @@ export default function InternDashboard({
                         <div className="flex w-full flex-wrap items-center justify-center gap-3 sm:w-auto sm:justify-end">
                             {/* Date range picker for DTR (start / end) */}
                             <div className="flex items-center gap-2">
-                                <input
+                                <Input
                                     type="date"
-                                    className="rounded border px-2 py-1 text-sm"
+                                    className="h-9 w-auto text-sm"
                                     value={startDate}
                                     onChange={(e) =>
                                         setStartDate(e.target.value)
                                     }
                                     aria-label="DTR start date"
                                 />
-                                <span className="text-sm">to</span>
-                                <input
+                                <span className="text-sm text-muted-foreground">
+                                    to
+                                </span>
+                                <Input
                                     type="date"
-                                    className="rounded border px-2 py-1 text-sm"
+                                    className="h-9 w-auto text-sm"
                                     value={endDate}
                                     onChange={(e) => setEndDate(e.target.value)}
                                     aria-label="DTR end date"
@@ -459,14 +472,12 @@ export default function InternDashboard({
                             <div className="space-y-4">
                                 <div className="grid gap-4 sm:hidden">
                                     {logs.map((log) => {
-                                        const badge = getStatusBadge(
-                                            log.status,
-                                        );
+                                        const badge = STATUS_META[log.status];
 
                                         return (
                                             <div
                                                 key={log.date}
-                                                className="rounded-3xl border border-border bg-card p-4 shadow-sm"
+                                                className="rounded-2xl border border-border bg-card p-4 shadow-sm"
                                             >
                                                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                                     <div>
@@ -481,7 +492,9 @@ export default function InternDashboard({
                                                         </p>
                                                     </div>
                                                     <Badge
-                                                        variant={badge.variant}
+                                                        className={
+                                                            badge.className
+                                                        }
                                                     >
                                                         {badge.label}
                                                     </Badge>
@@ -596,12 +609,16 @@ export default function InternDashboard({
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {logs.map((log) => (
+                                            {logs.map((log) => {
+                                                const badge =
+                                                    STATUS_META[log.status];
+
+                                                return (
                                                 <tr
                                                     key={log.date}
-                                                    className="border-b last:border-0"
+                                                    className="border-b last:border-0 hover:bg-muted/40"
                                                 >
-                                                    <td className="py-2 pr-4">
+                                                    <td className="py-2.5 pr-4 whitespace-nowrap">
                                                         {log.date}
                                                         <span className="ml-1 text-xs text-muted-foreground">
                                                             {log.day.slice(
@@ -610,41 +627,24 @@ export default function InternDashboard({
                                                             )}
                                                         </span>
                                                     </td>
-                                                    <td className="py-2 pr-4">
+                                                    <td className="py-2.5 pr-4 whitespace-nowrap">
                                                         {log.time_in ?? '—'}
                                                     </td>
-                                                    <td className="py-2 pr-4">
+                                                    <td className="py-2.5 pr-4 whitespace-nowrap">
                                                         {log.time_out ?? '—'}
                                                     </td>
-                                                    <td className="py-2 pr-4 tabular-nums">
+                                                    <td className="py-2.5 pr-4 tabular-nums">
                                                         {log.hours_rendered.toFixed(
                                                             2,
                                                         )}
                                                     </td>
-                                                    <td className="py-2">
+                                                    <td className="py-2.5">
                                                         <Badge
                                                             className={
-                                                                log.status ===
-                                                                'complete'
-                                                                    ? 'border-emerald-500 bg-emerald-100 text-emerald-400'
-                                                                    : log.status ===
-                                                                            'missing_time_in' ||
-                                                                        log.status ===
-                                                                            'no_record'
-                                                                      ? 'border-red-500 bg-red-100 text-red-400'
-                                                                      : 'border-amber-500 bg-amber-100 text-amber-400'
+                                                                badge.className
                                                             }
                                                         >
-                                                            {log.status ===
-                                                            'complete'
-                                                                ? 'Complete'
-                                                                : log.status ===
-                                                                    'missing_time_in'
-                                                                  ? 'Missing time in'
-                                                                  : log.status ===
-                                                                      'no_record'
-                                                                    ? 'No record'
-                                                                    : 'No time-out'}
+                                                            {badge.label}
                                                         </Badge>
                                                     </td>
                                                     <td className="py-2">
@@ -688,7 +688,8 @@ export default function InternDashboard({
                                                         )}
                                                     </td>
                                                 </tr>
-                                            ))}
+                                                );
+                                            })}
                                         </tbody>
                                     </table>
                                 </div>
