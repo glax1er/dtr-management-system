@@ -1,17 +1,11 @@
 import { Head, router } from '@inertiajs/react';
-import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Building2, ChevronDown, Search, SlidersHorizontal, X } from 'lucide-react';
 import { Fragment, useState } from 'react';
-import type { FormEvent, KeyboardEvent } from 'react';
-import { Badge } from '@/components/ui/badge';
+import type { FormEvent } from 'react';
+import { NumberedPagination } from '@/components/numbered-pagination';
+import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
 import {
     Select,
     SelectContent,
@@ -19,6 +13,14 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 
 interface HteInternRow {
     intern_user_id: number;
@@ -63,9 +65,6 @@ interface HtesIndexProps {
     filters: Filters;
 }
 
-const MIN_PER_PAGE = 1;
-const MAX_PER_PAGE = 100;
-
 // Radix's Select doesn't allow an item with an empty-string value, so
 // "every status" gets its own sentinel that we translate back to
 // undefined (i.e. no status filter) before it hits the URL.
@@ -102,7 +101,7 @@ export default function SupervisorHtes({
     filters,
 }: HtesIndexProps) {
     const [search, setSearch] = useState(filters.search);
-    const [perPageDraft, setPerPageDraft] = useState(String(filters.per_page));
+    const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     // Which HTE rows are currently expanded to show their intern list —
     // more than one can be open at once.
     const [expandedHteIds, setExpandedHteIds] = useState<Set<number>>(
@@ -127,42 +126,28 @@ export default function SupervisorHtes({
 
     const applySearch = (e: FormEvent) => {
         e.preventDefault();
-        visit({ ...baseParams(), search: search || undefined });
+        visit({ ...baseParams(), search: search || undefined, page: undefined });
     };
 
     const clearSearch = () => {
         setSearch('');
-        visit({ ...baseParams(), search: undefined });
+        visit({ ...baseParams(), search: undefined, page: undefined });
     };
 
     const changeStatus = (value: string) => {
         visit({
             ...baseParams(),
             status: value === ALL_STATUSES ? undefined : value,
+            page: undefined,
         });
     };
 
-    const commitPerPage = () => {
-        const parsed = parseInt(perPageDraft, 10);
-        const clamped = Number.isNaN(parsed)
-            ? filters.per_page
-            : Math.min(MAX_PER_PAGE, Math.max(MIN_PER_PAGE, parsed));
-
-        setPerPageDraft(String(clamped));
-
-        if (clamped === filters.per_page) {
-            return;
-        }
-
-        visit({ ...baseParams(), per_page: String(clamped) });
+    const goToPage = (page: number) => {
+        visit({ ...baseParams(), page: String(page) });
     };
 
-    const goToPage = (page: number) => {
-        if (page < 1 || page > htes.last_page) {
-            return;
-        }
-
-        visit({ ...baseParams(), page: String(page) });
+    const changePerPage = (perPage: number) => {
+        visit({ ...baseParams(), per_page: String(perPage), page: undefined });
     };
 
     const toggleExpanded = (hteId: number) => {
@@ -182,349 +167,249 @@ export default function SupervisorHtes({
     return (
         <>
             <Head title="HTEs" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl px-3 py-4 sm:p-6">
-                <div>
-                    <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-                        HTEs
-                    </h1>
-                    <p className="text-sm text-muted-foreground">
-                        {`${hteCount} HTE${hteCount === 1 ? '' : 's'} currently hosting interns from the ${scopeName ?? 'selected'} program.`}
-                    </p>
-                </div>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-base">
+            <div className="flex h-full flex-1 flex-col gap-4 p-4">
+                {/* ── Header toolbar ──────────────────────────────────────────── */}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h1 className="flex items-center gap-3 text-xl font-semibold tracking-tight sm:text-2xl">
+                            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                                <Building2 className="size-5" />
+                            </span>
                             Host Training Establishments
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-col gap-5">
-                        <form
-                            onSubmit={applySearch}
-                            className="flex flex-wrap items-end gap-2"
-                        >
-                            <div className="flex flex-col gap-1.5">
-                                <Label
-                                    htmlFor="search"
-                                    className="text-xs text-muted-foreground"
-                                >
-                                    Search by name
-                                </Label>
-                                <Input
-                                    id="search"
-                                    value={search}
-                                    onChange={(e) =>
-                                        setSearch(e.target.value)
-                                    }
-                                    placeholder="e.g. USeP"
-                                    className="w-52"
-                                />
-                            </div>
-                            <Button type="submit" variant="secondary" size="sm">
-                                Search
-                            </Button>
-                            {filters.search !== '' && (
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={clearSearch}
-                                >
-                                    Clear
-                                </Button>
-                            )}
+                        </h1>
+                        <p className="mt-1 ml-13 text-sm text-muted-foreground">
+                            {`${hteCount} HTE${hteCount === 1 ? '' : 's'} currently hosting interns from the ${scopeName ?? 'selected'} program.`}
+                        </p>
+                    </div>
 
-                            <div className="flex flex-col gap-1.5">
-                                <Label
-                                    htmlFor="status-filter"
-                                    className="text-xs text-muted-foreground"
+                    <div className="flex items-center gap-2">
+                        {/* Desktop: full search input */}
+                        <form onSubmit={applySearch} className="relative hidden sm:block">
+                            <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                            <input
+                                type="text"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder="Search HTEs…"
+                                className="h-9 w-44 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
+                            />
+                            {search && (
+                                <button
+                                    type="button"
+                                    onClick={clearSearch}
+                                    className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                                 >
-                                    Status
-                                </Label>
-                                <Select
-                                    value={filters.status ?? ALL_STATUSES}
-                                    onValueChange={changeStatus}
-                                >
-                                    <SelectTrigger
-                                        id="status-filter"
-                                        className="w-36"
-                                    >
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value={ALL_STATUSES}>
-                                            All statuses
-                                        </SelectItem>
-                                        <SelectItem value="active">
-                                            Active
-                                        </SelectItem>
-                                        <SelectItem value="inactive">
-                                            Inactive
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                                    <X className="size-3.5" />
+                                </button>
+                            )}
                         </form>
 
-                        {htes.data.length === 0 ? (
-                            <p className="py-8 text-center text-sm text-muted-foreground">
-                                No HTEs match{' '}
-                                {filters.search !== '' || filters.status
-                                    ? 'these filters.'
-                                    : 'your program yet.'}
-                            </p>
-                        ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full min-w-[720px] text-sm">
-                                    <thead>
-                                        <tr className="border-b text-left text-muted-foreground">
-                                            <th className="w-8 py-2" />
-                                            <th className="py-2 pr-4 font-medium">
-                                                Name
-                                            </th>
-                                            <th className="py-2 pr-4 font-medium">
-                                                Address
-                                            </th>
-                                            <th className="py-2 pr-4 font-medium">
-                                                Contact Person
-                                            </th>
-                                            <th className="py-2 pr-4 font-medium">
-                                                Contact Number
-                                            </th>
-                                            <th className="py-2 pr-4 font-medium">
-                                                Status
-                                            </th>
-                                            <th className="py-2 font-medium">
-                                                Interns
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {htes.data.map((hte) => {
-                                            const isExpanded =
-                                                expandedHteIds.has(
-                                                    hte.hte_id,
-                                                );
+                        {/* Mobile: search icon toggle */}
+                        <button
+                            type="button"
+                            onClick={() => setMobileSearchOpen((o) => !o)}
+                            className="inline-flex size-9 items-center justify-center rounded-md border bg-background text-muted-foreground hover:text-foreground sm:hidden"
+                            aria-label="Toggle search"
+                        >
+                            {mobileSearchOpen ? <X className="size-4" /> : <Search className="size-4" />}
+                        </button>
 
-                                            return (
-                                                <Fragment key={hte.hte_id}>
-                                                    <tr
-                                                        onClick={() =>
-                                                            toggleExpanded(
-                                                                hte.hte_id,
-                                                            )
-                                                        }
-                                                        className="cursor-pointer border-b last:border-0 hover:bg-muted/40"
-                                                        aria-expanded={
-                                                            isExpanded
-                                                        }
+                        {/* Status filter — full on sm+, icon-only on mobile */}
+                        <div className="hidden sm:block">
+                            <Select
+                                value={filters.status ?? ALL_STATUSES}
+                                onValueChange={changeStatus}
+                            >
+                                <SelectTrigger className="h-9 w-36">
+                                    <SlidersHorizontal className="mr-1 size-3.5 shrink-0 text-muted-foreground" />
+                                    <SelectValue placeholder="All Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value={ALL_STATUSES}>All Status</SelectItem>
+                                    <SelectItem value="active">Active</SelectItem>
+                                    <SelectItem value="inactive">Inactive</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="sm:hidden">
+                            <Select
+                                value={filters.status ?? ALL_STATUSES}
+                                onValueChange={changeStatus}
+                            >
+                                <SelectTrigger className="inline-flex size-9 items-center justify-center p-0 [&>span]:hidden [&>svg:last-child]:hidden">
+                                    <SlidersHorizontal className="size-4 text-muted-foreground" />
+                                </SelectTrigger>
+                                <SelectContent align="end">
+                                    <SelectItem value={ALL_STATUSES}>All Status</SelectItem>
+                                    <SelectItem value="active">Active</SelectItem>
+                                    <SelectItem value="inactive">Inactive</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Mobile inline search bar */}
+                {mobileSearchOpen && (
+                    <form
+                        onSubmit={(e) => {
+                            applySearch(e);
+                            setMobileSearchOpen(false);
+                        }}
+                        className="flex items-center gap-2 sm:hidden"
+                    >
+                        <div className="relative flex-1">
+                            <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                            <input
+                                autoFocus
+                                type="text"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder="Search HTEs…"
+                                className="h-9 w-full rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
+                            />
+                            {search && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        clearSearch();
+                                        setMobileSearchOpen(false);
+                                    }}
+                                    className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                >
+                                    <X className="size-3.5" />
+                                </button>
+                            )}
+                        </div>
+                        <Button type="submit" size="sm">Search</Button>
+                    </form>
+                )}
+
+                {/* ── Content ─────────────────────────────────────────────────── */}
+                {htes.data.length === 0 ? (
+                    <Card>
+                        <CardContent className="py-8 text-center text-sm text-muted-foreground">
+                            No HTEs{filters.search || filters.status ? ' match this filter.' : ' yet.'}
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <Card>
+                        <CardContent className="p-0">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="w-8 px-4" />
+                                        <TableHead className="px-6">
+                                            Host Training Establishment
+                                        </TableHead>
+                                        <TableHead className="px-6 text-center">Address</TableHead>
+                                        <TableHead className="px-6 text-center">Contact</TableHead>
+                                        <TableHead className="px-6 text-center">Status</TableHead>
+                                        <TableHead className="px-6 text-center">Interns</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {htes.data.map((hte) => {
+                                        const isExpanded = expandedHteIds.has(hte.hte_id);
+
+                                        return (
+                                            <Fragment key={hte.hte_id}>
+                                                <TableRow
+                                                    onClick={() => toggleExpanded(hte.hte_id)}
+                                                    className="cursor-pointer"
+                                                    aria-expanded={isExpanded}
+                                                >
+                                                    <TableCell className="px-4 text-muted-foreground">
+                                                        <ChevronDown
+                                                            className={`size-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell className="px-6 font-medium">
+                                                        {hte.hte_name}
+                                                    </TableCell>
+                                                    <TableCell
+                                                        className="max-w-xs truncate px-6 text-center text-muted-foreground"
+                                                        title={hte.address ?? undefined}
                                                     >
-                                                        <td className="py-2.5 pl-1 text-muted-foreground">
-                                                            <ChevronDown
-                                                                className={`size-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                                                            />
-                                                        </td>
-                                                        <td className="py-2.5 pr-4 font-medium whitespace-nowrap">
-                                                            {hte.hte_name}
-                                                        </td>
-                                                        <td className="py-2.5 pr-4 whitespace-nowrap">
-                                                            {hte.address ??
-                                                                '—'}
-                                                        </td>
-                                                        <td className="py-2.5 pr-4 whitespace-nowrap">
-                                                            {hte.contact_person ??
-                                                                '—'}
-                                                        </td>
-                                                        <td className="py-2.5 pr-4 whitespace-nowrap">
-                                                            {hte.contact_number ??
-                                                                '—'}
-                                                        </td>
-                                                        <td className="py-2.5 pr-4 whitespace-nowrap">
-                                                            <Badge
-                                                                variant={
-                                                                    hte.status ===
-                                                                    'active'
-                                                                        ? 'default'
-                                                                        : 'secondary'
-                                                                }
-                                                            >
-                                                                {hte.status}
-                                                            </Badge>
-                                                        </td>
-                                                        <td className="py-2.5 whitespace-nowrap">
-                                                            {
-                                                                hte.interns_count
-                                                            }
-                                                        </td>
-                                                    </tr>
-                                                    {isExpanded && (
-                                                        <tr className="border-b last:border-0 bg-muted/20">
-                                                            <td
-                                                                colSpan={7}
-                                                                className="px-4 py-3"
-                                                            >
-                                                                {hte.interns
-                                                                    .length ===
-                                                                0 ? (
-                                                                    <p className="text-sm text-muted-foreground">
-                                                                        No
-                                                                        interns
-                                                                        from
-                                                                        your
-                                                                        program
-                                                                        here
-                                                                        yet.
-                                                                    </p>
-                                                                ) : (
-                                                                    <table className="w-full text-sm">
-                                                                        <thead>
-                                                                            <tr className="text-left text-xs text-muted-foreground">
-                                                                                <th className="py-1 pr-4 font-medium">
-                                                                                    Name
-                                                                                </th>
-                                                                                <th className="py-1 pr-4 font-medium">
-                                                                                    Email
-                                                                                </th>
-                                                                                <th className="py-1 pr-4 font-medium">
-                                                                                    ID
-                                                                                    Number
-                                                                                </th>
-                                                                                <th className="py-1 pr-4 font-medium">
-                                                                                    Contact
-                                                                                </th>
-                                                                                <th className="py-1 font-medium">
-                                                                                    Hours
-                                                                                    Rendered
-                                                                                </th>
-                                                                            </tr>
-                                                                        </thead>
-                                                                        <tbody>
-                                                                            {hte.interns.map(
-                                                                                (
-                                                                                    intern,
-                                                                                ) => (
-                                                                                    <tr
-                                                                                        key={
-                                                                                            intern.intern_user_id
-                                                                                        }
-                                                                                        className="border-t"
-                                                                                    >
-                                                                                        <td className="py-2 pr-4 font-medium whitespace-nowrap">
-                                                                                            {
-                                                                                                intern.name
-                                                                                            }
-                                                                                        </td>
-                                                                                        <td className="py-2 pr-4 whitespace-nowrap">
-                                                                                            {
-                                                                                                intern.email
-                                                                                            }
-                                                                                        </td>
-                                                                                        <td className="py-2 pr-4 whitespace-nowrap">
-                                                                                            {intern.id_number ??
-                                                                                                '—'}
-                                                                                        </td>
-                                                                                        <td className="py-2 pr-4 whitespace-nowrap">
-                                                                                            {intern.contact_number ??
-                                                                                                '—'}
-                                                                                        </td>
-                                                                                        <td className="py-2 whitespace-nowrap">
-                                                                                            {formatLongDuration(
-                                                                                                intern.total_hours,
-                                                                                            )}
-                                                                                        </td>
-                                                                                    </tr>
-                                                                                ),
-                                                                            )}
-                                                                        </tbody>
-                                                                    </table>
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                    )}
-                                                </Fragment>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-
-                        {htes.total > 0 && (
-                            <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-                                <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                                    <span>
-                                        Showing {htes.from}–{htes.to} of{' '}
-                                        {htes.total} HTE
-                                        {htes.total === 1 ? '' : 's'}
-                                    </span>
-                                    <div className="flex items-center gap-2">
-                                        <Label
-                                            htmlFor="per-page"
-                                            className="text-xs whitespace-nowrap"
-                                        >
-                                            Rows per page
-                                        </Label>
-                                        <Input
-                                            id="per-page"
-                                            type="number"
-                                            inputMode="numeric"
-                                            min={MIN_PER_PAGE}
-                                            max={MAX_PER_PAGE}
-                                            value={perPageDraft}
-                                            onChange={(e) =>
-                                                setPerPageDraft(e.target.value)
-                                            }
-                                            onBlur={commitPerPage}
-                                            onKeyDown={(
-                                                e: KeyboardEvent<HTMLInputElement>,
-                                            ) => {
-                                                if (e.key === 'Enter') {
-                                                    e.preventDefault();
-                                                    commitPerPage();
-                                                }
-                                            }}
-                                            className="h-8 w-[4.5rem]"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={htes.current_page <= 1}
-                                        onClick={() =>
-                                            goToPage(htes.current_page - 1)
-                                        }
-                                    >
-                                        <ChevronLeft className="size-3.5" />
-                                        Previous
-                                    </Button>
-                                    <span className="min-w-24 text-center text-sm text-muted-foreground">
-                                        Page {htes.current_page} of{' '}
-                                        {htes.last_page}
-                                    </span>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={
-                                            htes.current_page >=
-                                            htes.last_page
-                                        }
-                                        onClick={() =>
-                                            goToPage(htes.current_page + 1)
-                                        }
-                                    >
-                                        Next
-                                        <ChevronRight className="size-3.5" />
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
+                                                        {hte.address ?? '—'}
+                                                    </TableCell>
+                                                    <TableCell className="px-6 text-center">
+                                                        <p className="truncate" title={hte.contact_person ?? undefined}>
+                                                            {hte.contact_person ?? '—'}
+                                                        </p>
+                                                        {hte.contact_number && (
+                                                            <p className="truncate text-xs text-muted-foreground">
+                                                                {hte.contact_number}
+                                                            </p>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell className="px-6 text-center">
+                                                        <StatusBadge status={hte.status} />
+                                                    </TableCell>
+                                                    <TableCell className="px-6 text-center">
+                                                        {hte.interns_count}
+                                                    </TableCell>
+                                                </TableRow>
+                                                {isExpanded && (
+                                                    <TableRow className="bg-muted/20 hover:bg-muted/20">
+                                                        <TableCell colSpan={6} className="px-6 py-3">
+                                                            {hte.interns.length === 0 ? (
+                                                                <p className="text-sm text-muted-foreground">
+                                                                    No interns from your program here yet.
+                                                                </p>
+                                                            ) : (
+                                                                <Table>
+                                                                    <TableHeader>
+                                                                        <TableRow>
+                                                                            <TableHead>Name</TableHead>
+                                                                            <TableHead>Email</TableHead>
+                                                                            <TableHead>ID Number</TableHead>
+                                                                            <TableHead>Contact</TableHead>
+                                                                            <TableHead>Hours Rendered</TableHead>
+                                                                        </TableRow>
+                                                                    </TableHeader>
+                                                                    <TableBody>
+                                                                        {hte.interns.map((intern) => (
+                                                                            <TableRow key={intern.intern_user_id}>
+                                                                                <TableCell className="font-medium whitespace-nowrap">
+                                                                                    {intern.name}
+                                                                                </TableCell>
+                                                                                <TableCell className="whitespace-nowrap">
+                                                                                    {intern.email}
+                                                                                </TableCell>
+                                                                                <TableCell className="whitespace-nowrap">
+                                                                                    {intern.id_number ?? '—'}
+                                                                                </TableCell>
+                                                                                <TableCell className="whitespace-nowrap">
+                                                                                    {intern.contact_number ?? '—'}
+                                                                                </TableCell>
+                                                                                <TableCell className="whitespace-nowrap">
+                                                                                    {formatLongDuration(intern.total_hours)}
+                                                                                </TableCell>
+                                                                            </TableRow>
+                                                                        ))}
+                                                                    </TableBody>
+                                                                </Table>
+                                                            )}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )}
+                                            </Fragment>
+                                        );
+                                    })}
+                                </TableBody>
+                            </Table>
+                            <NumberedPagination
+                                meta={htes}
+                                itemLabel="HTE"
+                                onPageChange={goToPage}
+                                onPerPageChange={changePerPage}
+                                idPrefix="htes-table-per-page"
+                            />
+                        </CardContent>
+                    </Card>
+                )}
             </div>
         </>
     );

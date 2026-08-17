@@ -362,7 +362,7 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
                     </div>
 
                     <div>
-                        <h1 className="text-2xl font-semibold tracking-tight">
+                        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
                             Manual attendance
                         </h1>
                         <p className="mt-0.5 text-sm text-muted-foreground">
