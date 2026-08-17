@@ -1,17 +1,14 @@
 import { Head, router } from '@inertiajs/react';
 import {
-    Building2,
-    Calendar,
     CalendarCheck2,
     Camera,
     CheckCircle2,
     ChevronLeft,
     ChevronRight,
+    CircleDashed,
     ClipboardCheck,
     Clock,
     Download,
-    GraduationCap,
-    Mail,
     QrCode,
     TrendingUp,
     User as UserIcon,
@@ -31,7 +28,6 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Progress } from '@/components/ui/progress';
 import {
     Table,
     TableBody,
@@ -135,24 +131,95 @@ export default function InternDashboard({
     const remainingHours = Math.max(0, hours.required - hours.total_rendered);
     const remainingPercent = Math.max(0, 100 - hours.progress_percent);
 
+    const milestones = [
+        {
+            label: '25% Milestone',
+            targetHours: hours.required * 0.25,
+            percent: 25,
+        },
+        {
+            label: '50% Halfway',
+            targetHours: hours.required * 0.5,
+            percent: 50,
+        },
+        {
+            label: '75% Stretch',
+            targetHours: hours.required * 0.75,
+            percent: 75,
+        },
+        {
+            label: '100% Complete',
+            targetHours: hours.required,
+            percent: 100,
+        },
+    ];
+
     return (
         <>
             <Head title="Intern Dashboard" />
 
             <div className="flex h-full flex-1 flex-col gap-5 p-4 sm:p-6">
-                {/* Header Banner */}
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex flex-col gap-1">
-                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-                            Welcome back, {profile.name.split(' ')[0]}
-                        </h1>
-                        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                            <span>{profile.program_name}</span>
-                            <span>•</span>
-                            <span>{profile.hte_name}</span>
+                {/* Header Banner with Avatar & Identity */}
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-4">
+                        {/* Avatar with photo change & remove triggers */}
+                        <div className="relative group shrink-0">
+                            <div className="flex size-14 sm:size-16 items-center justify-center overflow-hidden rounded-2xl border border-border bg-muted shadow-xs">
+                                {profile.photo_url ? (
+                                    <img
+                                        src={profile.photo_url}
+                                        alt={profile.name}
+                                        className="size-full object-cover"
+                                    />
+                                ) : (
+                                    <UserIcon className="size-7 sm:size-8 text-muted-foreground" />
+                                )}
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                className="absolute -right-1 -bottom-1 flex size-6 sm:size-6.5 items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground shadow-xs transition-transform hover:scale-110"
+                                title="Change profile photo"
+                            >
+                                <Camera className="size-3" />
+                            </button>
+
+                            {profile.photo_url && (
+                                <button
+                                    type="button"
+                                    onClick={handlePhotoRemove}
+                                    className="absolute -bottom-1 -left-1 flex size-6 sm:size-6.5 items-center justify-center rounded-full border-2 border-background bg-destructive text-destructive-foreground shadow-xs transition-transform hover:scale-110"
+                                    title="Remove profile photo"
+                                >
+                                    <span className="sr-only">Remove photo</span>
+                                    <X className="size-3" />
+                                </button>
+                            )}
+
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                className="hidden"
+                                onChange={handlePhotoSelect}
+                            />
+                        </div>
+
+                        {/* Name & Academic / Placement Info */}
+                        <div className="space-y-0.5">
+                            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                                Welcome back, {profile.name.split(' ')[0]}
+                            </h1>
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+                                <span className="font-medium text-foreground/90">{profile.program_name}</span>
+                                <span>•</span>
+                                <span>{profile.hte_name}</span>
+                            </div>
                         </div>
                     </div>
 
+                    {/* Header Badges */}
                     <div className="flex flex-wrap items-center gap-2">
                         <Badge variant="outline" className="px-3 py-1 font-mono text-xs font-normal">
                             ID: {profile.id_number}
@@ -195,7 +262,7 @@ export default function InternDashboard({
                         }
                         icon={TrendingUp}
                         variant="default"
-                        description={`${remainingPercent.toFixed(1)}% remaining towards completion`}
+                        description={`${remainingPercent.toFixed(1)}% remaining towards target`}
                         index={1}
                     />
                     <StatCard
@@ -245,179 +312,74 @@ export default function InternDashboard({
                     />
                 </div>
 
-                {/* Middle Grid: Profile + Hours Progress + QR Pass */}
+                {/* Middle Section: Progress & Milestones (2/3 width) + QR Pass (1/3 width) */}
                 <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-                    {/* Profile & Placement Card */}
-                    <Card className="flex flex-col justify-between shadow-xs">
-                        <CardHeader className="pb-3">
-                            <div className="flex items-center justify-between">
-                                <CardTitle className="text-base font-semibold">
-                                    Intern Profile
-                                </CardTitle>
-                                <Badge variant="outline" className="text-[11px] font-normal">
-                                    {profile.id_number}
-                                </Badge>
-                            </div>
+                    {/* OJT Hours & Milestones Card */}
+                    <Card className="flex flex-col justify-between shadow-xs lg:col-span-2">
+                        <CardHeader className="pb-3 border-b border-border/60">
+                            <CardTitle className="text-base font-semibold">
+                                OJT Hours Progress & Milestones
+                            </CardTitle>
                             <CardDescription>
-                                Academic and training establishment details
+                                Track your overall completion towards the required {hours.required} total hours
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            {/* Avatar & Basic Info */}
-                            <div className="flex items-center gap-3.5 pb-1">
-                                <div className="relative group shrink-0">
-                                    <div className="flex size-14 items-center justify-center overflow-hidden rounded-full border border-border bg-muted">
-                                        {profile.photo_url ? (
-                                            <img
-                                                src={profile.photo_url}
-                                                alt={profile.name}
-                                                className="size-full object-cover"
-                                            />
-                                        ) : (
-                                            <UserIcon className="size-7 text-muted-foreground" />
-                                        )}
-                                    </div>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => fileInputRef.current?.click()}
-                                        className="absolute -right-1 -bottom-1 flex size-6 items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground shadow-xs transition-transform hover:scale-110"
-                                        title="Change profile photo"
-                                    >
-                                        <Camera className="size-3" />
-                                    </button>
-
-                                    {profile.photo_url && (
-                                        <button
-                                            type="button"
-                                            onClick={handlePhotoRemove}
-                                            className="absolute -bottom-1 -left-1 flex size-6 items-center justify-center rounded-full border-2 border-background bg-destructive text-destructive-foreground shadow-xs transition-transform hover:scale-110"
-                                            title="Remove profile photo"
-                                        >
-                                            <span className="sr-only">Remove photo</span>
-                                            <X className="size-3" />
-                                        </button>
-                                    )}
-
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept="image/jpeg,image/png,image/webp"
-                                        className="hidden"
-                                        onChange={handlePhotoSelect}
+                        <CardContent className="pt-5 pb-5">
+                            <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-around">
+                                {/* Circular Progress Ring (Single visual hero - no duplicate progress bars) */}
+                                <div className="shrink-0">
+                                    <HoursProgressRing
+                                        percent={hours.progress_percent}
+                                        totalRendered={hours.total_rendered}
+                                        required={hours.required}
+                                        size={176}
                                     />
                                 </div>
 
-                                <div className="min-w-0 flex-1">
-                                    <h3 className="truncate text-base font-semibold text-foreground">
-                                        {profile.name}
-                                    </h3>
-                                    <p className="truncate text-xs text-muted-foreground">
-                                        {profile.email}
+                                {/* Milestone Checkpoints */}
+                                <div className="w-full sm:max-w-xs space-y-2.5">
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                        Milestones Checklist
                                     </p>
-                                </div>
-                            </div>
+                                    <div className="space-y-2">
+                                        {milestones.map((m) => {
+                                            const isDone = hours.total_rendered >= m.targetHours;
 
-                            {/* Placement Info Block */}
-                            <div className="space-y-2 rounded-xl bg-muted/50 p-3 text-xs border border-border/50">
-                                <div className="flex items-center justify-between gap-2">
-                                    <span className="flex items-center gap-1.5 text-muted-foreground shrink-0">
-                                        <Building2 className="size-3.5" />
-                                        HTE
-                                    </span>
-                                    <span className="font-medium text-foreground text-right truncate">
-                                        {profile.hte_name}
-                                    </span>
-                                </div>
-                                <div className="flex items-center justify-between gap-2">
-                                    <span className="flex items-center gap-1.5 text-muted-foreground shrink-0">
-                                        <GraduationCap className="size-3.5" />
-                                        Program
-                                    </span>
-                                    <span className="font-medium text-foreground text-right truncate">
-                                        {profile.program_name}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Today's Live Attendance Box */}
-                            <div className="rounded-xl border border-border/80 bg-card p-3 space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                                        Today &middot; {today.date}
-                                    </span>
-                                    <Badge
-                                        variant={
-                                            today.status === 'complete'
-                                                ? 'default'
-                                                : today.status === 'missing_time_in'
-                                                  ? 'destructive'
-                                                  : 'secondary'
-                                        }
-                                        className="text-[10px] px-2 py-0.5"
-                                    >
-                                        {today.status === 'not_started'
-                                            ? 'Not Started'
-                                            : today.status === 'open'
-                                              ? 'In Progress'
-                                              : today.status === 'missing_time_in'
-                                                ? 'Missing In'
-                                                : 'Complete'}
-                                    </Badge>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2 text-center pt-0.5">
-                                    <div className="rounded-lg bg-muted/40 p-2">
-                                        <p className="text-[10px] font-medium text-muted-foreground uppercase">Time In</p>
-                                        <p className="text-sm font-semibold text-foreground tabular-nums">
-                                            {today.time_in ?? '—'}
-                                        </p>
-                                    </div>
-                                    <div className="rounded-lg bg-muted/40 p-2">
-                                        <p className="text-[10px] font-medium text-muted-foreground uppercase">Time Out</p>
-                                        <p className="text-sm font-semibold text-foreground tabular-nums">
-                                            {today.time_out ?? '—'}
-                                        </p>
+                                            return (
+                                                <div
+                                                    key={m.percent}
+                                                    className={cn(
+                                                        'flex items-center justify-between rounded-xl border p-2.5 text-xs transition-colors',
+                                                        isDone
+                                                            ? 'border-emerald-500/30 bg-emerald-500/5 text-foreground'
+                                                            : 'border-border/60 bg-muted/30 text-muted-foreground',
+                                                    )}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        {isDone ? (
+                                                            <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                                        ) : (
+                                                            <CircleDashed className="size-4 text-muted-foreground/50 shrink-0" />
+                                                        )}
+                                                        <span className={cn('font-medium', isDone && 'text-foreground')}>
+                                                            {m.label}
+                                                        </span>
+                                                    </div>
+                                                    <span className="tabular-nums font-semibold text-foreground/80">
+                                                        {m.targetHours.toFixed(0)} hrs
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
 
-                    {/* Hours Progress Ring Card */}
-                    <Card className="flex flex-col justify-between shadow-xs">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-base font-semibold">
-                                OJT Hours Progress
-                            </CardTitle>
-                            <CardDescription>
-                                Progress towards required {hours.required} total hours
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex flex-col items-center justify-center py-2 space-y-4">
-                            <HoursProgressRing
-                                percent={hours.progress_percent}
-                                totalRendered={hours.total_rendered}
-                                required={hours.required}
-                                size={180}
-                            />
-
-                            <div className="w-full space-y-2 pt-1">
-                                <div className="flex justify-between text-xs text-muted-foreground">
-                                    <span>
-                                        Rendered: <strong className="text-foreground">{hours.total_rendered.toFixed(1)}h</strong>
-                                    </span>
-                                    <span>
-                                        Remaining: <strong className="text-foreground">{remainingHours.toFixed(1)}h</strong>
-                                    </span>
-                                </div>
-                                <Progress value={hours.progress_percent} className="h-2" />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* QR Code Pass Card */}
-                    <Card className="flex flex-col justify-between shadow-xs">
-                        <CardHeader className="pb-3">
+                    {/* Attendance QR Pass Card */}
+                    <Card className="flex flex-col justify-between shadow-xs lg:col-span-1">
+                        <CardHeader className="pb-3 border-b border-border/60">
                             <div className="flex items-center justify-between">
                                 <CardTitle className="text-base font-semibold">
                                     Attendance QR Pass
@@ -425,13 +387,13 @@ export default function InternDashboard({
                                 <QrCode className="size-4 text-muted-foreground" />
                             </div>
                             <CardDescription>
-                                Scan at the kiosk to record time in and out
+                                Scan at the kiosk to log time in and out
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4 flex flex-col items-center justify-center">
+                        <CardContent className="space-y-4 pt-5 pb-5 flex flex-col items-center justify-center">
                             {profile.has_qr_code ? (
                                 <>
-                                    <div className="flex aspect-square w-44 items-center justify-center rounded-2xl border border-border bg-card p-3 shadow-xs">
+                                    <div className="flex aspect-square w-40 items-center justify-center rounded-2xl border border-border bg-card p-3 shadow-xs">
                                         <img
                                             src={`/intern/qr-code?v=${encodeURIComponent(profile.id_number)}`}
                                             alt="Your QR code"
@@ -442,22 +404,22 @@ export default function InternDashboard({
                                         asChild
                                         variant="outline"
                                         size="sm"
-                                        className="w-full gap-2"
+                                        className="w-full gap-2 text-xs"
                                     >
                                         <a
                                             href={`/intern/qr-code?v=${encodeURIComponent(profile.id_number)}`}
                                             download={`${profile.name.replace(/\s+/g, '_')}_QR.png`}
                                         >
-                                            <Download className="size-4" />
+                                            <Download className="size-3.5" />
                                             Download QR Code
                                         </a>
                                     </Button>
                                 </>
                             ) : (
-                                <div className="flex aspect-square w-44 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border bg-muted/30 text-center p-4">
+                                <div className="flex aspect-square w-40 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border bg-muted/30 text-center p-4">
                                     <QrCode className="size-10 text-muted-foreground/60" />
                                     <span className="text-xs text-muted-foreground leading-tight">
-                                        QR Pass is generated automatically once your account is approved.
+                                        Generated automatically once your account is approved.
                                     </span>
                                 </div>
                             )}
@@ -473,7 +435,7 @@ export default function InternDashboard({
                                 Monthly Attendance Log
                             </CardTitle>
                             <CardDescription>
-                                Daily time logs, rendered hours, and resolution ticket status
+                                Daily check-ins, rendered hours, and resolution ticket status
                             </CardDescription>
                         </div>
 
@@ -618,7 +580,7 @@ export default function InternDashboard({
                                                         <TableCell>
                                                             <Badge
                                                                 variant="outline"
-                                                                className={cn('capitalize text-xs', badge.className)}
+                                                                className={cn('capitalize text-xs font-medium', badge.className)}
                                                             >
                                                                 {badge.label}
                                                             </Badge>
