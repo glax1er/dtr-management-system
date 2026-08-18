@@ -1,6 +1,5 @@
-// Components
 import { Form, Head } from '@inertiajs/react';
-import { LoaderCircle } from 'lucide-react';
+import { CheckCircle2, KeyRound, LoaderCircle } from 'lucide-react';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
@@ -12,51 +11,62 @@ import { email } from '@/routes/password';
 export default function ForgotPassword({ status }: { status?: string }) {
     return (
         <>
-            <Head title="Forgot password" />
+            <Head title="Forgot Password" />
 
-            {status && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {status}
-                </div>
-            )}
+            <div className="space-y-5">
+                {status && (
+                    <div className="flex items-center gap-2 p-3 text-xs font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 rounded-lg animate-in fade-in-50 duration-300">
+                        <CheckCircle2 className="h-4 w-4 shrink-0" />
+                        <span>{status}</span>
+                    </div>
+                )}
 
-            <div className="space-y-6">
                 <Form {...email.form()}>
                     {({ processing, errors }) => (
-                        <>
+                        <div className="space-y-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
+                                <Label htmlFor="email" className="text-xs font-medium">
+                                    Email address
+                                </Label>
                                 <Input
                                     id="email"
                                     type="email"
                                     name="email"
-                                    autoComplete="off"
+                                    autoComplete="email"
                                     autoFocus
-                                    placeholder="email@example.com"
+                                    required
+                                    placeholder="your-email@example.com"
+                                    className="h-10"
                                 />
-
                                 <InputError message={errors.email} />
                             </div>
 
-                            <div className="my-6 flex items-center justify-start">
-                                <Button
-                                    className="w-full"
-                                    disabled={processing}
-                                    data-test="email-password-reset-link-button"
-                                >
-                                    {processing && (
-                                        <LoaderCircle className="h-4 w-4 animate-spin" />
-                                    )}
-                                    Email password reset link
-                                </Button>
-                            </div>
-                        </>
+                            <Button
+                                className="w-full h-10 font-medium"
+                                disabled={processing}
+                                data-test="email-password-reset-link-button"
+                            >
+                                {processing ? (
+                                    <>
+                                        <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                                        Sending reset link...
+                                    </>
+                                ) : (
+                                    <>
+                                        <KeyRound className="mr-2 h-4 w-4" />
+                                        Send Password Reset Link
+                                    </>
+                                )}
+                            </Button>
+                        </div>
                     )}
                 </Form>
 
-                <div className="space-x-1 text-center text-sm text-muted-foreground">
-                    <span>Or, return to</span>
-                    <TextLink href={login()}>log in</TextLink>
+                <div className="text-center text-xs text-muted-foreground pt-2 border-t border-border/60">
+                    <span>Remember your password? </span>
+                    <TextLink href={login()} className="font-medium text-primary hover:underline">
+                        Log in
+                    </TextLink>
                 </div>
             </div>
         </>

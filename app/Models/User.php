@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,6 +14,8 @@ use Illuminate\Support\Carbon;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use App\Models\EmailVerificationCode;
+use App\Notifications\EmailVerificationCodeNotification;
 
 /**
  * @property int $id
@@ -31,7 +33,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  */
 #[Fillable(['role', 'name', 'email', 'password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
-class User extends Authenticatable implements PasskeyUser
+class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
@@ -91,6 +93,28 @@ class User extends Authenticatable implements PasskeyUser
     public function isIntern(): bool
     {
         return $this->role === self::ROLE_INTERN;
+    }
+
+    /**
+     * Determine if the user has verified their email address.
+     * Hard-coded/seeded admin is exempt from verification.
+     */
+    public function hasVerifiedEmail(): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        return ! is_null($this->email_verified_at);
+    }
+
+    /**
+     * Send the email verification 6-digit code notification.
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        $code = EmailVerificationCode::generateFor($this->email);
+        $this->notify(new EmailVerificationCodeNotification($code));
     }
 
     /**

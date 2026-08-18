@@ -20,11 +20,9 @@ class RegisterResponse implements RegisterResponseContract
      */
     public function toResponse($request): RedirectResponse
     {
-        Auth::guard('web')->logout();
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return redirect()->route('register')->with('registered', true);
+        return redirect()->route('verification.notice')->with(
+            'status',
+            'A 6-digit verification code has been sent to your email address. Please enter it below to verify your account.',
+        );
     }
 }

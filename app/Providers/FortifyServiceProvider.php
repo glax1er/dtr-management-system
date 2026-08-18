@@ -73,7 +73,13 @@ class FortifyServiceProvider extends ServiceProvider
                 return null;
             }
 
-            if ($user->isIntern()) {
+            // Admin accounts bypass all approval and verification checks
+            if ($user->isAdmin()) {
+                return $user;
+            }
+
+            // If an intern has already verified their email, verify their profile approval status
+            if ($user->isIntern() && $user->hasVerifiedEmail()) {
                 $status = $user->internProfile?->status;
 
                 if ($status !== 'approved') {
@@ -110,9 +116,18 @@ class FortifyServiceProvider extends ServiceProvider
             'status' => $request->session()->get('status'),
         ]));
 
-        Fortify::verifyEmailView(fn (Request $request) => Inertia::render('auth/verify-email', [
-            'status' => $request->session()->get('status'),
-        ]));    
+        Fortify::verifyEmailView(function (Request $request) {
+            $user = $request->user();
+
+            if ($user && $user->hasVerifiedEmail()) {
+                return redirect()->intended(route('dashboard'));
+            }
+
+            return Inertia::render('auth/verify-email', [
+                'status' => $request->session()->get('status'),
+                'email' => $user?->email,
+            ]);
+        });    
 
         Fortify::registerView(fn (Request $request) => Inertia::render('auth/register', [
             'passwordRules' => Password::defaults()->toPasswordRulesString(),

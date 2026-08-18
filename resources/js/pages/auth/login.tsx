@@ -21,6 +21,13 @@ export default function Login({ status, canResetPassword }: Props) {
         <>
             <Head title="Log in" />
 
+            {status && (
+                <div className="mb-2 flex items-start gap-2.5 p-3.5 text-xs font-medium text-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50 rounded-lg animate-in fade-in-50 duration-300">
+                    <span className="shrink-0 mt-0.5 inline-block h-2 w-2 rounded-full bg-emerald-500" />
+                    <span className="leading-relaxed">{status}</span>
+                </div>
+            )}
+
             <Form
                 {...store.form()}
                 resetOnSuccess={['password']}
@@ -98,12 +105,6 @@ export default function Login({ status, canResetPassword }: Props) {
                     </>
                 )}
             </Form>
-
-            {status && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {status}
-                </div>
-            )}
         </>
     );
 }

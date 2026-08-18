@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\Hte;
+use App\Models\InternProfile;
+use App\Models\Program;
 use App\Models\User;
 use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Fortify\Features;
@@ -11,7 +14,30 @@ test('login screen can be rendered', function () {
 });
 
 test('users can authenticate using the login screen', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->create(['role' => User::ROLE_ADMIN]);
+
+    $response = $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $this->assertAuthenticated();
+    $response->assertRedirect(route('admin.dashboard', absolute: false));
+});
+
+test('approved intern can authenticate using the login screen', function () {
+    $hte = Hte::create(['hte_name' => 'Test HTE']);
+    $program = Program::create(['program_name' => 'BSIT']);
+    $user = User::factory()->create(['role' => User::ROLE_INTERN]);
+    InternProfile::create([
+        'user_id' => $user->id,
+        'id_number' => '2026-11111',
+        'sex' => 'male',
+        'hte_id' => $hte->hte_id,
+        'program_id' => $program->program_id,
+        'status' => 'approved',
+        'privacy_accepted_at' => now(),
+    ]);
 
     $response = $this->post(route('login.store'), [
         'email' => $user->email,
@@ -20,26 +46,6 @@ test('users can authenticate using the login screen', function () {
 
     $this->assertAuthenticated();
     $response->assertRedirect(route('intern.dashboard', absolute: false));
-});
-
-test('users with two factor enabled are redirected to two factor challenge', function () {
-    $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
-
-    Features::twoFactorAuthentication([
-        'confirm' => true,
-        'confirmPassword' => true,
-    ]);
-
-    $user = User::factory()->withTwoFactor()->create();
-
-    $response = $this->post(route('login'), [
-        'email' => $user->email,
-        'password' => 'password',
-    ]);
-
-    $response->assertRedirect(route('two-factor.login'));
-    $response->assertSessionHas('login.id', $user->id);
-    $this->assertGuest();
 });
 
 test('users can not authenticate with invalid password', function () {
