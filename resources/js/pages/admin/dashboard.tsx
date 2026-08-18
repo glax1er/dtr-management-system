@@ -19,6 +19,7 @@ import {
 import PaginationFooter from '@/components/pagination-footer';
 import type { Paginated } from '@/components/pagination-footer';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/badges/status-badge';
 import {
     Card,
     CardContent,
@@ -156,17 +157,6 @@ export default function AdminDashboard({
             description: 'Host training establishments',
         },
     ];
-
-    const statusBadgeVariant = (status: string) => {
-        switch (status) {
-            case 'approved':
-                return 'default';
-            case 'rejected':
-                return 'destructive';
-            default:
-                return 'secondary';
-        }
-    };
 
     const visit = (params: Record<string, string | undefined>) => {
         router.get('/admin/dashboard', params, {
@@ -379,7 +369,7 @@ export default function AdminDashboard({
 
                 {/* Recent Registrations Table with Shadcn UI Table */}
                 <Card className="shadow-xs">
-                    <CardHeader className="pb-3">
+                    <CardHeader>
                         <div className="flex items-center justify-between">
                             <div>
                                 <CardTitle className="text-base font-semibold">
@@ -454,12 +444,7 @@ export default function AdminDashboard({
                                                     {intern.registered_at}
                                                 </TableCell>
                                                 <TableCell className="text-right">
-                                                    <Badge
-                                                        variant={statusBadgeVariant(intern.status)}
-                                                        className="capitalize font-medium text-xs shadow-xs"
-                                                    >
-                                                        {intern.status}
-                                                    </Badge>
+                                                    <StatusBadge status={intern.status}/>
                                                 </TableCell>
                                             </TableRow>
                                         ))}
