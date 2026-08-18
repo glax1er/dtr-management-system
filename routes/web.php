@@ -33,7 +33,6 @@ use App\Http\Controllers\Supervisor\DocumentTemplateController as SupervisorDocu
 use App\Http\Controllers\DocumentReviewController;
 
 Route::redirect('/', '/login')->name('home');
-
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('notifications', [NotificationController::class, 'index'])
     ->name('notifications.index');
