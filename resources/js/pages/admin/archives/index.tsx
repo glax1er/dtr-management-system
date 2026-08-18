@@ -1,4 +1,5 @@
 import { Head, router, usePage } from '@inertiajs/react';
+import { Archive } from 'lucide-react';
 import PaginationFooter from '@/components/pagination-footer';
 import type { Paginated } from '@/components/pagination-footer';
 import { Button } from '@/components/ui/button';
@@ -61,7 +62,12 @@ export default function ArchivesIndex({ records, currentType }: ArchivesIndexPro
             <Head title="Archives" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-3 sm:p-4">
                 <div>
-                    <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Archives</h1>
+                    <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                            <Archive className="size-5" />
+                        </span>
+                        Archives
+                    </h1>
                 </div>
 
                 {flash?.success && (

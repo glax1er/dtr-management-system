@@ -1,5 +1,6 @@
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
+import { GraduationCap } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -100,8 +101,12 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
             <Head title="Interns" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-3 sm:p-4">
                 <div>
-                    <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Interns</h1>
-                    <p className="text-muted-foreground text-sm">Manage intern registrations by status.</p>
+                    <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                            <GraduationCap className="size-5" />
+                        </span>
+                        Interns
+                    </h1>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
