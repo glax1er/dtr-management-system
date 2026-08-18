@@ -16,7 +16,7 @@ import {
     StatCard,
     TrendBarChart,
 } from '@/components/dashboard-analytics';
-import PaginationFooter from '@/components/pagination-footer';
+import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
@@ -453,7 +453,7 @@ export default function AdminDashboard({
                             </div>
                         )}
 
-                        <PaginationFooter
+                        <NumberedPagination
                             meta={recentRegistrations}
                             itemLabel="registration"
                             onPageChange={goToPage}
