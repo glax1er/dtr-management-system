@@ -49,7 +49,7 @@ class DashboardController extends Controller
             ->forIntern($user->id, $profile->hte_id, from: $today->clone()->startOfDay(), to: $today->clone()->endOfDay())
             ->first();
 
-        $requiredHours = $profile->program->required_hours ?? config('dtr.default_required_hours');
+        $requiredHours = $profile->program?->required_hours ?? config('dtr.default_required_hours');
         $totalHours = $this->calculator->totalHours($user->id, $profile->hte_id);
 
         // Keyed by date string so it's a cheap lookup per row below —
@@ -67,8 +67,8 @@ class DashboardController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'id_number' => $profile->id_number,
-                'hte_name' => $profile->hte->hte_name,
-                'program_name' => $profile->program->program_name,
+                'hte_name' => $profile->hte?->hte_name ?? 'Deleted HTE',
+                'program_name' => $profile->program?->program_name ?? 'Deleted Program',
                 'status' => $profile->status,
                 // Placeholder only — QR generation/display is being built
                 // separately. This flag just tells the UI whether a code

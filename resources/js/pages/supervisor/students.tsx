@@ -3,7 +3,12 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent, KeyboardEvent } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -53,13 +58,13 @@ interface MyStudentsProps {
     filters: Filters;
 }
 
+const MIN_PER_PAGE = 1;
+const MAX_PER_PAGE = 100;
+
 // Radix's Select doesn't allow an item with an empty-string value, so
 // "every HTE" gets its own sentinel that we translate back to
 // undefined (i.e. no hte_id filter) before it hits the URL.
 const ALL_HTES = 'all';
-
-const MIN_PER_PAGE = 1;
-const MAX_PER_PAGE = 100;
 
 /** 8.5 → "8 hours 30 minutes" — same long-form duration used on the
  * HTE attendance log, so hours read consistently across both views. */
@@ -173,82 +178,74 @@ export default function MyStudents({
                     <CardContent className="flex flex-col gap-5">
                         <form
                             onSubmit={applySearch}
-                            className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between"
+                            className="flex flex-wrap items-end gap-2"
                         >
-                            <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
-                                <div className="flex flex-col gap-1.5">
-                                    <Label
-                                        htmlFor="search"
-                                        className="text-xs text-muted-foreground"
-                                    >
-                                        Search by name
-                                    </Label>
-                                    <div className="flex gap-2">
-                                        <Input
-                                            id="search"
-                                            value={search}
-                                            onChange={(e) =>
-                                                setSearch(e.target.value)
-                                            }
-                                            placeholder="e.g. Juan Dela Cruz"
-                                            className="w-full sm:w-52"
-                                        />
-                                        <Button
-                                            type="submit"
-                                            variant="secondary"
-                                            size="sm"
-                                        >
-                                            Search
-                                        </Button>
-                                        {filters.search !== '' && (
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={clearSearch}
-                                            >
-                                                Clear
-                                            </Button>
-                                        )}
-                                    </div>
-                                </div>
+                            <div className="flex flex-col gap-1.5">
+                                <Label
+                                    htmlFor="search"
+                                    className="text-xs text-muted-foreground"
+                                >
+                                    Search by name
+                                </Label>
+                                <Input
+                                    id="search"
+                                    value={search}
+                                    onChange={(e) =>
+                                        setSearch(e.target.value)
+                                    }
+                                    placeholder="e.g. Juan Dela Cruz"
+                                    className="w-52"
+                                />
+                            </div>
+                            <Button type="submit" variant="secondary" size="sm">
+                                Search
+                            </Button>
+                            {filters.search !== '' && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={clearSearch}
+                                >
+                                    Clear
+                                </Button>
+                            )}
 
-                                <div className="flex flex-col gap-1.5">
-                                    <Label
-                                        htmlFor="hte-filter"
-                                        className="text-xs text-muted-foreground"
+                            <div className="flex flex-col gap-1.5">
+                                <Label
+                                    htmlFor="hte-filter"
+                                    className="text-xs text-muted-foreground"
+                                >
+                                    Assigned HTE
+                                </Label>
+                                <Select
+                                    value={
+                                        filters.hte_id
+                                            ? String(filters.hte_id)
+                                            : ALL_HTES
+                                    }
+                                    onValueChange={changeHte}
+                                >
+                                    <SelectTrigger
+                                        id="hte-filter"
+                                        className="w-48"
                                     >
-                                        Assigned HTE
-                                    </Label>
-                                    <Select
-                                        value={
-                                            filters.hte_id
-                                                ? String(filters.hte_id)
-                                                : ALL_HTES
-                                        }
-                                        onValueChange={changeHte}
-                                    >
-                                        <SelectTrigger
-                                            id="hte-filter"
-                                            className="w-full sm:w-48"
-                                        >
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value={ALL_HTES}>
-                                                All HTEs
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value={ALL_HTES}>
+                                            All HTEs
+                                        </SelectItem>
+                                        {hteOptions.map((hte) => (
+                                            <SelectItem
+                                                key={hte.hte_id}
+                                                value={String(hte.hte_id)}
+                                            >
+                                                {hte.hte_name}
                                             </SelectItem>
-                                            {hteOptions.map((hte) => (
-                                                <SelectItem
-                                                    key={hte.hte_id}
-                                                    value={String(hte.hte_id)}
-                                                >
-                                                    {hte.hte_name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </form>
 
@@ -261,7 +258,7 @@ export default function MyStudents({
                             </p>
                         ) : (
                             <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
+                                <table className="w-full min-w-[720px] text-sm">
                                     <thead>
                                         <tr className="border-b text-left text-muted-foreground">
                                             <th className="py-2 pr-4 font-medium">
@@ -294,7 +291,7 @@ export default function MyStudents({
                                                     {student.name}
                                                 </td>
                                                 <td
-                                                    className="max-w-[160px] truncate py-2.5 pr-4"
+                                                    className="py-2.5 pr-4 whitespace-nowrap"
                                                     title={student.email}
                                                 >
                                                     {student.email}
@@ -307,7 +304,7 @@ export default function MyStudents({
                                                         '—'}
                                                 </td>
                                                 <td
-                                                    className="max-w-[140px] truncate py-2.5 pr-4"
+                                                    className="py-2.5 pr-4 whitespace-nowrap"
                                                     title={student.hte_name}
                                                 >
                                                     {student.hte_name}

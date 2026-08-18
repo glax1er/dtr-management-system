@@ -8,7 +8,8 @@ import {
     X,
 } from 'lucide-react';
 import { useState } from 'react';
-import type { FormEvent, KeyboardEvent } from 'react';
+import type { FormEvent } from 'react';
+import PaginationFooter from '@/components/pagination-footer';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -93,9 +94,6 @@ interface MyInternsProps {
     scopeName?: string;
 }
 
-const MIN_PER_PAGE = 1;
-const MAX_PER_PAGE = 100;
-
 function shiftMonth(month: string, delta: number): string {
     const [year, m] = month.split('-').map(Number);
     const date = new Date(Date.UTC(year, m - 1 + delta, 1));
@@ -171,7 +169,6 @@ export default function MyInterns({
     const [search, setSearch] = useState(filters.search);
     const [fromDraft, setFromDraft] = useState(filters.from);
     const [toDraft, setToDraft] = useState(filters.to);
-    const [perPageDraft, setPerPageDraft] = useState(String(filters.per_page));
 
     const hasActiveFilters =
         filters.search !== '' || filters.remarks !== null || mode === 'range';
@@ -264,27 +261,12 @@ export default function MyInterns({
         visit({ ...baseParams(), sort: field, direction });
     };
 
-    const commitPerPage = () => {
-        const parsed = parseInt(perPageDraft, 10);
-        const clamped = Number.isNaN(parsed)
-            ? filters.per_page
-            : Math.min(MAX_PER_PAGE, Math.max(MIN_PER_PAGE, parsed));
-
-        setPerPageDraft(String(clamped));
-
-        if (clamped === filters.per_page) {
-            return;
-        }
-
-        visit({ ...baseParams(), per_page: String(clamped) });
+    const goToPage = (page: number) => {
+        visit({ ...baseParams(), page: String(page) });
     };
 
-    const goToPage = (page: number) => {
-        if (page < 1 || page > logs.last_page) {
-            return;
-        }
-
-        visit({ ...baseParams(), page: String(page) });
+    const changePerPage = (perPage: number) => {
+        visit({ ...baseParams(), per_page: String(perPage) });
     };
 
     const sortIcon = (field: SortField) => {
@@ -701,79 +683,13 @@ export default function MyInterns({
                             </div>
                         )}
 
-                        {logs.total > 0 && (
-                            <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-                                <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                                    <span>
-                                        Showing {logs.from}–{logs.to} of{' '}
-                                        {logs.total} entr
-                                        {logs.total === 1 ? 'y' : 'ies'}
-                                    </span>
-                                    <div className="flex items-center gap-2">
-                                        <Label
-                                            htmlFor="per-page"
-                                            className="text-xs whitespace-nowrap"
-                                        >
-                                            Rows per page
-                                        </Label>
-                                        <Input
-                                            id="per-page"
-                                            type="number"
-                                            inputMode="numeric"
-                                            min={MIN_PER_PAGE}
-                                            max={MAX_PER_PAGE}
-                                            value={perPageDraft}
-                                            onChange={(e) =>
-                                                setPerPageDraft(e.target.value)
-                                            }
-                                            onBlur={commitPerPage}
-                                            onKeyDown={(
-                                                e: KeyboardEvent<HTMLInputElement>,
-                                            ) => {
-                                                if (e.key === 'Enter') {
-                                                    e.preventDefault();
-                                                    commitPerPage();
-                                                }
-                                            }}
-                                            className="h-8 w-18"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={logs.current_page <= 1}
-                                        onClick={() =>
-                                            goToPage(logs.current_page - 1)
-                                        }
-                                    >
-                                        <ChevronLeft className="size-3.5" />
-                                        Previous
-                                    </Button>
-                                    <span className="min-w-24 text-center text-sm text-muted-foreground">
-                                        Page {logs.current_page} of{' '}
-                                        {logs.last_page}
-                                    </span>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={
-                                            logs.current_page >= logs.last_page
-                                        }
-                                        onClick={() =>
-                                            goToPage(logs.current_page + 1)
-                                        }
-                                    >
-                                        Next
-                                        <ChevronRight className="size-3.5" />
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
+                        <PaginationFooter
+                            meta={logs}
+                            itemLabel="record"
+                            onPageChange={goToPage}
+                            onPerPageChange={changePerPage}
+                            idPrefix="attendance-logs-per-page"
+                        />
                     </CardContent>
                 </Card>
             </div>

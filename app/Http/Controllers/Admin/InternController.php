@@ -50,8 +50,8 @@ class InternController extends Controller
                 'name' => $profile->user->name,
                 'email' => $profile->user->email,
                 'id_number' => $profile->id_number,
-                'hte_name' => $profile->hte->hte_name,
-                'program_name' => $profile->program->program_name,
+                'hte_name' => $profile->hte?->hte_name ?? 'Deleted HTE',
+                'program_name' => $profile->program?->program_name ?? 'Deleted Program',
                 'status' => $profile->status,
                 'registered_at' => $profile->registered_at->diffForHumans(),
             ]);

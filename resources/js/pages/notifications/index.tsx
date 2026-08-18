@@ -176,14 +176,14 @@ return false;
         statusFilter !== 'all' || categoryFilter !== 'all' || query !== '';
 
     return (
-        <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col p-4 md:p-8">
+        <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 p-4">
             {/* Header */}
             <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                    <h1 className="text-2xl font-semibold">
                         Notifications
                     </h1>
-                    <p className="mt-1 text-sm text-muted-foreground">
+                    <p className="text-muted-foreground">
                         {count > 0
                             ? `${count} unread notification${count === 1 ? '' : 's'}`
                             : 'You\u2019re all caught up.'}
@@ -202,9 +202,9 @@ return false;
             </div>
 
             {items.length > 0 && (
-                <div className="mt-5 space-y-3 rounded-2xl border border-border bg-card p-4">
+                <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 lg:flex-row lg:items-center lg:justify-between">
                     {/* Search */}
-                    <div className="relative">
+                    <div className="relative lg:max-w-xs lg:flex-1">
                         <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             value={query}
@@ -216,44 +216,50 @@ return false;
                         />
                     </div>
 
-                    {/* Status filter */}
-                    <div className="flex flex-wrap gap-1.5">
-                        {STATUS_FILTERS.map((filter) => (
-                            <button
-                                key={filter.value}
-                                type="button"
-                                onClick={() => setStatusFilter(filter.value)}
-                                className={cn(
-                                    'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-                                    statusFilter === filter.value
-                                        ? 'border-primary bg-primary text-primary-foreground'
-                                        : 'border-border bg-transparent text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-                                )}
-                            >
-                                {filter.label}
-                            </button>
-                        ))}
-                    </div>
+                    <div className="flex flex-wrap items-center gap-3">
+                        {/* Status filter */}
+                        <div className="flex flex-wrap gap-1.5">
+                            {STATUS_FILTERS.map((filter) => (
+                                <button
+                                    key={filter.value}
+                                    type="button"
+                                    onClick={() =>
+                                        setStatusFilter(filter.value)
+                                    }
+                                    className={cn(
+                                        'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+                                        statusFilter === filter.value
+                                            ? 'border-primary bg-primary text-primary-foreground'
+                                            : 'border-border bg-transparent text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                                    )}
+                                >
+                                    {filter.label}
+                                </button>
+                            ))}
+                        </div>
 
-                    {/* Category filter */}
-                    <div className="flex flex-wrap gap-1.5">
-                        {CATEGORY_FILTERS.map((filter) => (
-                            <button
-                                key={filter.value}
-                                type="button"
-                                onClick={() =>
-                                    setCategoryFilter(filter.value)
-                                }
-                                className={cn(
-                                    'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-                                    categoryFilter === filter.value
-                                        ? 'border-foreground/80 bg-foreground/5 text-foreground'
-                                        : 'border-border bg-transparent text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-                                )}
-                            >
-                                {filter.label}
-                            </button>
-                        ))}
+                        <div className="hidden h-5 w-px bg-border lg:block" />
+
+                        {/* Category filter */}
+                        <div className="flex flex-wrap gap-1.5">
+                            {CATEGORY_FILTERS.map((filter) => (
+                                <button
+                                    key={filter.value}
+                                    type="button"
+                                    onClick={() =>
+                                        setCategoryFilter(filter.value)
+                                    }
+                                    className={cn(
+                                        'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+                                        categoryFilter === filter.value
+                                            ? 'border-foreground/80 bg-foreground/5 text-foreground'
+                                            : 'border-border bg-transparent text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                                    )}
+                                >
+                                    {filter.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
             )}
@@ -303,7 +309,7 @@ return false;
                     )}
                 </div>
             ) : (
-                <div className="mt-5 space-y-6 pb-6">
+                <div className="space-y-6 pb-6">
                     {groups.map((group) => (
                         <div key={group.key} className="space-y-2">
                             <div className="flex items-center gap-2 px-1">
@@ -349,16 +355,22 @@ return false;
                                                     )}
                                                 </div>
 
-                                                <p className="line-clamp-2 text-sm text-muted-foreground">
+                                                <p className="line-clamp-1 text-sm text-muted-foreground sm:line-clamp-none sm:truncate">
                                                     {notification.message}
                                                 </p>
 
-                                                <p className="text-xs text-muted-foreground/80">
+                                                <p className="text-xs text-muted-foreground/80 sm:hidden">
                                                     {formatRelativeTime(
                                                         notification.created_at,
                                                     )}
                                                 </p>
                                             </div>
+
+                                            <span className="hidden shrink-0 text-xs whitespace-nowrap text-muted-foreground/80 sm:block">
+                                                {formatRelativeTime(
+                                                    notification.created_at,
+                                                )}
+                                            </span>
 
                                             <div className="flex shrink-0 items-center gap-1.5">
                                                 {unread && (

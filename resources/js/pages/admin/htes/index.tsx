@@ -183,7 +183,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
         router.patch(
             `/admin/htes/${hte.hte_id}/status`,
             { status: hte.status === 'active' ? 'inactive' : 'active' },
-            { preserveScroll: true, preserveState: true },
+            { preserveScroll: true },
         );
     };
 
@@ -241,7 +241,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                     </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                    {hte.status === 'active' ? 'Archive inactive HTEs only' : 'Archive to collection'}
+                    {hte.status === 'active' ? 'Archive inactive HTEs only' : 'Archive'}
                 </TooltipContent>
             </Tooltip>
         </div>
