@@ -16,12 +16,13 @@ beforeEach(function () {
     $this->skipUnlessFortifyHas(Features::emailVerification());
 });
 
-test('email verification screen can be rendered for unverified user', function () {
+test('email verification notice redirects to login modal with verification state', function () {
     $user = User::factory()->unverified()->create();
 
     $response = $this->actingAs($user)->get(route('verification.notice'));
 
-    $response->assertOk();
+    $response->assertRedirect(route('login'));
+    $response->assertSessionHas('show_verification', true);
 });
 
 test('verified user or admin is redirected away from verification screen', function () {

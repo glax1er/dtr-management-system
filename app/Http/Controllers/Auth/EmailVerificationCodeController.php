@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\EmailVerificationCode;
+use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -38,12 +39,19 @@ class EmailVerificationCodeController extends Controller
     {
         $request->validate([
             'code' => ['required', 'string', 'size:6'],
+            'email' => ['nullable', 'string', 'email'],
         ], [
             'code.required' => 'Please enter the 6-digit verification code.',
             'code.size' => 'The verification code must be exactly 6 digits.',
         ]);
 
-        $user = $request->user();
+        $email = $request->email ?: $request->user()?->email;
+
+        if (! $email) {
+            return redirect()->route('login');
+        }
+
+        $user = User::where('email', $email)->first();
 
         if (! $user) {
             return redirect()->route('login');
@@ -53,7 +61,7 @@ class EmailVerificationCodeController extends Controller
             return redirect()->intended(route('dashboard'));
         }
 
-        $isValid = EmailVerificationCode::verify($user->email, $request->code);
+        $isValid = EmailVerificationCode::verify($email, $request->code);
 
         if (! $isValid) {
             throw ValidationException::withMessages([
@@ -64,7 +72,7 @@ class EmailVerificationCodeController extends Controller
         $user->markEmailAsVerified();
         event(new Verified($user));
 
-        // If intern registration is still pending approval, log them out and notify them
+        // If intern registration is still pending approval, ensure logged out and notify them
         if ($user->isIntern() && $user->internProfile?->status !== 'approved') {
             Auth::guard('web')->logout();
 
@@ -75,6 +83,10 @@ class EmailVerificationCodeController extends Controller
                 'status',
                 'Email verified successfully! Your account registration is currently pending administrator approval. You will receive access once approved.',
             );
+        }
+
+        if (! Auth::check()) {
+            Auth::login($user);
         }
 
         return redirect()->intended(route('dashboard'))->with(
@@ -88,7 +100,17 @@ class EmailVerificationCodeController extends Controller
      */
     public function resend(Request $request): RedirectResponse
     {
-        $user = $request->user();
+        $request->validate([
+            'email' => ['nullable', 'string', 'email'],
+        ]);
+
+        $email = $request->email ?: $request->user()?->email;
+
+        if (! $email) {
+            return redirect()->route('login');
+        }
+
+        $user = User::where('email', $email)->first();
 
         if (! $user) {
             return redirect()->route('login');

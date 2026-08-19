@@ -18,8 +18,15 @@ class RegisterResponse implements RegisterResponseContract
      * them back out and send them to the register page to show the
      * "pending approval" dialog, rather than letting them straight in.
      */
-    public function toResponse($request): RedirectResponse
+    public function toResponse($request)
     {
+        if ($request->wantsJson()) {
+            return response()->json([
+                'status' => 'success',
+                'email' => $request->user()?->email,
+            ]);
+        }
+
         return redirect()->route('verification.notice')->with(
             'status',
             'A 6-digit verification code has been sent to your email address. Please enter it below to verify your account.',

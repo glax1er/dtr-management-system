@@ -78,8 +78,18 @@ class FortifyServiceProvider extends ServiceProvider
                 return $user;
             }
 
-            // If an intern has already verified their email, verify their profile approval status
-            if ($user->isIntern() && $user->hasVerifiedEmail()) {
+            // If email is not verified, require verification via modal on login
+            if (! $user->hasVerifiedEmail()) {
+                $user->sendEmailVerificationNotification();
+
+                throw ValidationException::withMessages([
+                    'unverified_email' => $user->email,
+                    Fortify::username() => 'Your email address is not verified yet. We have sent a 6-digit verification code to your email.',
+                ]);
+            }
+
+            // If an intern has verified their email, verify their profile approval status
+            if ($user->isIntern()) {
                 $status = $user->internProfile?->status;
 
                 if ($status !== 'approved') {
@@ -104,6 +114,8 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::loginView(fn (Request $request) => Inertia::render('auth/login', [
             'canResetPassword' => Features::enabled(Features::resetPasswords()),
             'status' => $request->session()->get('status'),
+            'showVerification' => $request->session()->get('show_verification', false),
+            'verificationEmail' => $request->session()->get('verification_email'),
         ]));
 
         Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/reset-password', [
@@ -123,23 +135,26 @@ class FortifyServiceProvider extends ServiceProvider
                 return redirect()->intended(route('dashboard'));
             }
 
-            return Inertia::render('auth/verify-email', [
-                'status' => $request->session()->get('status'),
-                'email' => $user?->email,
+            return redirect()->route('login')->with([
+                'show_verification' => true,
+                'verification_email' => $user?->email,
+                'status' => $request->session()->get('status', 'Please enter your 6-digit verification code.'),
             ]);
         });    
 
         Fortify::registerView(fn (Request $request) => Inertia::render('auth/register', [
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
             'registered' => $request->session()->get('registered', false),
+            'showVerification' => $request->session()->get('show_verification', false),
+            'verificationEmail' => $request->session()->get('verification_email'),
             'programs' => Program::query()
-                ->where('is_active', true)
+                ->select(['program_id', 'program_name'])
                 ->orderBy('program_name')
-                ->get(['program_id', 'program_name']),
+                ->get(),
             'htes' => Hte::query()
-                ->where('status', 'active')
+                ->select(['hte_id', 'hte_name'])
                 ->orderBy('hte_name')
-                ->get(['hte_id', 'hte_name']),
+                ->get(),
         ]));
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge'));
