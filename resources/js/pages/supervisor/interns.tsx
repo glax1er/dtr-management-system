@@ -471,7 +471,7 @@ export default function MyInterns({
                 {mobileSearchOpen && (
                     <form
                         onSubmit={(e) => { applySearch(e); setMobileSearchOpen(false); }}
-                        className="flex items-center gap-2 sm:hidden"
+                        className="flex items-center gap-2 sm:hidden w-full"
                     >
                         <div className="relative flex-1">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -498,61 +498,65 @@ export default function MyInterns({
                 )}
 
                 {/* Date range filter card / Active filters */}
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card p-3 shadow-xs">
-                    <form onSubmit={applyRange} className="flex flex-wrap items-center gap-2.5">
+                <div className="flex flex-col gap-3 rounded-lg border bg-card p-3 shadow-xs lg:flex-row lg:items-center lg:justify-between">
+                    <form onSubmit={applyRange} className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full lg:w-auto">
                         <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5 shrink-0">
                             <Calendar className="size-3.5" /> Date range:
                         </span>
-                        <div className="w-40 sm:w-44">
-                            <DatePicker
-                                date={fromDraft}
-                                onDateChange={(d) => setFromDraft(d)}
-                                placeholder="From date"
-                                maxDate={toDraft || undefined}
-                                className="h-9 text-xs sm:text-sm"
-                                clearable
-                            />
+                        <div className="flex items-center gap-1.5 flex-1 min-w-[240px] sm:min-w-0 sm:flex-initial">
+                            <div className="flex-1 sm:w-44 sm:flex-initial">
+                                <DatePicker
+                                    date={fromDraft}
+                                    onDateChange={(d) => setFromDraft(d)}
+                                    placeholder="From date"
+                                    maxDate={toDraft || undefined}
+                                    className="h-9 text-xs sm:text-sm"
+                                    clearable
+                                />
+                            </div>
+                            <span className="text-xs text-muted-foreground shrink-0">to</span>
+                            <div className="flex-1 sm:w-44 sm:flex-initial">
+                                <DatePicker
+                                    date={toDraft}
+                                    onDateChange={(d) => setToDraft(d)}
+                                    placeholder="To date"
+                                    minDate={fromDraft || undefined}
+                                    className="h-9 text-xs sm:text-sm"
+                                    clearable
+                                />
+                            </div>
                         </div>
-                        <span className="text-xs text-muted-foreground shrink-0">to</span>
-                        <div className="w-40 sm:w-44">
-                            <DatePicker
-                                date={toDraft}
-                                onDateChange={(d) => setToDraft(d)}
-                                placeholder="To date"
-                                minDate={fromDraft || undefined}
-                                className="h-9 text-xs sm:text-sm"
-                                clearable
-                            />
-                        </div>
-                        <Button
-                            type="submit"
-                            size="sm"
-                            variant="secondary"
-                            disabled={!fromDraft || !toDraft}
-                            className="h-9 px-3 text-xs sm:text-sm"
-                        >
-                            Apply Range
-                        </Button>
-                        {mode === 'range' && (
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
                             <Button
-                                type="button"
-                                variant="ghost"
+                                type="submit"
                                 size="sm"
-                                onClick={clearRange}
-                                className="h-9 px-3 text-xs sm:text-sm text-muted-foreground hover:text-foreground"
+                                variant="secondary"
+                                disabled={!fromDraft || !toDraft}
+                                className="h-9 px-3 text-xs sm:text-sm flex-1 sm:flex-initial"
                             >
-                                Switch to Month
+                                Apply Range
                             </Button>
-                        )}
+                            {mode === 'range' && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={clearRange}
+                                    className="h-9 px-3 text-xs sm:text-sm text-muted-foreground hover:text-foreground flex-1 sm:flex-initial"
+                                >
+                                    Switch to Month
+                                </Button>
+                            )}
+                        </div>
                     </form>
 
                     {hasActiveFilters && (
-                        <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-xs text-muted-foreground">
+                        <div className="flex flex-wrap items-center gap-2 pt-2 lg:pt-0 border-t lg:border-t-0">
+                            <span className="text-xs text-muted-foreground shrink-0">
                                 Active:
                             </span>
                             {filters.search !== '' && (
-                                <Badge variant="secondary" className="font-normal text-xs">
+                                <Badge variant="secondary" className="font-normal text-xs truncate max-w-[180px]">
                                     Name: {filters.search}
                                 </Badge>
                             )}
@@ -571,7 +575,7 @@ export default function MyInterns({
                                 variant="ghost"
                                 size="sm"
                                 onClick={clearAllFilters}
-                                className="h-6 px-2 text-xs text-muted-foreground"
+                                className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
                             >
                                 <X className="size-3 mr-1" />
                                 Clear all

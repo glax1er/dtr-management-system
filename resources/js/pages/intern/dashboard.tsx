@@ -430,19 +430,19 @@ export default function InternDashboard({
                             </CardDescription>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 w-full lg:w-auto">
                             {/* Month Selector Pill */}
-                            <div className="flex items-center gap-1.5 rounded-xl border border-border bg-muted/40 p-1">
+                            <div className="flex items-center justify-between sm:justify-start gap-1.5 rounded-xl border border-border bg-muted/40 p-1 w-full sm:w-auto">
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="size-7 rounded-lg"
+                                    className="size-7 rounded-lg shrink-0"
                                     onClick={() => goToMonth(shiftMonth(month, -1))}
                                     title="Previous month"
                                 >
                                     <ChevronLeft className="size-4" />
                                 </Button>
-                                <div className="px-2 text-center">
+                                <div className="px-2 text-center flex-1 sm:flex-initial">
                                     <span className="text-xs font-semibold text-foreground whitespace-nowrap">
                                         {monthLabel}
                                     </span>
@@ -453,7 +453,7 @@ export default function InternDashboard({
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="size-7 rounded-lg"
+                                    className="size-7 rounded-lg shrink-0"
                                     disabled={!canGoNextMonth}
                                     onClick={() => goToMonth(shiftMonth(month, 1))}
                                     title="Next month"
@@ -462,52 +462,54 @@ export default function InternDashboard({
                                 </Button>
                             </div>
 
-                            {/* Date Range Picker */}
-                            <div className="flex items-center gap-1.5">
-                                <div className="w-32 sm:w-36">
-                                    <DatePicker
-                                        date={startDate}
-                                        onDateChange={(d) => setStartDate(d)}
-                                        placeholder="Start date"
-                                        maxDate={endDate || undefined}
-                                        className="h-8 text-xs"
-                                        clearable
-                                    />
+                            {/* Date Range Picker + DTR Report */}
+                            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
+                                <div className="flex items-center gap-1.5 flex-1 min-w-[200px] sm:min-w-0">
+                                    <div className="flex-1 sm:w-36 sm:flex-initial">
+                                        <DatePicker
+                                            date={startDate}
+                                            onDateChange={(d) => setStartDate(d)}
+                                            placeholder="Start date"
+                                            maxDate={endDate || undefined}
+                                            className="h-8 text-xs"
+                                            clearable
+                                        />
+                                    </div>
+                                    <span className="text-xs text-muted-foreground shrink-0">to</span>
+                                    <div className="flex-1 sm:w-36 sm:flex-initial">
+                                        <DatePicker
+                                            date={endDate}
+                                            onDateChange={(d) => setEndDate(d)}
+                                            placeholder="End date"
+                                            minDate={startDate || undefined}
+                                            className="h-8 text-xs"
+                                            clearable
+                                        />
+                                    </div>
                                 </div>
-                                <span className="text-xs text-muted-foreground">to</span>
-                                <div className="w-32 sm:w-36">
-                                    <DatePicker
-                                        date={endDate}
-                                        onDateChange={(d) => setEndDate(d)}
-                                        placeholder="End date"
-                                        minDate={startDate || undefined}
-                                        className="h-8 text-xs"
-                                        clearable
-                                    />
-                                </div>
+
+                                {/* DTR Report Button */}
+                                <Button
+                                    size="sm"
+                                    variant="default"
+                                    className="gap-1.5 h-8 text-xs font-medium w-full sm:w-auto shrink-0"
+                                    onClick={() => {
+                                        const base = '/intern/dtr-report';
+                                        let url = base + '?';
+
+                                        if (startDate && endDate) {
+                                            url += `start=${startDate}&end=${endDate}`;
+                                        } else {
+                                            url += `month=${month}`;
+                                        }
+
+                                        window.open(url, '_blank', 'noopener');
+                                    }}
+                                >
+                                    <Download className="size-3.5" />
+                                    <span>DTR Report</span>
+                                </Button>
                             </div>
-
-                            {/* DTR Report Button */}
-                            <Button
-                                size="sm"
-                                variant="default"
-                                className="gap-1.5 h-8 text-xs font-medium"
-                                onClick={() => {
-                                    const base = '/intern/dtr-report';
-                                    let url = base + '?';
-
-                                    if (startDate && endDate) {
-                                        url += `start=${startDate}&end=${endDate}`;
-                                    } else {
-                                        url += `month=${month}`;
-                                    }
-
-                                    window.open(url, '_blank', 'noopener');
-                                }}
-                            >
-                                <Download className="size-3.5" />
-                                <span>DTR Report</span>
-                            </Button>
                         </div>
                     </CardHeader>
 

@@ -184,7 +184,7 @@ export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
 
                 {/* Mobile inline search */}
                 {mobileSearchOpen && (
-                    <div className="flex items-center gap-2 sm:hidden">
+                    <div className="flex items-center gap-2 sm:hidden w-full">
                         <div className="relative flex-1">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                             <input
