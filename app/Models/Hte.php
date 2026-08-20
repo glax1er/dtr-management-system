@@ -4,13 +4,19 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
 
 class Hte extends Model
 {
+    use SoftDeletes;
+
     protected $primaryKey = 'hte_id';
 
-    // Only created_at exists on this table, no updated_at column.
-    public $timestamps = false;
+    // Only created_at exists on this table. Eloquent will populate it on create
+    // and {@see UPDATED_AT} is disabled since this table has no updated_at.
+    public $timestamps = true;
+    public const UPDATED_AT = null;
 
     protected $fillable = [
         'hte_name',
@@ -35,22 +41,25 @@ class Hte extends Model
     }
 
     /**
-     * All supervisors assigned to this HTE.
+     * All supervisors assigned to this HTE as HTE supervisors.
      * (An HTE Supervisor's dashboard is scoped to just these interns — FR-17.)
+     * OJT supervisors are excluded since they're program-wide.
      *
      * @return HasMany<SupervisorProfile, $this>
      */
     public function supervisorProfiles(): HasMany
     {
-        return $this->hasMany(SupervisorProfile::class, 'hte_id', 'hte_id');
+        return $this->hasMany(SupervisorProfile::class, 'hte_id', 'hte_id')
+            ->where('supervisor_type', 'hte');
     }
 
     /**
      * Recomputes and saves `contact_person` from the names of this HTE's
-     * currently active supervisors, joined by comma if there's more than
+     * currently active HTE supervisors, joined by comma if there's more than
      * one. Called whenever a supervisor is assigned or their status
      * changes, so the stored column always reflects who's actually
      * reachable — never a stale or manually-typed name.
+     * OJT supervisors are not included in this list.
      */
     public function refreshContactPerson(): void
     {

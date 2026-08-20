@@ -9,13 +9,17 @@ class AttendanceLog extends Model
 {
     protected $primaryKey = 'log_id';
 
-    // Only created_at exists, no updated_at column.
-    public $timestamps = false;
+    // Only created_at exists on this table. Eloquent will populate it on create
+    // and {@see UPDATED_AT} is disabled since this table has no updated_at.
+    public $timestamps = true;
+    public const UPDATED_AT = null;
 
     protected $fillable = [
         'intern_user_id',
         'supervisor_user_id',
+        'kiosk_id',
         'scan_timestamp',
+        'resolved_ticket_id',
     ];
 
     protected $casts = [
@@ -53,5 +57,29 @@ class AttendanceLog extends Model
     public function supervisor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'supervisor_user_id', 'id');
+    }
+
+    /**
+     * The kiosk device that recorded this scan (nullable — older rows
+     * predate the kiosk system and were recorded by a logged-in
+     * supervisor instead; see supervisor_user_id).
+     *
+     * @return BelongsTo<Kiosk, $this>
+     */
+    public function kiosk(): BelongsTo
+    {
+        return $this->belongsTo(Kiosk::class, 'kiosk_id', 'id');
+    }
+
+    /**
+     * Null for a real scan. Set only when this row was written back by an
+     * approved resolution ticket instead of an actual QR scan — see
+     * ResolutionTicketController::approve().
+     *
+     * @return BelongsTo<ResolutionTicket, $this>
+     */
+    public function resolutionTicket(): BelongsTo
+    {
+        return $this->belongsTo(ResolutionTicket::class, 'resolved_ticket_id', 'id');
     }
 }

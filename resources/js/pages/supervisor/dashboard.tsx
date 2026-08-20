@@ -1,7 +1,23 @@
-import { Head, usePage } from '@inertiajs/react';
-import { Html5Qrcode } from 'html5-qrcode';
-import { ClipboardCheck, Clock, GraduationCap } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { Head, router, usePage } from '@inertiajs/react';
+import {
+    CalendarCheck2,
+    ClipboardCheck,
+    Clock,
+    GraduationCap,
+    LayoutDashboard,
+    TrendingUp,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import {
+    AttendanceRing,
+    CountUp,
+    RankedList,
+    StatCard,
+    TrendBarChart,
+} from '@/components/dashboard-analytics';
+import { NumberedPagination } from '@/components/numbered-pagination';
+import type { Paginated } from '@/components/pagination-footer';
+import { Badge } from '@/components/ui/badge';
 import {
     Card,
     CardContent,
@@ -9,328 +25,435 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { dashboard } from '@/routes';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import type { PageProps } from '@/types';
-
-const SCANNER_ELEMENT_ID = 'qr-scanner-viewport';
-
-// How long a successful/rejected scan stays on screen before clearing —
-// matches the spec: "display briefly ... then disappear."
-const FLASH_DURATION_MS = 3000;
-
-// How long to ignore further decoded frames after handling one scan.
-// html5-qrcode calls its success callback on every frame it manages to
-// decode — without this, a single physical QR sitting in view for a
-// couple of seconds would fire a dozen POSTs, not one. This is a
-// separate, client-side concern from RecordScan's own 5-minute
-// server-side debounce, which guards the database, not the network.
-const REPROCESS_COOLDOWN_MS = FLASH_DURATION_MS;
-
-type ScanFlash =
-    | {
-          kind: 'success';
-          internName: string;
-          idNumber: string;
-          label: 'time_in' | 'time_out';
-          timestamp: string;
-          isDuplicate: boolean;
-      }
-    | { kind: 'error'; message: string };
-
-function readXsrfToken(): string {
-    const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
-    return match ? decodeURIComponent(match[1]) : '';
-}
-
-function formatTime(iso: string): string {
-    return new Date(iso).toLocaleTimeString([], {
-        hour: 'numeric',
-        minute: '2-digit',
-    });
-}
+import { dashboard } from '@/routes';
 
 interface RecentScan {
+    id: number;
     intern_name: string;
+    id_number?: string | null;
     label: 'time_in' | 'time_out';
     scanned_at: string;
+    scanned_at_full: string;
+}
+
+interface TrendPoint {
+    date: string;
+    label: string;
+    count: number;
+}
+
+interface TodayAttendance {
+    checked_in: number;
+    total: number;
+    percent: number;
+}
+
+interface TicketStatusCount {
+    status: 'pending' | 'approved' | 'rejected';
+    count: number;
+}
+
+interface TopIntern {
+    name: string;
+    count: number;
 }
 
 interface SupervisorDashboardProps {
     myInternsCount: number;
     scansToday: number;
     scansThisWeek: number;
-    recentScans: RecentScan[];
+    pendingTickets: number;
+    recentScans: Paginated<RecentScan>;
+    scansTrend: TrendPoint[];
+    todayAttendance: TodayAttendance;
+    ticketBreakdown: TicketStatusCount[];
+    topInterns: TopIntern[];
+    scopeName?: string;
 }
 
+const TICKET_STATUS_META: Record<
+    TicketStatusCount['status'],
+    { label: string; barClass: string; dotClass: string }
+> = {
+    approved: {
+        label: 'Approved',
+        barClass: 'bg-emerald-500',
+        dotClass: 'bg-emerald-500',
+    },
+    pending: {
+        label: 'Pending',
+        barClass: 'bg-amber-500',
+        dotClass: 'bg-amber-500',
+    },
+    rejected: {
+        label: 'Rejected',
+        barClass: 'bg-destructive',
+        dotClass: 'bg-destructive',
+    },
+};
+
 export default function SupervisorDashboard({
-    myInternsCount = 0,
+    myInternsCount,
     scansToday,
     scansThisWeek,
-    recentScans
+    pendingTickets,
+    recentScans,
+    scansTrend,
+    todayAttendance,
+    ticketBreakdown,
+    topInterns,
+    scopeName,
 }: SupervisorDashboardProps) {
     const { auth } = usePage<PageProps>().props;
 
-    const [flash, setFlash] = useState<ScanFlash | null>(null);
-    const [cameraError, setCameraError] = useState<string | null>(null);
-    const scannerRef = useRef<Html5Qrcode | null>(null);
-    const busyRef = useRef(false);
-    const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
+    const [mounted, setMounted] = useState(false);
     useEffect(() => {
-        const scanner = new Html5Qrcode(SCANNER_ELEMENT_ID);
-        scannerRef.current = scanner;
-        let cancelled = false;
+        const id = requestAnimationFrame(() => setMounted(true));
 
-        const startPromise = scanner
-            .start(
-                { facingMode: 'environment' },
-                {
-                    fps: 10,
-                    // A fixed pixel qrbox (e.g. 250x250) looks tiny on a
-                    // tablet and cramped on a small phone. Sizing it as a
-                    // fraction of whatever the camera's actual viewfinder
-                    // turns out to be keeps the framing box sensible on
-                    // any device — this is html5-qrcode's documented
-                    // pattern for responsive scan regions.
-                    qrbox: (viewfinderWidth, viewfinderHeight) => {
-                        const edge = Math.floor(
-                            Math.min(viewfinderWidth, viewfinderHeight) * 0.7,
-                        );
-                        return { width: edge, height: edge };
-                    },
-                    // Force a square feed regardless of the phone's native
-                    // camera aspect ratio (varies a lot device to device)
-                    // so the preview always matches the square container
-                    // below instead of being stretched or letterboxed.
-                    aspectRatio: 1,
-                },
-                (decodedText) => {
-                    if (!cancelled) submitScan(decodedText);
-                },
-                () => {
-                    // Fires continuously while no code is in frame — expected, not an error.
-                },
-            )
-            .catch((err: unknown) => {
-                if (!cancelled) {
-                    setCameraError(
-                        'Could not access the camera. Make sure this page has camera permission and that no other app is using it.',
-                    );
-                    console.error(err);
-                }
-            });
-
-        return () => {
-            cancelled = true;
-            if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-            // Wait for start() to actually settle (success OR failure)
-            // before calling stop(). Calling stop() while start() is
-            // still mid-flight is what breaks the camera under React
-            // StrictMode's dev-only double mount/unmount/remount — it
-            // interrupts the first attempt right as it's requesting the
-            // camera, leaving the real (second) mount fighting over a
-            // half-initialized stream. This ordering fixes that without
-            // needing to touch StrictMode itself.
-            startPromise.finally(() => {
-                scanner.stop().catch(() => {});
-            });
-        };
+        return () => cancelAnimationFrame(id);
     }, []);
 
-    function submitScan(qrCodeValue: string) {
-        if (busyRef.current) return;
-        busyRef.current = true;
-
-        fetch('/supervisor/scan', {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-                'X-XSRF-TOKEN': readXsrfToken(),
-            },
-            body: JSON.stringify({ qr_code_value: qrCodeValue }),
-        })
-            .then(async (response) => {
-                const data = await response.json();
-
-                if (!response.ok) {
-                    setFlash({
-                        kind: 'error',
-                        message: data.message ?? 'Scan rejected.',
-                    });
-                    return;
-                }
-
-                setFlash({
-                    kind: 'success',
-                    internName: data.intern_name,
-                    idNumber: data.id_number,
-                    label: data.label,
-                    timestamp: data.timestamp,
-                    isDuplicate: data.is_duplicate,
-                });
-            })
-            .catch(() => {
-                setFlash({
-                    kind: 'error',
-                    message:
-                        'Could not reach the server. Check your connection and try again.',
-                });
-            })
-            .finally(() => {
-                if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-                flashTimerRef.current = setTimeout(
-                    () => setFlash(null),
-                    FLASH_DURATION_MS,
-                );
-
-                setTimeout(() => {
-                    busyRef.current = false;
-                }, REPROCESS_COOLDOWN_MS);
-            });
-    }
-
     const stats = [
-    { label: 'My Interns', value: myInternsCount, icon: GraduationCap },
-    { label: 'Scans Today', value: scansToday, icon: ClipboardCheck },
-    { label: 'Scans This Week', value: scansThisWeek, icon: Clock },
+        {
+            label: 'My Interns',
+            value: myInternsCount,
+            icon: GraduationCap,
+            variant: 'primary' as const,
+            description: 'Assigned to your establishment',
+            onClick: () => router.visit('/supervisor/interns'),
+        },
+        {
+            label: 'Scans Today',
+            value: scansToday,
+            icon: ClipboardCheck,
+            variant: 'success' as const,
+            description: 'Total check-ins & check-outs',
+        },
+        {
+            label: 'Scans This Week',
+            value: scansThisWeek,
+            icon: Clock,
+            variant: 'default' as const,
+            description: 'Weekly cumulative activity',
+        },
+        {
+            label: 'Pending Tickets',
+            value: pendingTickets,
+            icon: CalendarCheck2,
+            variant: 'warning' as const,
+            description: pendingTickets > 0 ? 'Awaiting resolution' : 'Zero pending requests',
+            onClick: () => router.visit('/supervisor/resolution-tickets'),
+        },
     ];
+
+    const visit = (params: Record<string, string | undefined>) => {
+        router.get('/supervisor/dashboard', params, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
+    const goToPage = (page: number) => {
+        visit({
+            page: String(page),
+            per_page: String(recentScans.per_page),
+        });
+    };
+
+    const changePerPage = (perPage: number) => {
+        visit({ per_page: String(perPage) });
+    };
+
+    const totalTicketCount = ticketBreakdown.reduce(
+        (sum, s) => sum + s.count,
+        0,
+    );
+    const scansTotal = scansTrend.reduce((sum, point) => sum + point.count, 0);
 
     return (
         <>
             <Head title="Supervisor Dashboard" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl px-3 py-4 sm:p-6">
-                <div>
-                    <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-                        Welcome back, {auth.user.name}
-                    </h1>
-                    <p className="text-sm text-muted-foreground">
-                        Scan an intern's QR code to record their time in/out.
-                    </p>
+            <div className="flex h-full flex-1 flex-col gap-5 p-4 sm:p-6">
+                {/* Header banner */}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-col gap-1">
+                        <h1 className="flex items-center gap-2.5 text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                            Welcome back, {auth.user.name}
+                        </h1>
+                        <p className="text-sm text-muted-foreground">
+                            Attendance tracking, real-time kiosk scans, and resolution requests.
+                        </p>
+                    </div>
+                    {scopeName && (
+                        <Badge variant="secondary" className="px-3 py-1 font-medium text-xs shadow-xs">
+                            {scopeName}
+                        </Badge>
+                    )}
                 </div>
 
-                {/* The scanner is the primary, first thing on this page —
-                    not a secondary link buried in the sidebar. For a
-                    supervisor, this IS the app; everything else here is
-                    supporting context underneath it. */}
-                <Card className="gap-4 py-4 sm:gap-6 sm:py-6">
-                    <CardHeader className="px-4 sm:px-6">
-                        <CardTitle className="text-lg sm:text-xl">
-                            Scan Intern QR Code
-                        </CardTitle>
-                        <CardDescription>
-                            Have the intern present their QR code to the camera
-                            below.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="px-3 sm:px-6">
-                        <div className="relative mx-auto aspect-square w-full max-w-sm overflow-hidden rounded-lg bg-black">
-                            {/* Always mounted — hidden via CSS if there's an error,
-                                never conditionally unmounted. html5-qrcode
-                                manipulates this div's DOM directly; removing and
-                                remounting it fights the library instead of
-                                working with it. */}
-                            <div
-                                id={SCANNER_ELEMENT_ID}
-                                className={
-                                    cameraError
-                                        ? 'hidden'
-                                        : 'h-full w-full [&>video]:h-full [&>video]:w-full [&>video]:object-cover'
-                                }
-                            />
-
-                            {cameraError && (
-                                <div className="flex h-full w-full items-center justify-center p-4 text-center text-sm text-white/80">
-                                    {cameraError}
-                                </div>
-                            )}
-
-                            {/* Overlaid on top of the camera feed, not stacked
-                                above it — a scan every few seconds otherwise
-                                shifts the whole layout up and down, which is
-                                disorienting when someone's actively holding a
-                                phone steady to line up a QR code. */}
-                            {flash && (
-                                <div
-                                    className={
-                                        'absolute inset-x-0 top-0 p-3 text-sm shadow-md backdrop-blur-sm ' +
-                                        (flash.kind === 'success'
-                                            ? 'bg-emerald-500/90 text-white'
-                                            : 'bg-destructive/90 text-white')
-                                    }
-                                >
-                                    {flash.kind === 'success' ? (
-                                        <>
-                                            <div className="text-base font-semibold sm:text-lg">
-                                                {flash.internName}
-                                            </div>
-                                            <div className="text-white/90">
-                                                {flash.idNumber}
-                                            </div>
-                                            <div className="text-white/90">
-                                                {flash.label === 'time_in'
-                                                    ? 'Timed In'
-                                                    : 'Timed Out'}{' '}
-                                                · {formatTime(flash.timestamp)}
-                                                {flash.isDuplicate &&
-                                                    ' (already recorded)'}
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <div className="text-base font-medium sm:text-lg">
-                                            {flash.message}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-                    {stats.map(({ label, value, icon: Icon }) => (
-                        <Card key={label}>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">
-                                    {label}
-                                </CardTitle>
-                                <Icon className="size-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">
-                                    {value}
-                                </div>
-                            </CardContent>
-                        </Card>
+                {/* Top-line KPI Stat Cards */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {stats.map((stat, i) => (
+                        <StatCard
+                            key={stat.label}
+                            label={stat.label}
+                            value={stat.value}
+                            icon={stat.icon}
+                            variant={stat.variant}
+                            description={stat.description}
+                            onClick={stat.onClick}
+                            index={i}
+                        />
                     ))}
                 </div>
 
-                <Card className="flex-1">
-                    <CardHeader>
-                        <CardTitle>Recent Scans</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {recentScans.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">
-                                No scans recorded yet — this list fills up as you scan intern QR codes.
-                            </p>
-                        ) : (
-                            <div className="flex flex-col gap-3">
-                                {recentScans.map((scan, i) => (
+                {/* Analytics row 1: scan momentum + right-now attendance */}
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                    <Card className="lg:col-span-2 shadow-xs">
+                        <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+                            <div>
+                                <CardTitle className="text-base font-semibold">
+                                    Scan Momentum (Last 14 Days)
+                                </CardTitle>
+                                <CardDescription>
+                                    {scansTotal} scan
+                                    {scansTotal === 1 ? '' : 's'} recorded in this window
+                                </CardDescription>
+                            </div>
+                            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                                <TrendingUp className="size-4" />
+                            </div>
+                        </CardHeader>
+                        <CardContent className="pt-2">
+                            <TrendBarChart
+                                data={scansTrend}
+                                mounted={mounted}
+                                barColor="bg-primary"
+                            />
+                        </CardContent>
+                    </Card>
+
+                    <Card className="shadow-xs flex flex-col justify-between">
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <div>
+                                <CardTitle className="text-base font-semibold">
+                                    Today's Attendance
+                                </CardTitle>
+                                <CardDescription>
+                                    Live check-in progress
+                                </CardDescription>
+                            </div>
+                            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                                <CalendarCheck2 className="size-4" />
+                            </div>
+                        </CardHeader>
+                        <CardContent className="flex flex-col items-center justify-center py-4">
+                            {todayAttendance.total === 0 ? (
+                                <div className="py-8 text-center text-sm text-muted-foreground">
+                                    No approved interns assigned yet.
+                                </div>
+                            ) : (
+                                <AttendanceRing
+                                    percent={
+                                        mounted ? todayAttendance.percent : 0
+                                    }
+                                    checkedIn={todayAttendance.checked_in}
+                                    total={todayAttendance.total}
+                                    subtitle="interns checked in"
+                                />
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Analytics row 2: ticket pipeline + top interns */}
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                    <Card className="shadow-xs">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-base font-semibold">
+                                Resolution Ticket Pipeline
+                            </CardTitle>
+                            <CardDescription>
+                                Status distribution of attendance change requests
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex flex-col gap-4">
+                            {/* Segmented multi-color progress bar */}
+                            <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted shadow-inner">
+                                {totalTicketCount > 0 &&
+                                    ticketBreakdown.map(
+                                        (item, i) =>
+                                            item.count > 0 && (
+                                                <div
+                                                    key={item.status}
+                                                    className={`transition-[width] duration-700 ease-out ${TICKET_STATUS_META[item.status].barClass}`}
+                                                    style={{
+                                                        width: mounted
+                                                            ? `${(item.count / totalTicketCount) * 100}%`
+                                                            : '0%',
+                                                        transitionDelay: `${150 + i * 80}ms`,
+                                                    }}
+                                                    title={`${TICKET_STATUS_META[item.status].label}: ${item.count}`}
+                                                />
+                                            ),
+                                    )}
+                            </div>
+
+                            {/* Status items */}
+                            <div className="flex flex-col gap-1.5">
+                                {ticketBreakdown.map((item) => (
                                     <div
-                                        key={i}
-                                        className="flex items-center justify-between rounded-lg border p-3"
+                                        key={item.status}
+                                        className="flex items-center justify-between rounded-lg p-2 text-sm transition-colors hover:bg-muted/60"
                                     >
-                                        <div>
-                                            <p className="font-medium">{scan.intern_name}</p>
-                                            <p className="text-muted-foreground text-sm">
-                                                {scan.label === 'time_in' ? 'Timed In' : 'Timed Out'} · {scan.scanned_at}
-                                            </p>
+                                        <div className="flex items-center gap-2.5">
+                                            <span
+                                                className={`size-3 shrink-0 rounded-full ${TICKET_STATUS_META[item.status].dotClass}`}
+                                            />
+                                            <span className="font-medium text-foreground">
+                                                {TICKET_STATUS_META[item.status].label}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-semibold text-foreground tabular-nums">
+                                                <CountUp value={item.count} />
+                                            </span>
+                                            <span className="text-xs text-muted-foreground">
+                                                ({totalTicketCount > 0 ? Math.round((item.count / totalTicketCount) * 100) : 0}%)
+                                            </span>
                                         </div>
                                     </div>
                                 ))}
                             </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="lg:col-span-2 shadow-xs">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-base font-semibold">
+                                Top Interns by Scans (Last 14 Days)
+                            </CardTitle>
+                            <CardDescription>
+                                Interns with the highest scanning activity
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <RankedList
+                                items={topInterns}
+                                mounted={mounted}
+                                emptyMessage="No scans recorded in the last 14 days."
+                                itemLabel="scan"
+                            />
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Recent Scans with Shadcn UI Table & NumberedPagination */}
+                <Card className="shadow-xs">
+                    <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle className="text-base font-semibold">
+                                    Recent Scans
+                                </CardTitle>
+                                <CardDescription>
+                                    Live activity log from the HTE scanning station
+                                </CardDescription>
+                            </div>
+                            <Badge variant="outline" className="text-xs font-normal">
+                                Total {recentScans.total}
+                            </Badge>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="flex flex-col gap-4">
+                        {recentScans.data.length === 0 ? (
+                            <div className="py-12 text-center text-sm text-muted-foreground">
+                                No scans recorded yet — this list fills up as interns from your HTE scan in.
+                            </div>
+                        ) : (
+                            <>
+                                {/* Table — desktop view */}
+                                <div className="hidden sm:block rounded-lg border overflow-hidden">
+                                    <Table>
+                                        <TableHeader className="bg-muted/40">
+                                            <TableRow>
+                                                <TableHead className="font-semibold">Intern Name</TableHead>
+                                                <TableHead className="font-semibold">ID Number</TableHead>
+                                                <TableHead className="font-semibold text-center">Type</TableHead>
+                                                <TableHead className="font-semibold text-right">Scanned At</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {recentScans.data.map((scan) => (
+                                                <TableRow key={scan.id}>
+                                                    <TableCell className="font-medium text-foreground">
+                                                        {scan.intern_name}
+                                                    </TableCell>
+                                                    <TableCell className="text-muted-foreground tabular-nums">
+                                                        {scan.id_number ?? '—'}
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        <Badge
+                                                            variant={scan.label === 'time_in' ? 'default' : 'secondary'}
+                                                            className="font-medium text-xs shadow-xs"
+                                                        >
+                                                            {scan.label === 'time_in' ? 'Time In' : 'Time Out'}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell
+                                                        className="text-right text-muted-foreground whitespace-nowrap text-xs"
+                                                        title={scan.scanned_at_full}
+                                                    >
+                                                        {scan.scanned_at}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+
+                                {/* Mobile card list */}
+                                <div className="divide-y rounded-lg border sm:hidden">
+                                    {recentScans.data.map((scan) => (
+                                        <div
+                                            key={scan.id}
+                                            className="flex items-center justify-between p-3.5"
+                                        >
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="font-medium text-sm text-foreground">
+                                                    {scan.intern_name}
+                                                </span>
+                                                <span className="text-xs text-muted-foreground" title={scan.scanned_at_full}>
+                                                    {scan.scanned_at}
+                                                </span>
+                                            </div>
+                                            <Badge
+                                                variant={scan.label === 'time_in' ? 'default' : 'secondary'}
+                                                className="font-medium text-xs"
+                                            >
+                                                {scan.label === 'time_in' ? 'Time In' : 'Time Out'}
+                                            </Badge>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <NumberedPagination
+                                    meta={recentScans}
+                                    itemLabel="scan"
+                                    onPageChange={goToPage}
+                                    onPerPageChange={changePerPage}
+                                    idPrefix="dashboard-recent-scans-per-page"
+                                />
+                            </>
                         )}
                     </CardContent>
                 </Card>

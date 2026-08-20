@@ -1,3 +1,5 @@
+import { CountUp } from '@/components/dashboard-analytics';
+
 type HoursProgressRingProps = {
     percent: number;
     totalRendered: number;
@@ -9,23 +11,26 @@ export function HoursProgressRing({
     percent,
     totalRendered,
     required,
-    size = 160,
+    size = 220,
 }: HoursProgressRingProps) {
-    const strokeWidth = 12;
+    const strokeWidth = 14;
     const radius = (size - strokeWidth) / 2;
     const circumference = 2 * Math.PI * radius;
     const clamped = Math.min(100, Math.max(0, percent));
     const offset = circumference - (clamped / 100) * circumference;
 
     return (
-        <div className="relative" style={{ width: size, height: size }}>
-            <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
+        <div
+            className="relative mx-auto aspect-square w-full py-1"
+            style={{ maxWidth: size }}
+        >
+            <svg viewBox={`0 0 ${size} ${size}`} className="h-full w-full -rotate-90 drop-shadow-xs">
                 <circle
                     cx={size / 2}
                     cy={size / 2}
                     r={radius}
                     strokeWidth={strokeWidth}
-                    className="fill-none stroke-muted"
+                    className="fill-none stroke-muted/80"
                 />
                 <circle
                     cx={size / 2}
@@ -35,15 +40,18 @@ export function HoursProgressRing({
                     strokeDasharray={circumference}
                     strokeDashoffset={offset}
                     strokeLinecap="round"
-                    className="fill-none stroke-primary transition-[stroke-dashoffset] duration-500 ease-out"
+                    className="fill-none stroke-primary transition-all duration-700 ease-out"
                 />
             </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-2xl font-semibold tabular-nums">{clamped}%</span>
-                <span className="text-center text-xs text-muted-foreground">
+            <div className="absolute inset-0 flex flex-col items-center justify-center px-2 text-center pointer-events-none">
+                <span className="text-2xl sm:text-3xl font-bold tracking-tight tabular-nums text-foreground">
+                    <CountUp value={clamped} />%
+                </span>
+                <span className="text-xs font-medium text-muted-foreground mt-0.5">
                     {totalRendered.toFixed(1)} / {required} hrs
                 </span>
             </div>
         </div>
     );
 }
+

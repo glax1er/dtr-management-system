@@ -47,4 +47,54 @@ return [
     */
     'default_required_hours' => (int) env('DTR_REQUIRED_HOURS', 486),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Expected start time (fallback)
+    |--------------------------------------------------------------------------
+    |
+    | Used for both the "on time"/"late" punctuality label AND the hours-
+    | rendered clamp. This is only the last-resort fallback now — a given
+    | day's actual expected start time is resolved via SchedulePeriod first
+    | (HTE-specific override, then the global admin default), and this
+    | value is only used if neither of those has a period configured for
+    | that day at all.
+    |
+    */
+    'expected_start_time' => env('DTR_EXPECTED_START_TIME', '08:00'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Time-out cutoff
+    |--------------------------------------------------------------------------
+    |
+    | If a day's *first* scan comes in after this time, it's treated as
+    | a time-out instead of a time-in — the intern forgot to scan in
+    | that morning, so there's no time-in to record for that day at all.
+    | Same "hardcoded for now, one-line change later" pattern as the
+    | lunch window above.
+    |
+    */
+    'time_out_cutoff' => env('DTR_TIME_OUT_CUTOFF', '16:00'),
+
+
+    'grace_period_minutes' => env('DTR_GRACE_PERIOD_MINUTES', 30),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Early-arrival allowance (hours-rendered clamp)
+    |--------------------------------------------------------------------------
+    |
+    | An intern who scans in before the expected start time doesn't have
+    | that entire early arrival thrown away — up to this many minutes
+    | *before* the resolved expected start time (SchedulePeriod override,
+    | then global default, then the fallback above) still counts as
+    | rendered time. Anything earlier than that is still clamped away.
+    |
+    | Applies uniformly on top of whichever expected start time layer
+    | ends up being used — it doesn't change which layer wins, only how
+    | much of an early scan-in counts once that layer is resolved.
+    |
+    */
+    'early_arrival_allowance_minutes' => env('DTR_EARLY_ARRIVAL_ALLOWANCE_MINUTES', 60),
+
 ];

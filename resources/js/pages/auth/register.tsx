@@ -102,7 +102,7 @@ export default function Register({
                             <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
                                 <div className="grid gap-2">
                                     <Label htmlFor="name">
-                                        Name{' '}
+                                        Full Name{' '}
                                         <span className="text-red-500">*</span>
                                     </Label>
                                     <Input
@@ -301,31 +301,32 @@ export default function Register({
                             <div className="flex items-start gap-2">
                                 <Checkbox
                                     id="privacy_accepted"
-                                    name="privacy_accepted" // matches the backend's validated field name
+                                    name="privacy_accepted"
                                     tabIndex={10}
-                                    checked={privacyAccepted} // controlled by React state
-                                    // CHANGED — checkbox can't be checked until the policy has been read
+                                    checked={privacyAccepted}
                                     disabled={!hasReadPolicy}
                                     onCheckedChange={(checked) =>
                                         setPrivacyAccepted(checked === true)
                                     }
                                     className="mt-0.5"
                                 />
-                                <Label
-                                    htmlFor="privacy_accepted"
-                                    className="text-sm font-normal text-muted-foreground"
-                                >
-                                    I have read and agree to the{' '}
+                                <div className="text-sm">
+                                    <Label
+                                        htmlFor="privacy_accepted"
+                                        className="font-normal opacity-50"
+                                    >
+                                        I have read and agree to the{' '}
+                                    </Label>
                                     <button
-                                        type="button" // prevents this from submitting the form
-                                        className="underline underline-offset-2 hover:text-foreground"
+                                        type="button"
+                                        className="cursor-pointer text-foreground underline underline-offset-2 hover:text-blue-800 dark:text-white"
                                         onClick={() =>
                                             setShowPrivacyDialog(true)
                                         }
                                     >
                                         Privacy Policy
                                     </button>
-                                </Label>
+                                </div>
                             </div>
 
                             {/* ADDED — shows backend validation error if privacy_accepted fails server-side */}
@@ -333,7 +334,7 @@ export default function Register({
 
                             <Button
                                 type="submit"
-                                className="mt-2 w-full"
+                                className="w-full"
                                 tabIndex={11} // CHANGED — was 10, shifted by 1 for the new checkbox
                                 disabled={!privacyAccepted} // ADDED — blocks submit until accepted
                                 data-test="register-user-button"

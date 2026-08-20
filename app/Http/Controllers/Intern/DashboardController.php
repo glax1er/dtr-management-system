@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Intern;
 
 use App\Http\Controllers\Controller;
+use App\Models\ResolutionTicket;
 use App\Services\Attendance\DailyAttendanceCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -35,38 +36,56 @@ class DashboardController extends Controller
 
         $monthDays = $this->calculator->forIntern(
             $user->id,
+            $profile->hte_id,
             from: $month->clone()->startOfMonth(),
             to: $month->clone()->endOfMonth(),
+            approvedAt: $profile->approved_at,
         );
 
         // Today's card is deliberately independent of $monthDays — an
         // intern paging back to review a previous month shouldn't see
         // their "Today" status disappear.
         $todayEntry = $this->calculator
-            ->forIntern($user->id, from: $today->clone()->startOfDay(), to: $today->clone()->endOfDay())
+            ->forIntern($user->id, $profile->hte_id, from: $today->clone()->startOfDay(), to: $today->clone()->endOfDay())
             ->first();
 
-        $requiredHours = $profile->program->required_hours ?? config('dtr.default_required_hours');
-        $totalHours = $this->calculator->totalHours($user->id);
+        $requiredHours = $profile->program?->required_hours ?? config('dtr.default_required_hours');
+        $totalHours = $this->calculator->totalHours($user->id, $profile->hte_id);
+
+        // Keyed by date string so it's a cheap lookup per row below —
+        // only ever one pending ticket per date is allowed to exist
+        // (enforced in ResolutionTicketController::store()).
+        $pendingTicketsByDate = ResolutionTicket::query()
+            ->where('intern_user_id', $user->id)
+            ->where('status', ResolutionTicket::STATUS_PENDING)
+            ->whereBetween('date', [$month->clone()->startOfMonth()->toDateString(), $month->clone()->endOfMonth()->toDateString()])
+            ->get()
+            ->mapWithKeys(fn (ResolutionTicket $ticket) => [$ticket->date->toDateString() => $ticket->id]);
 
         return Inertia::render('intern/dashboard', [
             'profile' => [
                 'name' => $user->name,
                 'email' => $user->email,
                 'id_number' => $profile->id_number,
-                'hte_name' => $profile->hte->hte_name,
-                'program_name' => $profile->program->program_name,
+                'hte_name' => $profile->hte?->hte_name ?? 'Deleted HTE',
+                'program_name' => $profile->program?->program_name ?? 'Deleted Program',
                 'status' => $profile->status,
                 // Placeholder only — QR generation/display is being built
                 // separately. This flag just tells the UI whether a code
                 // exists yet at all; it never renders the actual image here.
                 'has_qr_code' => $profile->qr_code_value !== null,
+                'photo_url' => $profile->profile_photo_url,
             ],
             'today' => [
                 'date' => $today->toDateString(),
-                'time_in' => $todayEntry?->timeIn->clone()->setTimezone($timezone)->format('H:i:s'),
-                'time_out' => $todayEntry?->timeOut?->clone()->setTimezone($timezone)->format('H:i:s'),
-                'status' => $todayEntry === null ? 'not_started' : ($todayEntry->isOpen() ? 'open' : 'complete'),
+                'time_in' => $todayEntry?->timeIn?->clone()->setTimezone($timezone)->format('g:i A'),
+                'time_out' => $todayEntry?->timeOut?->clone()->setTimezone($timezone)->format('g:i A'),
+                'status' => match (true) {
+                    $todayEntry === null => 'not_started',
+                    $todayEntry->isMissingTimeIn() => 'missing_time_in',
+                    $todayEntry->isOpen() => 'open',
+                    default => 'complete',
+                },
             ],
             'hours' => [
                 'total_rendered' => $totalHours,
@@ -77,7 +96,10 @@ class DashboardController extends Controller
             ],
             'month' => $month->format('Y-m'),
             'monthLabel' => $month->format('F Y'),
-            'logs' => $monthDays->map->toArray()->values(),
+            'logs' => $monthDays->map(fn ($day) => [
+                ...$day->toArray(),
+                'pending_ticket_id' => $pendingTicketsByDate->get($day->date),
+            ])->values(),
             'monthTotalHours' => round($monthDays->sum('hoursRendered'), 2),
             'canGoNextMonth' => $month->clone()->addMonthNoOverflow()->lessThanOrEqualTo($today->clone()->startOfMonth()),
         ]);

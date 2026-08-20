@@ -1,45 +1,29 @@
 <?php
+// app/Actions/Attendance/RecordScan.php
 
 namespace App\Actions\Attendance;
 
 use App\Exceptions\Attendance\InvalidScanException;
 use App\Models\AttendanceLog;
 use App\Models\InternProfile;
-use App\Models\User;
+use App\Models\Kiosk;
 use App\Support\Attendance\ScanLabel;
 use App\Support\Attendance\ScanRejectionReason;
 use App\Support\Attendance\ScanResult;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
 
-/**
- * The single write path for both Time In and Time Out. attendance_logs
- * has no direction column, so there is no "which kind of row" decision
- * to make here — every accepted scan is written identically. What
- * this action actually decides is whether to write anything at all
- * (QR / approval / HTE checks, debounce), and what display label to
- * hand back to the scanner screen.
- */
 class RecordScan
 {
-    /**
-     * Scans from the same intern within this many minutes of their
-     * last scan are treated as accidental re-taps: no new row is
-     * written, and the original scan's details are returned instead.
-     * 5 minutes matches a standard preset on commercial time clocks
-     * (e.g. ClockRite's selectable 1/2/5-minute duplicate-punch
-     * periods), and was chosen so a genuinely forgetful re-scan
-     * shortly after timing in doesn't accidentally register as a
-     * time-out.
-     */
     private const int DEBOUNCE_MINUTES = 5;
 
-    public function __invoke(string $qrCodeValue, User $supervisorUser, ?CarbonInterface $at = null): ScanResult
+    public function __invoke(string $qrCodeValue, Kiosk $kiosk, ?CarbonInterface $at = null): ScanResult
     {
         $at ??= Date::now();
 
         $internProfile = InternProfile::query()
-            ->with('user')
+            ->with(['user', 'program:program_id,program_name', 'hte:hte_id,hte_name'])
             ->where('qr_code_value', $qrCodeValue)
             ->first();
 
@@ -49,16 +33,6 @@ class RecordScan
 
         if ($internProfile->status !== 'approved') {
             throw new InvalidScanException(ScanRejectionReason::InternNotApproved);
-        }
-
-        $supervisorProfile = $supervisorUser->supervisorProfile;
-
-        if ($supervisorProfile === null) {
-            throw new InvalidScanException(ScanRejectionReason::ScannerNotSupervisor);
-        }
-
-        if ($supervisorProfile->hte_id !== $internProfile->hte_id) {
-            throw new InvalidScanException(ScanRejectionReason::HteMismatch);
         }
 
         $lastScan = AttendanceLog::query()
@@ -72,7 +46,7 @@ class RecordScan
         if (! $isDuplicate) {
             AttendanceLog::create([
                 'intern_user_id' => $internProfile->user_id,
-                'supervisor_user_id' => $supervisorUser->id,
+                'kiosk_id' => $kiosk->id,
                 'scan_timestamp' => $at,
             ]);
         }
@@ -81,25 +55,34 @@ class RecordScan
             internUserId: $internProfile->user_id,
             internName: $internProfile->user->name,
             idNumber: $internProfile->id_number,
+            programName: $internProfile->program?->program_name ?? 'Deleted Program',
+            hteName: $internProfile->hte?->hte_name ?? 'Deleted HTE',
+            photoUrl: $internProfile->profile_photo_url,
             label: $this->labelForScanCountToday($internProfile->user_id, $at),
             timestamp: $isDuplicate ? $lastScan->scan_timestamp : $at,
             isDuplicate: $isDuplicate,
         );
     }
 
-    /**
-     * Display-only: the first scan of the day is labeled Time In,
-     * every scan after that is labeled Time Out. Nothing about this
-     * label is stored — DailyAttendanceCalculator derives time-in/
-     * time-out independently via MIN/MAX over the same raw rows, so
-     * the two can never drift apart.
-     */
     private function labelForScanCountToday(int $internUserId, CarbonInterface $at): ScanLabel
     {
+        $timezone = config('dtr.timezone');
+        $localAt = $at->clone()->setTimezone($timezone);
+        $dayStart = $localAt->clone()->startOfDay();
+        $dayEnd = $localAt->clone()->endOfDay();
+
         $scansToday = AttendanceLog::query()
             ->where('intern_user_id', $internUserId)
-            ->whereDate('scan_timestamp', $at)
+            ->whereBetween('scan_timestamp', [$dayStart, $dayEnd])
             ->count();
+
+        $cutoff = Carbon::parse($localAt->toDateString() . ' ' . config('dtr.time_out_cutoff'), $timezone);
+
+        // If the day's first scan is after the time-out cutoff (e.g. 4:00 PM),
+        // it is a Time Out (missing time in), not a Time In.
+        if ($scansToday <= 1 && $localAt->gt($cutoff)) {
+            return ScanLabel::TimeOut;
+        }
 
         return $scansToday <= 1 ? ScanLabel::TimeIn : ScanLabel::TimeOut;
     }

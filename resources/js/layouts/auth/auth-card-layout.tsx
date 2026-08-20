@@ -25,9 +25,29 @@ export default function AuthCardLayout({
 
                 <div className="flex flex-col gap-6">
                     <Card className="rounded-xl">
-                        <CardHeader className="px-10 pt-4 pb-0 text-center">
-                            {/* for logo, you can use an image or a component */}
-                            {/* <img src="/logo.png" alt="Logo" className="mx-auto mb-3 h-12 w-auto" /> */}
+                        <CardHeader className="text-center">
+                            <div className="flex items-end justify-center">
+                                <img
+                                    src="/images/usep-logo.png"
+                                    alt="USEP logo"
+                                    className="h-12 w-auto object-contain mb-2"
+                                />
+                                <img
+                                    src="/images/cims-logo-light.png"
+                                    alt="CIC logo"
+                                    className="h-27 w-auto object-contain dark:hidden"
+                                />
+                                <img
+                                    src="/images/cims-logo-dark.png"
+                                    className="hidden h-27 w-auto object-contain dark:block"
+                                    alt="CIC logo dark"
+                                />
+                                <img
+                                    src="/images/cic-logo.png"
+                                    alt="App logo"
+                                    className="h-12 w-auto rounded-full object-contain mb-2"
+                                />
+                            </div>
                             <CardTitle className="text-xl">{title}</CardTitle>
                             <CardDescription>{description}</CardDescription>
                         </CardHeader>

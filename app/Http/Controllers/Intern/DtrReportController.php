@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Intern\DownloadDtrReportRequest;
 use App\Services\Attendance\DailyAttendanceCalculator;
 use Illuminate\Support\Carbon;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Mpdf\Mpdf;
+use Mpdf\Output\Destination;
+use Symfony\Component\HttpFoundation\Response;
 
 class DtrReportController extends Controller
 {
@@ -15,79 +17,90 @@ class DtrReportController extends Controller
     ) {}
 
     /**
-     * Streams a CSV in the intern's existing 2-column DTR layout:
-     * one row per day, with the day's first scan as "Time In (Morning)"
+     * Renders a PDF in the intern's existing 2-column DTR layout: one
+     * row per day, with the day's first scan as "Time In (Morning)"
      * and last scan as "Time Out (Afternoon)".
      *
-     * NOTE: FR-12 flags the exact report format/fields as still needing
-     * sign-off from the team. CSV was chosen here specifically because
-     * it needs zero extra libraries (built into PHP via fputcsv) and
-     * opens directly in Excel/Sheets. If the finalized format turns out
-     * to need a styled PDF/table layout instead, only this method needs
-     * to change — the underlying data (DailyAttendanceCalculator) stays
-     * the same.
+     * This used to be a CSV — swapped to a styled PDF (via mPDF) once
+     * the team needed control over the actual visual layout, not just
+     * the data. Only this method and its Blade view changed; the data
+     * itself (DailyAttendanceCalculator) is completely untouched — see
+     * its own comment for why it was built decoupled from rendering
+     * in the first place.
      */
-    public function download(DownloadDtrReportRequest $request): StreamedResponse
+    public function download(DownloadDtrReportRequest $request): Response
     {
         $user = $request->user();
         $profile = $user->internProfile()->with(['hte', 'program'])->firstOrFail();
         $timezone = config('dtr.timezone');
 
         $validated = $request->validated();
-        $month = isset($validated['month'])
-            ? Carbon::createFromFormat('Y-m-d', $validated['month'].'-01', $timezone)->startOfMonth()
-            : Carbon::now($timezone)->startOfMonth();
+
+        // Determine reporting period. Prefer explicit start/end, then a single date (use that week),
+        // then legacy month param; default to current week to support weekly reporting.
+        if (!empty($validated['start']) && !empty($validated['end'])) {
+            $from = Carbon::createFromFormat('Y-m-d', $validated['start'], $timezone)->startOfDay();
+            $to = Carbon::createFromFormat('Y-m-d', $validated['end'], $timezone)->endOfDay();
+            if ($from->gt($to)) {
+                // swap to be safe
+                [$from, $to] = [$to, $from];
+            }
+        } elseif (!empty($validated['date'])) {
+            $d = Carbon::createFromFormat('Y-m-d', $validated['date'], $timezone);
+            // Use ISO week start (Monday) to end (Sunday)
+            $from = $d->copy()->startOfWeek();
+            $to = $d->copy()->endOfWeek();
+        } elseif (!empty($validated['month'])) {
+            $month = Carbon::createFromFormat('Y-m-d', $validated['month'].'-01', $timezone)->startOfMonth();
+            $from = $month->copy()->startOfMonth();
+            $to = $month->copy()->endOfMonth();
+        } else {
+            // Default to current week (Monday - Sunday)
+            $now = Carbon::now($timezone);
+            $from = $now->copy()->startOfWeek();
+            $to = $now->copy()->endOfWeek();
+        }
 
         $days = $this->calculator->forIntern(
             $user->id,
-            from: $month->clone()->startOfMonth(),
-            to: $month->clone()->endOfMonth(),
+            $profile->hte_id,
+            from: $from,
+            to: $to,
+            approvedAt: $profile->approved_at,
         );
+
+        $html = view('reports.dtr', [
+            'user' => $user,
+            'profile' => $profile,
+            // pass explicit period to the view for accurate header text
+            'from' => $from,
+            'to' => $to,
+            'days' => $days,
+            'totalHours' => $days->sum('hoursRendered'),
+        ])->render();
+
+        $mpdf = new Mpdf([
+            'format' => 'Letter',
+            'margin_top' => 15,
+            'margin_bottom' => 15,
+            'margin_left' => 15,
+            'margin_right' => 15,
+        ]);
+        $mpdf->WriteHTML($html);
 
         $filename = sprintf(
-            'DTR_%s_%s.csv',
+            'DTR_%s_%s.pdf',
             str_replace(' ', '_', $profile->id_number),
-            $month->format('Y-m'),
+            sprintf('%s-%s', $from->format('Ymd'), $to->format('Ymd')),
         );
 
-        $callback = function () use ($user, $profile, $month, $days) {
-            $handle = fopen('php://output', 'w');
-
-            // Header block, matching the intern's existing DTR paper form.
-            fputcsv($handle, ['Daily Time Record']);
-            fputcsv($handle, ['Name', $user->name]);
-            fputcsv($handle, ['ID Number', $profile->id_number]);
-            fputcsv($handle, ['HTE', $profile->hte->hte_name]);
-            fputcsv($handle, ['Program', $profile->program->program_name]);
-            fputcsv($handle, ['Month', $month->format('F Y')]);
-            fputcsv($handle, []);
-
-            fputcsv($handle, [
-                'Date', 'Day', 'Time In (Morning)', 'Time Out (Afternoon)',
-                'Hours Rendered', 'Lunch Deducted', 'Status',
-            ]);
-
-            foreach ($days as $day) {
-                $row = $day->toArray();
-                fputcsv($handle, [
-                    $row['date'],
-                    $row['day'],
-                    $row['time_in'],
-                    $row['time_out'] ?? '—',
-                    number_format($row['hours_rendered'], 2),
-                    $row['lunch_deducted'] ? 'Yes' : 'No',
-                    $row['status'] === 'open' ? 'No time-out recorded' : 'Complete',
-                ]);
-            }
-
-            fputcsv($handle, []);
-            fputcsv($handle, ['Total Hours Rendered', number_format($days->sum('hoursRendered'), 2)]);
-
-            fclose($handle);
-        };
-
-        return response()->streamDownload($callback, $filename, [
-            'Content-Type' => 'text/csv',
-        ]);
+        return response(
+            $mpdf->Output($filename, Destination::STRING_RETURN),
+            200,
+            [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+            ],
+        );
     }
 }
