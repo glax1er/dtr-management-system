@@ -36,8 +36,8 @@ test('intern can view their document checklist page', function () {
     $response->assertOk();
     $response->assertInertia(fn (Assert $page) => $page
         ->component('intern/documents/index')
-        ->has('checklist', 6)
-        ->where('stats.total_required', 5)
+        ->has('checklist', 12)
+        ->where('stats.total_required', 12)
         ->where('stats.total_submitted', 0)
         ->where('stats.progress_percentage', 0)
     );
@@ -47,10 +47,10 @@ test('intern can upload a valid PDF document', function () {
     Storage::fake('local');
     [$intern] = createTestIntern();
 
-    $pdfFile = UploadedFile::fake()->create('parent_waiver.pdf', 1024, 'application/pdf');
+    $pdfFile = UploadedFile::fake()->create('parents_consent.pdf', 1024, 'application/pdf');
 
     $response = $this->actingAs($intern)->post(route('intern.documents.store'), [
-        'document_type' => 'parent_waiver',
+        'document_type' => 'parents_consent',
         'file' => $pdfFile,
     ]);
 
@@ -59,8 +59,8 @@ test('intern can upload a valid PDF document', function () {
 
     $this->assertDatabaseHas('intern_documents', [
         'user_id' => $intern->id,
-        'document_type' => 'parent_waiver',
-        'original_filename' => 'parent_waiver.pdf',
+        'document_type' => 'parents_consent',
+        'original_filename' => 'parents_consent.pdf',
         'status' => InternDocument::STATUS_PENDING,
     ]);
 });
@@ -72,38 +72,50 @@ test('uploading a non-PDF document is rejected', function () {
     $pngFile = UploadedFile::fake()->image('waiver.png');
 
     $response = $this->actingAs($intern)->post(route('intern.documents.store'), [
-        'document_type' => 'parent_waiver',
+        'document_type' => 'parents_consent',
         'file' => $pngFile,
     ]);
 
     $response->assertSessionHasErrors(['file']);
 });
 
-test('admin can review, approve, and reject intern documents', function () {
+test('supervisor can review, approve, and reject intern documents, while admin cannot', function () {
     Storage::fake('local');
-    [$intern] = createTestIntern();
+    [$intern, $profile, $hte, $program] = createTestIntern();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+
+    $supervisorUser = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
+    \App\Models\SupervisorProfile::create([
+        'user_id' => $supervisorUser->id,
+        'program_id' => $program->program_id,
+        'supervisor_type' => 'ojt',
+        'status' => 'active',
+    ]);
 
     $pdfFile = UploadedFile::fake()->create('endorsement.pdf', 500, 'application/pdf');
 
     $this->actingAs($intern)->post(route('intern.documents.store'), [
-        'document_type' => 'endorsement_letter',
+        'document_type' => 'usep_hte_nda',
         'file' => $pdfFile,
     ]);
 
     $document = InternDocument::where('user_id', $intern->id)->firstOrFail();
 
-    // Admin approves
+    // Admin cannot approve
     $this->actingAs($admin)->post(route('documents.review.approve', $document->id))
+        ->assertForbidden();
+
+    // Supervisor approves
+    $this->actingAs($supervisorUser)->post(route('documents.review.approve', $document->id))
         ->assertSessionHasNoErrors()
         ->assertRedirect();
 
     $document->refresh();
     expect($document->status)->toBe(InternDocument::STATUS_APPROVED);
-    expect($document->reviewed_by)->toBe($admin->id);
+    expect($document->reviewed_by)->toBe($supervisorUser->id);
 
-    // Admin rejects with reason
-    $this->actingAs($admin)->post(route('documents.review.reject', $document->id), [
+    // Supervisor rejects with reason
+    $this->actingAs($supervisorUser)->post(route('documents.review.reject', $document->id), [
         'rejection_reason' => 'Signatures are missing on page 2.',
     ])->assertSessionHasNoErrors()->assertRedirect();
 
@@ -131,15 +143,15 @@ test('OJT supervisor can upload blank template formats and interns can download 
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('supervisor/document-templates')
-            ->has('checklist', 6)
+            ->has('checklist', 12)
         );
 
-    // OJT Supervisor uploads a blank template for parent waiver
-    $templateFile = UploadedFile::fake()->create('waiver_official_template.docx', 500, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    // OJT Supervisor uploads a blank template for parent's consent
+    $templateFile = UploadedFile::fake()->create('consent_official_template.docx', 500, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
 
     $this->actingAs($ojtSupervisorUser)
         ->post(route('supervisor.document-templates.store'), [
-            'document_type' => 'parent_waiver',
+            'document_type' => 'parents_consent',
             'file' => $templateFile,
             'instructions' => 'Please sign with blue ink and attach 2x2 ID picture.',
         ])
@@ -148,11 +160,11 @@ test('OJT supervisor can upload blank template formats and interns can download 
 
     $this->assertDatabaseHas('document_templates', [
         'program_id' => $program->program_id,
-        'document_type' => 'parent_waiver',
-        'original_filename' => 'waiver_official_template.docx',
+        'document_type' => 'parents_consent',
+        'original_filename' => 'consent_official_template.docx',
     ]);
 
-    $template = \App\Models\DocumentTemplate::where('document_type', 'parent_waiver')->firstOrFail();
+    $template = \App\Models\DocumentTemplate::where('document_type', 'parents_consent')->firstOrFail();
 
     // Intern views their checklist and sees the blank template available
     $this->actingAs($intern)
@@ -160,7 +172,7 @@ test('OJT supervisor can upload blank template formats and interns can download 
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('checklist.0.has_template', true)
-            ->where('checklist.0.template_filename', 'waiver_official_template.docx')
+            ->where('checklist.0.template_filename', 'consent_official_template.docx')
             ->where('checklist.0.template_instructions', 'Please sign with blue ink and attach 2x2 ID picture.')
         );
 

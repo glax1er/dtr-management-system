@@ -4,16 +4,20 @@ namespace App\Http\Controllers\Supervisor;
 
 use App\Http\Controllers\Controller;
 use App\Models\Hte;
+use App\Models\InternDocument;
 use App\Models\InternProfile;
 use App\Models\SupervisorProfile;
 use App\Models\SchedulePeriod;
 use App\Services\Attendance\DailyAttendance;
 use App\Services\Attendance\DailyAttendanceCalculator;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
+use Mpdf\Mpdf;
+use Mpdf\Output\Destination;
 
 class InternsController extends Controller
 {
@@ -41,27 +45,25 @@ class InternsController extends Controller
     /**
      * Simple, read-only list of every intern in the OJT Supervisor's
      * program, across every HTE — name, contact info, where they're
-     * assigned, and total hours rendered to date. No date picker, no
-     * internal/admin fields (status, QR value, timestamps, profile
-     * photo) — just what a supervisor needs to see at a glance. Paginated
-     * the same way as the HTE attendance log (InternsController::attendanceLogs)
-     * so both surfaces behave consistently once a roster grows past a page.
+     * assigned, total hours rendered to date, and requirement completion status.
      */
     private function roster(Request $request, SupervisorProfile $supervisorProfile): Response
     {
         $validated = $request->validate([
             'search' => ['nullable', 'string', 'max:255'],
             'hte_id' => ['nullable', 'integer'],
+            'completion_status' => ['nullable', 'string', 'in:all,completed,in_progress'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
         $search = trim($validated['search'] ?? '');
         $hteId = $validated['hte_id'] ?? null;
+        $completionStatus = $validated['completion_status'] ?? 'all';
 
         $internsQuery = $supervisorProfile->getAssignedInterns()
-        ->where('status', 'approved')
-        ->with('user', 'hte');
+            ->where('status', 'approved')
+            ->with(['user', 'hte', 'program', 'internDocuments']);
 
         if ($search !== '') {
             $internsQuery->whereHas('user', fn ($query) => $query->where('name', 'like', "%{$search}%"));
@@ -72,34 +74,68 @@ class InternsController extends Controller
         }
 
         // Every HTE currently hosting an intern from this program — powers
-        // the "Assigned HTE" filter dropdown. Same scope Hte::index() in
-        // HtesController uses, computed independently of the search/hte_id
-        // filters above so the dropdown's option list never shrinks based
-        // on what's currently filtered.
+        // the "Assigned HTE" filter dropdown.
         $hteOptions = Hte::query()
             ->whereHas('internProfiles', fn ($query) => $query->where('program_id', $supervisorProfile->program_id))
             ->orderBy('hte_name')
             ->get(['hte_id', 'hte_name']);
 
-        $students = $internsQuery->get()
-            ->map(fn (InternProfile $intern) => [
-                'intern_user_id' => $intern->user_id,
-                'name' => $intern->user->name,
-                'email' => $intern->user->email,
-                'id_number' => $intern->id_number,
-                'contact_number' => $intern->contact_number,
-                'hte_name' => $intern->hte->hte_name,
-                'total_hours' => $this->calculator->totalHours($intern->user_id, $intern->hte_id),
-            ])
+        $requiredDocKeys = array_keys(array_filter(InternDocument::DOCUMENT_TYPES, fn ($c) => $c['required'] ?? false));
+        $totalRequiredDocsCount = count($requiredDocKeys);
+
+        $allStudents = $internsQuery->get()
+            ->map(function (InternProfile $intern) use ($requiredDocKeys, $totalRequiredDocsCount) {
+                $requiredHours = $intern->program->required_hours ?? config('dtr.default_required_hours');
+                $totalHours = $this->calculator->totalHours($intern->user_id, $intern->hte_id);
+                $hoursCompleted = $totalHours >= $requiredHours;
+
+                $approvedRequiredDocsCount = $intern->internDocuments
+                    ->where('status', InternDocument::STATUS_APPROVED)
+                    ->whereIn('document_type', $requiredDocKeys)
+                    ->count();
+                $docsCompleted = $approvedRequiredDocsCount >= $totalRequiredDocsCount;
+                $isCompleted = $hoursCompleted && $docsCompleted;
+
+                $progressPercent = $requiredHours > 0
+                    ? min(100, round(($totalHours / $requiredHours) * 100, 1))
+                    : 0;
+
+                return [
+                    'intern_user_id' => $intern->user_id,
+                    'name' => $intern->user->name,
+                    'email' => $intern->user->email,
+                    'id_number' => $intern->id_number,
+                    'contact_number' => $intern->contact_number,
+                    'hte_name' => $intern->hte->hte_name,
+                    'total_hours' => $totalHours,
+                    'required_hours' => $requiredHours,
+                    'progress_percent' => $progressPercent,
+                    'hours_completed' => $hoursCompleted,
+                    'approved_docs_count' => $approvedRequiredDocsCount,
+                    'total_required_docs_count' => $totalRequiredDocsCount,
+                    'docs_completed' => $docsCompleted,
+                    'is_completed' => $isCompleted,
+                ];
+            })
             ->sortBy('name')
             ->values();
 
+        $completedCount = $allStudents->where('is_completed', true)->count();
+        $inProgressCount = $allStudents->where('is_completed', false)->count();
+
+        $filteredStudents = $allStudents;
+        if ($completionStatus === 'completed') {
+            $filteredStudents = $filteredStudents->where('is_completed', true)->values();
+        } elseif ($completionStatus === 'in_progress') {
+            $filteredStudents = $filteredStudents->where('is_completed', false)->values();
+        }
+
         $perPage = (int) ($validated['per_page'] ?? 20);
-        $total = $students->count();
+        $total = $filteredStudents->count();
         $lastPage = max(1, (int) ceil($total / $perPage));
         $page = min((int) ($validated['page'] ?? 1), $lastPage);
 
-        $pagedStudents = $students->forPage($page, $perPage)->values();
+        $pagedStudents = $filteredStudents->forPage($page, $perPage)->values();
 
         return Inertia::render('supervisor/students', [
             'students' => [
@@ -111,15 +147,226 @@ class InternsController extends Controller
                 'from' => $total === 0 ? null : ($page - 1) * $perPage + 1,
                 'to' => $total === 0 ? null : min($page * $perPage, $total),
             ],
-            'studentCount' => $total,
+            'studentCount' => $allStudents->count(),
+            'completedCount' => $completedCount,
+            'inProgressCount' => $inProgressCount,
             'scopeName' => $supervisorProfile->getScopeName(),
             'hteOptions' => $hteOptions,
             'filters' => [
                 'search' => $search,
                 'hte_id' => $hteId,
+                'completion_status' => $completionStatus,
                 'per_page' => $perPage,
             ],
         ]);
+    }
+
+    /**
+     * Returns a comprehensive completion summary for an intern, detailing
+     * rendered vs. required hours, full attendance timeline, and mandatory
+     * document approval clearance status.
+     */
+    public function completionSummary(Request $request, int $internUserId): JsonResponse
+    {
+        $user = $request->user();
+        $internProfile = InternProfile::with(['user', 'hte', 'program', 'internDocuments.reviewer'])
+            ->where('user_id', $internUserId)
+            ->firstOrFail();
+
+        if (! $user->isAdmin()) {
+            if (! $user->isSupervisor()) {
+                abort(403, 'Unauthorized.');
+            }
+            $supervisor = $user->supervisorProfile;
+            if (! $supervisor) {
+                abort(403, 'Supervisor profile not found.');
+            }
+            if ($supervisor->isOjtSupervisor()) {
+                if ($internProfile->program_id !== $supervisor->program_id) {
+                    abort(403, 'Intern is not under your program.');
+                }
+            } else {
+                if ($internProfile->hte_id !== $supervisor->hte_id) {
+                    abort(403, 'Intern is not under your HTE.');
+                }
+            }
+        }
+
+        $timezone = config('dtr.timezone');
+        $requiredHours = $internProfile->program->required_hours ?? config('dtr.default_required_hours');
+        $totalHours = $this->calculator->totalHours($internProfile->user_id, $internProfile->hte_id);
+        $progressPercent = $requiredHours > 0 ? min(100, round(($totalHours / $requiredHours) * 100, 1)) : 0;
+        $hoursCompleted = $totalHours >= $requiredHours;
+
+        // Get daily attendance history for attendance stats
+        $attendanceDays = $this->calculator->forIntern(
+            $internProfile->user_id,
+            $internProfile->hte_id,
+            approvedAt: $internProfile->approved_at,
+        );
+
+        $attendedDays = $attendanceDays->filter(fn (DailyAttendance $day) => $day->hoursRendered > 0 || $day->rawScanCount > 0);
+        $totalDaysAttended = $attendedDays->count();
+        $firstAttendanceDate = $attendedDays->first()?->date;
+        $lastAttendanceDate = $attendedDays->last()?->date;
+
+        // Document checklist
+        $uploadedDocs = $internProfile->internDocuments->keyBy('document_type');
+        $checklist = [];
+        $totalRequiredDocs = 0;
+        $approvedRequiredDocs = 0;
+
+        foreach (InternDocument::DOCUMENT_TYPES as $typeKey => $typeConfig) {
+            $uploaded = $uploadedDocs->get($typeKey);
+            $isReq = $typeConfig['required'];
+            if ($isReq) {
+                $totalRequiredDocs++;
+                if ($uploaded && $uploaded->status === InternDocument::STATUS_APPROVED) {
+                    $approvedRequiredDocs++;
+                }
+            }
+
+            $checklist[] = [
+                'document_type' => $typeKey,
+                'name' => $typeConfig['name'],
+                'category' => $typeConfig['category'],
+                'description' => $typeConfig['description'],
+                'required' => $isReq,
+                'status' => $uploaded ? $uploaded->status : 'missing',
+                'id' => $uploaded?->id,
+                'original_filename' => $uploaded?->original_filename,
+                'file_size' => $uploaded?->formatted_file_size,
+                'rejection_reason' => $uploaded?->rejection_reason,
+                'submitted_at' => $uploaded?->submitted_at?->format('M d, Y g:i A'),
+                'reviewed_at' => $uploaded?->reviewed_at?->format('M d, Y g:i A'),
+                'reviewer_name' => $uploaded?->reviewer?->name,
+                'preview_url' => $uploaded ? route('documents.review.preview', $uploaded->id) : null,
+                'download_url' => $uploaded ? route('documents.review.download', $uploaded->id) : null,
+            ];
+        }
+
+        $docsCompleted = $approvedRequiredDocs >= $totalRequiredDocs;
+        $isCompleted = $hoursCompleted && $docsCompleted;
+
+        return response()->json([
+            'intern' => [
+                'user_id' => $internProfile->user_id,
+                'name' => $internProfile->user->name,
+                'email' => $internProfile->user->email,
+                'id_number' => $internProfile->id_number,
+                'contact_number' => $internProfile->contact_number,
+                'sex' => $internProfile->sex,
+                'photo_url' => $internProfile->profile_photo_url,
+                'registered_at' => $internProfile->registered_at?->format('M d, Y'),
+                'approved_at' => $internProfile->approved_at?->format('M d, Y'),
+                'program_name' => $internProfile->program?->program_name ?? 'N/A',
+                'hte_name' => $internProfile->hte?->hte_name ?? 'N/A',
+                'hte_address' => $internProfile->hte?->address,
+                'hte_contact_person' => $internProfile->hte?->contact_person,
+                'hte_contact_number' => $internProfile->hte?->contact_number,
+            ],
+            'hours' => [
+                'required_hours' => $requiredHours,
+                'total_hours' => $totalHours,
+                'progress_percent' => $progressPercent,
+                'hours_completed' => $hoursCompleted,
+                'total_days_attended' => $totalDaysAttended,
+                'first_attendance_date' => $firstAttendanceDate ? Carbon::parse($firstAttendanceDate)->format('M d, Y') : null,
+                'last_attendance_date' => $lastAttendanceDate ? Carbon::parse($lastAttendanceDate)->format('M d, Y') : null,
+            ],
+            'documents' => [
+                'total_required' => $totalRequiredDocs,
+                'approved_required' => $approvedRequiredDocs,
+                'docs_completed' => $docsCompleted,
+                'checklist' => $checklist,
+            ],
+            'completion' => [
+                'is_completed' => $isCompleted,
+                'status' => match (true) {
+                    $isCompleted => 'completed',
+                    $hoursCompleted && ! $docsCompleted => 'hours_met_documents_pending',
+                    ! $hoursCompleted && $docsCompleted => 'documents_met_hours_pending',
+                    default => 'in_progress',
+                },
+                'completion_date' => $isCompleted ? ($lastAttendanceDate ? Carbon::parse($lastAttendanceDate)->format('F d, Y') : Carbon::now($timezone)->format('F d, Y')) : null,
+                'generated_at' => Carbon::now($timezone)->format('F d, Y g:i A'),
+                'supervisor_name' => $user->name,
+                'supervisor_role' => $user->isSupervisor() && $user->supervisorProfile?->isOjtSupervisor() ? 'OJT Supervisor / Coordinator' : ($user->isAdmin() ? 'Administrator' : 'HTE Supervisor'),
+            ],
+        ]);
+    }
+
+    /**
+     * Allows a supervisor to download an intern's full official DTR report.
+     */
+    public function downloadInternDtr(Request $request, int $internUserId): \Symfony\Component\HttpFoundation\Response
+    {
+        $user = $request->user();
+        $internProfile = InternProfile::with(['user', 'hte', 'program'])->where('user_id', $internUserId)->firstOrFail();
+
+        if (! $user->isAdmin()) {
+            if (! $user->isSupervisor()) {
+                abort(403, 'Unauthorized.');
+            }
+            $supervisor = $user->supervisorProfile;
+            if (! $supervisor) {
+                abort(403, 'Supervisor profile not found.');
+            }
+            if ($supervisor->isOjtSupervisor()) {
+                if ($internProfile->program_id !== $supervisor->program_id) {
+                    abort(403, 'Intern is not under your program.');
+                }
+            } else {
+                if ($internProfile->hte_id !== $supervisor->hte_id) {
+                    abort(403, 'Intern is not under your HTE.');
+                }
+            }
+        }
+
+        $timezone = config('dtr.timezone');
+        $approvedAt = $internProfile->approved_at ?? Carbon::now($timezone)->startOfYear();
+        $from = $approvedAt->clone()->setTimezone($timezone)->startOfDay();
+        $to = Carbon::now($timezone)->endOfDay();
+
+        $days = $this->calculator->forIntern(
+            $internProfile->user_id,
+            $internProfile->hte_id,
+            from: $from,
+            to: $to,
+            approvedAt: $internProfile->approved_at,
+        );
+
+        $html = view('reports.dtr', [
+            'user' => $internProfile->user,
+            'profile' => $internProfile,
+            'from' => $from,
+            'to' => $to,
+            'days' => $days,
+            'totalHours' => $days->sum('hoursRendered'),
+        ])->render();
+
+        $mpdf = new Mpdf([
+            'format' => 'Letter',
+            'margin_top' => 15,
+            'margin_bottom' => 15,
+            'margin_left' => 15,
+            'margin_right' => 15,
+        ]);
+        $mpdf->WriteHTML($html);
+
+        $filename = sprintf(
+            'DTR_%s_Full.pdf',
+            str_replace(' ', '_', $internProfile->id_number ?: (string) $internProfile->user_id),
+        );
+
+        return response(
+            $mpdf->Output($filename, Destination::STRING_RETURN),
+            200,
+            [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+            ],
+        );
     }
 
     /**

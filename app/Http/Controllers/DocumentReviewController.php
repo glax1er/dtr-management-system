@@ -19,22 +19,20 @@ class DocumentReviewController extends Controller
         $user = $request->user();
         $internProfile = InternProfile::with(['user', 'hte', 'program'])->where('user_id', $internUserId)->firstOrFail();
 
-        if (! $user->isAdmin()) {
-            if (! $user->isSupervisor()) {
-                abort(403, 'Unauthorized.');
+        if (! $user->isSupervisor()) {
+            abort(403, 'Unauthorized. Only supervisors can review intern documents.');
+        }
+        $supervisor = $user->supervisorProfile;
+        if (! $supervisor) {
+            abort(403, 'Supervisor profile not found.');
+        }
+        if ($supervisor->isOjtSupervisor()) {
+            if ($internProfile->program_id !== $supervisor->program_id) {
+                abort(403, 'Intern is not under your program.');
             }
-            $supervisor = $user->supervisorProfile;
-            if (! $supervisor) {
-                abort(403, 'Supervisor profile not found.');
-            }
-            if ($supervisor->isOjtSupervisor()) {
-                if ($internProfile->program_id !== $supervisor->program_id) {
-                    abort(403, 'Intern is not under your program.');
-                }
-            } else {
-                if ($internProfile->hte_id !== $supervisor->hte_id) {
-                    abort(403, 'Intern is not under your HTE.');
-                }
+        } else {
+            if ($internProfile->hte_id !== $supervisor->hte_id) {
+                abort(403, 'Intern is not under your HTE.');
             }
         }
 
@@ -76,12 +74,9 @@ class DocumentReviewController extends Controller
             'checklist' => $checklist,
         ]);
     }
+
     private function canAccessDocument(User $user, InternDocument $internDocument): bool
     {
-        if ($user->isAdmin()) {
-            return true;
-        }
-
         if ($user->isSupervisor()) {
             $supervisorProfile = $user->supervisorProfile;
             if (! $supervisorProfile) {
@@ -142,8 +137,8 @@ class DocumentReviewController extends Controller
     {
         $user = $request->user();
 
-        if (! $user->isAdmin() && ! $user->isSupervisor()) {
-            abort(403, 'Only supervisors and admins can approve documents.');
+        if (! $user->isSupervisor()) {
+            abort(403, 'Only supervisors can approve documents.');
         }
 
         if (! $this->canAccessDocument($user, $internDocument)) {
@@ -167,8 +162,8 @@ class DocumentReviewController extends Controller
     {
         $user = $request->user();
 
-        if (! $user->isAdmin() && ! $user->isSupervisor()) {
-            abort(403, 'Only supervisors and admins can reject documents.');
+        if (! $user->isSupervisor()) {
+            abort(403, 'Only supervisors can reject documents.');
         }
 
         if (! $this->canAccessDocument($user, $internDocument)) {

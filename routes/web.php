@@ -100,6 +100,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('role:' . User::ROLE_SUPERVISOR)->prefix('supervisor')->name('supervisor.')->group(function () {
         Route::get('dashboard', [\App\Http\Controllers\Supervisor\DashboardController::class, 'index'])->name('dashboard');
         Route::get('interns', [InternsController::class, 'index'])->name('interns.index');
+        Route::get('interns/{internUserId}/completion-summary', [InternsController::class, 'completionSummary'])->name('interns.completion-summary');
+        Route::get('interns/{internUserId}/dtr-report', [InternsController::class, 'downloadInternDtr'])->name('interns.dtr-report');
 
         // Only an OJT Supervisor oversees a whole program across every
         // HTE, so only they get a roster of HTEs and Document Templates to manage.

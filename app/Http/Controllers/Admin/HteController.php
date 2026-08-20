@@ -113,14 +113,4 @@ class HteController extends Controller
 
         return back()->with('success', 'HTE removed.');
     }
-    public function destroy(Hte $hte): RedirectResponse
-    {
-        if ($hte->status !== 'inactive') {
-            return back()->with('error', 'Only inactive HTEs can be deleted.');
-        }
-
-        $hte->delete();
-
-        return back()->with('success', 'HTE removed.');
-    }
 }

@@ -32,41 +32,82 @@ class InternDocument extends Model
     public const STATUS_REJECTED = 'rejected';
 
     public const DOCUMENT_TYPES = [
-        'parent_waiver' => [
-            'name' => 'Parent / Guardian Consent & Waiver Form',
-            'category' => 'Pre-Internship',
-            'description' => 'Signed parent or guardian consent and waiver approving the internship placement.',
+        // ── Pre Deployment ──────────────────────────────────────────────────
+        'parents_consent' => [
+            'name' => "Parent's Consent",
+            'category' => 'Pre Deployment',
+            'description' => 'Signed consent from parent or guardian allowing you to proceed with the internship deployment.',
             'required' => true,
         ],
-        'moa' => [
-            'name' => 'Memorandum of Agreement (MOA)',
-            'category' => 'Pre-Internship',
-            'description' => 'Official agreement between your institution and the Host Training Establishment (HTE).',
+        'usep_hte_nda' => [
+            'name' => 'For USeP-HTE NDA',
+            'category' => 'Pre Deployment',
+            'description' => 'Non-Disclosure Agreement between USeP and the Host Training Establishment (for USeP-affiliated companies).',
             'required' => true,
         ],
-        'endorsement_letter' => [
-            'name' => 'Endorsement / Recommendation Letter',
-            'category' => 'Pre-Internship',
-            'description' => 'Official recommendation or endorsement letter from your department head/coordinator.',
+        'outside_hte_nda' => [
+            'name' => 'For Outside Companies-HTE NDA',
+            'category' => 'Pre Deployment',
+            'description' => 'Non-Disclosure Agreement between the intern and the Host Training Establishment (for outside/non-USeP companies).',
             'required' => true,
         ],
-        'medical_certificate' => [
-            'name' => 'Medical Certificate (Fit to Work)',
-            'category' => 'Pre-Internship',
-            'description' => 'Medical health clearance certificate issued by an accredited clinic or physician.',
+        'pre_deployment_cert' => [
+            'name' => 'Pre-Deployment Enrollment Orientation Certificate',
+            'category' => 'Pre Deployment',
+            'description' => 'Certificate of completion for the mandatory pre-deployment enrollment orientation.',
             'required' => true,
         ],
-        'acceptance_letter' => [
-            'name' => 'Acceptance Letter / Training Agreement',
-            'category' => 'Pre-Internship',
-            'description' => 'Official confirmation and acceptance letter issued by the Host Training Establishment.',
+        'waiver_of_claim' => [
+            'name' => 'Waiver of Claim',
+            'category' => 'Pre Deployment',
+            'description' => 'Signed waiver releasing USeP from liability during the internship deployment period.',
             'required' => true,
         ],
-        'completion_certificate' => [
-            'name' => 'Certificate of Completion',
-            'category' => 'Exit / Post-Internship',
-            'description' => 'Official certificate issued by the company upon completing required internship hours.',
-            'required' => false,
+
+        // ── During Deployment ────────────────────────────────────────────────
+        'dtr' => [
+            'name' => 'DTR (Daily Time Record)',
+            'category' => 'During Deployment',
+            'description' => 'Official daily time record documenting your attendance and hours rendered during deployment.',
+            'required' => true,
+        ],
+        'weekly_progress_report' => [
+            'name' => 'Weekly Progress Report',
+            'category' => 'During Deployment',
+            'description' => 'Weekly summary report of tasks accomplished and progress made during deployment.',
+            'required' => true,
+        ],
+        'competency_tech_support' => [
+            'name' => 'Assessment of Competency Form – Tech Support',
+            'category' => 'During Deployment',
+            'description' => 'Competency assessment form evaluating technical support skills demonstrated during deployment.',
+            'required' => true,
+        ],
+        'competency_tech_documentation' => [
+            'name' => 'Assessment of Competency Form – Tech Documentation',
+            'category' => 'During Deployment',
+            'description' => 'Competency assessment form evaluating technical documentation skills demonstrated during deployment.',
+            'required' => true,
+        ],
+        'competency_soft_design' => [
+            'name' => 'Assessment of Competency Form – Soft Design and Development',
+            'category' => 'During Deployment',
+            'description' => 'Competency assessment form evaluating software design and development skills demonstrated during deployment.',
+            'required' => true,
+        ],
+
+        // ── Evaluation Forms ─────────────────────────────────────────────────
+        'hte_evaluation_1' => [
+            'name' => 'HTE Evaluation 1 – Certificate of Completion',
+            'category' => 'Evaluation Forms',
+            'description' => 'First HTE evaluation form combined with the official Certificate of Completion issued by the company.',
+            'required' => true,
+        ],
+        'hte_evaluation_2' => [
+            'name' => 'HTE Evaluation 2',
+            'category' => 'Evaluation Forms',
+            'description' => 'Second evaluation form completed by the Host Training Establishment assessing overall internship performance.',
+            'required' => true,
         ],
     ];
 

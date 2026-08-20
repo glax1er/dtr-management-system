@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import PaginationFooter from '@/components/pagination-footer';
 import type { Paginated } from '@/components/pagination-footer';
-import { InternDocumentsDialog } from '@/components/intern-documents-dialog';
 import { dashboard } from '@/routes';
 
 interface Intern {
@@ -200,11 +199,6 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                                                 </td>
                                                 <td className="py-2.5">
                                                     <div className="flex flex-wrap items-center gap-2">
-                                                        <InternDocumentsDialog
-                                                            internUserId={intern.user_id}
-                                                            internName={intern.name}
-                                                        />
-
                                                         {intern.status === 'pending' && (
                                                             <>
                                                                 <Button

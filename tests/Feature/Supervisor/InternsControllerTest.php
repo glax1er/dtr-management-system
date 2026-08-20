@@ -39,6 +39,7 @@ function makeApprovedInternForHte(Hte $hte): User
         'hte_id' => $hte->hte_id,
         'program_id' => $program->program_id,
         'status' => 'approved',
+        'approved_at' => null,
         'privacy_accepted_at' => now(),
     ]);
 
@@ -81,6 +82,7 @@ function makeApprovedInternForHteAndProgram(Hte $hte, Program $program): User
 }
 
 test('a day with no time-in shows missing_time_in punctuality, without crashing', function () {
+    Carbon::setTestNow('2026-07-20 18:00:00');
     [$supervisor, $hte] = makeSupervisorWithHte();
     $intern = makeApprovedInternForHte($hte);
 
@@ -106,6 +108,7 @@ test('a day with no time-in shows missing_time_in punctuality, without crashing'
 });
 
 test('a time-in at or before the expected start time is marked on_time', function () {
+    Carbon::setTestNow('2026-07-20 18:00:00');
     [$supervisor, $hte] = makeSupervisorWithHte();
     $intern = makeApprovedInternForHte($hte);
 
@@ -132,6 +135,7 @@ test('a time-in at or before the expected start time is marked on_time', functio
 });
 
 test('a time-in after the expected start time (but before the cutoff) is marked late', function () {
+    Carbon::setTestNow('2026-07-20 18:00:00');
     [$supervisor, $hte] = makeSupervisorWithHte();
     $intern = makeApprovedInternForHte($hte);
 
@@ -346,3 +350,71 @@ test('an HTE supervisor still gets the full attendance log view, not the student
             ->component('supervisor/interns')
         );
 });
+
+test('the student roster exposes completion metrics and counts', function () {
+    $program = Program::create(['program_name' => 'BSIT-'.uniqid(), 'required_hours' => 100]);
+    [$supervisor] = makeOjtSupervisorForProgram($program);
+    $hte = Hte::create(['hte_name' => 'HTE A']);
+    $intern = makeApprovedInternForHteAndProgram($hte, $program);
+
+    $this->actingAs($supervisor)
+        ->get(route('supervisor.interns.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('supervisor/students')
+            ->has('completedCount')
+            ->has('inProgressCount')
+            ->has('students.data', 1, fn ($student) => $student
+                ->where('required_hours', 100)
+                ->where('is_completed', false)
+                ->has('total_hours')
+                ->has('approved_docs_count')
+                ->has('total_required_docs_count')
+                ->etc()
+            )
+        );
+});
+
+test('an OJT supervisor can fetch the completion summary JSON for an intern in their program', function () {
+    $program = Program::create(['program_name' => 'BSIT-'.uniqid(), 'required_hours' => 100]);
+    [$supervisor] = makeOjtSupervisorForProgram($program);
+    $hte = Hte::create(['hte_name' => 'HTE A', 'address' => '123 Main St']);
+    $intern = makeApprovedInternForHteAndProgram($hte, $program);
+
+    $response = $this->actingAs($supervisor)
+        ->get(route('supervisor.interns.completion-summary', ['internUserId' => $intern->id]));
+
+    $response->assertOk()
+        ->assertJsonStructure([
+            'intern' => ['user_id', 'name', 'email', 'program_name', 'hte_name', 'hte_address'],
+            'hours' => ['required_hours', 'total_hours', 'progress_percent', 'hours_completed', 'total_days_attended'],
+            'documents' => ['total_required', 'approved_required', 'docs_completed', 'checklist'],
+            'completion' => ['is_completed', 'status', 'generated_at', 'supervisor_name'],
+        ]);
+});
+
+test('an OJT supervisor cannot fetch the completion summary for an intern from a different program', function () {
+    $programA = Program::create(['program_name' => 'BSIT-'.uniqid()]);
+    $programB = Program::create(['program_name' => 'BSCS-'.uniqid()]);
+    [$supervisor] = makeOjtSupervisorForProgram($programA);
+    $hte = Hte::create(['hte_name' => 'HTE A']);
+    $otherIntern = makeApprovedInternForHteAndProgram($hte, $programB);
+
+    $this->actingAs($supervisor)
+        ->get(route('supervisor.interns.completion-summary', ['internUserId' => $otherIntern->id]))
+        ->assertForbidden();
+});
+
+test('an OJT supervisor can download the full DTR report for an intern in their program', function () {
+    $program = Program::create(['program_name' => 'BSIT-'.uniqid()]);
+    [$supervisor] = makeOjtSupervisorForProgram($program);
+    $hte = Hte::create(['hte_name' => 'HTE A']);
+    $intern = makeApprovedInternForHteAndProgram($hte, $program);
+
+    $response = $this->actingAs($supervisor)
+        ->get(route('supervisor.interns.dtr-report', ['internUserId' => $intern->id]));
+
+    $response->assertOk()
+        ->assertHeader('content-type', 'application/pdf');
+});
+
