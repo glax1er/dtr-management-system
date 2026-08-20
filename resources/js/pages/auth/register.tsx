@@ -23,7 +23,6 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import VerifyEmailDialog from '@/components/verify-email-dialog';
 import { login } from '@/routes';
 import { store } from '@/routes/register';
 
@@ -39,26 +38,19 @@ type Hte = {
 
 type Props = {
     passwordRules: string;
-    verifyEmail?: boolean;
-    registeredEmail?: string;
+    registered?: boolean;
     programs: Program[];
     htes: Hte[];
 };
 
 export default function Register({
     passwordRules,
-    verifyEmail,
-    registeredEmail,
+    registered,
     programs,
     htes,
 }: Props) {
-    // CHANGED — was showApprovalDialog. Now shows the "verify your email"
-    // dialog right after Create Account, instead of a "pending approval"
-    // dialog. Approval is still required, but it happens after email
-    // verification, so it's mentioned in the dialog copy rather than
-    // being the headline.
-    const [showVerifyDialog, setShowVerifyDialog] = useState(
-        verifyEmail ?? false,
+    const [showApprovalDialog, setShowApprovalDialog] = useState(
+        registered ?? false,
     );
 
     const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
@@ -68,10 +60,10 @@ export default function Register({
     const [hasReadPolicy, setHasReadPolicy] = useState(false);
 
     useEffect(() => {
-        if (verifyEmail) {
-            setShowVerifyDialog(true);
+        if (registered) {
+            setShowApprovalDialog(true);
         }
-    }, [verifyEmail]);
+    }, [registered]);
 
     const goToLogin = () => router.visit(login());
 
@@ -354,22 +346,29 @@ export default function Register({
                 )}
             </Form>
 
-            <VerifyEmailDialog
-                open={showVerifyDialog}
+            <Dialog
+                open={showApprovalDialog}
                 onOpenChange={(open) => {
-                    setShowVerifyDialog(open);
+                    setShowApprovalDialog(open);
                     if (!open) {
                         goToLogin();
                     }
                 }}
-                email={registeredEmail}
-                title="Verify your email"
-                description={`We've sent a verification link to ${registeredEmail ?? 'your email address'}. Click it to verify your account. After that, an administrator still needs to approve your registration before you can log in.`}
-                secondaryAction={{
-                    label: 'Go to login',
-                    onClick: goToLogin,
-                }}
-            />
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Registration submitted</DialogTitle>
+                        <DialogDescription>
+                            Your account has been created and is now pending
+                            approval from an administrator. You'll be able to
+                            log in once your registration has been approved.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button onClick={goToLogin}>Go to login</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* ADDED — the Privacy Policy dialog itself, opened by the link above */}
             <Dialog

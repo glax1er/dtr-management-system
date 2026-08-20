@@ -1,5 +1,4 @@
 import { Form, Head } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
@@ -8,7 +7,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import VerifyEmailDialog from '@/components/verify-email-dialog';
 import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
@@ -16,27 +14,9 @@ import { request } from '@/routes/password';
 type Props = {
     status?: string;
     canResetPassword: boolean;
-    // ADDED — set by Fortify::authenticateUsing() when login was just
-    // blocked because this intern's email isn't verified yet.
-    unverifiedEmail?: string;
 };
 
-export default function Login({
-    status,
-    canResetPassword,
-    unverifiedEmail,
-}: Props) {
-    // ADDED — pops the "email not verified" dialog whenever the backend
-    // flashes an unverifiedEmail, i.e. right after a blocked login attempt.
-    const [showUnverifiedDialog, setShowUnverifiedDialog] = useState(
-        Boolean(unverifiedEmail),
-    );
-
-    useEffect(() => {
-        if (unverifiedEmail) {
-            setShowUnverifiedDialog(true);
-        }
-    }, [unverifiedEmail]);
+export default function Login({ status, canResetPassword }: Props) {
 
     return (
         <>
@@ -125,14 +105,6 @@ export default function Login({
                     {status}
                 </div>
             )}
-
-            <VerifyEmailDialog
-                open={showUnverifiedDialog}
-                onOpenChange={setShowUnverifiedDialog}
-                email={unverifiedEmail}
-                title="Email not verified"
-                description="Email not verified. Please check the verification link sent to your email before logging in."
-            />
         </>
     );
 }

@@ -34,7 +34,7 @@ class DashboardController extends Controller
         $perPage = (int) ($validated['per_page'] ?? self::DEFAULT_PER_PAGE);
 
         $recentRegistrations = InternProfile::query()
-            ->with(['user:id,name,email,email_verified_at', 'hte:hte_id,hte_name', 'program:program_id,program_name'])
+            ->with(['user:id,name,email', 'hte:hte_id,hte_name', 'program:program_id,program_name'])
             ->orderBy('registered_at', 'desc')
             ->paginate($perPage, ['*'], 'page', $validated['page'] ?? 1)
             ->withQueryString()
@@ -42,7 +42,6 @@ class DashboardController extends Controller
                 'user_id' => $profile->user_id,
                 'name' => $profile->user->name,
                 'email' => $profile->user->email,
-                'email_verified' => $profile->user->email_verified_at !== null,
                 'id_number' => $profile->id_number,
                 'hte_name' => $profile->hte?->hte_name ?? 'Deleted HTE',
                 'program_name' => $profile->program?->program_name ?? 'Deleted Program',

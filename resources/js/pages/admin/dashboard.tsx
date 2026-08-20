@@ -42,7 +42,6 @@ interface RecentRegistration {
     user_id: number;
     name: string;
     email: string;
-    email_verified: boolean;
     id_number: string;
     hte_name: string;
     program_name: string;
@@ -377,7 +376,7 @@ export default function AdminDashboard({
                                     Recent Registrations
                                 </CardTitle>
                                 <CardDescription>
-                                    Latest student intern sign-ups awaiting verification
+                                    Latest student intern sign-ups awaiting approval
                                 </CardDescription>
                             </div>
                             <Badge variant="outline" className="text-xs font-normal">
