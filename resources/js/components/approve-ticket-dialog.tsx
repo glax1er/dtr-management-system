@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
+import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -135,9 +136,7 @@ export function TicketActions({ ticketId, type, proposedTimeIn, proposedTimeOut 
                     <DialogHeader>
                         <div className="flex items-center gap-2">
                             <DialogTitle>Confirm Approval</DialogTitle>
-                            <Badge className={badgeStyles[type]}>
-                                {typeLabel[type]}
-                            </Badge>
+                            <AttendanceBadge status={type} />
                         </div>
                         <DialogDescription className="space-y-3">
                             <p>Are you sure you want to approve this resolution ticket? This action cannot be undone.</p>
@@ -179,9 +178,7 @@ export function TicketActions({ ticketId, type, proposedTimeIn, proposedTimeOut 
                     <DialogHeader>
                         <div className="flex items-center gap-2">
                             <DialogTitle>Confirm Rejection</DialogTitle>
-                            <Badge className={badgeStyles[type]}>
-                                {typeLabel[type]}
-                            </Badge>
+                            <AttendanceBadge status={type} />
                         </div>
                         <DialogDescription className="space-y-3">
                             <p>Reject this resolution request? The day will go back to looking missing.</p>

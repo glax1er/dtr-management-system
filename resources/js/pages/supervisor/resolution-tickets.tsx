@@ -1,6 +1,7 @@
 import { Head } from '@inertiajs/react';
-import { Calendar, Clock, FileText, TicketCheck, User } from 'lucide-react';
-import { TicketActions, badgeStyles } from '@/components/approve-ticket-dialog';
+import { TicketCheck } from 'lucide-react';
+import { TicketActions } from '@/components/approve-ticket-dialog'; // drop badgeStyles from here
+import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -97,9 +98,7 @@ export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
                                                         {ticket.date}
                                                     </TableCell>
                                                     <TableCell className="px-6 text-center whitespace-nowrap">
-                                                        <Badge className={badgeStyles[ticket.type]}>
-                                                            {typeLabel[ticket.type]}
-                                                        </Badge>
+                                                        <AttendanceBadge status={ticket.type} />
                                                     </TableCell>
                                                     <TableCell className="px-6 text-center whitespace-nowrap">
                                                         {ticket.proposed_time_in ?? '—'}
@@ -142,9 +141,7 @@ export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
                                                     <p className="font-semibold text-sm">{ticket.intern_name}</p>
                                                     <p className="text-xs text-muted-foreground">{ticket.date}</p>
                                                 </div>
-                                                <Badge className={badgeStyles[ticket.type]}>
-                                                    {typeLabel[ticket.type]}
-                                                </Badge>
+                                                <AttendanceBadge status={ticket.type} />
                                             </div>
 
                                             <div className="grid grid-cols-2 gap-2 text-xs bg-muted/20 p-2.5 rounded-lg border">

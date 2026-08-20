@@ -17,6 +17,7 @@ import {
 import { useRef, useState } from 'react';
 import { StatCard } from '@/components/dashboard-analytics';
 import { NumberedPagination } from '@/components/numbered-pagination';
+import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
 import { HoursProgressRing } from '@/components/hours-progress-ring';
 import { ResolutionRequestDialog } from '@/components/resolution-request-dialog';
 import { Badge } from '@/components/ui/badge';
@@ -574,7 +575,6 @@ export default function InternDashboard({
                                         </TableHeader>
                                         <TableBody>
                                             {logs.data.map((log) => {
-                                                const badge = STATUS_META[log.status];
 
                                                 return (
                                                     <TableRow
@@ -603,27 +603,14 @@ export default function InternDashboard({
                                                             )}
                                                         </TableCell>
                                                         <TableCell className="text-center">
-                                                            <Badge
-                                                                variant="outline"
-                                                                className={cn(
-                                                                    'text-xs font-medium capitalize',
-                                                                    badge.className,
-                                                                )}
-                                                            >
-                                                                {badge.label}
-                                                            </Badge>
-                                                        </TableCell>
+    <AttendanceBadge status={log.status} />
+</TableCell>
                                                         <TableCell className="pr-6 text-center">
                                                             {log.status === 'complete' ? (
                                                                 <span className="text-xs text-muted-foreground/50">—</span>
                                                             ) : log.pending_ticket_id !== null ? (
                                                                 <div className="flex items-center justify-center gap-2">
-                                                                    <Badge
-                                                                        variant="secondary"
-                                                                        className="text-xs"
-                                                                    >
-                                                                        Pending Review
-                                                                    </Badge>
+                                                                    <AttendanceBadge status="pending_review" />
                                                                     <Button
                                                                         size="sm"
                                                                         variant="ghost"
@@ -657,7 +644,6 @@ export default function InternDashboard({
                                 {/* Mobile Cards View */}
                                 <div className="divide-y divide-border overflow-hidden rounded-lg border sm:hidden">
                                     {logs.data.map((log) => {
-                                        const badge = STATUS_META[log.status];
 
                                         return (
                                             <div
@@ -673,15 +659,7 @@ export default function InternDashboard({
                                                             {log.day}
                                                         </p>
                                                     </div>
-                                                    <Badge
-                                                        variant="outline"
-                                                        className={cn(
-                                                            'text-xs capitalize',
-                                                            badge.className,
-                                                        )}
-                                                    >
-                                                        {badge.label}
-                                                    </Badge>
+                                                    <AttendanceBadge status={log.status} />
                                                 </div>
 
                                                 <div className="grid grid-cols-3 gap-2 text-center">
@@ -718,12 +696,7 @@ export default function InternDashboard({
                                                         </span>
                                                     ) : log.pending_ticket_id !== null ? (
                                                         <div className="flex items-center gap-2">
-                                                            <Badge
-                                                                variant="secondary"
-                                                                className="text-xs"
-                                                            >
-                                                                Pending Review
-                                                            </Badge>
+                                                            <AttendanceBadge status="pending_review" />
                                                             <Button
                                                                 size="sm"
                                                                 variant="ghost"
