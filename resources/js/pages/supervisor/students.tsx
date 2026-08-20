@@ -4,7 +4,6 @@ import {
     Clock,
     GraduationCap,
     LayoutGrid,
-    Mail,
     Phone,
     Search,
     SlidersHorizontal,
@@ -148,7 +147,7 @@ export default function MyStudents({
                 {/* Header toolbar */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h1 className="flex items-center gap-3 text-xl font-semibold tracking-tight sm:text-2xl text-black dark:text-white">
+                        <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
                             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
                                 <GraduationCap className="size-5" />
                             </span>
@@ -287,37 +286,39 @@ export default function MyStudents({
                                 <Card>
                                     <CardContent className="p-0">
                                         <Table>
-                                            <TableHeader>
+                                            <TableHeader className="bg-muted/40">
                                                 <TableRow>
-                                                    <TableHead className="px-6">Name</TableHead>
-                                                    <TableHead className="px-6">Email</TableHead>
-                                                    <TableHead className="px-6">ID Number</TableHead>
-                                                    <TableHead className="px-6">Contact Number</TableHead>
-                                                    <TableHead className="px-6">Assigned HTE</TableHead>
-                                                    <TableHead className="px-6 text-right">Hours Rendered</TableHead>
+                                                    <TableHead className="px-6 font-semibold">Student</TableHead>
+                                                    <TableHead className="px-6 text-center font-semibold">ID Number</TableHead>
+                                                    <TableHead className="px-6 text-center font-semibold">Contact Number</TableHead>
+                                                    <TableHead className="px-6 text-center font-semibold">Assigned HTE</TableHead>
+                                                    <TableHead className="px-6 text-right font-semibold">Hours Rendered</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {students.data.map((student) => (
                                                     <TableRow key={student.intern_user_id}>
-                                                        <TableCell className="px-6 font-medium whitespace-nowrap">
-                                                            {student.name}
+                                                        <TableCell className="px-6">
+                                                            <p className="font-medium whitespace-nowrap text-foreground">{student.name}</p>
+                                                            <p
+                                                                className="max-w-[200px] truncate text-xs text-muted-foreground"
+                                                                title={student.email}
+                                                            >
+                                                                {student.email}
+                                                            </p>
                                                         </TableCell>
-                                                        <TableCell className="px-6 text-muted-foreground whitespace-nowrap">
-                                                            {student.email}
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-muted-foreground whitespace-nowrap">
+                                                        <TableCell className="px-6 text-center text-muted-foreground tabular-nums whitespace-nowrap">
                                                             {student.id_number ?? '—'}
                                                         </TableCell>
-                                                        <TableCell className="px-6 text-muted-foreground whitespace-nowrap">
+                                                        <TableCell className="px-6 text-center text-muted-foreground tabular-nums whitespace-nowrap">
                                                             {student.contact_number ?? '—'}
                                                         </TableCell>
-                                                        <TableCell className="px-6 whitespace-nowrap">
-                                                            <Badge variant="outline" className="font-normal">
+                                                        <TableCell className="px-6 text-center whitespace-nowrap">
+                                                            <Badge variant="outline" className="font-normal text-xs">
                                                                 {student.hte_name}
                                                             </Badge>
                                                         </TableCell>
-                                                        <TableCell className="px-6 text-right font-medium whitespace-nowrap">
+                                                        <TableCell className="px-6 text-right font-medium whitespace-nowrap text-foreground">
                                                             {formatLongDuration(student.total_hours)}
                                                         </TableCell>
                                                     </TableRow>
@@ -336,19 +337,20 @@ export default function MyStudents({
                                     <Card key={student.intern_user_id} className="flex flex-col justify-between">
                                         <CardHeader className="pb-3">
                                             <div className="flex items-start justify-between gap-2">
-                                                <CardTitle className="text-base font-semibold truncate">
-                                                    {student.name}
-                                                </CardTitle>
-                                                <Badge variant="outline" className="shrink-0 text-xs font-normal">
+                                                <div className="min-w-0">
+                                                    <CardTitle className="text-base font-semibold truncate">
+                                                        {student.name}
+                                                    </CardTitle>
+                                                    <p className="text-xs text-muted-foreground truncate mt-0.5" title={student.email}>
+                                                        {student.email}
+                                                    </p>
+                                                </div>
+                                                <Badge variant="outline" className="shrink-0 text-xs font-mono">
                                                     {student.id_number ?? 'No ID'}
                                                 </Badge>
                                             </div>
                                         </CardHeader>
-                                        <CardContent className="flex flex-col gap-2.5 text-xs text-muted-foreground">
-                                            <div className="flex items-center gap-2">
-                                                <Mail className="size-3.5 shrink-0" />
-                                                <span className="truncate">{student.email}</span>
-                                            </div>
+                                        <CardContent className="flex flex-col gap-2.5 text-xs text-muted-foreground pt-0">
                                             {student.contact_number && (
                                                 <div className="flex items-center gap-2">
                                                     <Phone className="size-3.5 shrink-0" />
@@ -379,17 +381,17 @@ export default function MyStudents({
                                 <Card key={student.intern_user_id}>
                                     <CardContent className="p-4 flex flex-col gap-2">
                                         <div className="flex items-start justify-between gap-2">
-                                            <div>
-                                                <p className="font-semibold text-sm">{student.name}</p>
-                                                <p className="text-xs text-muted-foreground">{student.email}</p>
+                                            <div className="min-w-0">
+                                                <p className="font-semibold text-sm text-foreground truncate">{student.name}</p>
+                                                <p className="text-xs text-muted-foreground truncate">{student.email}</p>
                                             </div>
-                                            <Badge variant="outline" className="text-xs">
+                                            <Badge variant="outline" className="text-xs shrink-0 font-mono">
                                                 {student.id_number ?? 'No ID'}
                                             </Badge>
                                         </div>
                                         <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t">
                                             <span className="truncate max-w-[160px] font-medium text-foreground">{student.hte_name}</span>
-                                            <span>{formatLongDuration(student.total_hours)}</span>
+                                            <span className="font-semibold text-foreground">{formatLongDuration(student.total_hours)}</span>
                                         </div>
                                     </CardContent>
                                 </Card>
