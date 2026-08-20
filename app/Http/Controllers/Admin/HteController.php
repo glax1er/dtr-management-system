@@ -111,6 +111,7 @@ class HteController extends Controller
 
         $hte->delete();
 
-        return back()->with('success', 'HTE removed.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'HTE archived.']);
+        return back();
     }
 }

@@ -1,15 +1,10 @@
 import { Head, router } from '@inertiajs/react';
-import { Pencil, Trash2 } from 'lucide-react';
+import { CalendarDays, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Dialog,
     DialogContent,
@@ -20,133 +15,159 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { dashboard } from '@/routes';
 
+// ── Constants ────────────────────────────────────────────────────────────────
+const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
+const DAY_LABELS: Record<string, string> = {
+    monday: 'Monday', tuesday: 'Tuesday', wednesday: 'Wednesday',
+    thursday: 'Thursday', friday: 'Friday', saturday: 'Saturday', sunday: 'Sunday',
+};
+
+// ── Types ────────────────────────────────────────────────────────────────────
 interface SchedulePeriod {
     id: number;
     name: string | null;
     start_date: string;
     end_date: string;
     day_schedule: Record<string, string | null>;
-    created_at: string;
 }
-
-interface ScheduleProps {
-    periods: SchedulePeriod[];
-}
-
-const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
-const DAY_LABELS: Record<string, string> = {
-    monday: 'Monday',
-    tuesday: 'Tuesday',
-    wednesday: 'Wednesday',
-    thursday: 'Thursday',
-    friday: 'Friday',
-    saturday: 'Saturday',
-    sunday: 'Sunday',
-};
-
-function formatTime12(time: string | null): string {
-    if (!time) return 'No work';
-    const [h, m] = time.split(':').map(Number);
-    const period = h >= 12 ? 'PM' : 'AM';
-    const hour12 = h % 12 === 0 ? 12 : h % 12;
-    return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
-}
-
-function isPast(dateStr: string): boolean {
-    return new Date(dateStr) < new Date(new Date().toDateString());
-}
-
-const emptyDaySchedule = () => Object.fromEntries(DAYS.map((d) => [d, ''])) as Record<string, string>;
-const emptyNoWork = () => Object.fromEntries(DAYS.map((d) => [d, false])) as Record<string, boolean>;
 
 interface FormState {
     name: string;
     startDate: string;
     endDate: string;
     daySchedule: Record<string, string>;
-    noWork: Record<string, boolean>;
 }
 
-function DayFields({
-    daySchedule,
-    noWork,
+// ── Helpers ──────────────────────────────────────────────────────────────────
+const emptyForm = (): FormState => ({
+    name: '',
+    startDate: '',
+    endDate: '',
+    daySchedule: Object.fromEntries(DAYS.map((d) => [d, ''])),
+});
+
+const formFromPeriod = (p: SchedulePeriod): FormState => ({
+    name: p.name ?? '',
+    startDate: p.start_date,
+    endDate: p.end_date,
+    daySchedule: Object.fromEntries(DAYS.map((d) => [d, p.day_schedule[d] ?? ''])),
+});
+
+const buildPayload = (form: FormState) =>
+    Object.fromEntries(DAYS.map((d) => [d, form.daySchedule[d] || null]));
+
+function formatTime12(time: string | null): string {
+    if (!time) return '—';
+    const [h, m] = time.split(':').map(Number);
+    const period = h >= 12 ? 'PM' : 'AM';
+    return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, '0')} ${period}`;
+}
+
+const isPast = (dateStr: string) =>
+    new Date(dateStr) < new Date(new Date().toDateString());
+
+// ── Shared form fields ────────────────────────────────────────────────────────
+function PeriodForm({
+    form,
     onChange,
 }: {
-    daySchedule: Record<string, string>;
-    noWork: Record<string, boolean>;
-    onChange: (day: string, value: string) => void;
+    form: FormState;
+    onChange: (patch: Partial<FormState>) => void;
 }) {
     return (
-        <div className="grid gap-2 sm:grid-cols-3">
-            {DAYS.map((day) => (
-                <div key={day} className="flex flex-wrap items-center gap-3 rounded-lg border p-3">
-                    <span className="w-28 shrink-0 text-sm font-medium">{DAY_LABELS[day]}</span>
+        <div className="flex flex-col gap-4">
+            {/* Date range + name */}
+            <div className="grid gap-3 sm:grid-cols-3">
+                <div className="grid gap-1.5">
+                    <Label>Name <span className="text-muted-foreground">(optional)</span></Label>
                     <Input
-                        type="time"
-                        value={daySchedule[day]}
-                        onChange={(e) => onChange(day, e.target.value)}
-                        className="w-36"
+                        value={form.name}
+                        onChange={(e) => onChange({ name: e.target.value })}
+                        placeholder="e.g. Off-semester AY 2026-2027"
                     />
                 </div>
-            ))}
+                <div className="grid gap-1.5">
+                    <Label>Start Date</Label>
+                    <Input
+                        type="date"
+                        value={form.startDate}
+                        onChange={(e) => onChange({ startDate: e.target.value })}
+                    />
+                </div>
+                <div className="grid gap-1.5">
+                    <Label>End Date</Label>
+                    <Input
+                        type="date"
+                        value={form.endDate}
+                        min={form.startDate || undefined}
+                        onChange={(e) => onChange({ endDate: e.target.value })}
+                    />
+                </div>
+            </div>
+
+            {/* Day schedule */}
+            <div className="grid gap-2 sm:grid-cols-2">
+                {DAYS.map((day) => (
+                    <div key={day} className="flex items-center rounded-lg border bg-background px-3 py-1">
+                        <span className="w-24 shrink-0 text-sm font-medium">{DAY_LABELS[day]}</span>
+                        <Input
+                            type="time"
+                            value={form.daySchedule[day]}
+                            onChange={(e) =>
+                                onChange({ daySchedule: { ...form.daySchedule, [day]: e.target.value } })
+                            }
+                            className="h-8 flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 text-xs"
+                        />
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }
 
-export default function AdminSchedule({ periods }: ScheduleProps) {
-    // "Add New Period" form state
-    const [addForm, setAddForm] = useState<FormState>({
-        name: '',
-        startDate: '',
-        endDate: '',
-        daySchedule: emptyDaySchedule(),
-        noWork: emptyNoWork(),
-    });
+// ── Main page ─────────────────────────────────────────────────────────────────
+export default function AdminSchedule({ periods }: { periods: SchedulePeriod[] }) {
+    const [addOpen, setAddOpen] = useState(false);
+    const [addForm, setAddForm] = useState<FormState>(emptyForm);
 
-    // Edit dialog state
     const [editOpen, setEditOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
-    const [editForm, setEditForm] = useState<FormState>({
-        name: '',
-        startDate: '',
-        endDate: '',
-        daySchedule: emptyDaySchedule(),
-        noWork: emptyNoWork(),
-    });
+    const [editForm, setEditForm] = useState<FormState>(emptyForm);
 
-    const resetAddForm = () => {
-        setAddForm({ name: '', startDate: '', endDate: '', daySchedule: emptyDaySchedule(), noWork: emptyNoWork() });
-    };
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [deleteName, setDeleteName] = useState('');
 
+    // ── Handlers ───────────────────────────────────────────────────────────
     const submitAdd = () => {
         if (!addForm.startDate || !addForm.endDate) {
             toast.error('Start date and end date are required.');
             return;
         }
-
-        const payload: Record<string, string | null> = {};
-        DAYS.forEach((day) => {
-            payload[day] = addForm.daySchedule[day] || null;
-        });
-
         router.post(
             '/admin/schedule',
-            { name: addForm.name || undefined, start_date: addForm.startDate, end_date: addForm.endDate, day_schedule: payload },
-            { preserveScroll: true, onSuccess: resetAddForm },
+            {
+                name: addForm.name || undefined,
+                start_date: addForm.startDate,
+                end_date: addForm.endDate,
+                day_schedule: buildPayload(addForm),
+            },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setAddOpen(false);
+                    setAddForm(emptyForm());
+                },
+            },
         );
     };
 
     const openEdit = (period: SchedulePeriod) => {
         setEditingId(period.id);
-        setEditForm({
-            name: period.name ?? '',
-            startDate: period.start_date,
-            endDate: period.end_date,
-            daySchedule: Object.fromEntries(DAYS.map((d) => [d, period.day_schedule[d] ?? ''])) as Record<string, string>,
-            noWork: Object.fromEntries(DAYS.map((d) => [d, period.day_schedule[d] == null])) as Record<string, boolean>,
-        });
+        setEditForm(formFromPeriod(period));
         setEditOpen(true);
     };
 
@@ -155,15 +176,14 @@ export default function AdminSchedule({ periods }: ScheduleProps) {
             toast.error('Start date and end date are required.');
             return;
         }
-
-        const payload: Record<string, string | null> = {};
-        DAYS.forEach((day) => {
-            payload[day] = editForm.daySchedule[day] || null;
-        });
-
         router.patch(
             `/admin/schedule/${editingId}`,
-            { name: editForm.name || undefined, start_date: editForm.startDate, end_date: editForm.endDate, day_schedule: payload },
+            {
+                name: editForm.name || undefined,
+                start_date: editForm.startDate,
+                end_date: editForm.endDate,
+                day_schedule: buildPayload(editForm),
+            },
             {
                 preserveScroll: true,
                 onSuccess: () => {
@@ -174,106 +194,113 @@ export default function AdminSchedule({ periods }: ScheduleProps) {
         );
     };
 
-    const remove = (id: number) => {
-        if (confirm('Delete this schedule period?')) {
-            router.delete(`/admin/schedule/${id}`, { preserveScroll: true });
-        }
+    const openDelete = (period: SchedulePeriod) => {
+        setDeleteId(period.id);
+        setDeleteName(period.name ?? 'this period');
+        setDeleteOpen(true);
     };
 
+    const submitDelete = () => {
+        if (deleteId === null) return;
+        router.delete(`/admin/schedule/${deleteId}`, { preserveScroll: true });
+        setDeleteOpen(false);
+        setDeleteId(null);
+        setDeleteName('');
+    };
+
+    // ── Render ─────────────────────────────────────────────────────────────
     return (
         <>
             <Head title="Global Schedule" />
+
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
-                <div>
-                    <h1 className="text-2xl font-semibold tracking-tight">Global Schedule</h1>
-                    <p className="text-muted-foreground text-sm">
-                        Sets the default expected start time per day of the week, for every intern unless a
-                        supervisor overrides it for their own HTE.
-                    </p>
+                {/* Header */}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                            <CalendarDays className="size-5" />
+                        </span>
+                        Global Schedule
+                    </h1>
+
+                    <Button onClick={() => setAddOpen(true)}>
+                        <Plus className="size-4" />
+                        <span className="hidden sm:inline">Add Period</span>
+                    </Button>
                 </div>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-base">Add New Period</CardTitle>
-                        <CardDescription>Only future or currently active periods can be added, edited, or removed.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex flex-col gap-4">
-                        <div className="grid gap-3 sm:grid-cols-3">
-                            <div className="grid gap-1.5">
-                                <Label>Name (optional)</Label>
-                                <Input
-                                    value={addForm.name}
-                                    onChange={(e) => setAddForm((p) => ({ ...p, name: e.target.value }))}
-                                    placeholder="e.g. Off-semester AY 2026-2027"
-                                />
-                            </div>
-                            <div className="grid gap-1.5">
-                                <Label>Start Date</Label>
-                                <Input
-                                    type="date"
-                                    value={addForm.startDate}
-                                    onChange={(e) => setAddForm((p) => ({ ...p, startDate: e.target.value }))}
-                                />
-                            </div>
-                            <div className="grid gap-1.5">
-                                <Label>End Date</Label>
-                                <Input
-                                    type="date"
-                                    value={addForm.endDate}
-                                    onChange={(e) => setAddForm((p) => ({ ...p, endDate: e.target.value }))}
-                                    min={addForm.startDate || undefined}
-                                />
-                            </div>
-                        </div>
-
-                        <DayFields
-                            daySchedule={addForm.daySchedule}
-                            noWork={addForm.noWork}
-                            onChange={(day, value) =>
-                                setAddForm((p) => ({ ...p, daySchedule: { ...p.daySchedule, [day]: value } }))
-                            }
-                        />
-
-                        <Button onClick={submitAdd} className="w-fit">
-                            Save Period
-                        </Button>
-                    </CardContent>
-                </Card>
-
+                {/* Existing periods */}
                 <Card className="flex-1">
                     <CardHeader>
-                        <CardTitle className="text-base">Existing Periods</CardTitle>
+                        <CardTitle className="text-base">Schedule Periods</CardTitle>
                     </CardHeader>
                     <CardContent>
                         {periods.length === 0 ? (
-                            <p className="text-muted-foreground text-sm">No schedule periods configured yet.</p>
+                            <p className="text-sm text-muted-foreground">
+                                No schedule periods configured yet.
+                            </p>
                         ) : (
                             <div className="flex flex-col gap-3">
                                 {periods.map((period) => (
-                                    <div key={period.id} className="rounded-lg border p-3">
-                                        <div className="mb-2 flex items-center justify-between">
+                                    <div key={period.id} className="rounded-lg border p-4">
+                                        {/* Period header */}
+                                        <div className="mb-3 flex items-start justify-between gap-2">
                                             <div>
-                                                <p className="font-medium">{period.name ?? 'Unnamed period'}</p>
-                                                <p className="text-muted-foreground text-xs">
+                                                <p className="font-medium">
+                                                    {period.name ?? 'Unnamed period'}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
                                                     {period.start_date} – {period.end_date}
+                                                    {isPast(period.end_date) && (
+                                                        <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide">
+                                                            Past
+                                                        </span>
+                                                    )}
                                                 </p>
                                             </div>
                                             {!isPast(period.end_date) && (
-                                                <div className="flex gap-1">
-                                                    <Button variant="ghost" size="icon" onClick={() => openEdit(period)}>
-                                                        <Pencil className="size-4" />
-                                                    </Button>
-                                                    <Button variant="ghost" size="icon" onClick={() => remove(period.id)}>
-                                                        <Trash2 className="size-4" />
-                                                    </Button>
+                                                <div className="flex shrink-0 gap-1">
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => openEdit(period)}
+                                                            >
+                                                                <Pencil className="size-4 text-blue-600" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>Edit</TooltipContent>
+                                                    </Tooltip>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => openDelete(period)}
+                                                            >
+                                                                <Trash2 className="size-4 text-destructive" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>Delete</TooltipContent>
+                                                    </Tooltip>
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="grid grid-cols-2 gap-5 gap-x-20 text-sm sm:grid-cols-4">
+
+                                        {/* Day schedule grid */}
+                                        <div className="grid grid-cols-2 gap-1.5 text-sm sm:grid-cols-4">
                                             {DAYS.map((day) => (
-                                                <div key={day} className="flex justify-between gap-2">
-                                                    <span className="text-muted-foreground">{DAY_LABELS[day].slice(0, 3)}</span>
-                                                    <span>{formatTime12(period.day_schedule[day])}</span>
+                                                <div
+                                                    key={day}
+                                                    className="flex justify-between gap-2 rounded-md bg-muted/40 px-2.5 py-1.5"
+                                                >
+                                                    <span className="text-muted-foreground">
+                                                        {DAY_LABELS[day].slice(0, 3)}
+                                                    </span>
+                                                    <span className="font-medium tabular-nums">
+                                                        {formatTime12(period.day_schedule[day])}
+                                                    </span>
                                                 </div>
                                             ))}
                                         </div>
@@ -285,50 +312,42 @@ export default function AdminSchedule({ periods }: ScheduleProps) {
                 </Card>
             </div>
 
+            {/* ── Add dialog ───────────────────────────────────────────────── */}
+            <Dialog open={addOpen} onOpenChange={setAddOpen}>
+                <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Add Schedule Period</DialogTitle>
+                        <DialogDescription>
+                            Set the date range and expected start time for each day of the week.
+                            Leave a day blank if there's no work that day.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <PeriodForm
+                        form={addForm}
+                        onChange={(patch) => setAddForm((f) => ({ ...f, ...patch }))}
+                    />
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setAddOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={submitAdd}>Save Period</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* ── Edit dialog ──────────────────────────────────────────────── */}
             <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+                <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Edit Period</DialogTitle>
-                        <DialogDescription>Update the date range or day-by-day expected start times.</DialogDescription>
+                        <DialogDescription>
+                            Update the date range or expected start times for each day.
+                        </DialogDescription>
                     </DialogHeader>
-
-                    <div className="flex flex-col gap-4">
-                        <div className="grid gap-3 sm:grid-cols-3">
-                            <div className="grid gap-1.5">
-                                <Label>Name (optional)</Label>
-                                <Input
-                                    value={editForm.name}
-                                    onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
-                                />
-                            </div>
-                            <div className="grid gap-1.5">
-                                <Label>Start Date</Label>
-                                <Input
-                                    type="date"
-                                    value={editForm.startDate}
-                                    onChange={(e) => setEditForm((p) => ({ ...p, startDate: e.target.value }))}
-                                />
-                            </div>
-                            <div className="grid gap-1.5">
-                                <Label>End Date</Label>
-                                <Input
-                                    type="date"
-                                    value={editForm.endDate}
-                                    onChange={(e) => setEditForm((p) => ({ ...p, endDate: e.target.value }))}
-                                    min={editForm.startDate || undefined}
-                                />
-                            </div>
-                        </div>
-
-                        <DayFields
-                            daySchedule={editForm.daySchedule}
-                            noWork={editForm.noWork}
-                            onChange={(day, value) =>
-                                setEditForm((p) => ({ ...p, daySchedule: { ...p.daySchedule, [day]: value } }))
-                            }
-                        />
-                    </div>
-
+                    <PeriodForm
+                        form={editForm}
+                        onChange={(patch) => setEditForm((f) => ({ ...f, ...patch }))}
+                    />
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setEditOpen(false)}>
                             Cancel
@@ -337,6 +356,16 @@ export default function AdminSchedule({ periods }: ScheduleProps) {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* ── Delete confirmation ──────────────────────────────────────── */}
+            <ConfirmationDialog
+                open={deleteOpen}
+                onOpenChange={setDeleteOpen}
+                title="Delete Schedule Period"
+                description={`Delete "${deleteName}"? This cannot be undone.`}
+                onConfirm={submitDelete}
+                confirmText="Delete"
+            />
         </>
     );
 }

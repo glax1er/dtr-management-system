@@ -7,7 +7,8 @@ import {
     TrendingUp,
     Users,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { AttendanceRing, CountUp } from '@/components/dashboard-analytics';
 import PaginationFooter from '@/components/pagination-footer';
 import type { Paginated } from '@/components/pagination-footer';
 import { Badge } from '@/components/ui/badge';
@@ -103,6 +104,7 @@ export default function AdminDashboard({
     const [mounted, setMounted] = useState(false);
     useEffect(() => {
         const id = requestAnimationFrame(() => setMounted(true));
+
         return () => cancelAnimationFrame(id);
     }, []);
 
@@ -180,7 +182,7 @@ export default function AdminDashboard({
                     {stats.map(({ label, value, icon: Icon, onClick }, i) => (
                         <Card
                             key={label}
-                            className={`animate-in fade-in-0 slide-in-from-bottom-2 py-4 duration-500 fill-mode-backwards ${onClick ? 'cursor-pointer transition-colors hover:bg-muted/50' : ''}`}
+                            className={`animate-in py-4 duration-500 fade-in-0 fill-mode-backwards slide-in-from-bottom-2 ${onClick ? 'cursor-pointer transition-colors hover:bg-muted/50' : ''}`}
                             style={{ animationDelay: `${i * 75}ms` }}
                             onClick={onClick}
                         >
@@ -201,7 +203,7 @@ export default function AdminDashboard({
 
                 {/* Analytics row 1: registration momentum + right-now attendance */}
                 <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-                    <Card className="animate-in fade-in-0 slide-in-from-bottom-2 py-4 duration-500 fill-mode-backwards lg:col-span-2">
+                    <Card className="animate-in py-4 duration-500 fade-in-0 fill-mode-backwards slide-in-from-bottom-2 lg:col-span-2">
                         <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 px-4 pb-1">
                             <div>
                                 <CardTitle className="text-sm font-medium">
@@ -252,7 +254,7 @@ export default function AdminDashboard({
                     </Card>
 
                     <Card
-                        className="animate-in fade-in-0 slide-in-from-bottom-2 py-4 duration-500 fill-mode-backwards"
+                        className="animate-in py-4 duration-500 fade-in-0 fill-mode-backwards slide-in-from-bottom-2"
                         style={{ animationDelay: '75ms' }}
                     >
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 px-4 pb-1">
@@ -282,7 +284,7 @@ export default function AdminDashboard({
                 {/* Analytics row 2: approval pipeline + top HTEs */}
                 <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
                     <Card
-                        className="animate-in fade-in-0 slide-in-from-bottom-2 py-4 duration-500 fill-mode-backwards"
+                        className="animate-in py-4 duration-500 fade-in-0 fill-mode-backwards slide-in-from-bottom-2"
                         style={{ animationDelay: '150ms' }}
                     >
                         <CardHeader className="px-4 pb-1">
@@ -338,7 +340,7 @@ export default function AdminDashboard({
                     </Card>
 
                     <Card
-                        className="animate-in fade-in-0 slide-in-from-bottom-2 py-4 duration-500 fill-mode-backwards lg:col-span-2"
+                        className="animate-in py-4 duration-500 fade-in-0 fill-mode-backwards slide-in-from-bottom-2 lg:col-span-2"
                         style={{ animationDelay: '200ms' }}
                     >
                         <CardHeader className="px-4 pb-1">
@@ -508,114 +510,6 @@ export default function AdminDashboard({
                 </Card>
             </div>
         </>
-    );
-}
-
-/**
- * Animates a number counting up from 0 to `value` whenever `value`
- * changes (e.g. on first mount, or after an Inertia partial reload
- * brings back fresh stats). Uses an ease-out curve over a fixed
- * duration rather than a fixed increment so small and large numbers
- * both feel snappy.
- */
-function CountUp({
-    value,
-    duration = 700,
-}: {
-    value: number;
-    duration?: number;
-}) {
-    const [display, setDisplay] = useState(0);
-    const frame = useRef<number | null>(null);
-
-    useEffect(() => {
-        const start = performance.now();
-        const from = 0;
-
-        const tick = (now: number) => {
-            const elapsed = now - start;
-            const progress = Math.min(1, elapsed / duration);
-            const eased = 1 - Math.pow(1 - progress, 3);
-            setDisplay(Math.round(from + (value - from) * eased));
-
-            if (progress < 1) {
-                frame.current = requestAnimationFrame(tick);
-            }
-        };
-
-        frame.current = requestAnimationFrame(tick);
-
-        return () => {
-            if (frame.current !== null) {
-                cancelAnimationFrame(frame.current);
-            }
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [value, duration]);
-
-    return <>{display}</>;
-}
-
-/**
- * Self-contained progress ring for the "checked in today" metric. Kept
- * local to this page (rather than reusing `HoursProgressRing`) since the
- * label shape here — "3 / 10 interns" against a percentage of the
- * approved roster — is different from that component's hours-rendered
- * semantics, and duplicating a ~20-line SVG is cheaper than overloading
- * a shared component's props for a one-off case.
- */
-function AttendanceRing({
-    percent,
-    checkedIn,
-    total,
-}: {
-    percent: number;
-    checkedIn: number;
-    total: number;
-}) {
-    const size = 148;
-    const strokeWidth = 12;
-    const radius = (size - strokeWidth) / 2;
-    const circumference = 2 * Math.PI * radius;
-    const clamped = Math.min(100, Math.max(0, percent));
-    const offset = circumference - (clamped / 100) * circumference;
-
-    return (
-        <div
-            className="relative mx-auto aspect-square w-full"
-            style={{ maxWidth: size }}
-        >
-            <svg
-                viewBox={`0 0 ${size} ${size}`}
-                className="h-full w-full -rotate-90"
-            >
-                <circle
-                    cx={size / 2}
-                    cy={size / 2}
-                    r={radius}
-                    strokeWidth={strokeWidth}
-                    className="fill-none stroke-muted"
-                />
-                <circle
-                    cx={size / 2}
-                    cy={size / 2}
-                    r={radius}
-                    strokeWidth={strokeWidth}
-                    strokeDasharray={circumference}
-                    strokeDashoffset={offset}
-                    strokeLinecap="round"
-                    className="fill-none stroke-chart-2 transition-[stroke-dashoffset] duration-500 ease-out"
-                />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center px-2">
-                <span className="text-xl font-semibold tabular-nums sm:text-2xl">
-                    <CountUp value={clamped} />%
-                </span>
-                <span className="text-center text-xs text-muted-foreground">
-                    {checkedIn} / {total} interns
-                </span>
-            </div>
-        </div>
     );
 }
 

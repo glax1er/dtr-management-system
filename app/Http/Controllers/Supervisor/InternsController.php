@@ -106,7 +106,7 @@ class InternsController extends Controller
                     'email' => $intern->user->email,
                     'id_number' => $intern->id_number,
                     'contact_number' => $intern->contact_number,
-                    'hte_name' => $intern->hte->hte_name,
+                    'hte_name' => $intern->hte?->hte_name ?? 'Deleted HTE',
                     'total_hours' => $totalHours,
                     'required_hours' => $requiredHours,
                     'progress_percent' => $progressPercent,
@@ -436,8 +436,8 @@ class InternsController extends Controller
                     [
                         'intern_user_id' => $intern->user_id,
                         'intern_name' => $intern->user->name,
-                        'hte_name' => $intern->hte->hte_name,
-                        'program_name' => $intern->program->program_name,
+                        'hte_name' => $intern->hte?->hte_name ?? 'Deleted HTE',
+                        'program_name' => $intern->program?->program_name ?? 'Deleted Program', 
                         'punctuality' => $this->computePunctuality($day, $intern->hte_id),
                     ],
                 ));

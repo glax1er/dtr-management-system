@@ -1,6 +1,7 @@
 import { Head, router } from '@inertiajs/react';
+import { MonitorSmartphone } from 'lucide-react';
 import { useState } from 'react';
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -39,12 +40,12 @@ export default function AdminKiosk({ kiosk }: KioskProps) {
         <>
             <Head title="Kiosk" />
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
-                <div>
-                    <h1 className="text-2xl font-semibold tracking-tight">Scanning Kiosk</h1>
-                    <p className="text-muted-foreground text-sm">
-                        One shared, login-free scanning link for the testing room.
-                    </p>
-                </div>
+                <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                        <MonitorSmartphone className="size-5" />
+                    </span>
+                    Scanning Kiosk
+                </h1>
 
                 <Card>
                     <CardHeader>
@@ -55,15 +56,7 @@ export default function AdminKiosk({ kiosk }: KioskProps) {
                                     Open this link on the shared tablet/device.
                                 </CardDescription>
                             </div>
-                            <Badge
-                                className={
-                                    kiosk.is_active
-                                        ? 'bg-emerald-100 text-emerald-400 border-emerald-500'
-                                        : 'bg-red-100 text-red-400 border-red-500'
-                                }
-                            >
-                                {kiosk.is_active ? 'Active' : 'Disabled'}
-                            </Badge>
+                            <StatusBadge status={kiosk.is_active ? 'active' : 'inactive'} />
                         </div>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-4">

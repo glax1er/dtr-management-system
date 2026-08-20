@@ -97,10 +97,10 @@ class SupervisorProfile extends Model
     public function getAssignedInterns(): mixed
     {
         if ($this->isHteSupervisor()) {
-            return $this->hte->internProfiles();
+            return $this->hte?->internProfiles() ?? \App\Models\InternProfile::whereRaw('1 = 0');
         }
 
-        return $this->program->internProfiles();
+        return $this->program?->internProfiles() ?? \App\Models\InternProfile::whereRaw('1 = 0');
     }
 
     /**
@@ -121,7 +121,7 @@ class SupervisorProfile extends Model
     public function getScopeName(): string
     {
         return $this->isHteSupervisor()
-            ? ($this->hte->hte_name ?? 'Unknown HTE')
-            : ($this->program->program_name ?? 'Unknown Program');
+            ? ($this->hte?->hte_name ?? 'Unknown HTE')
+            : ($this->program?->program_name ?? 'Unknown Program');
     }
 }

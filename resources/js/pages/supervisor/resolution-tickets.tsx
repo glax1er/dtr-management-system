@@ -32,8 +32,10 @@ export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
 
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl px-3 py-4 sm:p-6">
                 <div>
-                    <h1 className="text-2xl font-semibold">Resolution Tickets</h1>
-                    <p className="text-muted-foreground">
+                    <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                        Resolution Tickets
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
                         Pending requests from interns for missing Time In/Out on their DTR.
                     </p>
                 </div>

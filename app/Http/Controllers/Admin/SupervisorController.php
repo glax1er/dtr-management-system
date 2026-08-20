@@ -88,7 +88,7 @@ class SupervisorController extends Controller
         // Keep the HTE's stored contact_person in sync — an inactive
         // HTE supervisor should stop being listed as the contact.
         if ($supervisorProfile->isHteSupervisor() && $supervisorProfile->hte) {
-            $supervisorProfile->hte->refreshContactPerson();
+            $supervisorProfile->hte?->refreshContactPerson();
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Supervisor status updated.']);
@@ -114,7 +114,7 @@ class SupervisorController extends Controller
             ]);
 
             // Keep the HTE's stored contact_person in sync.
-            $supervisorProfile->hte->refreshContactPerson();
+            $supervisorProfile->hte?->refreshContactPerson();
         });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "HTE Supervisor account created.\nDefault password: ".config('supervisor.default_supervisor_password')]);
@@ -156,13 +156,14 @@ class SupervisorController extends Controller
 
             if ($supervisorProfile->supervisor_type === 'hte') {
                 $supervisorProfile->update(['hte_id' => $request->validated('hte_id')]);
-                $supervisorProfile->hte->refreshContactPerson();
+                $supervisorProfile->hte?->refreshContactPerson();
             } else {
                 $supervisorProfile->update(['program_id' => $request->validated('program_id')]);
             }
         });
 
-        return back()->with('success', 'Supervisor updated.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Supervisor updated.']);
+        return back();
     }
 
     public function destroy(SupervisorProfile $supervisorProfile): RedirectResponse
@@ -173,6 +174,7 @@ class SupervisorController extends Controller
 
         $supervisorProfile->delete();
 
-        return back()->with('success', 'Supervisor removed.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Supervisor archived.']);
+        return back();
     }
 }

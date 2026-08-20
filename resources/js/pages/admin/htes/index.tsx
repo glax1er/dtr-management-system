@@ -274,7 +274,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
         router.patch(
             `/admin/htes/${hte.hte_id}/status`,
             { status: hte.status === 'active' ? 'inactive' : 'active' },
-            { preserveScroll: true, preserveState: true },
+            { preserveScroll: true },
         );
     };
 
@@ -293,6 +293,50 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
         }
     };
 
+    // ── HTE action buttons (reused in table and grid) ──────────────────────────
+    const HteActions = ({ hte }: { hte: Hte }) => (
+        <div className="flex justify-center gap-1">
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={() => openEditDialog(hte)}>
+                        <Pencil className="size-4 text-blue-600" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>Edit</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={() => toggleStatus(hte)}>
+                        {hte.status === 'active' ? (
+                            <PowerOff className="size-4 text-destructive" />
+                        ) : (
+                            <Power className="size-4 text-emerald-600" />
+                        )}
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    {hte.status === 'active' ? 'Deactivate' : 'Activate'}
+                </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={hte.status === 'active'}
+                        onClick={() => openArchiveDialog(hte.hte_id, hte.hte_name)}
+                    >
+                        <Archive className="size-4 text-orange-600" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    {hte.status === 'active' ? 'Archive inactive HTEs only' : 'Archive'}
+                </TooltipContent>
+            </Tooltip>
+        </div>
+    );
     return (
         <>
             <Head title="HTEs" />
