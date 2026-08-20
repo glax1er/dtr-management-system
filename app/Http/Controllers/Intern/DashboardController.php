@@ -6,12 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Models\ResolutionTicket;
 use App\Services\Attendance\DailyAttendanceCalculator;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DashboardController extends Controller
 {
+    private const DEFAULT_PER_PAGE = 10;
+    private const MAX_PER_PAGE = 100;
+
     public function __construct(
         private readonly DailyAttendanceCalculator $calculator,
     ) {}
@@ -24,11 +28,13 @@ class DashboardController extends Controller
         $today = Carbon::now($timezone);
 
         $validated = $request->validate([
-            // 'YYYY-MM', defaults to the current month. Drives the log
-            // table below — a separate value from "today", so paging
-            // back to a previous month never affects the Today card.
             'month' => ['nullable', 'date_format:Y-m'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:' . self::MAX_PER_PAGE],
         ]);
+
+        $page = (int) ($validated['page'] ?? 1);
+        $perPage = (int) ($validated['per_page'] ?? self::DEFAULT_PER_PAGE);
 
         $month = isset($validated['month'])
             ? Carbon::createFromFormat('Y-m-d', $validated['month'] . '-01', $timezone)->startOfMonth()
@@ -42,9 +48,6 @@ class DashboardController extends Controller
             approvedAt: $profile->approved_at,
         );
 
-        // Today's card is deliberately independent of $monthDays — an
-        // intern paging back to review a previous month shouldn't see
-        // their "Today" status disappear.
         $todayEntry = $this->calculator
             ->forIntern($user->id, $profile->hte_id, from: $today->clone()->startOfDay(), to: $today->clone()->endOfDay())
             ->first();
@@ -52,15 +55,25 @@ class DashboardController extends Controller
         $requiredHours = $profile->program?->required_hours ?? config('dtr.default_required_hours');
         $totalHours = $this->calculator->totalHours($user->id, $profile->hte_id);
 
-        // Keyed by date string so it's a cheap lookup per row below —
-        // only ever one pending ticket per date is allowed to exist
-        // (enforced in ResolutionTicketController::store()).
         $pendingTicketsByDate = ResolutionTicket::query()
             ->where('intern_user_id', $user->id)
             ->where('status', ResolutionTicket::STATUS_PENDING)
             ->whereBetween('date', [$month->clone()->startOfMonth()->toDateString(), $month->clone()->endOfMonth()->toDateString()])
             ->get()
             ->mapWithKeys(fn (ResolutionTicket $ticket) => [$ticket->date->toDateString() => $ticket->id]);
+
+        $mappedLogs = $monthDays->map(fn ($day) => [
+            ...$day->toArray(),
+            'pending_ticket_id' => $pendingTicketsByDate->get($day->date),
+        ])->values();
+
+        $paginatedLogs = new LengthAwarePaginator(
+            $mappedLogs->forPage($page, $perPage)->values(),
+            $mappedLogs->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
 
         return Inertia::render('intern/dashboard', [
             'profile' => [
@@ -70,9 +83,6 @@ class DashboardController extends Controller
                 'hte_name' => $profile->hte?->hte_name ?? 'Deleted HTE',
                 'program_name' => $profile->program?->program_name ?? 'Deleted Program',
                 'status' => $profile->status,
-                // Placeholder only — QR generation/display is being built
-                // separately. This flag just tells the UI whether a code
-                // exists yet at all; it never renders the actual image here.
                 'has_qr_code' => $profile->qr_code_value !== null,
                 'photo_url' => $profile->profile_photo_url,
             ],
@@ -96,10 +106,7 @@ class DashboardController extends Controller
             ],
             'month' => $month->format('Y-m'),
             'monthLabel' => $month->format('F Y'),
-            'logs' => $monthDays->map(fn ($day) => [
-                ...$day->toArray(),
-                'pending_ticket_id' => $pendingTicketsByDate->get($day->date),
-            ])->values(),
+            'logs' => $paginatedLogs,
             'monthTotalHours' => round($monthDays->sum('hoursRendered'), 2),
             'canGoNextMonth' => $month->clone()->addMonthNoOverflow()->lessThanOrEqualTo($today->clone()->startOfMonth()),
         ]);
