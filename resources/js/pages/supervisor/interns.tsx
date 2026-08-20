@@ -523,6 +523,7 @@ export default function MyInterns({
                                     minDate={fromDraft || undefined}
                                     className="h-9 text-xs sm:text-sm"
                                     clearable
+                                    align="end"
                                 />
                             </div>
                         </div>

@@ -484,6 +484,7 @@ export default function InternDashboard({
                                             minDate={startDate || undefined}
                                             className="h-8 text-xs"
                                             clearable
+                                            align="end"
                                         />
                                     </div>
                                 </div>

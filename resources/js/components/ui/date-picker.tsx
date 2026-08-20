@@ -20,6 +20,8 @@ export interface DatePickerProps {
     maxDate?: string | Date;
     id?: string;
     clearable?: boolean;
+    align?: 'start' | 'center' | 'end';
+    side?: 'top' | 'right' | 'bottom' | 'left';
 }
 
 export function DatePicker({
@@ -32,6 +34,8 @@ export function DatePicker({
     maxDate,
     id,
     clearable = false,
+    align = 'start',
+    side = 'bottom',
 }: DatePickerProps) {
     const [open, setOpen] = React.useState(false);
 
@@ -108,7 +112,14 @@ export function DatePicker({
                     )}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 shadow-lg" align="start">
+            <PopoverContent
+                className="w-auto p-0 shadow-lg max-w-[calc(100vw-1rem)]"
+                align={align}
+                side={side}
+                sideOffset={4}
+                collisionPadding={12}
+                avoidCollisions={true}
+            >
                 <Calendar
                     mode="single"
                     selected={selectedDate}

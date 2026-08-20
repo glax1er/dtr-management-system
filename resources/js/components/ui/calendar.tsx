@@ -16,7 +16,7 @@ function Calendar({
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      className={cn("p-3 select-none", className)}
+      className={cn("p-2 sm:p-3 select-none", className)}
       classNames={{
         months: "flex flex-col sm:flex-row gap-4 relative",
         month: "flex flex-col gap-3",
@@ -34,13 +34,13 @@ function Calendar({
         month_grid: "w-full border-collapse space-y-1 select-none",
         weekdays: "flex justify-between w-full mb-1",
         weekday:
-          "text-muted-foreground w-9 text-center font-medium text-[0.8rem] py-1 select-none",
+          "text-muted-foreground w-8 sm:w-9 text-center font-medium text-[0.8rem] py-1 select-none",
         weeks: "flex flex-col gap-1 w-full",
         week: "flex w-full justify-between mt-0.5",
-        day: "h-9 w-9 p-0 text-center text-sm relative flex items-center justify-center focus-within:relative focus-within:z-20",
+        day: "h-8 w-8 sm:h-9 sm:w-9 p-0 text-center text-sm relative flex items-center justify-center focus-within:relative focus-within:z-20",
         day_button: cn(
           buttonVariants({ variant: "ghost" }),
-          "size-9 p-0 font-normal rounded-lg text-foreground transition-all hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring select-none text-xs sm:text-sm"
+          "size-8 sm:size-9 p-0 font-normal rounded-lg text-foreground transition-all hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring select-none text-xs sm:text-sm"
         ),
         selected:
           "[&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:font-medium [&>button]:hover:bg-primary [&>button]:hover:text-primary-foreground [&>button]:shadow-xs rounded-lg",
