@@ -20,6 +20,7 @@ import { StatCard } from '@/components/dashboard-analytics';
 import { HoursProgressRing } from '@/components/hours-progress-ring';
 import { ResolutionRequestDialog } from '@/components/resolution-request-dialog';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -116,16 +117,6 @@ export default function InternDashboard({
         });
     };
 
-    const handlePhotoRemove = () => {
-        if (confirm('Remove your profile photo?')) {
-            router.delete('/intern/profile-photo', {
-                preserveScroll: true,
-                onSuccess: () => toast.success('Profile photo removed.'),
-                onError: () => toast.error('Could not remove photo.'),
-            });
-        }
-    };
-
     const cancelRequest = (ticketId: number) => {
         if (!confirm('Cancel this resolution request?')) {
             return;
@@ -201,17 +192,6 @@ export default function InternDashboard({
                                 <Camera className="size-3" />
                             </button>
 
-                            {profile.photo_url && (
-                                <button
-                                    type="button"
-                                    onClick={handlePhotoRemove}
-                                    className="absolute -bottom-1 -left-1 flex size-6 sm:size-6.5 items-center justify-center rounded-full border-2 border-background bg-destructive text-destructive-foreground shadow-xs transition-transform hover:scale-110"
-                                    title="Remove profile photo"
-                                >
-                                    <span className="sr-only">Remove photo</span>
-                                    <X className="size-3" />
-                                </button>
-                            )}
 
                             <input
                                 ref={fileInputRef}
@@ -240,12 +220,7 @@ export default function InternDashboard({
                         <Badge variant="outline" className="px-3 py-1 font-mono text-xs font-normal">
                             ID: {profile.id_number}
                         </Badge>
-                        <Badge
-                            variant={profile.status === 'approved' ? 'default' : 'secondary'}
-                            className="px-3 py-1 text-xs font-medium capitalize shadow-xs"
-                        >
-                            {profile.status}
-                        </Badge>
+                        <StatusBadge status={profile.status} />
                     </div>
                 </div>
 

@@ -215,7 +215,7 @@ inFlightRef.current = true;
         <>
             <Head title={kioskName} />
             <div
-                className="relative flex min-h-svh flex-col items-center justify-start gap-6 pt-9 p-4"
+                className="relative flex min-h-svh flex-col items-center justify-start gap-6 pt-30 p-4"
                 style={{
                     backgroundImage: `url('/images/cic-bg.jpg')`,
                     backgroundSize: 'cover',
