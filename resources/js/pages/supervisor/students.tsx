@@ -1,7 +1,17 @@
 import { Head, router } from '@inertiajs/react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import {
+    Award,
+    CheckCircle2,
+    ChevronLeft,
+    ChevronRight,
+    Clock,
+    FileCheck2,
+    GraduationCap,
+    SlidersHorizontal,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
 import type { FormEvent, KeyboardEvent } from 'react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -18,6 +28,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { CompletionSummaryDialog } from '@/components/completion-summary-dialog';
+import { InternDocumentsDialog } from '@/components/intern-documents-dialog';
 
 interface StudentRow {
     intern_user_id: number;
@@ -27,6 +39,13 @@ interface StudentRow {
     contact_number: string | null;
     hte_name: string;
     total_hours: number;
+    required_hours: number;
+    progress_percent: number;
+    hours_completed: boolean;
+    approved_docs_count: number;
+    total_required_docs_count: number;
+    docs_completed: boolean;
+    is_completed: boolean;
 }
 
 interface PaginatedStudents {
@@ -47,12 +66,15 @@ interface HteOption {
 interface Filters {
     search: string;
     hte_id: number | null;
+    completion_status?: 'all' | 'completed' | 'in_progress';
     per_page: number;
 }
 
 interface MyStudentsProps {
     students: PaginatedStudents;
     studentCount: number;
+    completedCount?: number;
+    inProgressCount?: number;
     scopeName?: string;
     hteOptions: HteOption[];
     filters: Filters;
@@ -65,47 +87,39 @@ const MAX_PER_PAGE = 100;
 // "every HTE" gets its own sentinel that we translate back to
 // undefined (i.e. no hte_id filter) before it hits the URL.
 const ALL_HTES = 'all';
+const ALL_STATUSES = 'all';
 
-/** 8.5 → "8 hours 30 minutes" — same long-form duration used on the
- * HTE attendance log, so hours read consistently across both views. */
-function formatLongDuration(hours: number): string {
+/** 8.5 → "8.5 hrs" */
+function formatHours(hours: number): string {
     if (hours <= 0) {
-        return '—';
+        return '0 hrs';
     }
-
-    const totalMinutes = Math.round(hours * 60);
-    const wholeHours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-
-    const parts: string[] = [];
-
-    if (wholeHours > 0) {
-        parts.push(`${wholeHours} ${wholeHours === 1 ? 'hour' : 'hours'}`);
-    }
-
-    if (minutes > 0) {
-        parts.push(`${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`);
-    }
-
-    return parts.length > 0 ? parts.join(' ') : '0 minutes';
+    return `${hours.toFixed(1)} hrs`;
 }
 
 export default function MyStudents({
     students,
     studentCount,
+    completedCount = 0,
+    inProgressCount = 0,
     scopeName,
     hteOptions,
     filters,
 }: MyStudentsProps) {
-    const [search, setSearch] = useState(filters.search);
+    const [search, setSearch] = useState(filters.search || '');
     const [perPageDraft, setPerPageDraft] = useState(String(filters.per_page));
 
+    useEffect(() => {
+        setSearch(filters.search || '');
+    }, [filters.search]);
+
     // Base params shared by every navigation action — anything that
-    // changes what rows match (search/hte_id) resets back to page 1 by
+    // changes what rows match (search/hte_id/completion_status) resets back to page 1 by
     // simply omitting the page param.
     const baseParams = () => ({
         search: filters.search || undefined,
         hte_id: filters.hte_id ? String(filters.hte_id) : undefined,
+        completion_status: filters.completion_status && filters.completion_status !== 'all' ? filters.completion_status : undefined,
         per_page: String(filters.per_page),
     });
 
@@ -130,6 +144,13 @@ export default function MyStudents({
         visit({
             ...baseParams(),
             hte_id: value === ALL_HTES ? undefined : value,
+        });
+    };
+
+    const changeCompletionStatus = (value: string) => {
+        visit({
+            ...baseParams(),
+            completion_status: value === ALL_STATUSES ? undefined : value,
         });
     };
 
@@ -160,19 +181,33 @@ export default function MyStudents({
         <>
             <Head title="My Students" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl px-3 py-4 sm:p-6">
-                <div>
-                    <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-                        My Students
-                    </h1>
-                    <p className="text-sm text-muted-foreground">
-                        {`${studentCount} intern${studentCount === 1 ? '' : 's'} in the ${scopeName ?? 'selected'} program, across every HTE.`}
-                    </p>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl flex items-center gap-2">
+                            <GraduationCap className="size-6 text-primary" />
+                            My Students
+                        </h1>
+                        <p className="text-sm text-muted-foreground">
+                            {`${studentCount} intern${studentCount === 1 ? '' : 's'} in the ${scopeName ?? 'selected'} program, across every HTE.`}
+                        </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-400 gap-1.5 py-1 px-2.5">
+                            <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <span className="font-semibold">{completedCount}</span> Completed Requirements
+                        </Badge>
+                        <Badge variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-400 gap-1.5 py-1 px-2.5">
+                            <Clock className="size-3.5 text-amber-600 dark:text-amber-400" />
+                            <span className="font-semibold">{inProgressCount}</span> In Progress
+                        </Badge>
+                    </div>
                 </div>
 
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-base">
-                            Assigned Interns
+                            Assigned Interns &amp; Requirement Status
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-5">
@@ -247,12 +282,45 @@ export default function MyStudents({
                                     </SelectContent>
                                 </Select>
                             </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <Label
+                                    htmlFor="completion-filter"
+                                    className="text-xs text-muted-foreground"
+                                >
+                                    Completion Status
+                                </Label>
+                                <Select
+                                    value={filters.completion_status || ALL_STATUSES}
+                                    onValueChange={changeCompletionStatus}
+                                >
+                                    <SelectTrigger
+                                        id="completion-filter"
+                                        className="w-full sm:w-48"
+                                    >
+                                        <SlidersHorizontal className="mr-1.5 size-3.5 text-muted-foreground" />
+                                        <SelectValue placeholder="All Status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value={ALL_STATUSES}>
+                                            All Students
+                                        </SelectItem>
+                                        <SelectItem value="completed">
+                                            Completed Requirements ({completedCount})
+                                        </SelectItem>
+                                        <SelectItem value="in_progress">
+                                            In Progress ({inProgressCount})
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            </div>
                         </form>
 
                         {students.data.length === 0 ? (
                             <p className="py-8 text-center text-sm text-muted-foreground">
                                 No interns match{' '}
-                                {filters.search !== '' || filters.hte_id
+                                {filters.search !== '' || filters.hte_id || (filters.completion_status && filters.completion_status !== 'all')
                                     ? 'these filters.'
                                     : 'your program yet.'}
                             </p>
@@ -261,23 +329,26 @@ export default function MyStudents({
                                 <table className="w-full min-w-[720px] text-sm">
                                     <thead>
                                         <tr className="border-b text-left text-muted-foreground">
-                                            <th className="py-2 pr-4 font-medium">
+                                            <th className="py-2.5 pr-4 font-medium">
                                                 Name
                                             </th>
-                                            <th className="py-2 pr-4 font-medium">
-                                                Email
-                                            </th>
-                                            <th className="py-2 pr-4 font-medium">
+                                            <th className="py-2.5 pr-4 font-medium">
                                                 ID Number
                                             </th>
-                                            <th className="py-2 pr-4 font-medium">
-                                                Contact
-                                            </th>
-                                            <th className="py-2 pr-4 font-medium">
+                                            <th className="py-2.5 pr-4 font-medium">
                                                 Assigned HTE
                                             </th>
-                                            <th className="py-2 font-medium">
+                                            <th className="py-2.5 pr-4 font-medium">
                                                 Hours Rendered
+                                            </th>
+                                            <th className="py-2.5 pr-4 font-medium">
+                                                Documents
+                                            </th>
+                                            <th className="py-2.5 pr-4 font-medium">
+                                                Requirement Status
+                                            </th>
+                                            <th className="py-2.5 font-medium text-right">
+                                                Actions
                                             </th>
                                         </tr>
                                     </thead>
@@ -287,32 +358,83 @@ export default function MyStudents({
                                                 key={student.intern_user_id}
                                                 className="border-b last:border-0 hover:bg-muted/40"
                                             >
-                                                <td className="py-2.5 pr-4 font-medium whitespace-nowrap">
-                                                    {student.name}
-                                                </td>
-                                                <td
-                                                    className="py-2.5 pr-4 whitespace-nowrap"
-                                                    title={student.email}
-                                                >
-                                                    {student.email}
-                                                </td>
-                                                <td className="py-2.5 pr-4 whitespace-nowrap">
+                                                <td className="py-3 pr-4">
+                                                    <p className="font-medium whitespace-nowrap">
+                                                        {student.name}
+                                                    </p>
+                                                    <p
+                                                        className="max-w-[160px] truncate text-xs text-muted-foreground"
+                                                        title={student.email}
+                                                    >
+                                                        {student.email}
+                                                    </p>
+                                                <td className="py-3 pr-4 whitespace-nowrap">
                                                     {student.id_number ?? '—'}
                                                 </td>
-                                                <td className="py-2.5 pr-4 whitespace-nowrap">
-                                                    {student.contact_number ??
-                                                        '—'}
-                                                </td>
                                                 <td
-                                                    className="py-2.5 pr-4 whitespace-nowrap"
+                                                    className="max-w-[140px] truncate py-3 pr-4"
                                                     title={student.hte_name}
                                                 >
                                                     {student.hte_name}
                                                 </td>
-                                                <td className="py-2.5 whitespace-nowrap">
-                                                    {formatLongDuration(
-                                                        student.total_hours,
+                                                <td className="py-3 pr-4 whitespace-nowrap">
+                                                    <div className="flex flex-col gap-1 min-w-[110px]">
+                                                        <div className="flex justify-between text-xs">
+                                                            <span className="font-medium">{formatHours(student.total_hours)}</span>
+                                                            <span className="text-muted-foreground">/ {student.required_hours}h</span>
+                                                        </div>
+                                                        <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                                                            <div
+                                                                className={`h-full rounded-full ${
+                                                                    student.hours_completed ? 'bg-emerald-500' : 'bg-primary'
+                                                                }`}
+                                                                style={{ width: `${Math.min(100, student.progress_percent)}%` }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="py-3 pr-4 whitespace-nowrap">
+                                                    <Badge
+                                                        variant="outline"
+                                                        className={`text-xs gap-1 ${
+                                                            student.docs_completed
+                                                                ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-300'
+                                                                : 'bg-muted text-muted-foreground'
+                                                        }`}
+                                                    >
+                                                        <FileCheck2 className="size-3" />
+                                                        {student.approved_docs_count} / {student.total_required_docs_count} Approved
+                                                    </Badge>
+                                                </td>
+                                                <td className="py-3 pr-4 whitespace-nowrap">
+                                                    {student.is_completed ? (
+                                                        <Badge className="bg-emerald-600 text-white hover:bg-emerald-600 text-xs gap-1">
+                                                            <CheckCircle2 className="size-3.5" />
+                                                            Completed
+                                                        </Badge>
+                                                    ) : (
+                                                        <Badge
+                                                            variant="secondary"
+                                                            className="text-xs text-muted-foreground font-normal"
+                                                        >
+                                                            {student.hours_completed
+                                                                ? 'Hours Met • Docs Pending'
+                                                                : `${Math.round(student.progress_percent)}% Rendered`}
+                                                        </Badge>
                                                     )}
+                                                </td>
+                                                <td className="py-3 whitespace-nowrap text-right">
+                                                    <div className="flex items-center justify-end gap-1.5">
+                                                        <CompletionSummaryDialog
+                                                            internUserId={student.intern_user_id}
+                                                            internName={student.name}
+                                                            isCompleted={student.is_completed}
+                                                        />
+                                                        <InternDocumentsDialog
+                                                            internUserId={student.intern_user_id}
+                                                            internName={student.name}
+                                                        />
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}

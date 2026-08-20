@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/Admin/InternApprovalController.php
 
 namespace App\Http\Controllers\Admin;
 
@@ -17,7 +16,7 @@ class InternApprovalController extends Controller
         $internProfile->update([
             'status' => 'approved',
             'approved_at' => now(),
-            'qr_code_value' => (string) Str::uuid(), // only a unique random token string, modify if qr generation wil be applied
+            'qr_code_value' => (string) Str::uuid(),
         ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "{$internProfile->user->name} has been approved."]);

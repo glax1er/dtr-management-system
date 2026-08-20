@@ -198,7 +198,7 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                                                     {intern.registered_at}
                                                 </td>
                                                 <td className="py-2.5">
-                                                    <div className="flex flex-wrap gap-2">
+                                                    <div className="flex flex-wrap items-center gap-2">
                                                         {intern.status === 'pending' && (
                                                             <>
                                                                 <Button
