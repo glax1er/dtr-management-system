@@ -503,8 +503,8 @@ export default function MyInterns({
                         <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5 shrink-0">
                             <Calendar className="size-3.5" /> Date range:
                         </span>
-                        <div className="flex items-center gap-1.5 flex-1 min-w-[240px] sm:min-w-0 sm:flex-initial">
-                            <div className="flex-1 sm:w-44 sm:flex-initial">
+                        <div className="flex items-center gap-1.5 flex-1 min-w-0 w-full sm:w-auto sm:flex-initial">
+                            <div className="flex-1 min-w-0 sm:w-44 sm:flex-initial">
                                 <DatePicker
                                     date={fromDraft}
                                     onDateChange={(d) => setFromDraft(d)}
@@ -515,7 +515,7 @@ export default function MyInterns({
                                 />
                             </div>
                             <span className="text-xs text-muted-foreground shrink-0">to</span>
-                            <div className="flex-1 sm:w-44 sm:flex-initial">
+                            <div className="flex-1 min-w-0 sm:w-44 sm:flex-initial">
                                 <DatePicker
                                     date={toDraft}
                                     onDateChange={(d) => setToDraft(d)}

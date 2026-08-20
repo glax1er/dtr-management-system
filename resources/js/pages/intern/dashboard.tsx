@@ -463,9 +463,9 @@ export default function InternDashboard({
                             </div>
 
                             {/* Date Range Picker + DTR Report */}
-                            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
-                                <div className="flex items-center gap-1.5 flex-1 min-w-[200px] sm:min-w-0">
-                                    <div className="flex-1 sm:w-36 sm:flex-initial">
+                            <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                                <div className="flex items-center gap-1.5 flex-1 min-w-0 w-full sm:w-auto sm:flex-initial">
+                                    <div className="flex-1 min-w-0 sm:w-43 sm:flex-initial">
                                         <DatePicker
                                             date={startDate}
                                             onDateChange={(d) => setStartDate(d)}
@@ -476,7 +476,7 @@ export default function InternDashboard({
                                         />
                                     </div>
                                     <span className="text-xs text-muted-foreground shrink-0">to</span>
-                                    <div className="flex-1 sm:w-36 sm:flex-initial">
+                                    <div className="flex-1 min-w-0 sm:w-43 sm:flex-initial">
                                         <DatePicker
                                             date={endDate}
                                             onDateChange={(d) => setEndDate(d)}

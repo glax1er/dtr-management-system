@@ -82,13 +82,13 @@ export function DatePicker({
                     variant="outline"
                     disabled={disabled}
                     className={cn(
-                        'w-full justify-start text-left font-normal text-xs sm:text-sm h-9 bg-background px-2.5 transition-colors',
+                        'w-full min-w-0 justify-start text-left font-normal text-xs sm:text-sm h-9 bg-background px-2 sm:px-2.5 transition-colors overflow-hidden',
                         !date && 'text-muted-foreground',
                         className,
                     )}
                 >
-                    <CalendarIcon className="mr-2 size-3.5 shrink-0 text-muted-foreground" />
-                    <span className="truncate flex-1">
+                    <CalendarIcon className="mr-1.5 sm:mr-2 size-3.5 shrink-0 text-muted-foreground" />
+                    <span className="truncate flex-1 min-w-0">
                         {selectedDate ? (
                             format(selectedDate, 'MMM dd, yyyy')
                         ) : (
@@ -105,9 +105,9 @@ export function DatePicker({
                                     handleClear(e as unknown as React.MouseEvent);
                                 }
                             }}
-                            className="ml-1 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+                            className="ml-1 shrink-0 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
                         >
-                            <X className="size-3" />
+                            <X className="size-3 shrink-0" />
                         </span>
                     )}
                 </Button>
