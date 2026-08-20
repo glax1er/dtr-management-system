@@ -4,8 +4,8 @@ import {
     ClipboardCheck,
     Clock,
     GraduationCap,
-    LayoutDashboard,
     TrendingUp,
+    FileWarning,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
@@ -136,7 +136,7 @@ export default function SupervisorDashboard({
             value: scansToday,
             icon: ClipboardCheck,
             variant: 'success' as const,
-            description: 'Total check-ins & check-outs',
+            description: 'Total time-ins & time-outs',
         },
         {
             label: 'Scans This Week',
@@ -148,7 +148,7 @@ export default function SupervisorDashboard({
         {
             label: 'Pending Tickets',
             value: pendingTickets,
-            icon: CalendarCheck2,
+            icon: FileWarning,
             variant: 'warning' as const,
             description: pendingTickets > 0 ? 'Awaiting resolution' : 'Zero pending requests',
             onClick: () => router.visit('/supervisor/resolution-tickets'),
@@ -268,7 +268,7 @@ export default function SupervisorDashboard({
                                     }
                                     checkedIn={todayAttendance.checked_in}
                                     total={todayAttendance.total}
-                                    subtitle="interns checked in"
+                                    subtitle="Interns checked in"
                                 />
                             )}
                         </CardContent>

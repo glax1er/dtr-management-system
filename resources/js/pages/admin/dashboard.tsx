@@ -267,7 +267,7 @@ export default function AdminDashboard({
                                     }
                                     checkedIn={todayAttendance.checked_in}
                                     total={todayAttendance.total}
-                                    subtitle="interns checked in"
+                                    subtitle="Interns checked in"
                                 />
                             )}
                         </CardContent>

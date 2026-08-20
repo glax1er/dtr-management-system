@@ -1,5 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import { Calendar, CalendarDays, Clock, Pencil, Plus, Sparkles, Trash2, X } from 'lucide-react';
+import { Calendar, CalendarDays, CalendarClock, Clock, Pencil, Plus, Sparkles, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
@@ -358,7 +358,7 @@ export default function AdminSchedule({ periods }: { periods: SchedulePeriod[] }
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
                         <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-                            <CalendarDays className="size-5" />
+                            <CalendarClock className="size-5" />
                         </span>
                         Global Schedule
                     </h1>
