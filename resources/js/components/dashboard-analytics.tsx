@@ -1,11 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import type { LucideIcon } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
 
 /**
  * Animates a number counting up from 0 to `value` whenever `value`
  * changes (e.g. on first mount, or after an Inertia partial reload
- * brings back fresh stats). Uses an ease-out curve over a fixed
- * duration rather than a fixed increment so small and large numbers
- * both feel snappy.
+ * brings back fresh stats). Uses an ease-out cubic curve over a fixed
+ * duration.
  */
 export function CountUp({
     value,
@@ -45,22 +49,88 @@ export function CountUp({
 }
 
 /**
+ * Modern shadcn KPI Stat Card with icon container, count-up animation,
+ * and optional click action / description / custom display value.
+ */
+export function StatCard({
+    label,
+    value,
+    displayValue,
+    icon: Icon,
+    onClick,
+    description,
+    variant = 'default',
+    index = 0,
+}: {
+    label: string;
+    value?: number;
+    displayValue?: React.ReactNode;
+    icon: LucideIcon;
+    onClick?: () => void;
+    description?: string;
+    variant?: 'default' | 'primary' | 'success' | 'warning';
+    index?: number;
+}) {
+    const variantStyles = {
+        default: 'bg-primary/10 text-primary',
+        primary: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+        success: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+        warning: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+    };
+
+    return (
+        <Card
+            className={cn(
+                'group relative overflow-hidden transition-all duration-300 hover:shadow-md',
+                onClick && 'cursor-pointer hover:border-primary/40 hover:bg-card/80 active:scale-[0.99]',
+            )}
+            style={{ animationDelay: `${index * 60}ms` }}
+            onClick={onClick}
+        >
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                    {label}
+                </CardTitle>
+                <div
+                    className={cn(
+                        'flex size-9 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110 shadow-xs',
+                        variantStyles[variant],
+                    )}
+                >
+                    <Icon className="size-4.5" />
+                </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+                <div className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground tabular-nums">
+                    {displayValue !== undefined ? displayValue : value !== undefined ? <CountUp value={value} /> : null}
+                </div>
+                {description && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                        {description}
+                    </p>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
+/**
  * Self-contained "checked in today" progress ring — a percentage of
  * some approved/assigned roster against how many of them have
- * scanned in today. Shared between the admin dashboard (whole
- * system) and the supervisor dashboard (their own roster) so both
- * render identically.
+ * scanned in today.
  */
 export function AttendanceRing({
     percent,
     checkedIn,
     total,
+    subtitle = "interns",
 }: {
     percent: number;
     checkedIn: number;
     total: number;
+    subtitle?: string;
 }) {
-    const size = 148;
+    const size = 156;
     const strokeWidth = 12;
     const radius = (size - strokeWidth) / 2;
     const circumference = 2 * Math.PI * radius;
@@ -69,20 +139,21 @@ export function AttendanceRing({
 
     return (
         <div
-            className="relative mx-auto aspect-square w-full"
-            style={{ maxWidth: size }}
+            className="relative mx-auto aspect-square w-full max-w-[156px] py-1"
         >
             <svg
                 viewBox={`0 0 ${size} ${size}`}
-                className="h-full w-full -rotate-90"
+                className="h-full w-full -rotate-90 drop-shadow-xs"
             >
+                {/* Background track */}
                 <circle
                     cx={size / 2}
                     cy={size / 2}
                     r={radius}
                     strokeWidth={strokeWidth}
-                    className="fill-none stroke-muted"
+                    className="fill-none stroke-muted/80"
                 />
+                {/* Active progress track */}
                 <circle
                     cx={size / 2}
                     cy={size / 2}
@@ -91,17 +162,179 @@ export function AttendanceRing({
                     strokeDasharray={circumference}
                     strokeDashoffset={offset}
                     strokeLinecap="round"
-                    className="fill-none stroke-chart-2 transition-[stroke-dashoffset] duration-500 ease-out"
+                    className="fill-none stroke-primary transition-all duration-700 ease-out"
                 />
             </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center px-2">
-                <span className="text-xl font-semibold tabular-nums sm:text-2xl">
+            <div className="absolute inset-0 flex flex-col items-center justify-center px-2 text-center pointer-events-none">
+                <span className="text-2xl sm:text-3xl font-bold tracking-tight tabular-nums text-foreground">
                     <CountUp value={clamped} />%
                 </span>
-                <span className="text-center text-xs text-muted-foreground">
-                    {checkedIn} / {total} interns
+                <span className="text-xs font-medium text-muted-foreground mt-0.5">
+                    {checkedIn} / {total} {subtitle}
                 </span>
             </div>
         </div>
     );
 }
+
+/**
+ * 14-day activity momentum bar chart with animated bars, clean tooltips,
+ * and weekday labels.
+ */
+export function TrendBarChart({
+    data,
+    mounted,
+    barColor = 'bg-primary',
+}: {
+    data: { date: string; label: string; count: number }[];
+    mounted: boolean;
+    barColor?: string;
+}) {
+    const total = data.reduce((sum, p) => sum + p.count, 0);
+    const max = Math.max(1, ...data.map((p) => p.count));
+
+    if (total === 0) {
+        return (
+            <div className="flex h-32 items-center justify-center text-center">
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                    No activity recorded in this period.
+                </p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex flex-col gap-2 pt-2">
+            <div className="flex h-32 items-end gap-1.5 sm:gap-2">
+                {data.map((point, i) => {
+                    const heightPercent = mounted
+                        ? Math.max((point.count / max) * 100, 5)
+                        : 0;
+
+                    return (
+                        <div
+                            key={point.date}
+                            className="group relative flex h-full flex-1 flex-col items-center justify-end"
+                        >
+                            {/* Hover tooltip */}
+                            <div className="pointer-events-none absolute -top-8 z-20 hidden rounded-md bg-popover px-2 py-1 text-[11px] font-medium text-popover-foreground shadow-md border group-hover:flex items-center gap-1 whitespace-nowrap transition-all">
+                                <span>{point.count}</span>
+                                <span className="text-muted-foreground">({point.label})</span>
+                            </div>
+
+                            {/* Bar element */}
+                            <div
+                                className={cn(
+                                    "w-full rounded-t-md transition-all duration-500 ease-out group-hover:opacity-90",
+                                    point.count > 0 ? barColor : "bg-muted/60"
+                                )}
+                                style={{
+                                    height: `${heightPercent}%`,
+                                    transitionDelay: `${i * 25}ms`,
+                                }}
+                            />
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Date labels below */}
+            <div className="flex justify-between items-center px-0.5 text-[10px] text-muted-foreground select-none">
+                <span>{data[0]?.label}</span>
+                <span className="hidden sm:inline text-center">
+                    {data[Math.floor(data.length / 2)]?.label}
+                </span>
+                <span>{data[data.length - 1]?.label}</span>
+            </div>
+        </div>
+    );
+}
+
+/**
+ * Ranked item list with numbered badges, proportional progress bars,
+ * and click interaction.
+ */
+export function RankedList({
+    items,
+    mounted,
+    onItemClick,
+    emptyMessage = "No items recorded yet.",
+    itemLabel = "item",
+}: {
+    items: { name: string; count: number }[];
+    mounted: boolean;
+    onItemClick?: (name: string) => void;
+    emptyMessage?: string;
+    itemLabel?: string;
+}) {
+    const max = Math.max(1, ...items.map((i) => i.count));
+
+    if (items.length === 0) {
+        return (
+            <div className="flex h-32 items-center justify-center text-center">
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                    {emptyMessage}
+                </p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex flex-col gap-3">
+            {items.map((item, index) => {
+                const widthPercent = mounted
+                    ? Math.max((item.count / max) * 100, 6)
+                    : 0;
+
+                return (
+                    <div
+                        key={item.name}
+                        onClick={() => onItemClick?.(item.name)}
+                        className={cn(
+                            "group flex flex-col gap-1.5 rounded-lg p-2 transition-colors",
+                            onItemClick && "cursor-pointer hover:bg-muted/50"
+                        )}
+                    >
+                        <div className="flex items-center justify-between text-xs sm:text-sm">
+                            <div className="flex items-center gap-2 min-w-0">
+                                <span
+                                    className={cn(
+                                        "flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold",
+                                        index === 0
+                                            ? "bg-primary text-primary-foreground"
+                                            : index === 1
+                                            ? "bg-primary/70 text-primary-foreground"
+                                            : index === 2
+                                            ? "bg-primary/40 text-foreground"
+                                            : "bg-muted text-muted-foreground"
+                                    )}
+                                >
+                                    {index + 1}
+                                </span>
+                                <span className="truncate font-medium text-foreground group-hover:text-primary transition-colors">
+                                    {item.name}
+                                </span>
+                            </div>
+                            <span className="shrink-0 text-xs font-semibold tabular-nums text-muted-foreground">
+                                <CountUp value={item.count} /> {itemLabel}
+                                {item.count === 1 ? '' : 's'}
+                            </span>
+                        </div>
+
+                        {/* Progress track */}
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                            <div
+                                className="h-full rounded-full bg-primary transition-all duration-700 ease-out"
+                                style={{
+                                    width: `${widthPercent}%`,
+                                    transitionDelay: `${index * 60}ms`,
+                                }}
+                            />
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+

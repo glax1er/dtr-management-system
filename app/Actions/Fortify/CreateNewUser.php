@@ -6,7 +6,9 @@ use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
 use App\Models\InternProfile;
 use App\Models\User;
+use App\Notifications\NewInternRegistrationNotification;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 
@@ -70,7 +72,7 @@ class CreateNewUser implements CreatesNewUsers
                 'password' => $input['password'],
             ]);
 
-            InternProfile::create([
+            $internProfile = InternProfile::create([
                 'user_id' => $user->id,
                 'id_number' => $input['id_number'],
                 'contact_number' => $input['contact_number'] ?? null,
@@ -81,6 +83,12 @@ class CreateNewUser implements CreatesNewUsers
                 'privacy_accepted_at' => now(), 
                 'registered_at' => now(),
             ]);
+
+            // Notify all admins that a new intern signed up and is pending approval
+            $admins = User::where('role', User::ROLE_ADMIN)->get();
+            if ($admins->isNotEmpty()) {
+                Notification::send($admins, new NewInternRegistrationNotification($internProfile));
+            }
 
             return $user;
         });
