@@ -673,162 +673,246 @@ export default function MyInterns({
                     </Card>
                 )}
 
-                {/* Attendance Log Table */}
-                <Card className="flex-1">
-                    <CardHeader className="flex flex-row items-center justify-between px-6 py-4">
-                        <CardTitle className="text-base font-semibold">
-                            Attendance Logs
-                        </CardTitle>
-                        {mode === 'range' && (
-                            <span className="text-xs text-muted-foreground">
-                                {formatLongDateRange(filters.from, filters.to)}
-                            </span>
+                {/* Attendance Logs Content */}
+                {logs.data.length === 0 ? (
+                    <Card>
+                        <CardContent className="py-8 text-center text-sm text-muted-foreground">
+                            No attendance logs recorded for this{' '}
+                            {mode === 'month' ? 'month' : 'range'}.
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <>
+                        {/* Table View — desktop */}
+                        {view === 'table' && (
+                            <div className="hidden sm:block">
+                                <Card className="flex-1">
+                                    <CardHeader className="flex flex-row items-center justify-between px-6 py-4">
+                                        <CardTitle className="text-base font-semibold">
+                                            Attendance Logs
+                                        </CardTitle>
+                                        {mode === 'range' && (
+                                            <span className="text-xs text-muted-foreground">
+                                                {formatLongDateRange(
+                                                    filters.from,
+                                                    filters.to,
+                                                )}
+                                            </span>
+                                        )}
+                                    </CardHeader>
+                                    <CardContent className="p-0">
+                                        <Table>
+                                            <TableHeader className="bg-muted/40">
+                                                <TableRow>
+                                                    <TableHead className="px-6">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                toggleSort('date')
+                                                            }
+                                                            className="inline-flex items-center font-semibold hover:text-foreground"
+                                                        >
+                                                            Date{' '}
+                                                            {sortIcon('date')}
+                                                        </button>
+                                                    </TableHead>
+                                                    <TableHead className="px-6">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                toggleSort('name')
+                                                            }
+                                                            className="inline-flex items-center font-semibold hover:text-foreground"
+                                                        >
+                                                            Intern{' '}
+                                                            {sortIcon('name')}
+                                                        </button>
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center font-semibold">
+                                                        Time In
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center font-semibold">
+                                                        Time Out
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center font-semibold">
+                                                        Hours Rendered
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center font-semibold">
+                                                        Remarks
+                                                    </TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {logs.data.map((log) => (
+                                                    <TableRow
+                                                        key={`${log.intern_user_id}-${log.date}`}
+                                                    >
+                                                        <TableCell className="px-6 font-medium whitespace-nowrap">
+                                                            {formatLongDate(
+                                                                log.date,
+                                                                log.day,
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="px-6 font-medium text-foreground">
+                                                            {log.intern_name}
+                                                        </TableCell>
+                                                        <TableCell className="px-6 text-center whitespace-nowrap text-muted-foreground">
+                                                            {formatLongTime(
+                                                                log.time_in,
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="px-6 text-center whitespace-nowrap text-muted-foreground">
+                                                            {formatLongTime(
+                                                                log.time_out,
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="px-6 text-center font-medium whitespace-nowrap">
+                                                            {formatLongDuration(
+                                                                log.hours_rendered,
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="px-6 text-center">
+                                                            <div className="flex flex-wrap justify-center gap-1">
+                                                                {log.punctuality && (
+                                                                    <AttendanceBadge
+                                                                        status={
+                                                                            log.punctuality
+                                                                        }
+                                                                    />
+                                                                )}
+                                                                {log.status ===
+                                                                    'open' && (
+                                                                    <AttendanceBadge status="open" />
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </CardContent>
+                                </Card>
+                            </div>
                         )}
-                    </CardHeader>
-                    <CardContent className="p-0">
-                        {logs.data.length === 0 ? (
-                            <p className="py-8 text-center text-sm text-muted-foreground">
-                                No attendance logs recorded for this{' '}
-                                {mode === 'month' ? 'month' : 'range'}.
-                            </p>
-                        ) : (
-                            <>
-                                {/* Table — desktop only */}
-                                <div className="hidden sm:block">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead className="px-6">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            toggleSort('date')
-                                                        }
-                                                        className="inline-flex items-center font-medium hover:text-foreground"
-                                                    >
-                                                        Date {sortIcon('date')}
-                                                    </button>
-                                                </TableHead>
-                                                <TableHead className="px-6">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            toggleSort('name')
-                                                        }
-                                                        className="inline-flex items-center font-medium hover:text-foreground"
-                                                    >
-                                                        Intern{' '}
-                                                        {sortIcon('name')}
-                                                    </button>
-                                                </TableHead>
-                                                <TableHead className="px-6 text-center">
-                                                    Time In
-                                                </TableHead>
-                                                <TableHead className="px-6 text-center">
-                                                    Time Out
-                                                </TableHead>
-                                                <TableHead className="px-6 text-center">
-                                                    Hours Rendered
-                                                </TableHead>
-                                                <TableHead className="px-6 text-center">
-                                                    Remarks
-                                                </TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {logs.data.map((log) => (
-                                                <TableRow
-                                                    key={`${log.intern_user_id}-${log.date}`}
-                                                >
-                                                    <TableCell className="px-6 font-medium whitespace-nowrap">
+
+                        {/* Grid View — desktop */}
+                        {view === 'grid' && (
+                            <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {logs.data.map((log) => (
+                                    <Card
+                                        key={`${log.intern_user_id}-${log.date}`}
+                                        className="flex flex-col justify-between"
+                                    >
+                                        <CardHeader className="pb-3">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="min-w-0">
+                                                    <CardTitle className="text-base font-semibold truncate">
+                                                        {log.intern_name}
+                                                    </CardTitle>
+                                                    <p className="mt-0.5 text-xs text-muted-foreground">
                                                         {formatLongDate(
                                                             log.date,
                                                             log.day,
                                                         )}
-                                                    </TableCell>
-                                                    <TableCell className="px-6">
-                                                        {log.intern_name}
-                                                    </TableCell>
-                                                    <TableCell className="px-6 text-center whitespace-nowrap">
-                                                        {formatLongTime(
-                                                            log.time_in,
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell className="px-6 text-center whitespace-nowrap">
-                                                        {formatLongTime(
-                                                            log.time_out,
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell className="px-6 text-center whitespace-nowrap">
-                                                        {formatLongDuration(
-                                                            log.hours_rendered,
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell className="px-6 text-center">
-                                                        <div className="flex flex-wrap justify-center gap-1">
-                                                            <AttendanceBadge
-                                                                status={
-                                                                    log.punctuality
-                                                                }
-                                                            />
-                                                            {log.status ===
-                                                                'open' && (
-                                                                <AttendanceBadge status="open" />
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-
-                                {/* Card list — mobile only */}
-                                <div className="divide-y sm:hidden">
-                                    {logs.data.map((log) => (
-                                        <div
-                                            key={`${log.intern_user_id}-${log.date}`}
-                                            className="flex flex-col gap-2 p-4"
-                                        >
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-sm font-medium">
-                                                    {log.intern_name}
-                                                </span>
-                                                <span className="text-xs text-muted-foreground">
-                                                    {formatLongDate(
-                                                        log.date,
-                                                        log.day,
+                                                    </p>
+                                                </div>
+                                                <div className="flex shrink-0 flex-wrap gap-1">
+                                                    {log.punctuality && (
+                                                        <AttendanceBadge
+                                                            status={
+                                                                log.punctuality
+                                                            }
+                                                        />
                                                     )}
+                                                    {log.status === 'open' && (
+                                                        <AttendanceBadge status="open" />
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent className="space-y-2 pt-0 text-xs text-muted-foreground">
+                                            <div className="flex items-center justify-between border-t pt-2">
+                                                <span>Time In:</span>
+                                                <span className="font-medium text-foreground">
+                                                    {formatLongTime(log.time_in)}
                                                 </span>
                                             </div>
-                                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                                <span>
-                                                    In:{' '}
-                                                    {formatLongTime(
-                                                        log.time_in,
-                                                    )}
+                                            <div className="flex items-center justify-between">
+                                                <span>Time Out:</span>
+                                                <span className="font-medium text-foreground">
+                                                    {formatLongTime(log.time_out)}
                                                 </span>
-                                                <span>
-                                                    Out:{' '}
-                                                    {formatLongTime(
-                                                        log.time_out,
-                                                    )}
-                                                </span>
-                                                <span>
-                                                    Hours:{' '}
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span>Hours Rendered:</span>
+                                                <span className="font-semibold text-foreground">
                                                     {formatLongDuration(
                                                         log.hours_rendered,
                                                     )}
                                                 </span>
                                             </div>
-                                            <div className="flex flex-wrap gap-1">
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Mobile List View */}
+                        <div className="divide-y rounded-lg border bg-card sm:hidden">
+                            {logs.data.map((log) => (
+                                <div
+                                    key={`${log.intern_user_id}-${log.date}`}
+                                    className="flex flex-col gap-2.5 p-4"
+                                >
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="min-w-0">
+                                            <span className="block truncate text-sm font-semibold text-foreground">
+                                                {log.intern_name}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground">
+                                                {formatLongDate(
+                                                    log.date,
+                                                    log.day,
+                                                )}
+                                            </span>
+                                        </div>
+                                        <div className="flex shrink-0 flex-wrap gap-1">
+                                            {log.punctuality && (
                                                 <AttendanceBadge
                                                     status={log.punctuality}
                                                 />
-                                                {log.status === 'open' && (
-                                                    <AttendanceBadge status="open" />
+                                            )}
+                                            {log.status === 'open' && (
+                                                <AttendanceBadge status="open" />
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-1 rounded-md border bg-muted/30 p-2 text-center text-xs text-muted-foreground">
+                                        <div>
+                                            <span className="block text-[10px] text-muted-foreground">
+                                                Time In
+                                            </span>
+                                            <span className="font-medium text-foreground">
+                                                {formatLongTime(log.time_in)}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span className="block text-[10px] text-muted-foreground">
+                                                Time Out
+                                            </span>
+                                            <span className="font-medium text-foreground">
+                                                {formatLongTime(log.time_out)}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span className="block text-[10px] text-muted-foreground">
+                                                Hours
+                                            </span>
+                                            <span className="font-semibold text-foreground">
+                                                {formatLongDuration(
+                                                    log.hours_rendered,
                                                 )}
-                                            </div>
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
