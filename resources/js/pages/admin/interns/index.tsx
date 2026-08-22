@@ -141,7 +141,7 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                         Interns
                     </h1>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
                         <form onSubmit={applySearch} className="relative hidden sm:block">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                             <input
@@ -165,21 +165,23 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                         <button
                             type="button"
                             onClick={() => setMobileSearchOpen((o) => !o)}
-                            className="inline-flex size-9 items-center justify-center rounded-md border bg-background text-muted-foreground hover:text-foreground sm:hidden"
+                            className="inline-flex size-9 shrink-0 items-center justify-center rounded-md border bg-background text-muted-foreground hover:text-foreground sm:hidden"
                             aria-label="Toggle search"
                         >
                             {mobileSearchOpen ? <X className="size-4" /> : <Search className="size-4" />}
                         </button>
 
-                        <Tabs value={currentStatus} onValueChange={switchTab}>
-                            <TabsList>
-                                {TABS.map((tab) => (
-                                    <TabsTrigger key={tab.value} value={tab.value}>
-                                        {tab.label}
-                                    </TabsTrigger>
-                                ))}
-                            </TabsList>
-                        </Tabs>
+                        <div className="overflow-x-auto max-w-[calc(100%-3rem)] sm:max-w-none scrollbar-none">
+                            <Tabs value={currentStatus} onValueChange={switchTab}>
+                                <TabsList className="w-auto">
+                                    {TABS.map((tab) => (
+                                        <TabsTrigger key={tab.value} value={tab.value} className="text-xs sm:text-sm px-2 sm:px-3">
+                                            {tab.label}
+                                        </TabsTrigger>
+                                    ))}
+                                </TabsList>
+                            </Tabs>
+                        </div>
 
                         <div className="hidden sm:block">
                             <div className="inline-flex rounded-md border p-0.5">
@@ -207,7 +209,7 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                 {mobileSearchOpen && (
                     <form
                         onSubmit={(e) => { applySearch(e); setMobileSearchOpen(false); }}
-                        className="flex items-center gap-2 sm:hidden"
+                        className="flex items-center gap-2 sm:hidden w-full"
                     >
                         <div className="relative flex-1">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />

@@ -80,10 +80,33 @@ test('an intern can page the dashboard log table to a specific month', function 
         );
 });
 
-test('an intern can download their DTR report as a CSV', function () {
+test('an intern can download their DTR report as a PDF and empty dates are excluded', function () {
     $intern = makeApprovedIntern();
+    $profile = $intern->internProfile;
+    $profile->update(['approved_at' => Carbon::parse('2026-07-01 08:00:00')]);
 
-    $response = $this->actingAs($intern)->get(route('intern.dtr-report.download'));
+    $kiosk = \App\Models\Kiosk::create([
+        'name' => 'Main Gate Kiosk',
+        'device_token' => 'kiosk-test-token',
+        'is_active' => true,
+    ]);
+
+    // Add attendance on 2026-07-06 only
+    AttendanceLog::create([
+        'intern_user_id' => $intern->id,
+        'kiosk_id' => $kiosk->id,
+        'scan_timestamp' => Carbon::parse('2026-07-06 08:00:00', 'Asia/Manila'),
+    ]);
+    AttendanceLog::create([
+        'intern_user_id' => $intern->id,
+        'kiosk_id' => $kiosk->id,
+        'scan_timestamp' => Carbon::parse('2026-07-06 17:00:00', 'Asia/Manila'),
+    ]);
+
+    $response = $this->actingAs($intern)->get(route('intern.dtr-report.download', [
+        'start' => '2026-07-01',
+        'end' => '2026-07-10',
+    ]));
 
     $response->assertOk();
     $response->assertHeader('content-type', 'application/pdf');

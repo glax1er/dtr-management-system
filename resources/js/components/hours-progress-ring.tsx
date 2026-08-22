@@ -21,7 +21,7 @@ export function HoursProgressRing({
 
     return (
         <div
-            className="relative mx-auto aspect-square w-full py-1"
+            className="relative mx-auto aspect-square w-full"
             style={{ maxWidth: size }}
         >
             <svg viewBox={`0 0 ${size} ${size}`} className="h-full w-full -rotate-90 drop-shadow-xs">
@@ -44,10 +44,10 @@ export function HoursProgressRing({
                 />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center px-2 text-center pointer-events-none">
-                <span className="text-2xl sm:text-3xl font-bold tracking-tight tabular-nums text-foreground">
+                <span className="text-2xl sm:text-3xl font-bold tracking-tight tabular-nums text-foreground leading-none">
                     <CountUp value={clamped} />%
                 </span>
-                <span className="text-xs font-medium text-muted-foreground mt-0.5">
+                <span className="text-xs font-semibold text-muted-foreground mt-1 tabular-nums whitespace-nowrap">
                     {totalRendered.toFixed(1)} / {required} hrs
                 </span>
             </div>
