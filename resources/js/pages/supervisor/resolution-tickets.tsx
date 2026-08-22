@@ -1,16 +1,7 @@
 import { Head } from '@inertiajs/react';
-import {
-    Calendar,
-    Clock,
-    FileWarning,
-    LayoutGrid,
-    Search,
-    SlidersHorizontal,
-    Table as TableIcon,
-    X,
-} from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { TicketActions, badgeStyles } from '@/components/approve-ticket-dialog';
+import { TicketCheck } from 'lucide-react';
+import { TicketActions } from '@/components/approve-ticket-dialog'; // drop badgeStyles from here
+import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -209,86 +200,81 @@ export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
                 )}
 
                 {/* Content */}
-                {filteredTickets.length === 0 ? (
-                    <Card>
-                        <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                            {tickets.length === 0 ? 'No pending resolution requests.' : 'No requests match your current filters.'}
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <>
-                        {/* Table — desktop only */}
-                        {view === 'table' && (
-                            <div className="hidden sm:block">
-                                <Card className="flex-1">
-                                    <CardContent className="p-0">
-                                        <Table>
-                                            <TableHeader className="bg-muted/40">
-                                                <TableRow>
-                                                    <TableHead className="px-6 font-semibold">Intern</TableHead>
-                                                    <TableHead className="px-6 font-semibold">Date</TableHead>
-                                                    <TableHead className="px-6 text-center font-semibold">Type</TableHead>
-                                                    <TableHead className="px-6 text-center font-semibold">Proposed In</TableHead>
-                                                    <TableHead className="px-6 text-center font-semibold">Proposed Out</TableHead>
-                                                    <TableHead className="px-6 font-semibold">Reason</TableHead>
-                                                    <TableHead className="px-6 text-center font-semibold">Actions</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {filteredTickets.map((ticket) => (
-                                                    <TableRow key={ticket.id}>
-                                                        <TableCell className="px-6 font-medium whitespace-nowrap text-foreground">
-                                                            {ticket.intern_name}
-                                                        </TableCell>
-                                                        <TableCell className="px-6 whitespace-nowrap text-muted-foreground">
-                                                            {ticket.date}
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-center whitespace-nowrap">
-                                                            <Badge className={badgeStyles[ticket.type]}>
-                                                                {typeLabel[ticket.type]}
-                                                            </Badge>
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-center whitespace-nowrap font-medium text-foreground">
-                                                            {ticket.proposed_time_in ?? '—'}
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-center whitespace-nowrap font-medium text-foreground">
-                                                            {ticket.proposed_time_out ?? '—'}
-                                                        </TableCell>
-                                                        <TableCell className="max-w-xs px-6">
-                                                            <Tooltip>
-                                                                <TooltipTrigger asChild>
-                                                                    <p className="truncate text-muted-foreground cursor-default">
-                                                                        {ticket.reason}
-                                                                    </p>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent className="max-w-sm">
+                <Card className="flex-1">
+                    <CardHeader className="px-6 py-4">
+                        <CardTitle className="text-base font-semibold">
+                            Pending Requests ({tickets.length})
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        {tickets.length === 0 ? (
+                            <p className="py-8 text-center text-sm text-muted-foreground">
+                                No pending resolution requests.
+                            </p>
+                        ) : (
+                            <>
+                                {/* Table — desktop only */}
+                                <div className="hidden sm:block">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead className="px-6">Intern</TableHead>
+                                                <TableHead className="px-6">Date</TableHead>
+                                                <TableHead className="px-6 text-center">Type</TableHead>
+                                                <TableHead className="px-6 text-center">Proposed Time In</TableHead>
+                                                <TableHead className="px-6 text-center">Proposed Time Out</TableHead>
+                                                <TableHead className="px-6">Reason</TableHead>
+                                                <TableHead className="px-6 text-center">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {tickets.map((ticket) => (
+                                                <TableRow key={ticket.id}>
+                                                    <TableCell className="px-6 font-medium whitespace-nowrap">
+                                                        {ticket.intern_name}
+                                                    </TableCell>
+                                                    <TableCell className="px-6 whitespace-nowrap text-muted-foreground">
+                                                        {ticket.date}
+                                                    </TableCell>
+                                                    <TableCell className="px-6 text-center whitespace-nowrap">
+                                                        <AttendanceBadge status={ticket.type} />
+                                                    </TableCell>
+                                                    <TableCell className="px-6 text-center whitespace-nowrap">
+                                                        {ticket.proposed_time_in ?? '—'}
+                                                    </TableCell>
+                                                    <TableCell className="px-6 text-center whitespace-nowrap">
+                                                        {ticket.proposed_time_out ?? '—'}
+                                                    </TableCell>
+                                                    <TableCell className="max-w-xs px-6">
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <p className="truncate text-muted-foreground cursor-default">
                                                                     {ticket.reason}
-                                                                </TooltipContent>
-                                                            </Tooltip>
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-center whitespace-nowrap">
-                                                            <TicketActions
-                                                                ticketId={ticket.id}
-                                                                type={ticket.type}
-                                                                proposedTimeIn={ticket.proposed_time_in}
-                                                                proposedTimeOut={ticket.proposed_time_out}
-                                                            />
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        )}
+                                                                </p>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent className="max-w-sm">
+                                                                {ticket.reason}
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TableCell>
+                                                    <TableCell className="px-6 text-center whitespace-nowrap">
+                                                        <TicketActions
+                                                            ticketId={ticket.id}
+                                                            type={ticket.type}
+                                                            proposedTimeIn={ticket.proposed_time_in}
+                                                            proposedTimeOut={ticket.proposed_time_out}
+                                                        />
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
 
-                        {/* Grid view — desktop */}
-                        {view === 'grid' && (
-                            <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {filteredTickets.map((ticket) => (
-                                    <Card key={ticket.id} className="flex flex-col justify-between">
-                                        <CardHeader className="pb-3">
+                                {/* Mobile cards list */}
+                                <div className="divide-y sm:hidden">
+                                    {tickets.map((ticket) => (
+                                        <div key={ticket.id} className="flex flex-col gap-3 p-4">
                                             <div className="flex items-start justify-between gap-2">
                                                 <div>
                                                     <CardTitle className="text-base font-semibold truncate">
@@ -296,9 +282,7 @@ export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
                                                     </CardTitle>
                                                     <p className="text-xs text-muted-foreground mt-0.5">{ticket.date}</p>
                                                 </div>
-                                                <Badge className={badgeStyles[ticket.type]}>
-                                                    {typeLabel[ticket.type]}
-                                                </Badge>
+                                                <AttendanceBadge status={ticket.type} />
                                             </div>
                                         </CardHeader>
                                         <CardContent className="space-y-3 pt-0 text-xs">
