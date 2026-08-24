@@ -13,6 +13,7 @@ import {
     QrCode,
     TrendingUp,
     User as UserIcon,
+    X,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { StatCard } from '@/components/dashboard-analytics';
@@ -606,18 +607,17 @@ export default function InternDashboard({
                                                             )}
                                                         </TableCell>
                                                         <TableCell className="text-center">
-    <AttendanceBadge status={log.status} />
+    <AttendanceBadge status={log.pending_ticket_id !== null ? 'pending_review' : log.status} />
 </TableCell>
                                                         <TableCell className="pr-6 text-center">
                                                             {log.status === 'complete' ? (
                                                                 <span className="text-xs text-muted-foreground/50">—</span>
                                                             ) : log.pending_ticket_id !== null ? (
-                                                                <div className="flex items-center justify-center gap-2">
-                                                                    <AttendanceBadge status="pending_review" />
+                                                                <div className="flex items-center justify-center">
                                                                     <Button
                                                                         size="sm"
-                                                                        variant="ghost"
-                                                                        className="h-7 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                                                        variant="outline"
+                                                                        className="h-7 gap-1 border-destructive/30 px-2.5 text-xs font-medium text-destructive hover:border-destructive hover:bg-destructive hover:text-white"
                                                                         onClick={() =>
                                                                             cancelRequest(log.pending_ticket_id!)
                                                                         }
@@ -662,7 +662,7 @@ export default function InternDashboard({
                                                             {log.day}
                                                         </p>
                                                     </div>
-                                                    <AttendanceBadge status={log.status} />
+                                                    <AttendanceBadge status={log.pending_ticket_id !== null ? 'pending_review' : log.status} />
                                                 </div>
 
                                                 <div className="grid grid-cols-3 gap-2 text-center">
@@ -698,19 +698,16 @@ export default function InternDashboard({
                                                             Complete
                                                         </span>
                                                     ) : log.pending_ticket_id !== null ? (
-                                                        <div className="flex items-center gap-2">
-                                                            <AttendanceBadge status="pending_review" />
-                                                            <Button
-                                                                size="sm"
-                                                                variant="ghost"
-                                                                className="h-7 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                                                onClick={() =>
-                                                                    cancelRequest(log.pending_ticket_id!)
-                                                                }
-                                                            >
-                                                                Cancel
-                                                            </Button>
-                                                        </div>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            className="h-7 gap-1 border-destructive/30 px-2.5 text-xs font-medium text-destructive hover:border-destructive hover:bg-destructive hover:text-white"
+                                                            onClick={() =>
+                                                                cancelRequest(log.pending_ticket_id!)
+                                                            }
+                                                        >
+                                                            Cancel
+                                                        </Button>
                                                     ) : (
                                                         <ResolutionRequestDialog
                                                             date={log.date}
