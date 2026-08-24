@@ -65,7 +65,7 @@ class DashboardController extends Controller
         $mappedLogs = $monthDays->map(fn ($day) => [
             ...$day->toArray(),
             'pending_ticket_id' => $pendingTicketsByDate->get($day->date),
-        ])->values();
+        ])->sortByDesc('date')->values();
 
         $paginatedLogs = new LengthAwarePaginator(
             $mappedLogs->forPage($page, $perPage)->values(),
