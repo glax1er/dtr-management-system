@@ -4,8 +4,8 @@ import {
     ClipboardCheck,
     Clock,
     GraduationCap,
-    LayoutDashboard,
     TrendingUp,
+    FileWarning,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
@@ -136,7 +136,7 @@ export default function SupervisorDashboard({
             value: scansToday,
             icon: ClipboardCheck,
             variant: 'success' as const,
-            description: 'Total check-ins & check-outs',
+            description: 'Total time-ins & time-outs',
         },
         {
             label: 'Scans This Week',
@@ -148,7 +148,7 @@ export default function SupervisorDashboard({
         {
             label: 'Pending Tickets',
             value: pendingTickets,
-            icon: CalendarCheck2,
+            icon: FileWarning,
             variant: 'warning' as const,
             description: pendingTickets > 0 ? 'Awaiting resolution' : 'Zero pending requests',
             onClick: () => router.visit('/supervisor/resolution-tickets'),
@@ -186,11 +186,11 @@ export default function SupervisorDashboard({
                 {/* Header banner */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex flex-col gap-1">
-                        <h1 className="flex items-center gap-2.5 text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
                             Welcome back, {auth.user.name}
                         </h1>
                         <p className="text-sm text-muted-foreground">
-                            Attendance tracking, real-time kiosk scans, and resolution requests.
+                            Real-time overview of attendance tracking, kiosk scans, and resolution requests.
                         </p>
                     </div>
                     {scopeName && (
@@ -268,7 +268,7 @@ export default function SupervisorDashboard({
                                     }
                                     checkedIn={todayAttendance.checked_in}
                                     total={todayAttendance.total}
-                                    subtitle="interns checked in"
+                                    subtitle="Interns checked in"
                                 />
                             )}
                         </CardContent>
@@ -308,12 +308,14 @@ export default function SupervisorDashboard({
                                     )}
                             </div>
 
-                            {/* Status items */}
+                            {/* Status items with filter navigation */}
                             <div className="flex flex-col gap-1.5">
                                 {ticketBreakdown.map((item) => (
-                                    <div
+                                    <button
                                         key={item.status}
-                                        className="flex items-center justify-between rounded-lg p-2 text-sm transition-colors hover:bg-muted/60"
+                                        type="button"
+                                        onClick={() => router.visit('/supervisor/resolution-tickets')}
+                                        className="flex items-center justify-between rounded-lg p-2 text-sm transition-colors hover:bg-muted/60 text-left w-full"
                                     >
                                         <div className="flex items-center gap-2.5">
                                             <span
@@ -331,7 +333,7 @@ export default function SupervisorDashboard({
                                                 ({totalTicketCount > 0 ? Math.round((item.count / totalTicketCount) * 100) : 0}%)
                                             </span>
                                         </div>
-                                    </div>
+                                    </button>
                                 ))}
                             </div>
                         </CardContent>
@@ -350,6 +352,11 @@ export default function SupervisorDashboard({
                             <RankedList
                                 items={topInterns}
                                 mounted={mounted}
+                                onItemClick={(name) =>
+                                    router.visit(
+                                        `/supervisor/interns?search=${encodeURIComponent(name)}`,
+                                    )
+                                }
                                 emptyMessage="No scans recorded in the last 14 days."
                                 itemLabel="scan"
                             />
@@ -386,22 +393,22 @@ export default function SupervisorDashboard({
                                     <Table>
                                         <TableHeader className="bg-muted/40">
                                             <TableRow>
-                                                <TableHead className="font-semibold">Intern Name</TableHead>
-                                                <TableHead className="font-semibold">ID Number</TableHead>
-                                                <TableHead className="font-semibold text-center">Type</TableHead>
-                                                <TableHead className="font-semibold text-right">Scanned At</TableHead>
+                                                <TableHead className="font-semibold px-4">Intern Name</TableHead>
+                                                <TableHead className="font-semibold text-center px-4">ID Number</TableHead>
+                                                <TableHead className="font-semibold text-center px-4">Type</TableHead>
+                                                <TableHead className="font-semibold text-right px-4">Scanned At</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {recentScans.data.map((scan) => (
                                                 <TableRow key={scan.id}>
-                                                    <TableCell className="font-medium text-foreground">
+                                                    <TableCell className="font-medium text-foreground px-4">
                                                         {scan.intern_name}
                                                     </TableCell>
-                                                    <TableCell className="text-muted-foreground tabular-nums">
+                                                    <TableCell className="text-center text-muted-foreground tabular-nums px-4">
                                                         {scan.id_number ?? '—'}
                                                     </TableCell>
-                                                    <TableCell className="text-center">
+                                                    <TableCell className="text-center px-4">
                                                         <Badge
                                                             variant={scan.label === 'time_in' ? 'default' : 'secondary'}
                                                             className="font-medium text-xs shadow-xs"
@@ -410,7 +417,7 @@ export default function SupervisorDashboard({
                                                         </Badge>
                                                     </TableCell>
                                                     <TableCell
-                                                        className="text-right text-muted-foreground whitespace-nowrap text-xs"
+                                                        className="text-right text-muted-foreground whitespace-nowrap text-xs px-4"
                                                         title={scan.scanned_at_full}
                                                     >
                                                         {scan.scanned_at}

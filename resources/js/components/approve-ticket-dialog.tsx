@@ -22,9 +22,9 @@ type TicketActionsProps = {
 };
 
 export const badgeStyles: Record<TicketActionsProps['type'], string> = {
-    missing_time_in: 'bg-red-100 text-red-400 border-red-500',
-    open: 'bg-amber-100 text-amber-400 border-amber-500',
-    no_record: 'bg-red-100 text-red-400 border-red-500',
+    missing_time_in: 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-950/50 dark:text-yellow-300 dark:border-yellow-800',
+    open: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800',
+    no_record: 'bg-red-100 text-red-800 border-red-300 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800',
 };
 
 const typeLabel: Record<TicketActionsProps['type'], string> = {
