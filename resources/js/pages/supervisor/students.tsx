@@ -1,18 +1,10 @@
 import { Head, router } from '@inertiajs/react';
 import {
     Award,
+    Building2,
     CheckCircle2,
-    ChevronLeft,
-    ChevronRight,
     Clock,
     FileCheck2,
-    GraduationCap,
-    SlidersHorizontal,
-} from 'lucide-react';
-import { useEffect, useState } from 'react';
-import type { FormEvent, KeyboardEvent } from 'react';
-    Building2,
-    Clock,
     GraduationCap,
     LayoutGrid,
     Phone,
@@ -21,8 +13,11 @@ import type { FormEvent, KeyboardEvent } from 'react';
     Table as TableIcon,
     X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
+
+import { CompletionSummaryDialog } from '@/components/completion-summary-dialog';
+import { InternDocumentsDialog } from '@/components/intern-documents-dialog';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
 import { Badge } from '@/components/ui/badge';
@@ -35,9 +30,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { CompletionSummaryDialog } from '@/components/completion-summary-dialog';
-import { InternDocumentsDialog } from '@/components/intern-documents-dialog';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Table,
     TableBody,
@@ -46,6 +38,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { dashboard } from '@/routes';
 
 interface StudentRow {
@@ -92,10 +85,8 @@ type ViewMode = 'table' | 'grid';
 const ALL_HTES = 'all';
 const ALL_STATUSES = 'all';
 
-function formatLongDuration(hours: number): string {
-    if (hours <= 0) {
-        return '0 hrs';
-    }
+function formatHours(hours: number): string {
+    if (hours <= 0) return '0 hrs';
     return `${hours.toFixed(1)} hrs`;
 }
 
@@ -108,24 +99,21 @@ export default function MyStudents({
     hteOptions,
     filters,
 }: MyStudentsProps) {
+    const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters.search || '');
-    const [perPageDraft, setPerPageDraft] = useState(String(filters.per_page));
+    const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
     useEffect(() => {
         setSearch(filters.search || '');
     }, [filters.search]);
 
-    // Base params shared by every navigation action — anything that
-    // changes what rows match (search/hte_id/completion_status) resets back to page 1 by
-    // simply omitting the page param.
-    const [view, setView] = useState<ViewMode>('table');
-    const [search, setSearch] = useState(filters.search);
-    const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-
     const baseParams = () => ({
         search: filters.search || undefined,
         hte_id: filters.hte_id ? String(filters.hte_id) : undefined,
-        completion_status: filters.completion_status && filters.completion_status !== 'all' ? filters.completion_status : undefined,
+        completion_status:
+            filters.completion_status && filters.completion_status !== 'all'
+                ? filters.completion_status
+                : undefined,
         per_page: String(filters.per_page),
     });
 
@@ -158,22 +146,8 @@ export default function MyStudents({
         visit({
             ...baseParams(),
             completion_status: value === ALL_STATUSES ? undefined : value,
+            page: undefined,
         });
-    };
-
-    const commitPerPage = () => {
-        const parsed = parseInt(perPageDraft, 10);
-        const clamped = Number.isNaN(parsed)
-            ? filters.per_page
-            : Math.min(MAX_PER_PAGE, Math.max(MIN_PER_PAGE, parsed));
-
-        setPerPageDraft(String(clamped));
-
-        if (clamped === filters.per_page) {
-            return;
-        }
-
-        visit({ ...baseParams(), per_page: String(clamped) });
     };
 
     const goToPage = (page: number) => {
@@ -191,18 +165,37 @@ export default function MyStudents({
                 {/* Header toolbar */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
+                        <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-foreground">
                             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
                                 <GraduationCap className="size-5" />
                             </span>
-                            My Students
+                            Program Interns
                         </h1>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            {studentCount} intern{studentCount === 1 ? '' : 's'} in {scopeName ?? 'your program'}, across every HTE.
-                        </p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
+                        {/* View Switcher */}
+                        <div className="hidden sm:flex items-center border rounded-md p-0.5 bg-muted/40">
+                            <Button
+                                variant={view === 'table' ? 'secondary' : 'ghost'}
+                                size="sm"
+                                className="h-8 px-2.5"
+                                onClick={() => setView('table')}
+                            >
+                                <TableIcon className="size-4 mr-1.5" />
+                                Table
+                            </Button>
+                            <Button
+                                variant={view === 'grid' ? 'secondary' : 'ghost'}
+                                size="sm"
+                                className="h-8 px-2.5"
+                                onClick={() => setView('grid')}
+                            >
+                                <LayoutGrid className="size-4 mr-1.5" />
+                                Grid
+                            </Button>
+                        </div>
+
                         {/* Desktop search */}
                         <form onSubmit={applySearch} className="relative hidden sm:block">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -250,113 +243,90 @@ export default function MyStudents({
                                         <SelectItem key={hte.hte_id} value={String(hte.hte_id)}>
                                             {hte.hte_name}
                                         </SelectItem>
-                                        {hteOptions.map((hte) => (
-                                            <SelectItem
-                                                key={hte.hte_id}
-                                                value={String(hte.hte_id)}
-                                            >
-                                                {hte.hte_name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
 
-                            <div className="flex flex-col gap-1.5">
-                                <Label
-                                    htmlFor="completion-filter"
-                                    className="text-xs text-muted-foreground"
-                                >
-                                    Completion Status
-                                </Label>
-                                <Select
-                                    value={filters.completion_status || ALL_STATUSES}
-                                    onValueChange={changeCompletionStatus}
-                                >
-                                    <SelectTrigger
-                                        id="completion-filter"
-                                        className="w-full sm:w-48"
-                                    >
-                                        <SlidersHorizontal className="mr-1.5 size-3.5 text-muted-foreground" />
-                                        <SelectValue placeholder="All Status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value={ALL_STATUSES}>
-                                            All Students
-                                        </SelectItem>
-                                        <SelectItem value="completed">
-                                            Completed Requirements ({completedCount})
-                                        </SelectItem>
-                                        <SelectItem value="in_progress">
-                                            In Progress ({inProgressCount})
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            </div>
-                        </form>
+                        {/* Completion Status filter */}
+                        <div className="hidden sm:block">
+                            <Select
+                                value={filters.completion_status || ALL_STATUSES}
+                                onValueChange={changeCompletionStatus}
+                            >
+                                <SelectTrigger className="h-9 w-48">
+                                    <SlidersHorizontal className="mr-1.5 size-3.5 text-muted-foreground" />
+                                    <SelectValue placeholder="All Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value={ALL_STATUSES}>All Students</SelectItem>
+                                    <SelectItem value="completed">
+                                        Completed Requirements ({completedCount})
+                                    </SelectItem>
+                                    <SelectItem value="in_progress">
+                                        In Progress ({inProgressCount})
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                </div>
 
-                        {students.data.length === 0 ? (
-                            <p className="py-8 text-center text-sm text-muted-foreground">
-                                No interns match{' '}
-                                {filters.search !== '' || filters.hte_id || (filters.completion_status && filters.completion_status !== 'all')
-                                    ? 'these filters.'
-                                    : 'your program yet.'}
-                            </p>
-                        ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full min-w-[720px] text-sm">
-                                    <thead>
-                                        <tr className="border-b text-left text-muted-foreground">
-                                            <th className="py-2.5 pr-4 font-medium">
-                                                Name
-                                            </th>
-                                            <th className="py-2.5 pr-4 font-medium">
-                                                ID Number
-                                            </th>
-                                            <th className="py-2.5 pr-4 font-medium">
-                                                Assigned HTE
-                                            </th>
-                                            <th className="py-2.5 pr-4 font-medium">
-                                                Hours Rendered
-                                            </th>
-                                            <th className="py-2.5 pr-4 font-medium">
-                                                Documents
-                                            </th>
-                                            <th className="py-2.5 pr-4 font-medium">
-                                                Requirement Status
-                                            </th>
-                                            <th className="py-2.5 font-medium text-right">
-                                                Actions
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
+                {/* Mobile search input */}
+                {mobileSearchOpen && (
+                    <form onSubmit={applySearch} className="relative sm:hidden">
+                        <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <input
+                            type="text"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Search students…"
+                            className="h-9 w-full rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
+                        />
+                    </form>
+                )}
+
+                {/* Content Section */}
+                {students.data.length === 0 ? (
+                    <p className="py-8 text-center text-sm text-muted-foreground">
+                        No interns match{' '}
+                        {filters.search !== '' || filters.hte_id || (filters.completion_status && filters.completion_status !== 'all')
+                            ? 'these filters.'
+                            : 'your program yet.'}
+                    </p>
+                ) : (
+                    <>
+                        {/* Table view */}
+                        {view === 'table' && (
+                            <div className="hidden sm:block overflow-x-auto rounded-md border">
+                                <Table className="w-full min-w-[720px] text-sm">
+                                    <TableHeader>
+                                        <TableRow className="border-b text-left text-muted-foreground">
+                                            <TableHead className="py-2.5 pr-4 font-medium">Name</TableHead>
+                                            <TableHead className="py-2.5 pr-4 font-medium">ID Number</TableHead>
+                                            <TableHead className="py-2.5 pr-4 font-medium">Assigned HTE</TableHead>
+                                            <TableHead className="py-2.5 pr-4 font-medium">Hours Rendered</TableHead>
+                                            <TableHead className="py-2.5 pr-4 font-medium">Documents</TableHead>
+                                            <TableHead className="py-2.5 pr-4 font-medium">Requirement Status</TableHead>
+                                            <TableHead className="py-2.5 font-medium text-right">Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
                                         {students.data.map((student) => (
-                                            <tr
-                                                key={student.intern_user_id}
-                                                className="border-b last:border-0 hover:bg-muted/40"
-                                            >
-                                                <td className="py-3 pr-4">
-                                                    <p className="font-medium whitespace-nowrap">
-                                                        {student.name}
-                                                    </p>
-                                                    <p
-                                                        className="max-w-[160px] truncate text-xs text-muted-foreground"
-                                                        title={student.email}
-                                                    >
+                                            <TableRow key={student.intern_user_id} className="border-b last:border-0 hover:bg-muted/40">
+                                                <TableCell className="py-3 pr-4">
+                                                    <p className="font-medium whitespace-nowrap">{student.name}</p>
+                                                    <p className="max-w-[160px] truncate text-xs text-muted-foreground" title={student.email}>
                                                         {student.email}
                                                     </p>
-                                                <td className="py-3 pr-4 whitespace-nowrap">
+                                                </TableCell>
+                                                <TableCell className="py-3 pr-4 whitespace-nowrap">
                                                     {student.id_number ?? '—'}
-                                                </td>
-                                                <td
-                                                    className="max-w-[140px] truncate py-3 pr-4"
-                                                    title={student.hte_name}
-                                                >
+                                                </TableCell>
+                                                <TableCell className="max-w-[140px] truncate py-3 pr-4" title={student.hte_name}>
                                                     {student.hte_name}
-                                                </td>
-                                                <td className="py-3 pr-4 whitespace-nowrap">
+                                                </TableCell>
+                                                <TableCell className="py-3 pr-4 whitespace-nowrap">
                                                     <div className="flex flex-col gap-1 min-w-[110px]">
                                                         <div className="flex justify-between text-xs">
                                                             <span className="font-medium">{formatHours(student.total_hours)}</span>
@@ -371,8 +341,8 @@ export default function MyStudents({
                                                             />
                                                         </div>
                                                     </div>
-                                                </td>
-                                                <td className="py-3 pr-4 whitespace-nowrap">
+                                                </TableCell>
+                                                <TableCell className="py-3 pr-4 whitespace-nowrap">
                                                     <Badge
                                                         variant="outline"
                                                         className={`text-xs gap-1 ${
@@ -384,8 +354,8 @@ export default function MyStudents({
                                                         <FileCheck2 className="size-3" />
                                                         {student.approved_docs_count} / {student.total_required_docs_count} Approved
                                                     </Badge>
-                                                </td>
-                                                <td className="py-3 pr-4 whitespace-nowrap">
+                                                </TableCell>
+                                                <TableCell className="py-3 pr-4 whitespace-nowrap">
                                                     {student.is_completed ? (
                                                         <Badge className="bg-emerald-600 text-white hover:bg-emerald-600 text-xs gap-1">
                                                             <CheckCircle2 className="size-3.5" />
@@ -401,8 +371,8 @@ export default function MyStudents({
                                                                 : `${Math.round(student.progress_percent)}% Rendered`}
                                                         </Badge>
                                                     )}
-                                                </td>
-                                                <td className="py-3 whitespace-nowrap text-right">
+                                                </TableCell>
+                                                <TableCell className="py-3 whitespace-nowrap text-right">
                                                     <div className="flex items-center justify-end gap-1.5">
                                                         <CompletionSummaryDialog
                                                             internUserId={student.intern_user_id}
@@ -414,15 +384,15 @@ export default function MyStudents({
                                                             internName={student.name}
                                                         />
                                                     </div>
-                                                </td>
-                                            </tr>
+                                                </TableCell>
+                                            </TableRow>
                                         ))}
-                                    </tbody>
-                                </table>
+                                    </TableBody>
+                                </Table>
                             </div>
                         )}
 
-                        {/* Grid view — desktop */}
+                        {/* Grid view */}
                         {view === 'grid' && (
                             <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {students.data.map((student) => (
@@ -458,7 +428,7 @@ export default function MyStudents({
                                                     <Clock className="size-3.5" /> Rendered:
                                                 </span>
                                                 <span className="font-semibold text-foreground text-xs">
-                                                    {formatLongDuration(student.total_hours)}
+                                                    {formatHours(student.total_hours)}
                                                 </span>
                                             </div>
                                         </CardContent>
@@ -483,7 +453,7 @@ export default function MyStudents({
                                         </div>
                                         <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t">
                                             <span className="truncate max-w-[160px] font-medium text-foreground">{student.hte_name}</span>
-                                            <span className="font-semibold text-foreground">{formatLongDuration(student.total_hours)}</span>
+                                            <span className="font-semibold text-foreground">{formatHours(student.total_hours)}</span>
                                         </div>
                                     </CardContent>
                                 </Card>

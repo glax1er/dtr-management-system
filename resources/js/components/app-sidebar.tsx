@@ -37,7 +37,7 @@ const hteSupervisorNavItems: NavItem[] = [
 ];
 
 const ojtSupervisorNavItems: NavItem[] = [
-    { title: 'My Students', href: '/supervisor/interns', icon: GraduationCap },
+    { title: 'Program Interns', href: '/supervisor/interns', icon: GraduationCap },
     { title: 'Document Templates', href: '/supervisor/document-templates', icon: FileStack },
     { title: 'HTEs', href: '/supervisor/htes', icon: Building },
 ];
