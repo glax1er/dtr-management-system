@@ -42,17 +42,18 @@ interface Filters {
 
 interface ArchivesIndexProps {
     records: Paginated<ArchivedRecord>;
-    currentType: 'htes' | 'supervisors' | 'interns' | 'programs';
+    currentType: 'htes' | 'supervisors' | 'interns' | 'programs' | 'templates';
     filters?: Filters;
 }
 
 type ViewMode = 'table' | 'grid';
 
-const TABS: { label: string; value: 'htes' | 'supervisors' | 'interns' | 'programs'; detailLabel: string }[] = [
+const TABS: { label: string; value: 'htes' | 'supervisors' | 'interns' | 'programs' | 'templates'; detailLabel: string }[] = [
     { label: 'Interns', value: 'interns', detailLabel: 'ID Number' },
     { label: 'Supervisors', value: 'supervisors', detailLabel: 'Email' },
     { label: 'HTEs', value: 'htes', detailLabel: 'Address' },
     { label: 'Programs', value: 'programs', detailLabel: 'Required Hours' },
+    { label: 'Templates', value: 'templates', detailLabel: 'Program / File' },
 ];
 
 export default function ArchivesIndex({ records, currentType, filters }: ArchivesIndexProps) {

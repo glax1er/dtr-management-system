@@ -180,4 +180,47 @@ test('OJT supervisor can upload blank template formats and interns can download 
     $this->actingAs($intern)
         ->get(route('intern.documents.template.download', $template->id))
         ->assertOk();
+
+    // OJT Supervisor soft deletes (archives) the template
+    $this->actingAs($ojtSupervisorUser)
+        ->delete(route('supervisor.document-templates.destroy', $template->id))
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+
+    $this->assertSoftDeleted('document_templates', [
+        'id' => $template->id,
+    ]);
+
+    // Intern should no longer see the template when it's archived
+    $this->actingAs($intern)
+        ->get(route('intern.documents.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('checklist.0.has_template', false)
+        );
+
+    // OJT Supervisor restores the template from archive
+    $this->actingAs($ojtSupervisorUser)
+        ->post(route('supervisor.document-templates.restore', $template->id))
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+
+    $this->assertDatabaseHas('document_templates', [
+        'id' => $template->id,
+        'deleted_at' => null,
+    ]);
+
+    // OJT Supervisor permanently deletes (force deletes) the template
+    $this->actingAs($ojtSupervisorUser)
+        ->delete(route('supervisor.document-templates.destroy', $template->id));
+
+    $this->actingAs($ojtSupervisorUser)
+        ->delete(route('supervisor.document-templates.forceDelete', $template->id))
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+
+    $this->assertDatabaseMissing('document_templates', [
+        'id' => $template->id,
+    ]);
 });
+

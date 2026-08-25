@@ -111,6 +111,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('document-templates', [SupervisorDocumentTemplateController::class, 'store'])->name('document-templates.store');
             Route::get('document-templates/{documentTemplate}/download', [SupervisorDocumentTemplateController::class, 'download'])->name('document-templates.download');
             Route::delete('document-templates/{documentTemplate}', [SupervisorDocumentTemplateController::class, 'destroy'])->name('document-templates.destroy');
+            Route::post('document-templates/{id}/restore', [SupervisorDocumentTemplateController::class, 'restore'])->name('document-templates.restore');
+            Route::delete('document-templates/{id}/force', [SupervisorDocumentTemplateController::class, 'forceDelete'])->name('document-templates.forceDelete');
         });
 
         // OJT Supervisors can view/monitor the same as an HTE Supervisor,
