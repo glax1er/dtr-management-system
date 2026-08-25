@@ -1,4 +1,4 @@
-import { Bell, CheckCircle2, Clock3, XCircle } from 'lucide-react';
+import { Bell, CheckCircle2, Clock3, UserPlus, XCircle } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Notification } from '@/types/auth';
 
@@ -51,6 +51,7 @@ export type NotificationCategory =
     | 'approved'
     | 'rejected'
     | 'pending'
+    | 'registration'
     | 'general';
 
 export const NOTIFICATION_CATEGORY_LABELS: Record<
@@ -60,17 +61,27 @@ export const NOTIFICATION_CATEGORY_LABELS: Record<
     approved: 'Approved',
     rejected: 'Rejected',
     pending: 'Pending',
+    registration: 'Registration',
     general: 'General',
 };
 
 /**
- * Derives a coarse category from a notification's title, so the same
+ * Derives a coarse category from a notification's type and title, so the same
  * grouping logic can drive both visual tone and filtering.
  */
 export function getNotificationCategory(
     notification: Notification,
 ): NotificationCategory {
     const title = notification.title.toLowerCase();
+    const type = notification.type?.toLowerCase() ?? '';
+
+    if (
+        type === 'intern_registration' ||
+        title.includes('sign-up') ||
+        title.includes('registration')
+    ) {
+        return 'registration';
+    }
 
     if (title.includes('approved')) {
         return 'approved';
@@ -104,6 +115,10 @@ const NOTIFICATION_CATEGORY_TONES: Record<
         icon: Clock3,
         badgeClassName: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
     },
+    registration: {
+        icon: UserPlus,
+        badgeClassName: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+    },
     general: {
         icon: Bell,
         badgeClassName: 'bg-primary/10 text-primary',
@@ -111,9 +126,9 @@ const NOTIFICATION_CATEGORY_TONES: Record<
 };
 
 /**
- * Derives a visual tone (icon + color) for a notification from its title,
- * so approved / rejected / pending / general notifications are always
- * styled the same way, whether shown in the bell dropdown or the full list.
+ * Derives a visual tone (icon + color) for a notification from its title and type,
+ * so approved / rejected / pending / registration / general notifications are always
+ * styled consistently, whether shown in the bell dropdown or the full list.
  */
 export function getNotificationTone(
     notification: Notification,

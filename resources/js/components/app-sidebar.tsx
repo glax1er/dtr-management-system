@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Building, CalendarClock, Paperclip, FileWarning, GraduationCap, LayoutGrid, MonitorSmartphone, Users, PenLine, Archive, BookOpen } from 'lucide-react';
+import { Building, CalendarClock, Paperclip, FileWarning, GraduationCap, LayoutGrid, MonitorSmartphone, Users, PenLine, Archive, BookOpen, FileStack } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -37,7 +37,8 @@ const hteSupervisorNavItems: NavItem[] = [
 ];
 
 const ojtSupervisorNavItems: NavItem[] = [
-    { title: 'My Students', href: '/supervisor/students', icon: GraduationCap },
+    { title: 'Program Interns', href: '/supervisor/students', icon: GraduationCap },
+    { title: 'Document Templates', href: '/supervisor/document-templates', icon: FileStack },
     { title: 'HTEs', href: '/supervisor/htes', icon: Building },
 ];
 
@@ -61,7 +62,7 @@ const manualAttendanceNavItem: NavItem = {
 
 const internNavItems: NavItem[] = [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
-    { title: 'My Documents', href: '#', icon: Paperclip },
+    { title: 'My Documents', href: '/intern/documents', icon: Paperclip },
 ];
 
 const footerNavItems: NavItem[] = [];

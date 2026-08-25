@@ -11,6 +11,7 @@ use App\Support\Attendance\ScanLabel;
 use App\Support\Attendance\ScanRejectionReason;
 use App\Support\Attendance\ScanResult;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
 
 class RecordScan
@@ -65,10 +66,23 @@ class RecordScan
 
     private function labelForScanCountToday(int $internUserId, CarbonInterface $at): ScanLabel
     {
+        $timezone = config('dtr.timezone');
+        $localAt = $at->clone()->setTimezone($timezone);
+        $dayStart = $localAt->clone()->startOfDay();
+        $dayEnd = $localAt->clone()->endOfDay();
+
         $scansToday = AttendanceLog::query()
             ->where('intern_user_id', $internUserId)
-            ->whereDate('scan_timestamp', $at)
+            ->whereBetween('scan_timestamp', [$dayStart, $dayEnd])
             ->count();
+
+        $cutoff = Carbon::parse($localAt->toDateString() . ' ' . config('dtr.time_out_cutoff'), $timezone);
+
+        // If the day's first scan is after the time-out cutoff (e.g. 4:00 PM),
+        // it is a Time Out (missing time in), not a Time In.
+        if ($scansToday <= 1 && $localAt->gt($cutoff)) {
+            return ScanLabel::TimeOut;
+        }
 
         return $scansToday <= 1 ? ScanLabel::TimeIn : ScanLabel::TimeOut;
     }

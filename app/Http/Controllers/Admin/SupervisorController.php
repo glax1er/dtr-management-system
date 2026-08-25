@@ -1,21 +1,20 @@
 <?php
-// app/Http/Controllers/Admin/SupervisorController.php
 
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreSupervisorRequest;
 use App\Http\Requests\Admin\StoreOjtSupervisorRequest;
-use Illuminate\Http\Request;
+use App\Http\Requests\Admin\UpdateSupervisorRequest;
 use App\Models\Hte;
 use App\Models\Program;
 use App\Models\SupervisorProfile;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
-use App\Http\Requests\Admin\UpdateSupervisorRequest;
 use App\Http\Requests\Admin\GrantHteSupervisorRoleRequest;
 use App\Http\Requests\Admin\GrantOjtSupervisorRoleRequest;
 

@@ -1,17 +1,27 @@
 import { Head, router } from '@inertiajs/react';
+import { toast } from 'sonner';
 import {
+    CalendarCheck2,
+    Camera,
+    CheckCircle2,
     ChevronLeft,
     ChevronRight,
+    CircleDashed,
+    ClipboardCheck,
+    Clock,
     Download,
     QrCode,
-    Camera,
+    TrendingUp,
     User as UserIcon,
-    X,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
+import { StatCard } from '@/components/dashboard-analytics';
+import { NumberedPagination } from '@/components/numbered-pagination';
+import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
 import { HoursProgressRing } from '@/components/hours-progress-ring';
 import { ResolutionRequestDialog } from '@/components/resolution-request-dialog';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -20,34 +30,41 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import { cn } from '@/lib/utils';
 import type { AttendanceDay, InternDashboardProps } from '@/types/intern';
 
-/**
- * Single source of truth for how each attendance status is labeled and
- * colored. Shared between the mobile card list and the desktop table so
- * the two views never drift out of sync, and matches the color scheme
- * used on the supervisor attendance table (green/amber/red/slate).
- */
 const STATUS_META: Record<
     AttendanceDay['status'],
     { label: string; className: string }
 > = {
     complete: {
         label: 'Complete',
-        className: 'border-emerald-500 bg-emerald-100 text-emerald-400',
+        className:
+            'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium',
     },
     missing_time_in: {
         label: 'Missing time in',
-        className: 'border-amber-500 bg-amber-100 text-amber-400',
+        className:
+            'border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium',
     },
     no_record: {
         label: 'No record',
-        className: 'border-red-500 bg-red-100 text-red-400',
+        className:
+            'border-destructive/20 bg-destructive/10 text-destructive font-medium',
     },
     open: {
-        label: 'No time-out',
-        className: 'border-slate-400 bg-slate-100 text-slate-500',
+        label: 'In progress',
+        className:
+            'border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-medium',
     },
 };
 
@@ -68,6 +85,10 @@ export default function InternDashboard({
     monthTotalHours,
     canGoNextMonth,
 }: InternDashboardProps) {
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [startDate, setStartDate] = useState<string>('');
+    const [endDate, setEndDate] = useState<string>('');
+
     const goToMonth = (targetMonth: string) => {
         router.get(
             '/intern/dashboard',
@@ -76,9 +97,21 @@ export default function InternDashboard({
         );
     };
 
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const [startDate, setStartDate] = useState<string>('');
-    const [endDate, setEndDate] = useState<string>('');
+    const goToPage = (page: number) => {
+        router.get(
+            '/intern/dashboard',
+            { month, page, per_page: logs.per_page },
+            { preserveState: true, preserveScroll: true },
+        );
+    };
+
+    const changePerPage = (perPage: number) => {
+        router.get(
+            '/intern/dashboard',
+            { month, per_page: perPage, page: 1 },
+            { preserveState: true, preserveScroll: true },
+        );
+    };
 
     const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -93,13 +126,12 @@ export default function InternDashboard({
         router.post('/intern/profile-photo', formData, {
             preserveScroll: true,
             forceFormData: true,
+            onSuccess: () => toast.success('Profile photo updated.'),
+            onError: (errors) =>
+                toast.error(
+                    Object.values(errors)[0] ?? 'Could not upload photo.',
+                ),
         });
-    };
-
-    const handlePhotoRemove = () => {
-        if (confirm('Remove your profile photo?')) {
-            router.delete('/intern/profile-photo', { preserveScroll: true });
-        }
     };
 
     const cancelRequest = (ticketId: number) => {
@@ -110,590 +142,599 @@ export default function InternDashboard({
         router.patch(
             `/intern/resolution-tickets/${ticketId}/cancel`,
             {},
-            { preserveScroll: true },
+            {
+                preserveScroll: true,
+                onSuccess: () => toast.success('Resolution request cancelled.'),
+                onError: () =>
+                    toast.error('Could not cancel resolution request.'),
+            },
         );
     };
 
+    const remainingHours = Math.max(0, hours.required - hours.total_rendered);
+    const remainingPercent = Math.max(0, 100 - hours.progress_percent);
+
+    const milestones = [
+        {
+            label: '25% Milestone',
+            targetHours: hours.required * 0.25,
+            percent: 25,
+        },
+        {
+            label: '50% Halfway',
+            targetHours: hours.required * 0.5,
+            percent: 50,
+        },
+        {
+            label: '75% Stretch',
+            targetHours: hours.required * 0.75,
+            percent: 75,
+        },
+        {
+            label: '100% Complete',
+            targetHours: hours.required,
+            percent: 100,
+        },
+    ];
+
     return (
         <>
-            <Head title="Dashboard" />
+            <Head title="Intern Dashboard" />
 
-            <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 p-4">
-                <div>
-                    <h1 className="text-2xl font-semibold">
-                        Welcome, {profile.name.split(' ')[0]}
-                    </h1>
-                    <p className="text-muted-foreground">
-                        {profile.program_name} &middot; {profile.hte_name}
-                    </p>
+            <div className="flex h-full flex-1 flex-col gap-5 p-4 sm:p-6">
+                {/* Header Banner */}
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="group relative shrink-0">
+                            <div className="flex size-14 items-center justify-center overflow-hidden rounded-2xl border border-border bg-muted shadow-xs sm:size-16">
+                                {profile.photo_url ? (
+                                    <img
+                                        src={profile.photo_url}
+                                        alt={profile.name}
+                                        className="size-full object-cover"
+                                    />
+                                ) : (
+                                    <UserIcon className="size-7 text-muted-foreground sm:size-8" />
+                                )}
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                className="absolute -right-1 -bottom-1 flex size-6 items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground shadow-xs transition-transform hover:scale-110 sm:size-6.5"
+                                title="Change profile photo"
+                            >
+                                <Camera className="size-3" />
+                            </button>
+
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                className="hidden"
+                                onChange={handlePhotoSelect}
+                            />
+                        </div>
+
+                        <div className="space-y-0.5">
+                            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                                Welcome back, {profile.name.split(' ')[0]}
+                            </h1>
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+                                <span className="font-medium text-foreground/90">
+                                    {profile.program_name}
+                                </span>
+                                <span>•</span>
+                                <span>{profile.hte_name}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Badge
+                            variant="outline"
+                            className="px-3 py-1 font-mono text-xs font-normal"
+                        >
+                            ID: {profile.id_number}
+                        </Badge>
+                        <StatusBadge status={profile.status} />
+                    </div>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-3">
-                    {/* Profile + Today, merged into one card */}
-                    <Card>
-                        <CardHeader>
-                            <div className="flex items-center gap-4">
-                                <div className="relative">
-                                    <div className="flex size-16 items-center justify-center overflow-hidden rounded-full bg-muted">
-                                        {profile.photo_url ? (
-                                            <img
-                                                src={profile.photo_url}
-                                                alt={profile.name}
-                                                className="size-full object-cover"
-                                            />
-                                        ) : (
-                                            <UserIcon className="size-8 text-muted-foreground" />
-                                        )}
-                                    </div>
+                {/* KPI Stat Cards */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <StatCard
+                        label="Hours Rendered"
+                        displayValue={
+                            <span className="flex items-baseline gap-1.5">
+                                <span>{hours.total_rendered.toFixed(1)}</span>
+                                <span className="text-sm font-normal text-muted-foreground">
+                                    / {hours.required} hrs
+                                </span>
+                            </span>
+                        }
+                        icon={Clock}
+                        variant="primary"
+                        description={`${hours.progress_percent}% of required OJT completed`}
+                        index={0}
+                    />
+                    <StatCard
+                        label="Remaining Hours"
+                        displayValue={
+                            <span className="flex items-baseline gap-1.5">
+                                <span>{remainingHours.toFixed(1)}</span>
+                                <span className="text-sm font-normal text-muted-foreground">
+                                    hrs left
+                                </span>
+                            </span>
+                        }
+                        icon={TrendingUp}
+                        variant="default"
+                        description={`${remainingPercent.toFixed(1)}% remaining towards target`}
+                        index={1}
+                    />
+                    <StatCard
+                        label="Logged This Month"
+                        displayValue={
+                            <span className="flex items-baseline gap-1.5">
+                                <span>{monthTotalHours.toFixed(1)}</span>
+                                <span className="text-sm font-normal text-muted-foreground">
+                                    hrs
+                                </span>
+                            </span>
+                        }
+                        icon={CalendarCheck2}
+                        variant="success"
+                        description={`Accumulated in ${monthLabel}`}
+                        index={2}
+                    />
+                    <StatCard
+                        label="Today's Status"
+                        displayValue={
+                            <span className="text-xl font-bold sm:text-2xl">
+                                {today.status === 'complete'
+                                    ? 'Completed'
+                                    : today.status === 'open'
+                                      ? 'In Progress'
+                                      : today.status === 'missing_time_in'
+                                        ? 'Missing In'
+                                        : 'Not Started'}
+                            </span>
+                        }
+                        icon={ClipboardCheck}
+                        variant={
+                            today.status === 'complete'
+                                ? 'success'
+                                : today.status === 'open'
+                                  ? 'primary'
+                                  : today.status === 'missing_time_in'
+                                    ? 'warning'
+                                    : 'default'
+                        }
+                        description={
+                            today.time_in
+                                ? `In: ${today.time_in}${today.time_out ? ` • Out: ${today.time_out}` : ''}`
+                                : `Date: ${today.date}`
+                        }
+                        index={3}
+                    />
+                </div>
 
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            fileInputRef.current?.click()
-                                        }
-                                        className="absolute -right-1 -bottom-1 flex size-6 items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground"
-                                        title="Change photo"
-                                    >
-                                        <Camera className="size-3.5" />
-                                    </button>
-
-                                    {profile.photo_url && (
-                                        <button
-                                            type="button"
-                                            onClick={handlePhotoRemove}
-                                            className="absolute -bottom-1 -left-1 flex size-6 items-center justify-center rounded-full border-2 border-background bg-destructive text-destructive-foreground"
-                                            title="Remove photo"
-                                        >
-                                            <span className="sr-only">
-                                                Remove photo
-                                            </span>
-                                            <X className="size-3.5" />
-                                        </button>
-                                    )}
-
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept="image/jpeg,image/png,image/webp"
-                                        className="hidden"
-                                        onChange={handlePhotoSelect}
+                {/* Progress & QR */}
+                <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+                    <Card className="flex flex-col justify-between shadow-xs lg:col-span-2">
+                        <CardHeader className="border-b border-border/60 pb-3">
+                            <CardTitle className="text-base font-semibold">
+                                OJT Hours Progress & Milestones
+                            </CardTitle>
+                            <CardDescription>
+                                Track your overall completion towards the required {hours.required} total hours
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-5 pb-5">
+                            <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-around">
+                                <div className="shrink-0">
+                                    <HoursProgressRing
+                                        percent={hours.progress_percent}
+                                        totalRendered={hours.total_rendered}
+                                        required={hours.required}
+                                        size={176}
                                     />
                                 </div>
 
-                                <div>
-                                    <CardTitle>My Profile</CardTitle>
-                                    <CardDescription>
-                                        {profile.id_number}
-                                    </CardDescription>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="space-y-2 text-sm">
-                            <div className="flex justify-between gap-4">
-                                <span className="shrink-0 text-muted-foreground">
-                                    Email
-                                </span>
-                                <span className="min-w-0 text-right break-words">
-                                    {profile.email}
-                                </span>
-                            </div>
-                            <div className="flex justify-between gap-4">
-                                <span className="shrink-0 text-muted-foreground">
-                                    HTE
-                                </span>
-                                <span className="min-w-0 text-right break-words">
-                                    {profile.hte_name}
-                                </span>
-                            </div>
-                            <div className="flex justify-between gap-4">
-                                <span className="shrink-0 text-muted-foreground">
-                                    Program
-                                </span>
-                                <span className="min-w-0 text-right break-words">
-                                    {profile.program_name}
-                                </span>
-                            </div>
-                            <div className="flex justify-between gap-4">
-                                <span className="shrink-0 text-muted-foreground">
-                                    Status
-                                </span>
-                                <Badge
-                                    variant={
-                                        profile.status === 'approved'
-                                            ? 'default'
-                                            : 'secondary'
-                                    }
-                                >
-                                    {profile.status}
-                                </Badge>
-                            </div>
+                                <div className="w-full space-y-2.5 sm:max-w-xs">
+                                    <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                                        Milestones Checklist
+                                    </p>
+                                    <div className="space-y-2">
+                                        {milestones.map((m) => {
+                                            const isDone = hours.total_rendered >= m.targetHours;
 
-                            {/* Today's status, now a section within this same card */}
-                            <div className="mt-4 border-t pt-4">
-                                <p className="mb-2 text-sm font-medium">
-                                    Today &middot; {today.date}
-                                </p>
-                                <div className="space-y-2">
-                                    <div className="flex justify-between gap-4">
-                                        <span className="shrink-0 text-muted-foreground">
-                                            Time In
-                                        </span>
-                                        <span className="min-w-0 text-right break-words">
-                                            {today.time_in ?? '—'}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between gap-4">
-                                        <span className="shrink-0 text-muted-foreground">
-                                            Time Out
-                                        </span>
-                                        <span className="min-w-0 text-right break-words">
-                                            {today.time_out ?? '—'}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between gap-4">
-                                        <span className="shrink-0 text-muted-foreground">
-                                            Status
-                                        </span>
-                                        <Badge
-                                            variant={
-                                                today.status === 'complete'
-                                                    ? 'default'
-                                                    : today.status ===
-                                                        'missing_time_in'
-                                                      ? 'destructive'
-                                                      : 'outline'
-                                            }
-                                        >
-                                            {today.status === 'not_started'
-                                                ? 'Not started'
-                                                : today.status === 'open'
-                                                  ? 'In progress'
-                                                  : today.status ===
-                                                      'missing_time_in'
-                                                    ? 'Missing time in'
-                                                    : 'Complete'}
-                                        </Badge>
+                                            return (
+                                                <div
+                                                    key={m.percent}
+                                                    className={cn(
+                                                        'flex items-center justify-between rounded-xl border p-2.5 text-xs transition-colors',
+                                                        isDone
+                                                            ? 'border-emerald-500/30 bg-emerald-500/5 text-foreground'
+                                                            : 'border-border/60 bg-muted/30 text-muted-foreground',
+                                                    )}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        {isDone ? (
+                                                            <CheckCircle2 className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                                                        ) : (
+                                                            <CircleDashed className="size-4 shrink-0 text-muted-foreground/50" />
+                                                        )}
+                                                        <span
+                                                            className={cn(
+                                                                'font-medium',
+                                                                isDone && 'text-foreground',
+                                                            )}
+                                                        >
+                                                            {m.label}
+                                                        </span>
+                                                    </div>
+                                                    <span className="font-semibold text-foreground/80 tabular-nums">
+                                                        {m.targetHours.toFixed(0)} hrs
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
 
-                    {/* QR code — unchanged, stays as the middle card */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>My QR Code</CardTitle>
+                    <Card className="flex flex-col justify-between shadow-xs lg:col-span-1">
+                        <CardHeader className="border-b border-border/60 pb-3">
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="text-base font-semibold">
+                                    Attendance QR Pass
+                                </CardTitle>
+                                <QrCode className="size-4 text-muted-foreground" />
+                            </div>
                             <CardDescription>
-                                Present this to your supervisor to time in/out
+                                Scan at the kiosk to log time in and out
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-3">
+                        <CardContent className="flex flex-col items-center justify-center space-y-4 pt-5 pb-5">
                             {profile.has_qr_code ? (
                                 <>
-                                    <div className="flex aspect-square items-center justify-center rounded-lg border p-4">
+                                    <div className="flex aspect-square w-40 items-center justify-center rounded-2xl border border-border bg-card p-3 shadow-xs">
                                         <img
                                             src={`/intern/qr-code?v=${encodeURIComponent(profile.id_number)}`}
                                             alt="Your QR code"
-                                            className="h-full w-full object-contain"
+                                            className="size-full object-contain"
                                         />
                                     </div>
                                     <Button
                                         asChild
                                         variant="outline"
-                                        className="w-full"
+                                        size="sm"
+                                        className="w-full gap-2 text-xs"
                                     >
                                         <a
                                             href={`/intern/qr-code?v=${encodeURIComponent(profile.id_number)}`}
-                                            download={`${profile.name.replace(/\s+/g, '_')}.png`}
+                                            download={`${profile.name.replace(/\s+/g, '_')}_QR.png`}
                                         >
-                                            <Download className="mr-2 size-4" />
-                                            Download PNG
+                                            <Download className="size-3.5" />
+                                            Download QR Code
                                         </a>
                                     </Button>
                                 </>
                             ) : (
-                                <div className="flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-sidebar-border/70 text-muted-foreground">
-                                    <QrCode className="size-10" />
-                                    <span className="text-xs">
-                                        Generated once your account is verified
+                                <div className="flex aspect-square w-40 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border bg-muted/30 p-4 text-center">
+                                    <QrCode className="size-10 text-muted-foreground/60" />
+                                    <span className="text-xs leading-tight text-muted-foreground">
+                                        Generated automatically once your account is approved.
                                     </span>
                                 </div>
                             )}
                         </CardContent>
                     </Card>
-
-                    {/* Hours rendered progress — now the 3rd top-row card */}
-                    <Card className="flex flex-col items-center justify-center gap-4 p-6">
-                        <CardTitle className="text-base">
-                            Hours Rendered
-                        </CardTitle>
-                        <HoursProgressRing
-                            percent={hours.progress_percent}
-                            totalRendered={hours.total_rendered}
-                            required={hours.required}
-                        />
-                    </Card>
                 </div>
 
-                {/* Full attendance log, now full width on its own row */}
-                <Card>
-                    <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="relative flex w-full justify-center sm:w-auto">
-                            <div className="flex flex-col items-center gap-1">
-                                <div className="flex items-center gap-2 pr-10 sm:pr-0">
+                {/* Monthly Attendance Logs Table Card */}
+                <Card className="shadow-xs">
+                    <CardHeader>
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                            <div>
+                                <CardTitle className="text-base font-semibold">
+                                    Monthly Attendance Log
+                                </CardTitle>
+                                <CardDescription>
+                                    Daily check-ins, rendered hours, and resolution ticket status
+                                </CardDescription>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 w-full lg:w-auto">
+                                {/* Month Selector */}
+                                <div className="flex items-center justify-between sm:justify-start gap-1.5 rounded-xl border border-border bg-muted/40 p-1 w-full sm:w-auto">
                                     <Button
-                                        variant="outline"
+                                        variant="ghost"
                                         size="icon"
+                                        className="size-7 rounded-lg shrink-0"
                                         onClick={() =>
                                             goToMonth(shiftMonth(month, -1))
                                         }
+                                        title="Previous month"
                                     >
-                                        <ChevronLeft />
+                                        <ChevronLeft className="size-4" />
                                     </Button>
-                                    <CardTitle className="min-w-32 text-center text-base">
-                                        {monthLabel}
-                                    </CardTitle>
+                                    <div className="px-2 text-center flex-1 sm:flex-initial">
+                                        <span className="text-xs font-semibold whitespace-nowrap text-foreground">
+                                            {monthLabel}
+                                        </span>
+                                        <span className="block text-[10px] text-muted-foreground tabular-nums">
+                                            {monthTotalHours.toFixed(2)} hrs total
+                                        </span>
+                                    </div>
                                     <Button
-                                        variant="outline"
+                                        variant="ghost"
                                         size="icon"
+                                        className="size-7 rounded-lg shrink-0"
                                         disabled={!canGoNextMonth}
                                         onClick={() =>
                                             goToMonth(shiftMonth(month, 1))
                                         }
+                                        title="Next month"
                                     >
-                                        <ChevronRight />
+                                        <ChevronRight className="size-4" />
                                     </Button>
                                 </div>
-                                <div className="text-center text-[11px] text-muted-foreground">
-                                    Total:{' '}
-                                    <span className="font-medium text-foreground tabular-nums">
-                                        {monthTotalHours.toFixed(2)} hrs
-                                    </span>
-                                </div>
+
+                                {/* Date Range Picker + DTR Report */}
+                                <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                                <div className="flex items-center gap-1.5 flex-1 min-w-0 w-full sm:w-auto sm:flex-initial">
+                                        <div className="flex-1 min-w-0 sm:w-43 sm:flex-initial">
+                                            <DatePicker
+                                                date={startDate}
+                                                onDateChange={(d) => setStartDate(d)}
+                                                placeholder="Start date"
+                                                maxDate={endDate || undefined}
+                                                className="h-8 text-xs"
+                                                clearable
+                                            />
+                                        </div>
+                                        <span className="text-xs text-muted-foreground shrink-0">to</span>
+                                        <div className="flex-1 min-w-0 sm:w-43 sm:flex-initial">
+                                            <DatePicker
+                                                date={endDate}
+                                                onDateChange={(d) => setEndDate(d)}
+                                                placeholder="End date"
+                                                minDate={startDate || undefined}
+                                                className="h-8 text-xs"
+                                                clearable
+                                                align="end"
+                                        />
+                                        </div>
+                                    </div>
+
+                                    {/* DTR Report Button */}
+                                    <Button
+                                        size="sm"
+                                        variant="default"
+                                        className="h-8 gap-1.5 text-xs font-medium w-full sm:w-auto shrink-0"
+                                        onClick={() => {
+                                            const base = '/intern/dtr-report';
+                                            let url = base + '?';
+
+                                            if (startDate && endDate) {
+                                                url += `start=${startDate}&end=${endDate}`;
+                                            } else {
+                                                url += `month=${month}`;
+                                            }
+
+                                            window.open(url, '_blank', 'noopener');
+                                        }}
+                                    >
+                                        <Download className="size-3.5" />
+                                        <span>DTR Report</span>
+                                    </Button>
                             </div>
-
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                className="absolute top-[calc(50%-10px)] right-0 -translate-y-1/2 sm:hidden"
-                                onClick={() => {
-                                    const base = '/intern/dtr-report';
-                                    let url = base + '?';
-
-                                    if (startDate && endDate) {
-                                        url += `start=${startDate}&end=${endDate}`;
-                                    } else {
-                                        url += `month=${month}`;
-                                    }
-
-                                    window.open(url, '_blank', 'noopener');
-                                }}
-                                aria-label="Download DTR report"
-                            >
-                                <Download className="size-4" />
-                            </Button>
-                        </div>
-                        <div className="flex w-full flex-wrap items-center justify-center gap-3 sm:w-auto sm:justify-end">
-                            {/* Date range picker for DTR (start / end) */}
-                            <div className="flex items-center gap-2">
-                                <Input
-                                    type="date"
-                                    className="h-9 w-auto text-sm"
-                                    value={startDate}
-                                    onChange={(e) =>
-                                        setStartDate(e.target.value)
-                                    }
-                                    aria-label="DTR start date"
-                                />
-                                <span className="text-sm text-muted-foreground">
-                                    to
-                                </span>
-                                <Input
-                                    type="date"
-                                    className="h-9 w-auto text-sm"
-                                    value={endDate}
-                                    onChange={(e) => setEndDate(e.target.value)}
-                                    aria-label="DTR end date"
-                                />
-                                {/* <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => {
-                                        const now = new Date();
-                                        // get Monday as startOfWeek
-                                        const day = now.getDay();
-                                        const diffToMonday = (day + 6) % 7; // 0->6
-                                        const monday = new Date(
-                                            now.getFullYear(),
-                                            now.getMonth(),
-                                            now.getDate() - diffToMonday,
-                                        );
-                                        const sunday = new Date(
-                                            monday.getFullYear(),
-                                            monday.getMonth(),
-                                            monday.getDate() + 6,
-                                        );
-                                        const fmt = (d: Date) => d.toISOString().slice(0, 10);
-                                        setStartDate(fmt(monday));
-                                        setEndDate(fmt(sunday));
-                                    }}
-                                >
-                                    This week
-                                </Button> */}
                             </div>
-
-                            <Button
-                                size="sm"
-                                className="hidden sm:inline-flex"
-                                onClick={() => {
-                                    const base = '/intern/dtr-report';
-                                    let url = base + '?';
-
-                                    if (startDate && endDate) {
-                                        url += `start=${startDate}&end=${endDate}`;
-                                    } else {
-                                        url += `month=${month}`;
-                                    }
-
-                                    window.open(url, '_blank', 'noopener');
-                                }}
-                            >
-                                <Download className="mr-2 size-4" />
-                                DTR Report
-                            </Button>
                         </div>
                     </CardHeader>
-                    <CardContent>
-                        {logs.length === 0 ? (
-                            <p className="py-8 text-center text-sm text-muted-foreground">
-                                No attendance logs recorded for {monthLabel}.
-                            </p>
+
+                    <CardContent className="flex flex-col gap-4">
+                        {logs.data.length === 0 ? (
+                            <div className="py-12 text-center text-sm text-muted-foreground">
+                                <CalendarCheck2 className="mx-auto mb-2 size-8 text-muted-foreground/50" />
+                                <p className="font-medium text-foreground">
+                                    No attendance records for {monthLabel}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    Your daily scans and approved resolution tickets will appear here.
+                                </p>
+                            </div>
                         ) : (
-                            <div className="space-y-4">
-                                <div className="grid gap-4 sm:hidden">
-                                    {logs.map((log) => {
-                                        const badge = STATUS_META[log.status];
+                            <>
+                                {/* Desktop Table View */}
+                                <div className="hidden overflow-hidden rounded-lg border sm:block">
+                                    <Table>
+                                        <TableHeader className="bg-muted/40">
+                                            <TableRow>
+                                                <TableHead className="pl-6 font-semibold">
+                                                    Date
+                                                </TableHead>
+                                                <TableHead className="text-center font-semibold">
+                                                    Time In
+                                                </TableHead>
+                                                <TableHead className="text-center font-semibold">
+                                                    Time Out
+                                                </TableHead>
+                                                <TableHead className="text-center font-semibold">
+                                                    Hours
+                                                </TableHead>
+                                                <TableHead className="text-center font-semibold">
+                                                    Status
+                                                </TableHead>
+                                                <TableHead className="pr-6 text-center font-semibold">
+                                                    Action
+                                                </TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {logs.data.map((log) => {
 
-                                        return (
-                                            <div
-                                                key={log.date}
-                                                className="rounded-2xl border border-border bg-card p-4 shadow-sm"
-                                            >
-                                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                                    <div>
-                                                        <p className="text-base font-semibold">
-                                                            {log.date}
-                                                        </p>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            {log.day.slice(
-                                                                0,
-                                                                3,
-                                                            )}
-                                                        </p>
-                                                    </div>
-                                                    <Badge
-                                                        className={
-                                                            badge.className
-                                                        }
+                                                return (
+                                                    <TableRow
+                                                        key={log.date}
+                                                        className="hover:bg-muted/50"
                                                     >
-                                                        {badge.label}
-                                                    </Badge>
-                                                </div>
-
-                                                <div className="mt-4 grid gap-3">
-                                                    <div className="rounded-2xl bg-muted p-3">
-                                                        <p className="text-xs tracking-wide text-muted-foreground uppercase">
-                                                            Time In
-                                                        </p>
-                                                        <p className="mt-1 text-sm font-medium">
-                                                            {log.time_in ?? '—'}
-                                                        </p>
-                                                    </div>
-                                                    <div className="rounded-2xl bg-muted p-3">
-                                                        <p className="text-xs tracking-wide text-muted-foreground uppercase">
-                                                            Time Out
-                                                        </p>
-                                                        <p className="mt-1 text-sm font-medium">
-                                                            {log.time_out ??
-                                                                '—'}
-                                                        </p>
-                                                    </div>
-                                                    <div className="rounded-2xl bg-muted p-3">
-                                                        <p className="text-xs tracking-wide text-muted-foreground uppercase">
-                                                            Hours
-                                                        </p>
-                                                        <p className="mt-1 text-sm font-medium tabular-nums">
-                                                            {log.hours_rendered.toFixed(
-                                                                2,
-                                                            )}
-                                                        </p>
-                                                    </div>
-                                                    <div className="rounded-2xl bg-muted p-3">
-                                                        <p className="text-xs tracking-wide text-muted-foreground uppercase">
-                                                            Action
-                                                        </p>
-                                                        <div className="mt-1">
-                                                            {log.status ===
-                                                            'complete' ? (
-                                                                <span className="text-sm text-muted-foreground">
-                                                                    —
+                                                        <TableCell className="pl-6 font-medium">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span>{log.date}</span>
+                                                                <span className="text-xs text-muted-foreground">
+                                                                    ({log.day.slice(0, 3)})
                                                                 </span>
-                                                            ) : log.pending_ticket_id !==
-                                                              null ? (
-                                                                <div className="flex flex-wrap items-center gap-2">
-                                                                    <Badge variant="secondary">
-                                                                        Pending
-                                                                    </Badge>
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="text-center text-muted-foreground tabular-nums">
+                                                            {log.time_in ?? '—'}
+                                                        </TableCell>
+                                                        <TableCell className="text-center text-muted-foreground tabular-nums">
+                                                            {log.time_out ?? '—'}
+                                                        </TableCell>
+                                                        <TableCell className="text-center font-medium tabular-nums">
+                                                            {log.hours_rendered > 0 ? (
+                                                                <span>{log.hours_rendered.toFixed(2)} hrs</span>
+                                                            ) : (
+                                                                <span className="text-muted-foreground/60">0.00</span>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="text-center">
+    <AttendanceBadge status={log.status} />
+</TableCell>
+                                                        <TableCell className="pr-6 text-center">
+                                                            {log.status === 'complete' ? (
+                                                                <span className="text-xs text-muted-foreground/50">—</span>
+                                                            ) : log.pending_ticket_id !== null ? (
+                                                                <div className="flex items-center justify-center gap-2">
+                                                                    <AttendanceBadge status="pending_review" />
                                                                     <Button
                                                                         size="sm"
                                                                         variant="ghost"
-                                                                        className="min-w-[6rem]"
+                                                                        className="h-7 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
                                                                         onClick={() =>
-                                                                            cancelRequest(
-                                                                                log.pending_ticket_id!,
-                                                                            )
+                                                                            cancelRequest(log.pending_ticket_id!)
                                                                         }
                                                                     >
                                                                         Cancel
                                                                     </Button>
                                                                 </div>
                                                             ) : (
-                                                                <ResolutionRequestDialog
-                                                                    date={
-                                                                        log.date
-                                                                    }
-                                                                    day={
-                                                                        log.day
-                                                                    }
-                                                                    status={
-                                                                        log.status
-                                                                    }
-                                                                    existingTimeIn={
-                                                                        log.time_in
-                                                                    }
-                                                                    existingTimeOut={
-                                                                        log.time_out
-                                                                    }
-                                                                />
+                                                                <div className="flex justify-center">
+                                                                    <ResolutionRequestDialog
+                                                                        date={log.date}
+                                                                        day={log.day}
+                                                                        status={log.status}
+                                                                        existingTimeIn={log.time_in}
+                                                                        existingTimeOut={log.time_out}
+                                                                    />
+                                                                </div>
                                                             )}
-                                                        </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            })}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+
+                                {/* Mobile Cards View */}
+                                <div className="divide-y divide-border overflow-hidden rounded-lg border sm:hidden">
+                                    {logs.data.map((log) => {
+
+                                        return (
+                                            <div
+                                                key={log.date}
+                                                className="space-y-3 bg-card p-4"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <p className="text-sm font-semibold text-foreground">
+                                                            {log.date}
+                                                        </p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {log.day}
+                                                        </p>
                                                     </div>
+                                                    <AttendanceBadge status={log.status} />
+                                                </div>
+
+                                                <div className="grid grid-cols-3 gap-2 text-center">
+                                                    <div className="rounded-lg bg-muted/40 p-2">
+                                                        <p className="text-[10px] font-medium text-muted-foreground uppercase">
+                                                            Time In
+                                                        </p>
+                                                        <p className="mt-0.5 text-xs font-semibold tabular-nums">
+                                                            {log.time_in ?? '—'}
+                                                        </p>
+                                                    </div>
+                                                    <div className="rounded-lg bg-muted/40 p-2">
+                                                        <p className="text-[10px] font-medium text-muted-foreground uppercase">
+                                                            Time Out
+                                                        </p>
+                                                        <p className="mt-0.5 text-xs font-semibold tabular-nums">
+                                                            {log.time_out ?? '—'}
+                                                        </p>
+                                                    </div>
+                                                    <div className="rounded-lg bg-muted/40 p-2">
+                                                        <p className="text-[10px] font-medium text-muted-foreground uppercase">
+                                                            Hours
+                                                        </p>
+                                                        <p className="mt-0.5 text-xs font-semibold tabular-nums">
+                                                            {log.hours_rendered.toFixed(2)}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center justify-end pt-1">
+                                                    {log.status === 'complete' ? (
+                                                        <span className="text-xs text-muted-foreground/60">
+                                                            Complete
+                                                        </span>
+                                                    ) : log.pending_ticket_id !== null ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <AttendanceBadge status="pending_review" />
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                className="h-7 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                                                onClick={() =>
+                                                                    cancelRequest(log.pending_ticket_id!)
+                                                                }
+                                                            >
+                                                                Cancel
+                                                            </Button>
+                                                        </div>
+                                                    ) : (
+                                                        <ResolutionRequestDialog
+                                                            date={log.date}
+                                                            day={log.day}
+                                                            status={log.status}
+                                                            existingTimeIn={log.time_in}
+                                                            existingTimeOut={log.time_out}
+                                                        />
+                                                    )}
                                                 </div>
                                             </div>
                                         );
                                     })}
                                 </div>
 
-                                <div className="hidden overflow-x-auto sm:block">
-                                    <table className="w-full text-sm">
-                                        <thead>
-                                            <tr className="border-b text-left text-muted-foreground">
-                                                <th className="py-2 pr-4 font-medium">
-                                                    Date
-                                                </th>
-                                                <th className="py-2 pr-4 font-medium">
-                                                    Time In
-                                                </th>
-                                                <th className="py-2 pr-4 font-medium">
-                                                    Time Out
-                                                </th>
-                                                <th className="py-2 pr-4 font-medium">
-                                                    Hours
-                                                </th>
-                                                <th className="py-2 pr-4 font-medium">
-                                                    Status
-                                                </th>
-                                                <th className="py-2 font-medium">
-                                                    Action
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {logs.map((log) => {
-                                                const badge =
-                                                    STATUS_META[log.status];
-
-                                                return (
-                                                <tr
-                                                    key={log.date}
-                                                    className="border-b last:border-0 hover:bg-muted/40"
-                                                >
-                                                    <td className="py-2.5 pr-4 whitespace-nowrap">
-                                                        {log.date}
-                                                        <span className="ml-1 text-xs text-muted-foreground">
-                                                            {log.day.slice(
-                                                                0,
-                                                                3,
-                                                            )}
-                                                        </span>
-                                                    </td>
-                                                    <td className="py-2.5 pr-4 whitespace-nowrap">
-                                                        {log.time_in ?? '—'}
-                                                    </td>
-                                                    <td className="py-2.5 pr-4 whitespace-nowrap">
-                                                        {log.time_out ?? '—'}
-                                                    </td>
-                                                    <td className="py-2.5 pr-4 tabular-nums">
-                                                        {log.hours_rendered.toFixed(
-                                                            2,
-                                                        )}
-                                                    </td>
-                                                    <td className="py-2.5">
-                                                        <Badge
-                                                            className={
-                                                                badge.className
-                                                            }
-                                                        >
-                                                            {badge.label}
-                                                        </Badge>
-                                                    </td>
-                                                    <td className="py-2">
-                                                        {log.status ===
-                                                        'complete' ? (
-                                                            <span className="text-muted-foreground">
-                                                                —
-                                                            </span>
-                                                        ) : log.pending_ticket_id !==
-                                                          null ? (
-                                                            <div className="flex items-center gap-2">
-                                                                <Badge variant="secondary">
-                                                                    Pending
-                                                                </Badge>
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="ghost"
-                                                                    onClick={() =>
-                                                                        cancelRequest(
-                                                                            log.pending_ticket_id!,
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    Cancel
-                                                                </Button>
-                                                            </div>
-                                                        ) : (
-                                                            <ResolutionRequestDialog
-                                                                date={log.date}
-                                                                day={log.day}
-                                                                status={
-                                                                    log.status
-                                                                }
-                                                                existingTimeIn={
-                                                                    log.time_in
-                                                                }
-                                                                existingTimeOut={
-                                                                    log.time_out
-                                                                }
-                                                            />
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+                                {/* Pagination Controls */}
+                                <NumberedPagination
+                                    meta={logs}
+                                    itemLabel="attendance record"
+                                    onPageChange={goToPage}
+                                    onPerPageChange={changePerPage}
+                                    idPrefix="intern-attendance-per-page"
+                                />
+                            </>
                         )}
                     </CardContent>
                 </Card>

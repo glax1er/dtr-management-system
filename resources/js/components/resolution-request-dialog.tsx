@@ -1,5 +1,6 @@
 import { useForm } from '@inertiajs/react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import {
@@ -67,8 +68,15 @@ export function ResolutionRequestDialog({
     const handleSubmit = () => {
         form.post('/intern/resolution-tickets', {
             preserveScroll: true,
-            onSuccess: closeAndReset,
-            onError: () => setStep('form'),
+            onSuccess: () => {
+                toast.success('Resolution request submitted for review.');
+                closeAndReset();
+            },
+            onError: (errors) => {
+                const msg = Object.values(errors)[0] ?? 'Could not submit resolution request.';
+                toast.error(msg);
+                setStep('form');
+            },
         });
     };
 
