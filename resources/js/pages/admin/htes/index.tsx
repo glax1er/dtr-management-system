@@ -307,7 +307,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                         Host Training Establishments
                     </h1>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         {/* Desktop: full search input */}
                         <form onSubmit={applySearch} className="relative hidden sm:block">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -396,7 +396,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                             applySearch(e);
                             setMobileSearchOpen(false);
                         }}
-                        className="flex items-center gap-2 sm:hidden"
+                        className="flex items-center gap-2 sm:hidden w-full"
                     >
                         <div className="relative flex-1">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />

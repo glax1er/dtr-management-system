@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\InternProfile;
+use App\Notifications\InternApprovalNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -19,6 +20,8 @@ class InternApprovalController extends Controller
             'qr_code_value' => (string) Str::uuid(),
         ]);
 
+        $internProfile->user?->notify(new InternApprovalNotification($internProfile, 'approved'));
+
         Inertia::flash('toast', ['type' => 'success', 'message' => "{$internProfile->user->name} has been approved."]);
         return back();
     }
@@ -28,6 +31,8 @@ class InternApprovalController extends Controller
         $internProfile->update([
             'status' => 'rejected',
         ]);
+
+        $internProfile->user?->notify(new InternApprovalNotification($internProfile, 'rejected'));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "{$internProfile->user->name} has been rejected."]);
         return back();

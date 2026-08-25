@@ -19,7 +19,7 @@ final readonly class ScanResult
         public string $idNumber,
         public string $programName,
         public string $hteName,
-        public ?string $photoUrl,
+        public ?string $photoUrl = null,
         public ScanLabel $label,
         public CarbonInterface $timestamp,
         public bool $isDuplicate,

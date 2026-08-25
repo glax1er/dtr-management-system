@@ -79,7 +79,8 @@ const GROUP_ORDER = [
 ];
 
 export default function NotificationsPage() {
-    const { notifications } = usePage<PageProps>().props;
+    const { auth, notifications } = usePage<PageProps>().props;
+    const isAdmin = auth?.user?.role === 'admin';
 
     const count = notifications?.count ?? 0;
     const items = useMemo(
@@ -130,14 +131,15 @@ export default function NotificationsPage() {
             const unread = !notification.read_at;
 
             if (statusFilter === 'unread' && !unread) {
-return false;
-}
+                return false;
+            }
 
             if (statusFilter === 'read' && unread) {
-return false;
-}
+                return false;
+            }
 
             if (
+                !isAdmin &&
                 categoryFilter !== 'all' &&
                 getNotificationCategory(notification) !== categoryFilter
             ) {
@@ -154,7 +156,7 @@ return false;
 
             return true;
         });
-    }, [items, statusFilter, categoryFilter, query]);
+    }, [items, statusFilter, categoryFilter, query, isAdmin]);
 
     const groups = useMemo(() => {
         const buckets = new Map<string, Notification[]>();
@@ -173,7 +175,9 @@ return false;
     }, [filteredItems]);
 
     const isFiltering =
-        statusFilter !== 'all' || categoryFilter !== 'all' || query !== '';
+        statusFilter !== 'all' ||
+        (!isAdmin && categoryFilter !== 'all') ||
+        query !== '';
 
     return (
         <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 p-4">
@@ -238,28 +242,32 @@ return false;
                             ))}
                         </div>
 
-                        <div className="hidden h-5 w-px bg-border lg:block" />
+                        {!isAdmin && (
+                            <>
+                                <div className="hidden h-5 w-px bg-border lg:block" />
 
-                        {/* Category filter */}
-                        <div className="flex flex-wrap gap-1.5">
-                            {CATEGORY_FILTERS.map((filter) => (
-                                <button
-                                    key={filter.value}
-                                    type="button"
-                                    onClick={() =>
-                                        setCategoryFilter(filter.value)
-                                    }
-                                    className={cn(
-                                        'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-                                        categoryFilter === filter.value
-                                            ? 'border-foreground/80 bg-foreground/5 text-foreground'
-                                            : 'border-border bg-transparent text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-                                    )}
-                                >
-                                    {filter.label}
-                                </button>
-                            ))}
-                        </div>
+                                {/* Category filter */}
+                                <div className="flex flex-wrap gap-1.5">
+                                    {CATEGORY_FILTERS.map((filter) => (
+                                        <button
+                                            key={filter.value}
+                                            type="button"
+                                            onClick={() =>
+                                                setCategoryFilter(filter.value)
+                                            }
+                                            className={cn(
+                                                'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+                                                categoryFilter === filter.value
+                                                    ? 'border-foreground/80 bg-foreground/5 text-foreground'
+                                                    : 'border-border bg-transparent text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                                            )}
+                                        >
+                                            {filter.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             )}
@@ -275,8 +283,9 @@ return false;
                             No notifications yet
                         </p>
                         <p className="mx-auto max-w-sm text-sm text-muted-foreground">
-                            Updates about your requests and documents will
-                            show up here as soon as something happens.
+                            {isAdmin
+                                ? 'Updates about new intern registrations and system activity will show up here as soon as something happens.'
+                                : 'Updates about your requests and documents will show up here as soon as something happens.'}
                         </p>
                     </div>
                 </div>

@@ -141,7 +141,7 @@ export function InternStatsPanel({ interns, month }: InternStatsPanelProps) {
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                 <XAxis dataKey="date" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
                                 <YAxis tick={{ fontSize: 10 }} width={28} />
-                                <Tooltip formatter={(value: number | string | undefined) => [`${value} hrs`, 'Hours']} />
+                                <Tooltip formatter={(value: any) => [`${value} hrs`, 'Hours']} />
                                 <Bar dataKey="hours" fill="#111827" radius={[3, 3, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>

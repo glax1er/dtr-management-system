@@ -91,7 +91,7 @@ test('a day with no time-in shows missing_time_in punctuality, without crashing'
     AttendanceLog::create([
         'intern_user_id' => $intern->id,
         'supervisor_user_id' => $supervisor->id,
-        'scan_timestamp' => Carbon::parse('2026-07-20 14:00:00', 'Asia/Manila'),
+        'scan_timestamp' => Carbon::parse('2026-07-20 17:00:00', 'Asia/Manila'),
     ]);
 
     $this->actingAs($supervisor)
@@ -99,7 +99,7 @@ test('a day with no time-in shows missing_time_in punctuality, without crashing'
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('supervisor/interns')
-            ->has('logs', 1, fn ($log) => $log
+            ->has('logs.data', 1, fn ($log) => $log
                 ->where('punctuality', 'missing_time_in')
                 ->where('time_in', null)
                 ->etc()
@@ -127,7 +127,7 @@ test('a time-in at or before the expected start time is marked on_time', functio
         ->get(route('supervisor.interns.index', ['month' => '2026-07']))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->has('logs', 1, fn ($log) => $log
+            ->has('logs.data', 1, fn ($log) => $log
                 ->where('punctuality', 'on_time')
                 ->etc()
             )
@@ -154,7 +154,7 @@ test('a time-in after the expected start time (but before the cutoff) is marked 
         ->get(route('supervisor.interns.index', ['month' => '2026-07']))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->has('logs', 1, fn ($log) => $log
+            ->has('logs.data', 1, fn ($log) => $log
                 ->where('punctuality', 'late')
                 ->etc()
             )

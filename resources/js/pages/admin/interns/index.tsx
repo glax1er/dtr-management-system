@@ -1,12 +1,29 @@
 import { Head, router } from '@inertiajs/react';
+import {
+    GraduationCap,
+    LayoutGrid,
+    Search,
+    Table as TableIcon,
+    X,
+} from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import { InternActions } from '@/components/intern-actions';
+import { NumberedPagination } from '@/components/numbered-pagination';
+import type { Paginated } from '@/components/pagination-footer';
+import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import PaginationFooter from '@/components/pagination-footer';
-import type { Paginated } from '@/components/pagination-footer';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import { dashboard } from '@/routes';
 
 interface Intern {
@@ -31,6 +48,8 @@ interface InternsIndexProps {
     filters: Filters;
 }
 
+type ViewMode = 'table' | 'grid';
+
 const TABS: { label: string; value: string }[] = [
     { label: 'Pending', value: 'pending' },
     { label: 'Approved', value: 'approved' },
@@ -38,11 +57,16 @@ const TABS: { label: string; value: string }[] = [
 ];
 
 export default function InternsIndex({ interns, currentStatus, filters }: InternsIndexProps) {
+    const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters.search);
+    const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
-    // Base params shared by every navigation action. Anything that
-    // changes what rows match (status, search) resets back to page 1
-    // by simply omitting the page param.
+    const [undoOpen, setUndoOpen] = useState(false);
+    const [undoTarget, setUndoTarget] = useState<Intern | null>(null);
+
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState<Intern | null>(null);
+
     const baseParams = () => ({
         status: currentStatus,
         search: filters.search || undefined,
@@ -54,212 +78,325 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
     };
 
     const switchTab = (status: string) => {
-        visit({ ...baseParams(), status, search: filters.search || undefined });
+        setSearch('');
+        visit({ status, per_page: String(filters.per_page), page: undefined });
     };
 
     const applySearch = (e: FormEvent) => {
         e.preventDefault();
-        visit({ ...baseParams(), search: search || undefined });
+        visit({ ...baseParams(), search: search || undefined, page: undefined });
     };
 
     const clearSearch = () => {
         setSearch('');
-        visit({ ...baseParams(), search: undefined });
+        visit({ ...baseParams(), search: undefined, page: undefined });
     };
 
-    const goToPage = (page: number) => {
-        visit({ ...baseParams(), page: String(page) });
+    const goToPage = (page: number) => visit({ ...baseParams(), page: String(page) });
+    const changePerPage = (perPage: number) =>
+        visit({ ...baseParams(), per_page: String(perPage), page: undefined });
+
+    const approve = (intern: Intern) => {
+        router.post(`/admin/interns/${intern.user_id}/approve`, {}, { preserveScroll: true });
     };
 
-    const changePerPage = (perPage: number) => {
-        visit({ ...baseParams(), per_page: String(perPage) });
+    const reject = (intern: Intern) => {
+        router.post(`/admin/interns/${intern.user_id}/reject`, {}, { preserveScroll: true });
     };
 
-    const approve = (userId: number) => {
-        router.post(`/admin/interns/${userId}/approve`, {}, { preserveScroll: true });
+    const openUndoDialog = (intern: Intern) => {
+        setUndoTarget(intern);
+        setUndoOpen(true);
     };
 
-    const reject = (userId: number) => {
-        router.post(`/admin/interns/${userId}/reject`, {}, { preserveScroll: true });
+    const submitUndo = () => {
+        if (!undoTarget) return;
+        router.post(`/admin/interns/${undoTarget.user_id}/undo`, {}, { preserveScroll: true });
+        setUndoOpen(false);
+        setUndoTarget(null);
     };
 
-    const undo = (userId: number, name: string) => {
-        if (confirm(`Revert ${name} back to pending?`)) {
-            router.post(`/admin/interns/${userId}/undo`, {}, { preserveScroll: true });
-        }
+    const openDeleteDialog = (intern: Intern) => {
+        setDeleteTarget(intern);
+        setDeleteOpen(true);
     };
 
-    const deleteIntern = (userId: number, name: string) => {
-        if (confirm(`Move ${name}'s record to Archives?`)) {
-            router.delete(`/admin/interns/${userId}`, { preserveScroll: true });
-        }
+    const submitDelete = () => {
+        if (!deleteTarget) return;
+        router.delete(`/admin/interns/${deleteTarget.user_id}`, { preserveScroll: true });
+        setDeleteOpen(false);
+        setDeleteTarget(null);
     };
 
     return (
         <>
             <Head title="Interns" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-3 sm:p-4">
-                <div>
-                    <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Interns</h1>
-                    <p className="text-muted-foreground text-sm">Manage intern registrations by status.</p>
-                </div>
 
-                <div className="flex flex-wrap gap-2">
-                    {TABS.map((tab) => (
-                        <Button
-                            key={tab.value}
-                            variant={currentStatus === tab.value ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => switchTab(tab.value)}
-                        >
-                            {tab.label}
-                        </Button>
-                    ))}
-                </div>
+            <div className="flex h-full flex-1 flex-col gap-4 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                            <GraduationCap className="size-5" />
+                        </span>
+                        Interns
+                    </h1>
 
-                <Card className="flex-1">
-                    <CardHeader>
-                        <CardTitle className="capitalize">{currentStatus} Interns</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-col gap-5">
-                        <form onSubmit={applySearch} className="flex flex-col gap-1.5">
-                            <Label htmlFor="search" className="text-xs text-muted-foreground">
-                                Search by name
-                            </Label>
-                            <div className="flex gap-2">
-                                <Input
-                                    id="search"
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="e.g. Juan Dela Cruz"
-                                    className="w-full sm:w-64"
-                                />
-                                <Button type="submit" variant="secondary" size="sm">
-                                    Search
-                                </Button>
-                                {filters.search !== '' && (
-                                    <Button type="button" variant="ghost" size="sm" onClick={clearSearch}>
-                                        Clear
-                                    </Button>
-                                )}
-                            </div>
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                        <form onSubmit={applySearch} className="relative hidden sm:block">
+                            <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                            <input
+                                type="text"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder="Search interns…"
+                                className="h-9 w-48 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
+                            />
+                            {search && (
+                                <button
+                                    type="button"
+                                    onClick={clearSearch}
+                                    className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                >
+                                    <X className="size-3.5" />
+                                </button>
+                            )}
                         </form>
 
-                        {interns.data.length === 0 ? (
-                            <p className="py-8 text-center text-sm text-muted-foreground">
-                                No {currentStatus} interns{filters.search ? ' match your search.' : '.'}
-                            </p>
-                        ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead>
-                                        <tr className="border-b text-left text-muted-foreground">
-                                            <th className="py-2 pr-4 font-medium">Name</th>
-                                            <th className="py-2 pr-4 font-medium">ID Number</th>
-                                            <th className="py-2 pr-4 font-medium">Program</th>
-                                            <th className="py-2 pr-4 font-medium">HTE</th>
-                                            <th className="py-2 pr-4 font-medium">Registered</th>
-                                            <th className="py-2 font-medium">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {interns.data.map((intern) => (
-                                            <tr
-                                                key={intern.user_id}
-                                                className="border-b last:border-0 hover:bg-muted/40"
-                                            >
-                                                <td className="py-2.5 pr-4">
-                                                    <p className="font-medium whitespace-nowrap">
-                                                        {intern.name}
-                                                    </p>
-                                                    <p
-                                                        className="max-w-[180px] truncate text-xs text-muted-foreground"
-                                                        title={intern.email}
-                                                    >
-                                                        {intern.email}
-                                                    </p>
-                                                </td>
-                                                <td className="py-2.5 pr-4 whitespace-nowrap">
-                                                    {intern.id_number}
-                                                </td>
-                                                <td
-                                                    className="max-w-[160px] truncate py-2.5 pr-4"
-                                                    title={intern.program_name}
-                                                >
-                                                    {intern.program_name}
-                                                </td>
-                                                <td
-                                                    className="max-w-[160px] truncate py-2.5 pr-4"
-                                                    title={intern.hte_name}
-                                                >
-                                                    {intern.hte_name}
-                                                </td>
-                                                <td className="py-2.5 pr-4 whitespace-nowrap text-muted-foreground">
-                                                    {intern.registered_at}
-                                                </td>
-                                                <td className="py-2.5">
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        {intern.status === 'pending' && (
-                                                            <>
-                                                                <Button
-                                                                    size="sm"
-                                                                    onClick={() => approve(intern.user_id)}
-                                                                >
-                                                                    Approve
-                                                                </Button>
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="outline"
-                                                                    onClick={() => reject(intern.user_id)}
-                                                                >
-                                                                    Reject
-                                                                </Button>
-                                                            </>
-                                                        )}
+                        <button
+                            type="button"
+                            onClick={() => setMobileSearchOpen((o) => !o)}
+                            className="inline-flex size-9 shrink-0 items-center justify-center rounded-md border bg-background text-muted-foreground hover:text-foreground sm:hidden"
+                            aria-label="Toggle search"
+                        >
+                            {mobileSearchOpen ? <X className="size-4" /> : <Search className="size-4" />}
+                        </button>
 
-                                                        {(intern.status === 'approved' ||
-                                                            intern.status === 'rejected') && (
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                onClick={() =>
-                                                                    undo(intern.user_id, intern.name)
-                                                                }
-                                                            >
-                                                                Undo
-                                                            </Button>
-                                                        )}
+                        <div className="overflow-x-auto max-w-[calc(100%-3rem)] sm:max-w-none scrollbar-none">
+                            <Tabs value={currentStatus} onValueChange={switchTab}>
+                                <TabsList className="w-auto">
+                                    {TABS.map((tab) => (
+                                        <TabsTrigger key={tab.value} value={tab.value} className="text-xs sm:text-sm px-2 sm:px-3">
+                                            {tab.label}
+                                        </TabsTrigger>
+                                    ))}
+                                </TabsList>
+                            </Tabs>
+                        </div>
 
-                                                        {intern.status === 'rejected' && (
-                                                            <Button
-                                                                size="sm"
-                                                                variant="destructive"
-                                                                onClick={() =>
-                                                                    deleteIntern(intern.user_id, intern.name)
-                                                                }
+                        <div className="hidden sm:block">
+                            <div className="inline-flex rounded-md border p-0.5">
+                                <Button
+                                    variant={view === 'table' ? 'secondary' : 'ghost'}
+                                    size="icon"
+                                    className="size-8"
+                                    onClick={() => setView('table')}
+                                >
+                                    <TableIcon className="size-4" />
+                                </Button>
+                                <Button
+                                    variant={view === 'grid' ? 'secondary' : 'ghost'}
+                                    size="icon"
+                                    className="size-8"
+                                    onClick={() => setView('grid')}
+                                >
+                                    <LayoutGrid className="size-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {mobileSearchOpen && (
+                    <form
+                        onSubmit={(e) => { applySearch(e); setMobileSearchOpen(false); }}
+                        className="flex items-center gap-2 sm:hidden w-full"
+                    >
+                        <div className="relative flex-1">
+                            <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                            <input
+                                autoFocus
+                                type="text"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder="Search interns…"
+                                className="h-9 w-full rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
+                            />
+                            {search && (
+                                <button
+                                    type="button"
+                                    onClick={() => { clearSearch(); setMobileSearchOpen(false); }}
+                                    className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                >
+                                    <X className="size-3.5" />
+                                </button>
+                            )}
+                        </div>
+                        <Button type="submit" size="sm">Search</Button>
+                    </form>
+                )}
+
+                {interns.data.length === 0 ? (
+                    <Card>
+                        <CardContent className="py-8 text-center text-sm text-muted-foreground">
+                            No {currentStatus} interns{filters.search ? ' match your search.' : '.'}
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <>
+                        {view === 'table' && (
+                            <div className="hidden sm:block">
+                                <Card>
+                                    <CardContent className="p-0">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="px-6">Name</TableHead>
+                                                    <TableHead className="px-6 text-center">ID Number</TableHead>
+                                                    <TableHead className="px-6 text-center">Program</TableHead>
+                                                    <TableHead className="px-6 text-center">HTE</TableHead>
+                                                    <TableHead className="px-6 text-center">Status</TableHead>
+                                                    <TableHead className="px-6 text-center">Registered</TableHead>
+                                                    <TableHead className="px-6 text-center">Actions</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {interns.data.map((intern) => (
+                                                    <TableRow key={intern.user_id}>
+                                                        <TableCell className="px-6">
+                                                            <p className="font-medium whitespace-nowrap">{intern.name}</p>
+                                                            <p
+                                                                className="max-w-[180px] truncate text-xs text-muted-foreground"
+                                                                title={intern.email}
                                                             >
-                                                                Delete
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                                                {intern.email}
+                                                            </p>
+                                                        </TableCell>
+                                                        <TableCell className="px-6 text-center whitespace-nowrap">
+                                                            {intern.id_number}
+                                                        </TableCell>
+                                                        <TableCell
+                                                            className="max-w-[160px] truncate px-6 text-center"
+                                                            title={intern.program_name}
+                                                        >
+                                                            {intern.program_name}
+                                                        </TableCell>
+                                                        <TableCell
+                                                            className="max-w-[160px] truncate px-6 text-center"
+                                                            title={intern.hte_name}
+                                                        >
+                                                            {intern.hte_name}
+                                                        </TableCell>
+                                                        <TableCell className="px-6 text-center">
+                                                            <StatusBadge status={intern.status} />
+                                                        </TableCell>
+                                                        <TableCell className="px-6 text-center whitespace-nowrap text-muted-foreground">
+                                                            {intern.registered_at}
+                                                        </TableCell>
+                                                        <TableCell className="px-6 text-center">
+                                                            <InternActions
+                                                                intern={intern}
+                                                                onApprove={approve}
+                                                                onReject={reject}
+                                                                onUndo={openUndoDialog}
+                                                                onDelete={openDeleteDialog}
+                                                            />
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                        <NumberedPagination
+                                            meta={interns}
+                                            itemLabel="intern"
+                                            onPageChange={goToPage}
+                                            onPerPageChange={changePerPage}
+                                            idPrefix="interns-table-per-page"
+                                        />
+                                    </CardContent>
+                                </Card>
                             </div>
                         )}
 
-                        <PaginationFooter
-                            meta={interns}
-                            itemLabel="intern"
-                            onPageChange={goToPage}
-                            onPerPageChange={changePerPage}
-                            idPrefix="interns-per-page"
-                        />
-                    </CardContent>
-                </Card>
+                        <div className={view === 'table' ? 'sm:hidden' : ''}>
+                                                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                {interns.data.map((intern) => (
+                                    <Card key={intern.user_id}>
+                                        <CardHeader>
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="min-w-0">
+                                                    <CardTitle className="truncate text-base">
+                                                        {intern.name}
+                                                    </CardTitle>
+                                                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                                                        {intern.email}
+                                                    </p>
+                                                    <div className="mt-2">
+                                                        <StatusBadge status={intern.status} />
+                                                    </div>
+                                                </div>
+                                                <div className="shrink-0">
+                                                    <InternActions
+                                                        intern={intern}
+                                                        onApprove={approve}
+                                                        onReject={reject}
+                                                        onUndo={openUndoDialog}
+                                                        onDelete={openDeleteDialog}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent className="space-y-2 text-sm">
+                                            <div className="flex justify-between gap-2">
+                                                <span className="text-muted-foreground">ID Number</span>
+                                                <span>{intern.id_number}</span>
+                                            </div>
+                                            <div className="flex justify-between gap-2">
+                                                <span className="shrink-0 text-muted-foreground">Program</span>
+                                                <span className="truncate text-right">{intern.program_name}</span>
+                                            </div>
+                                            <div className="flex justify-between gap-2">
+                                                <span className="shrink-0 text-muted-foreground">HTE</span>
+                                                <span className="truncate text-right">{intern.hte_name}</span>
+                                            </div>
+                                            <div className="flex justify-between gap-2">
+                                                <span className="text-muted-foreground">Registered</span>
+                                                <span>{intern.registered_at}</span>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                            <div className="mt-4">
+                                <NumberedPagination
+                                    meta={interns}
+                                    itemLabel="intern"
+                                    onPageChange={goToPage}
+                                    onPerPageChange={changePerPage}
+                                    idPrefix="interns-grid-per-page"
+                                />
+                            </div>
+                        </div>
+                    </>
+                )}
             </div>
+
+            <ConfirmationDialog
+                open={undoOpen}
+                onOpenChange={setUndoOpen}
+                title="Revert to Pending"
+                description={`Revert ${undoTarget?.name}'s status back to pending?`}
+                onConfirm={submitUndo}
+                confirmText="Revert"
+            />
+
+            <ConfirmationDialog
+                open={deleteOpen}
+                onOpenChange={setDeleteOpen}
+                title="Move to Archives"
+                description={`Move ${deleteTarget?.name}'s record to Archives?`}
+                onConfirm={submitDelete}
+                confirmText="Archive"
+            />
         </>
     );
 }
