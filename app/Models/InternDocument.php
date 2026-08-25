@@ -156,14 +156,87 @@ class InternDocument extends Model
         return $this->status === self::STATUS_REJECTED;
     }
 
-    public static function getTypeConfig(string $type): ?array
+    public static function getTypeConfig(string $type, ?int $programId = null): ?array
     {
-        return self::DOCUMENT_TYPES[$type] ?? null;
+        $base = self::DOCUMENT_TYPES[$type] ?? null;
+
+        $query = DocumentTemplate::withTrashed()->where('document_type', $type);
+        if ($programId) {
+            $query->where('program_id', $programId);
+        }
+        $template = $query->first();
+
+        if ($template) {
+            return [
+                'name' => $template->name ?: ($base['name'] ?? $type),
+                'category' => $template->category ?: ($base['category'] ?? 'General'),
+                'description' => $template->description ?: ($base['description'] ?? ''),
+                'required' => $template->required ?? ($base['required'] ?? true),
+                'is_custom' => (bool) $template->is_custom,
+            ];
+        }
+
+        return $base;
     }
 
-    public static function isValidType(string $type): bool
+    public static function isValidType(string $type, ?int $programId = null): bool
     {
-        return array_key_exists($type, self::DOCUMENT_TYPES);
+        if (array_key_exists($type, self::DOCUMENT_TYPES)) {
+            return true;
+        }
+
+        if ($programId) {
+            return DocumentTemplate::where('program_id', $programId)
+                ->where('document_type', $type)
+                ->exists();
+        }
+
+        return DocumentTemplate::where('document_type', $type)->exists();
+    }
+
+    public static function getDocumentTypesForProgram(?int $programId): array
+    {
+        $types = self::DOCUMENT_TYPES;
+
+        if (! $programId) {
+            return $types;
+        }
+
+        $templates = DocumentTemplate::where('program_id', $programId)->get()->keyBy('document_type');
+        $trashedTemplates = DocumentTemplate::onlyTrashed()->where('program_id', $programId)->get()->keyBy('document_type');
+
+        $result = [];
+
+        // 1. Predefined types (unless archived/trashed)
+        foreach ($types as $key => $config) {
+            if ($trashedTemplates->has($key)) {
+                continue;
+            }
+
+            $template = $templates->get($key);
+            $result[$key] = [
+                'name' => $template?->name ?: $config['name'],
+                'category' => $template?->category ?: $config['category'],
+                'description' => $template?->description ?: $config['description'],
+                'required' => $template ? (bool) $template->required : (bool) $config['required'],
+                'is_custom' => false,
+            ];
+        }
+
+        // 2. Custom active types
+        foreach ($templates as $key => $template) {
+            if ($template->is_custom && ! isset($result[$key])) {
+                $result[$key] = [
+                    'name' => $template->display_name,
+                    'category' => $template->display_category,
+                    'description' => $template->display_description,
+                    'required' => (bool) $template->required,
+                    'is_custom' => true,
+                ];
+            }
+        }
+
+        return $result;
     }
 
     public function getFormattedFileSizeAttribute(): string

@@ -9,20 +9,22 @@ import {
     Download,
     FileCheck,
     FileEdit,
+    FilePlus,
     FileStack,
     FileText,
     Folder,
     FolderArchive,
     FolderOpen,
     HardDrive,
-    HelpCircle,
     Info,
     LayoutGrid,
     Loader2,
+    Pencil,
     Plus,
     RefreshCw,
     Search,
     SlidersHorizontal,
+    Sparkles,
     Table as TableIcon,
     Trash2,
     UploadCloud,
@@ -36,10 +38,8 @@ import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
 } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import {
     Dialog,
@@ -77,6 +77,7 @@ interface TemplateChecklistItem {
     category: string;
     description: string;
     required: boolean;
+    is_custom: boolean;
     template_id: number | null;
     has_template: boolean;
     original_filename: string | null;
@@ -99,9 +100,13 @@ interface ArchivedTemplate {
     document_type: string;
     name: string;
     category: string;
-    original_filename: string;
-    file_size: string;
-    file_extension: string;
+    description: string;
+    required: boolean;
+    is_custom: boolean;
+    has_template: boolean;
+    original_filename: string | null;
+    file_size: string | null;
+    file_extension: string | null;
     instructions: string | null;
     deleted_at: string;
     deleted_at_human: string;
@@ -112,6 +117,7 @@ interface DocumentTemplatesProps {
     checklist: TemplateChecklistItem[];
     folders: FolderMeta[];
     archived: ArchivedTemplate[];
+    categories?: string[];
     program: {
         program_id: number | null;
         program_name: string;
@@ -122,14 +128,17 @@ interface DocumentTemplatesProps {
 }
 
 type ViewMode = 'table' | 'grid';
-type StatusFilter = 'all' | 'configured' | 'missing';
+type StatusFilter = 'all' | 'configured' | 'missing' | 'required' | 'optional';
 
 const MAX_TEMPLATE_SIZE = 15 * 1024 * 1024; // 15MB
+
+const DEFAULT_CATEGORIES = ['Pre Deployment', 'During Deployment', 'Evaluation Forms'];
 
 export default function DocumentTemplates({
     checklist,
     folders = [],
     archived = [],
+    categories = [],
     program,
     total_templates,
     total_types,
@@ -141,20 +150,49 @@ export default function DocumentTemplates({
     const [activeFolder, setActiveFolder] = useState<string>('all'); // 'all' | folder_name | 'trash'
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
-    // Upload / Edit modal state
-    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-    const [selectedItem, setSelectedItem] = useState<TemplateChecklistItem | null>(null);
-    const [selectedDocType, setSelectedDocType] = useState<string>('');
-    const [fileToUpload, setFileToUpload] = useState<File | null>(null);
-    const [instructions, setInstructions] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isDragOver, setIsDragOver] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    // ── All Available Categories List ────────────────────────────────────────
+    const availableCategories = useMemo(() => {
+        const set = new Set<string>([...DEFAULT_CATEGORIES, ...categories]);
+        checklist.forEach((item) => {
+            if (item.category) set.add(item.category);
+        });
+        return Array.from(set);
+    }, [categories, checklist]);
 
-    // View instructions modal state
+    // ── Add Document Modal State ─────────────────────────────────────────────
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [addName, setAddName] = useState('');
+    const [addCategory, setAddCategory] = useState('Pre Deployment');
+    const [isAddCustomCategory, setIsAddCustomCategory] = useState(false);
+    const [addCustomCategory, setAddCustomCategory] = useState('');
+    const [addDescription, setAddDescription] = useState('');
+    const [addRequired, setAddRequired] = useState(true);
+    const [addInstructions, setAddInstructions] = useState('');
+    const [addFile, setAddFile] = useState<File | null>(null);
+    const [isAddSubmitting, setIsAddSubmitting] = useState(false);
+    const [isAddDragOver, setIsAddDragOver] = useState(false);
+    const addFileInputRef = useRef<HTMLInputElement>(null);
+
+    // ── Edit Document Modal State ────────────────────────────────────────────
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editItem, setEditItem] = useState<TemplateChecklistItem | null>(null);
+    const [editName, setEditName] = useState('');
+    const [editCategory, setEditCategory] = useState('Pre Deployment');
+    const [isEditCustomCategory, setIsEditCustomCategory] = useState(false);
+    const [editCustomCategory, setEditCustomCategory] = useState('');
+    const [editDescription, setEditDescription] = useState('');
+    const [editRequired, setEditRequired] = useState(true);
+    const [editInstructions, setEditInstructions] = useState('');
+    const [editFile, setEditFile] = useState<File | null>(null);
+    const [removeTemplate, setRemoveTemplate] = useState(false);
+    const [isEditSubmitting, setIsEditSubmitting] = useState(false);
+    const [isEditDragOver, setIsEditDragOver] = useState(false);
+    const editFileInputRef = useRef<HTMLInputElement>(null);
+
+    // ── View Guidance Modal State ────────────────────────────────────────────
     const [instructionsModalItem, setInstructionsModalItem] = useState<TemplateChecklistItem | null>(null);
 
-    // Confirmation dialogs
+    // ── Confirmation Dialogs State ───────────────────────────────────────────
     const [archiveOpen, setArchiveOpen] = useState(false);
     const [archiveTarget, setArchiveTarget] = useState<TemplateChecklistItem | null>(null);
 
@@ -167,99 +205,156 @@ export default function DocumentTemplates({
     // Progress percentage
     const progressPercent = total_types > 0 ? Math.round((total_templates / total_types) * 100) : 0;
 
-    // ── Open Upload Modal ───────────────────────────────────────────────────
-    const openUploadModal = (item?: TemplateChecklistItem) => {
-        if (item) {
-            setSelectedItem(item);
-            setSelectedDocType(item.document_type);
-            setInstructions(item.instructions || '');
+    // ── Open Add Modal ───────────────────────────────────────────────────────
+    const openAddModal = () => {
+        setAddName('');
+        setAddCategory(availableCategories[0] || 'Pre Deployment');
+        setIsAddCustomCategory(false);
+        setAddCustomCategory('');
+        setAddDescription('');
+        setAddRequired(true);
+        setAddInstructions('');
+        setAddFile(null);
+        setIsAddModalOpen(true);
+    };
+
+    // ── Open Edit Modal ──────────────────────────────────────────────────────
+    const openEditModal = (item: TemplateChecklistItem) => {
+        setEditItem(item);
+        setEditName(item.name);
+        if (availableCategories.includes(item.category)) {
+            setEditCategory(item.category);
+            setIsEditCustomCategory(false);
+            setEditCustomCategory('');
         } else {
-            const firstWithoutTemplate = checklist.find((c) => !c.has_template) || checklist[0];
-            setSelectedItem(firstWithoutTemplate || null);
-            setSelectedDocType(firstWithoutTemplate?.document_type || '');
-            setInstructions(firstWithoutTemplate?.instructions || '');
+            setEditCategory('__custom__');
+            setIsEditCustomCategory(true);
+            setEditCustomCategory(item.category);
         }
-        setFileToUpload(null);
-        setIsUploadModalOpen(true);
+        setEditDescription(item.description || '');
+        setEditRequired(item.required);
+        setEditInstructions(item.instructions || '');
+        setEditFile(null);
+        setRemoveTemplate(false);
+        setIsEditModalOpen(true);
     };
 
-    const handleDocTypeChange = (typeKey: string) => {
-        setSelectedDocType(typeKey);
-        const item = checklist.find((c) => c.document_type === typeKey) || null;
-        setSelectedItem(item);
-        if (item) {
-            setInstructions(item.instructions || '');
-        }
-    };
-
-    const handleFile = (file: File) => {
+    const validateFile = (file: File): boolean => {
         const ext = file.name.split('.').pop()?.toLowerCase();
         if (!['pdf', 'docx', 'doc'].includes(ext || '')) {
-            toast.error('Invalid format. Blank templates must be PDF or Word (.pdf, .docx, .doc).');
-            return;
+            toast.error('Invalid format. Templates must be PDF or Microsoft Word (.pdf, .docx, .doc).');
+            return false;
         }
 
         if (file.size > MAX_TEMPLATE_SIZE) {
             toast.error('The selected template file is too large (max 15 MB).');
+            return false;
+        }
+
+        return true;
+    };
+
+    // ── Handle Add Submit ────────────────────────────────────────────────────
+    const handleAddSubmit = (e: FormEvent) => {
+        e.preventDefault();
+        const trimmedName = addName.trim();
+        if (!trimmedName) {
+            toast.error('Please enter a document title.');
             return;
         }
 
-        setFileToUpload(file);
-    };
-
-    const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) handleFile(file);
-    };
-
-    const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragOver(false);
-        const file = e.dataTransfer.files?.[0];
-        if (file) handleFile(file);
-    };
-
-    // ── Submit Template ──────────────────────────────────────────────────────
-    const handleSubmitTemplate = (e: FormEvent) => {
-        e.preventDefault();
-        if (!selectedDocType) {
-            toast.error('Please select a document type.');
-            return;
-        }
-
-        const currentConfig = checklist.find((c) => c.document_type === selectedDocType);
-        if (!currentConfig?.has_template && !fileToUpload) {
-            toast.error('Please select a template file to upload.');
+        const categoryVal = isAddCustomCategory ? addCustomCategory.trim() : addCategory.trim();
+        if (!categoryVal) {
+            toast.error('Please specify a category for this document.');
             return;
         }
 
         const formData = new FormData();
-        formData.append('document_type', selectedDocType);
-        if (fileToUpload) {
-            formData.append('file', fileToUpload);
+        formData.append('name', trimmedName);
+        formData.append('category', categoryVal);
+        if (addDescription.trim()) {
+            formData.append('description', addDescription.trim());
         }
-        if (instructions.trim()) {
-            formData.append('instructions', instructions.trim());
+        formData.append('required', addRequired ? '1' : '0');
+        if (addInstructions.trim()) {
+            formData.append('instructions', addInstructions.trim());
+        }
+        if (addFile) {
+            formData.append('file', addFile);
         }
 
-        setIsSubmitting(true);
+        setIsAddSubmitting(true);
 
         router.post('/supervisor/document-templates', formData, {
             preserveScroll: true,
             forceFormData: true,
             onSuccess: () => {
-                toast.success(`Template for "${currentConfig?.name || 'Document'}" saved successfully.`);
-                setIsUploadModalOpen(false);
-                setSelectedItem(null);
-                setFileToUpload(null);
-                setInstructions('');
+                toast.success(`Document requirement "${trimmedName}" added successfully.`);
+                setIsAddModalOpen(false);
+                setAddFile(null);
             },
             onError: (errors) => {
-                const msg = errors.file || errors.instructions || errors.document_type || 'Failed to save template.';
+                const msg = Object.values(errors)[0] as string || 'Failed to create document requirement.';
                 toast.error(msg);
             },
             onFinish: () => {
-                setIsSubmitting(false);
+                setIsAddSubmitting(false);
+            },
+        });
+    };
+
+    // ── Handle Edit Submit ───────────────────────────────────────────────────
+    const handleEditSubmit = (e: FormEvent) => {
+        e.preventDefault();
+        if (!editItem) return;
+
+        const trimmedName = editName.trim();
+        if (!trimmedName) {
+            toast.error('Please enter a document title.');
+            return;
+        }
+
+        const categoryVal = isEditCustomCategory ? editCustomCategory.trim() : editCategory.trim();
+        if (!categoryVal) {
+            toast.error('Please specify a category for this document.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('name', trimmedName);
+        formData.append('category', categoryVal);
+        if (editDescription.trim()) {
+            formData.append('description', editDescription.trim());
+        }
+        formData.append('required', editRequired ? '1' : '0');
+        if (editInstructions.trim()) {
+            formData.append('instructions', editInstructions.trim());
+        }
+        if (editFile) {
+            formData.append('file', editFile);
+        }
+        if (removeTemplate) {
+            formData.append('remove_template', '1');
+        }
+
+        setIsEditSubmitting(true);
+
+        router.post(`/supervisor/document-templates/${editItem.document_type}/update`, formData, {
+            preserveScroll: true,
+            forceFormData: true,
+            onSuccess: () => {
+                toast.success(`Document requirement "${trimmedName}" updated.`);
+                setIsEditModalOpen(false);
+                setEditItem(null);
+                setEditFile(null);
+                setRemoveTemplate(false);
+            },
+            onError: (errors) => {
+                const msg = Object.values(errors)[0] as string || 'Failed to update document requirement.';
+                toast.error(msg);
+            },
+            onFinish: () => {
+                setIsEditSubmitting(false);
             },
         });
     };
@@ -271,12 +366,16 @@ export default function DocumentTemplates({
     };
 
     const submitArchive = () => {
-        if (!archiveTarget?.template_id) return;
-        router.delete(`/supervisor/document-templates/${archiveTarget.template_id}`, {
+        if (!archiveTarget) return;
+        router.delete(`/supervisor/document-templates/${archiveTarget.document_type}`, {
             preserveScroll: true,
             onSuccess: () => {
+                toast.success(`Document "${archiveTarget.name}" moved to archive.`);
                 setArchiveOpen(false);
                 setArchiveTarget(null);
+            },
+            onError: () => {
+                toast.error('Failed to archive document.');
             },
         });
     };
@@ -292,8 +391,12 @@ export default function DocumentTemplates({
         router.post(`/supervisor/document-templates/${restoreTarget.id}/restore`, {}, {
             preserveScroll: true,
             onSuccess: () => {
+                toast.success(`Document "${restoreTarget.name}" restored successfully.`);
                 setRestoreOpen(false);
                 setRestoreTarget(null);
+            },
+            onError: () => {
+                toast.error('Failed to restore document.');
             },
         });
     };
@@ -309,8 +412,12 @@ export default function DocumentTemplates({
         router.delete(`/supervisor/document-templates/${forceDeleteTarget.id}/force`, {
             preserveScroll: true,
             onSuccess: () => {
+                toast.success(`Document "${forceDeleteTarget.name}" permanently deleted.`);
                 setForceDeleteOpen(false);
                 setForceDeleteTarget(null);
+            },
+            onError: () => {
+                toast.error('Failed to delete document.');
             },
         });
     };
@@ -326,6 +433,8 @@ export default function DocumentTemplates({
             // Status filter
             if (statusFilter === 'configured' && !item.has_template) return false;
             if (statusFilter === 'missing' && item.has_template) return false;
+            if (statusFilter === 'required' && !item.required) return false;
+            if (statusFilter === 'optional' && item.required) return false;
 
             // Search filter
             if (search.trim()) {
@@ -347,17 +456,11 @@ export default function DocumentTemplates({
         return archived.filter(
             (item) =>
                 item.name.toLowerCase().includes(query) ||
-                item.original_filename.toLowerCase().includes(query) ||
-                item.category.toLowerCase().includes(query)
+                (item.original_filename && item.original_filename.toLowerCase().includes(query)) ||
+                item.category.toLowerCase().includes(query) ||
+                (item.description && item.description.toLowerCase().includes(query))
         );
     }, [archived, search]);
-
-    // Distinct category names
-    const categoryNames = useMemo(() => {
-        return folders.length > 0
-            ? folders.map((f) => f.name)
-            : Array.from(new Set(checklist.map((c) => c.category)));
-    }, [folders, checklist]);
 
     const getFolderColorClass = (catName: string) => {
         const lower = catName.toLowerCase();
@@ -375,10 +478,17 @@ export default function DocumentTemplates({
                 iconBg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
             };
         }
+        if (lower.includes('eval')) {
+            return {
+                border: 'hover:border-emerald-500/50',
+                activeBorder: 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300',
+                iconBg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+            };
+        }
         return {
-            border: 'hover:border-emerald-500/50',
-            activeBorder: 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300',
-            iconBg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+            border: 'hover:border-purple-500/50',
+            activeBorder: 'border-purple-500 bg-purple-50/50 dark:bg-purple-950/20 text-purple-700 dark:text-purple-300',
+            iconBg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
         };
     };
 
@@ -407,7 +517,7 @@ export default function DocumentTemplates({
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search templates…"
+                                placeholder="Search documents…"
                                 className="h-9 w-48 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none lg:w-64"
                             />
                             {search && (
@@ -440,14 +550,16 @@ export default function DocumentTemplates({
                                         value={statusFilter}
                                         onValueChange={(val: StatusFilter) => setStatusFilter(val)}
                                     >
-                                        <SelectTrigger className="h-9 w-40">
+                                        <SelectTrigger className="h-9 w-44">
                                             <SlidersHorizontal className="mr-1 size-3.5 shrink-0 text-muted-foreground" />
-                                            <SelectValue placeholder="All Status" />
+                                            <SelectValue placeholder="All Documents" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="all">All Status</SelectItem>
-                                            <SelectItem value="configured">Template Ready</SelectItem>
-                                            <SelectItem value="missing">Missing Template</SelectItem>
+                                            <SelectItem value="all">All Documents</SelectItem>
+                                            <SelectItem value="configured">Template Attached</SelectItem>
+                                            <SelectItem value="missing">No Template</SelectItem>
+                                            <SelectItem value="required">Required Only</SelectItem>
+                                            <SelectItem value="optional">Optional Only</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -460,9 +572,11 @@ export default function DocumentTemplates({
                                             <SlidersHorizontal className="size-4 text-muted-foreground" />
                                         </SelectTrigger>
                                         <SelectContent align="end">
-                                            <SelectItem value="all">All Status</SelectItem>
-                                            <SelectItem value="configured">Template Ready</SelectItem>
-                                            <SelectItem value="missing">Missing Template</SelectItem>
+                                            <SelectItem value="all">All Documents</SelectItem>
+                                            <SelectItem value="configured">Template Attached</SelectItem>
+                                            <SelectItem value="missing">No Template</SelectItem>
+                                            <SelectItem value="required">Required Only</SelectItem>
+                                            <SelectItem value="optional">Optional Only</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -479,15 +593,15 @@ export default function DocumentTemplates({
                             </Tabs>
                         </div>
 
-                        {/* Primary Action Button */}
+                        {/* Primary Action Button: Add Document */}
                         <Button
-                            onClick={() => openUploadModal()}
+                            onClick={openAddModal}
                             size="sm"
                             className="gap-1.5 shadow-sm"
                         >
                             <Plus className="size-4" />
-                            <span className="hidden sm:inline">Upload Template</span>
-                            <span className="sm:hidden">Upload</span>
+                            <span className="hidden sm:inline">Add Document</span>
+                            <span className="sm:hidden">Add</span>
                         </Button>
                     </div>
                 </div>
@@ -500,7 +614,7 @@ export default function DocumentTemplates({
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search document templates..."
+                            placeholder="Search document requirements..."
                             className="h-9 w-full rounded-md border border-input bg-background pl-8 pr-8 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
                             autoFocus
                         />
@@ -516,49 +630,13 @@ export default function DocumentTemplates({
                     </div>
                 )}
 
-                {/* ── Repository Status & Coverage Banner ─────────────────────── */}
-                <Card className="border-border/60 shadow-sm bg-gradient-to-r from-card via-card to-muted/30">
-                    <CardContent className="p-4 sm:p-5">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                            <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                    <HardDrive className="size-4 text-primary shrink-0" />
-                                    <h3 className="text-sm font-semibold text-foreground">
-                                        Program Blank Template Repository
-                                    </h3>
-                                </div>
-                                <p className="text-xs text-muted-foreground">
-                                    {total_templates} of {total_types} requirement types configured with official blank templates.
-                                </p>
-                            </div>
-
-                            <div className="flex items-center gap-4 shrink-0">
-                                <div className="text-right">
-                                    <div className="text-xl font-bold tracking-tight text-foreground tabular-nums">
-                                        {progressPercent}%
-                                    </div>
-                                    <div className="text-[11px] text-muted-foreground">
-                                        Active Coverage
-                                    </div>
-                                </div>
-                                <div className="w-28 sm:w-36 h-2.5 overflow-hidden rounded-full bg-secondary/80 border border-border/50">
-                                    <div
-                                        className="h-full bg-primary transition-all duration-500 rounded-full"
-                                        style={{ width: `${progressPercent}%` }}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* ── Google Drive Folders Section ───────────────────────────── */}
+                {/* ── Drive Folders Section ───────────────────────────────────── */}
                 <div className="space-y-2.5">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <Folder className="size-4 text-primary" />
                             <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                Drive Folders
+                                Categories & Folders
                             </h2>
                         </div>
 
@@ -570,14 +648,13 @@ export default function DocumentTemplates({
                                 className="h-7 text-xs gap-1 text-primary hover:text-primary"
                             >
                                 <ArrowLeft className="size-3" />
-                                View All Folders
+                                View All Categories
                             </Button>
                         )}
                     </div>
 
-                    {/* Google Drive Folder Cards Grid */}
+                    {/* Category Folder Cards Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                        {/* Pre-Deployment, During Deployment, Evaluation Forms */}
                         {folders.map((f) => {
                             const colors = getFolderColorClass(f.name);
                             const isSelected = activeFolder === f.name;
@@ -605,10 +682,10 @@ export default function DocumentTemplates({
                                             {f.name}
                                         </div>
                                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                            <span>{f.total_items} items</span>
+                                            <span>{f.total_items} {f.total_items === 1 ? 'doc' : 'docs'}</span>
                                             <span>•</span>
                                             <span className={f.templates_count === f.total_items ? 'text-emerald-600 font-medium' : ''}>
-                                                {f.templates_count} ready
+                                                {f.templates_count} format{f.templates_count === 1 ? '' : 's'}
                                             </span>
                                         </div>
                                     </div>
@@ -631,10 +708,10 @@ export default function DocumentTemplates({
                             </div>
                             <div className="flex-1 min-w-0 space-y-1">
                                 <div className="font-semibold text-sm truncate text-foreground">
-                                    Archived Templates
+                                    Archived Documents
                                 </div>
                                 <div className="text-xs text-muted-foreground">
-                                    {total_archived} {total_archived === 1 ? 'archived file' : 'archived files'}
+                                    {total_archived} {total_archived === 1 ? 'archived item' : 'archived items'}
                                 </div>
                             </div>
                         </button>
@@ -651,14 +728,14 @@ export default function DocumentTemplates({
                                 activeFolder === 'all' ? 'text-foreground font-semibold' : ''
                             }`}
                         >
-                            My Drive
+                            All Documents
                         </button>
                         <span>/</span>
                         <span className="font-semibold text-foreground">
                             {activeFolder === 'all'
-                                ? 'All Sections'
+                                ? 'All Categories'
                                 : activeFolder === 'trash'
-                                  ? 'Archived Templates (Trash)'
+                                  ? 'Archived Documents (Trash)'
                                   : activeFolder}
                         </span>
                         <Badge variant="outline" className="ml-1.5 text-[10px] px-1.5 py-0">
@@ -667,7 +744,7 @@ export default function DocumentTemplates({
                     </div>
 
                     <div className="text-xs text-muted-foreground">
-                        Accepted Formats: <span className="font-medium text-foreground">.pdf, .docx, .doc</span> (max 15 MB)
+                        Templates format: <span className="font-medium text-foreground">.pdf, .docx, .doc</span> (max 15 MB)
                     </div>
                 </div>
 
@@ -677,9 +754,9 @@ export default function DocumentTemplates({
                     filteredArchived.length === 0 ? (
                         <Card className="border-dashed p-10 text-center text-muted-foreground">
                             <FolderArchive className="mx-auto size-10 text-muted-foreground/50 mb-3" />
-                            <h3 className="font-medium text-sm text-foreground">No archived templates</h3>
+                            <h3 className="font-medium text-sm text-foreground">No archived documents</h3>
                             <p className="text-xs mt-1">
-                                Removed templates will be safely kept here and can be restored anytime.
+                                Archived document requirements will appear here and can be restored anytime.
                             </p>
                         </Card>
                     ) : view === 'grid' ? (
@@ -696,10 +773,17 @@ export default function DocumentTemplates({
                                                 <div className="p-2 rounded-lg bg-orange-500/10 text-orange-600 shrink-0">
                                                     <FileText className="size-5" />
                                                 </div>
-                                                <div className="min-w-0">
-                                                    <Badge variant="outline" className="text-[10px] mb-1 text-muted-foreground">
-                                                        {item.category}
-                                                    </Badge>
+                                                <div className="min-w-0 space-y-0.5">
+                                                    <div className="flex flex-wrap items-center gap-1.5">
+                                                        <Badge variant="outline" className="text-[10px] text-muted-foreground">
+                                                            {item.category}
+                                                        </Badge>
+                                                        {item.is_custom && (
+                                                            <Badge variant="secondary" className="text-[9px] uppercase tracking-wider bg-purple-500/10 text-purple-700 dark:text-purple-300">
+                                                                Custom
+                                                            </Badge>
+                                                        )}
+                                                    </div>
                                                     <h3 className="font-semibold text-sm text-foreground leading-tight">
                                                         {item.name}
                                                     </h3>
@@ -710,15 +794,27 @@ export default function DocumentTemplates({
                                             </Badge>
                                         </div>
 
+                                        {item.description && (
+                                            <p className="text-xs text-muted-foreground line-clamp-2">
+                                                {item.description}
+                                            </p>
+                                        )}
+
                                         <div className="text-xs text-muted-foreground bg-muted/40 p-2.5 rounded-lg border border-border/40 space-y-1">
-                                            <div className="truncate font-medium text-foreground flex items-center gap-1.5">
-                                                <Badge variant="outline" className="text-[9px] px-1 py-0 uppercase">
-                                                    {item.file_extension}
-                                                </Badge>
-                                                <span className="truncate">{item.original_filename}</span>
-                                            </div>
-                                            <div className="flex items-center justify-between text-[11px]">
-                                                <span>{item.file_size}</span>
+                                            {item.original_filename ? (
+                                                <div className="truncate font-medium text-foreground flex items-center gap-1.5">
+                                                    <Badge variant="outline" className="text-[9px] px-1 py-0 uppercase">
+                                                        {item.file_extension || 'FILE'}
+                                                    </Badge>
+                                                    <span className="truncate">{item.original_filename}</span>
+                                                </div>
+                                            ) : (
+                                                <div className="text-[11px] italic text-muted-foreground">
+                                                    No template file attached
+                                                </div>
+                                            )}
+                                            <div className="flex items-center justify-between text-[11px] pt-0.5">
+                                                <span>{item.file_size || 'No file'}</span>
                                                 <span>Archived {item.deleted_at_human}</span>
                                             </div>
                                         </div>
@@ -756,8 +852,8 @@ export default function DocumentTemplates({
                                         <TableRow className="bg-muted/50">
                                             <TableHead>Document Name</TableHead>
                                             <TableHead>Category</TableHead>
-                                            <TableHead>Original File</TableHead>
-                                            <TableHead>File Size</TableHead>
+                                            <TableHead>Type</TableHead>
+                                            <TableHead>Template File</TableHead>
                                             <TableHead>Archived Date</TableHead>
                                             <TableHead className="text-right">Actions</TableHead>
                                         </TableRow>
@@ -766,18 +862,40 @@ export default function DocumentTemplates({
                                         {filteredArchived.map((item) => (
                                             <TableRow key={item.id}>
                                                 <TableCell className="font-semibold text-foreground">
-                                                    {item.name}
+                                                    <div className="space-y-0.5">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span>{item.name}</span>
+                                                            {item.is_custom && (
+                                                                <Badge variant="secondary" className="text-[9px] uppercase bg-purple-500/10 text-purple-700 dark:text-purple-300">
+                                                                    Custom
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                        {item.description && (
+                                                            <div className="text-xs text-muted-foreground line-clamp-1 font-normal">
+                                                                {item.description}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </TableCell>
                                                 <TableCell>
                                                     <Badge variant="outline" className="text-xs">
                                                         {item.category}
                                                     </Badge>
                                                 </TableCell>
-                                                <TableCell className="text-xs text-muted-foreground font-mono">
-                                                    {item.original_filename}
+                                                <TableCell>
+                                                    {item.required ? (
+                                                        <Badge variant="secondary" className="text-[10px] uppercase font-semibold">
+                                                            Required
+                                                        </Badge>
+                                                    ) : (
+                                                        <Badge variant="outline" className="text-[10px] uppercase text-muted-foreground">
+                                                            Optional
+                                                        </Badge>
+                                                    )}
                                                 </TableCell>
-                                                <TableCell className="text-xs text-muted-foreground">
-                                                    {item.file_size}
+                                                <TableCell className="text-xs text-muted-foreground font-mono">
+                                                    {item.original_filename || <span className="italic">None</span>}
                                                 </TableCell>
                                                 <TableCell className="text-xs text-muted-foreground">
                                                     {item.deleted_at}
@@ -795,7 +913,7 @@ export default function DocumentTemplates({
                                                                     <ArchiveRestore className="size-4" />
                                                                 </Button>
                                                             </TooltipTrigger>
-                                                            <TooltipContent>Restore</TooltipContent>
+                                                            <TooltipContent>Restore Document</TooltipContent>
                                                         </Tooltip>
 
                                                         <Tooltip>
@@ -821,19 +939,25 @@ export default function DocumentTemplates({
                         </Card>
                     )
                 ) : (
-                    /* ── ACTIVE TEMPLATES VIEW ── */
+                    /* ── ACTIVE DOCUMENTS VIEW ── */
                     filteredChecklist.length === 0 ? (
                         <Card className="border-dashed p-10 text-center text-muted-foreground">
                             <FileStack className="mx-auto size-10 text-muted-foreground/50 mb-3" />
-                            <h3 className="font-medium text-sm text-foreground">No document templates found</h3>
+                            <h3 className="font-medium text-sm text-foreground">No document requirements found</h3>
                             <p className="text-xs mt-1">
                                 {search
-                                    ? 'No templates match your search query.'
-                                    : 'No templates configured in this section.'}
+                                    ? 'No document requirements match your search query.'
+                                    : 'No documents configured in this section.'}
                             </p>
+                            <div className="mt-4">
+                                <Button onClick={openAddModal} size="sm" className="gap-1.5">
+                                    <Plus className="size-4" />
+                                    Add Document
+                                </Button>
+                            </div>
                         </Card>
                     ) : view === 'grid' ? (
-                        /* Google Drive File Cards Grid */
+                        /* Document Requirements Grid */
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {filteredChecklist.map((item) => (
                                 <Card
@@ -873,6 +997,11 @@ export default function DocumentTemplates({
                                                                 Optional
                                                             </Badge>
                                                         )}
+                                                        {item.is_custom && (
+                                                            <Badge variant="secondary" className="text-[9px] uppercase tracking-wider bg-purple-500/10 text-purple-700 dark:text-purple-300 px-1.5 py-0">
+                                                                Custom
+                                                            </Badge>
+                                                        )}
                                                     </div>
                                                     <h3 className="font-semibold text-sm text-foreground leading-snug">
                                                         {item.name}
@@ -894,9 +1023,15 @@ export default function DocumentTemplates({
                                         </div>
 
                                         {/* Description */}
-                                        <p className="text-xs text-muted-foreground line-clamp-2">
-                                            {item.description}
-                                        </p>
+                                        {item.description ? (
+                                            <p className="text-xs text-muted-foreground line-clamp-2">
+                                                {item.description}
+                                            </p>
+                                        ) : (
+                                            <p className="text-xs text-muted-foreground/60 italic">
+                                                No description provided.
+                                            </p>
+                                        )}
 
                                         {/* File Metadata Box */}
                                         {item.has_template ? (
@@ -915,7 +1050,7 @@ export default function DocumentTemplates({
                                         ) : (
                                             <div className="bg-muted/20 p-2.5 rounded-lg border border-dashed border-border/60 text-xs text-muted-foreground flex items-center gap-2">
                                                 <AlertCircle className="size-4 text-muted-foreground/60 shrink-0" />
-                                                <span>No blank format uploaded yet for this requirement.</span>
+                                                <span>No blank format attached. Interns will upload their own copy.</span>
                                             </div>
                                         )}
 
@@ -924,7 +1059,7 @@ export default function DocumentTemplates({
                                             <button
                                                 type="button"
                                                 onClick={() => setInstructionsModalItem(item)}
-                                                className="w-full text-left bg-primary/5 hover:bg-primary/10 transition-colors text-foreground/90 border border-primary/15 rounded-lg p-2 text-xs flex items-start gap-1.5"
+                                                className="w-full text-left bg-primary/5 hover:bg-primary/10 transition-colors text-foreground/90 border border-primary/15 rounded-lg p-2 text-xs flex items-start gap-1.5 cursor-pointer"
                                             >
                                                 <Info className="size-3.5 text-primary shrink-0 mt-0.5" />
                                                 <span className="line-clamp-2">
@@ -959,42 +1094,31 @@ export default function DocumentTemplates({
                                         </div>
 
                                         <div className="flex items-center gap-1">
-                                            {/* Upload / Replace */}
+                                            {/* Edit Document Requirement */}
                                             <Button
                                                 size="sm"
-                                                variant={item.has_template ? 'secondary' : 'default'}
+                                                variant="secondary"
                                                 className="h-8 gap-1.5 text-xs"
-                                                onClick={() => openUploadModal(item)}
+                                                onClick={() => openEditModal(item)}
                                             >
-                                                {item.has_template ? (
-                                                    <>
-                                                        <RefreshCw className="size-3.5" />
-                                                        Replace / Edit
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <UploadCloud className="size-3.5" />
-                                                        Upload Template
-                                                    </>
-                                                )}
+                                                <Pencil className="size-3.5" />
+                                                Edit Document
                                             </Button>
 
                                             {/* Archive Button */}
-                                            {item.has_template && (
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            className="size-8 p-0 text-muted-foreground hover:text-destructive"
-                                                            onClick={() => openArchiveDialog(item)}
-                                                        >
-                                                            <Archive className="size-3.5 text-orange-600" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>Archive template</TooltipContent>
-                                                </Tooltip>
-                                            )}
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        className="size-8 p-0 text-muted-foreground hover:text-orange-600"
+                                                        onClick={() => openArchiveDialog(item)}
+                                                    >
+                                                        <Archive className="size-3.5 text-orange-600" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>Archive document requirement</TooltipContent>
+                                            </Tooltip>
                                         </div>
                                     </div>
                                 </Card>
@@ -1010,9 +1134,9 @@ export default function DocumentTemplates({
                                             <TableHead>Document Requirement</TableHead>
                                             <TableHead>Category</TableHead>
                                             <TableHead>Requirement</TableHead>
-                                            <TableHead>Template Status</TableHead>
-                                            <TableHead>Blank File Details</TableHead>
-                                            <TableHead>Instructions</TableHead>
+                                            <TableHead>Format Status</TableHead>
+                                            <TableHead>Blank File</TableHead>
+                                            <TableHead>Guidance</TableHead>
                                             <TableHead className="text-right">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -1021,9 +1145,16 @@ export default function DocumentTemplates({
                                             <TableRow key={item.document_type} className="hover:bg-muted/30">
                                                 <TableCell className="font-semibold text-foreground">
                                                     <div className="space-y-0.5">
-                                                        <div>{item.name}</div>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span>{item.name}</span>
+                                                            {item.is_custom && (
+                                                                <Badge variant="secondary" className="text-[9px] uppercase tracking-wider bg-purple-500/10 text-purple-700 dark:text-purple-300">
+                                                                    Custom
+                                                                </Badge>
+                                                            )}
+                                                        </div>
                                                         <div className="text-xs text-muted-foreground font-normal line-clamp-1">
-                                                            {item.description}
+                                                            {item.description || 'No description provided.'}
                                                         </div>
                                                     </div>
                                                 </TableCell>
@@ -1051,7 +1182,7 @@ export default function DocumentTemplates({
                                                         </Badge>
                                                     ) : (
                                                         <Badge variant="outline" className="text-muted-foreground text-xs border-dashed">
-                                                            Missing
+                                                            No Template
                                                         </Badge>
                                                     )}
                                                 </TableCell>
@@ -1069,7 +1200,7 @@ export default function DocumentTemplates({
                                                             </div>
                                                         </div>
                                                     ) : (
-                                                        <span className="text-muted-foreground italic">None</span>
+                                                        <span className="text-muted-foreground italic">None attached</span>
                                                     )}
                                                 </TableCell>
                                                 <TableCell className="text-xs">
@@ -1077,7 +1208,7 @@ export default function DocumentTemplates({
                                                         <button
                                                             type="button"
                                                             onClick={() => setInstructionsModalItem(item)}
-                                                            className="text-primary hover:underline flex items-center gap-1 font-medium"
+                                                            className="text-primary hover:underline flex items-center gap-1 font-medium cursor-pointer"
                                                         >
                                                             <Info className="size-3" />
                                                             View guidance
@@ -1111,36 +1242,28 @@ export default function DocumentTemplates({
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="icon"
-                                                                    className="size-8"
-                                                                    onClick={() => openUploadModal(item)}
+                                                                    className="size-8 text-blue-600 hover:text-blue-700"
+                                                                    onClick={() => openEditModal(item)}
                                                                 >
-                                                                    {item.has_template ? (
-                                                                        <RefreshCw className="size-4 text-blue-600" />
-                                                                    ) : (
-                                                                        <UploadCloud className="size-4 text-primary" />
-                                                                    )}
+                                                                    <Pencil className="size-4" />
                                                                 </Button>
                                                             </TooltipTrigger>
-                                                            <TooltipContent>
-                                                                {item.has_template ? 'Replace / Edit Template' : 'Upload Template'}
-                                                            </TooltipContent>
+                                                            <TooltipContent>Edit Document</TooltipContent>
                                                         </Tooltip>
 
-                                                        {item.has_template && (
-                                                            <Tooltip>
-                                                                <TooltipTrigger asChild>
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        className="size-8"
-                                                                        onClick={() => openArchiveDialog(item)}
-                                                                    >
-                                                                        <Archive className="size-4 text-orange-600" />
-                                                                    </Button>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent>Archive Template</TooltipContent>
-                                                            </Tooltip>
-                                                        )}
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="size-8 text-orange-600 hover:text-orange-700"
+                                                                    onClick={() => openArchiveDialog(item)}
+                                                                >
+                                                                    <Archive className="size-4" />
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>Archive Document</TooltipContent>
+                                                        </Tooltip>
                                                     </div>
                                                 </TableCell>
                                             </TableRow>
@@ -1153,153 +1276,190 @@ export default function DocumentTemplates({
                 )}
             </div>
 
-            {/* ── Upload / Replace Template Dialog ─────────────────────────── */}
-            <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
+            {/* ── Add Document Requirement Dialog ─────────────────────────── */}
+            <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
                 <DialogContent className="max-w-lg">
-                    <form onSubmit={handleSubmitTemplate} className="space-y-4">
+                    <form onSubmit={handleAddSubmit} className="space-y-4">
                         <DialogHeader>
                             <DialogTitle className="text-base font-semibold flex items-center gap-2">
-                                <UploadCloud className="size-5 text-primary" />
-                                {selectedItem?.has_template ? 'Update Blank Template' : 'Upload Blank Template'}
+                                <FilePlus className="size-5 text-primary" />
+                                Add Document Requirement
                             </DialogTitle>
                             <DialogDescription className="text-xs">
-                                Configure the official blank document template for {program.program_name}.
+                                Add a new clearance document requirement for {program.program_name}.
                             </DialogDescription>
                         </DialogHeader>
 
                         <div className="space-y-3.5">
-                            {/* Document Type Selector */}
+                            {/* Document Title */}
                             <div className="space-y-1.5">
-                                <Label htmlFor="doc-type-select" className="text-xs font-medium">
-                                    Document Requirement Type <span className="text-destructive">*</span>
+                                <Label htmlFor="add-name" className="text-xs font-medium">
+                                    Document Title / Requirement Name <span className="text-destructive">*</span>
+                                </Label>
+                                <Input
+                                    id="add-name"
+                                    value={addName}
+                                    onChange={(e) => setAddName(e.target.value)}
+                                    placeholder="e.g. Health Certificate, Company NDA, Clearance Form"
+                                    className="text-xs"
+                                    required
+                                />
+                            </div>
+
+                            {/* Category Selector / Custom Category */}
+                            <div className="space-y-1.5">
+                                <Label htmlFor="add-category" className="text-xs font-medium">
+                                    Category / Folder <span className="text-destructive">*</span>
                                 </Label>
                                 <Select
-                                    value={selectedDocType}
-                                    onValueChange={handleDocTypeChange}
+                                    value={isAddCustomCategory ? '__custom__' : addCategory}
+                                    onValueChange={(val) => {
+                                        if (val === '__custom__') {
+                                            setIsAddCustomCategory(true);
+                                        } else {
+                                            setIsAddCustomCategory(false);
+                                            setAddCategory(val);
+                                        }
+                                    }}
                                 >
-                                    <SelectTrigger id="doc-type-select" className="text-xs">
-                                        <SelectValue placeholder="Select requirement type..." />
+                                    <SelectTrigger id="add-category" className="text-xs">
+                                        <SelectValue placeholder="Select category..." />
                                     </SelectTrigger>
-                                    <SelectContent className="max-h-64">
-                                        {categoryNames.map((category) => {
-                                            const items = checklist.filter((c) => c.category === category);
-                                            return (
-                                                <div key={category} className="py-1">
-                                                    <div className="px-2 py-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider bg-muted/40">
-                                                        {category}
-                                                    </div>
-                                                    {items.map((it) => (
-                                                        <SelectItem
-                                                            key={it.document_type}
-                                                            value={it.document_type}
-                                                            className="text-xs pl-4"
-                                                        >
-                                                            <div className="flex items-center justify-between gap-3 w-full">
-                                                                <span>{it.name}</span>
-                                                                {it.has_template && (
-                                                                    <Badge variant="outline" className="text-[9px] text-emerald-600 border-emerald-300">
-                                                                        Configured
-                                                                    </Badge>
-                                                                )}
-                                                            </div>
-                                                        </SelectItem>
-                                                    ))}
-                                                </div>
-                                            );
-                                        })}
+                                    <SelectContent>
+                                        {availableCategories.map((cat) => (
+                                            <SelectItem key={cat} value={cat} className="text-xs">
+                                                {cat}
+                                            </SelectItem>
+                                        ))}
+                                        <SelectItem value="__custom__" className="text-xs font-semibold text-primary">
+                                            + Add Custom Category...
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
-                                {selectedItem && (
-                                    <p className="text-[11px] text-muted-foreground mt-1">
-                                        {selectedItem.description}
-                                    </p>
+
+                                {isAddCustomCategory && (
+                                    <Input
+                                        value={addCustomCategory}
+                                        onChange={(e) => setAddCustomCategory(e.target.value)}
+                                        placeholder="Enter new category name (e.g. Post Deployment)..."
+                                        className="text-xs mt-1.5"
+                                        required
+                                        autoFocus
+                                    />
                                 )}
                             </div>
 
-                            {/* Drag and drop upload zone */}
+                            {/* Description */}
+                            <div className="space-y-1.5">
+                                <Label htmlFor="add-description" className="text-xs font-medium">
+                                    Requirement Description (Optional)
+                                </Label>
+                                <Textarea
+                                    id="add-description"
+                                    value={addDescription}
+                                    onChange={(e) => setAddDescription(e.target.value)}
+                                    placeholder="Brief summary explaining what this document is for and who issues it..."
+                                    rows={2}
+                                    className="text-xs resize-none"
+                                />
+                            </div>
+
+                            {/* Required Checkbox */}
+                            <div className="flex items-start gap-2.5 rounded-lg border border-border/70 p-3 bg-muted/20">
+                                <Checkbox
+                                    id="add-required"
+                                    checked={addRequired}
+                                    onCheckedChange={(checked) => setAddRequired(!!checked)}
+                                    className="mt-0.5"
+                                />
+                                <div className="space-y-0.5 leading-none">
+                                    <Label htmlFor="add-required" className="text-xs font-medium cursor-pointer">
+                                        Mandatory / Required Document
+                                    </Label>
+                                    <p className="text-[11px] text-muted-foreground">
+                                        Interns cannot complete clearance without having an approved upload for this requirement.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Guidance & Instructions for Interns */}
+                            <div className="space-y-1.5">
+                                <Label htmlFor="add-instructions" className="text-xs font-medium">
+                                    Intern Instructions (Optional)
+                                </Label>
+                                <Textarea
+                                    id="add-instructions"
+                                    value={addInstructions}
+                                    onChange={(e) => setAddInstructions(e.target.value)}
+                                    placeholder="e.g. Sign in blue ink, obtain parent/guardian signature, and scan in PDF format before uploading."
+                                    rows={2}
+                                    className="text-xs resize-none"
+                                />
+                                <p className="text-[11px] text-muted-foreground">
+                                    Interns will see this instructions when preparing and submitting this document.
+                                </p>
+                            </div>
+
+                            {/* Optional Blank Template File Upload */}
                             <div className="space-y-1.5">
                                 <Label className="text-xs font-medium">
-                                    Blank Template File{' '}
-                                    {selectedItem?.has_template ? (
-                                        <span className="text-muted-foreground font-normal">(Optional if updating guidance only)</span>
-                                    ) : (
-                                        <span className="text-destructive">*</span>
-                                    )}
+                                    Blank Template File <span className="text-muted-foreground font-normal">(Optional)</span>
                                 </Label>
 
                                 <div
                                     onDragOver={(e) => {
                                         e.preventDefault();
-                                        setIsDragOver(true);
+                                        setIsAddDragOver(true);
                                     }}
-                                    onDragLeave={() => setIsDragOver(false)}
-                                    onDrop={handleDrop}
-                                    onClick={() => fileInputRef.current?.click()}
+                                    onDragLeave={() => setIsAddDragOver(false)}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        setIsAddDragOver(false);
+                                        const file = e.dataTransfer.files?.[0];
+                                        if (file && validateFile(file)) setAddFile(file);
+                                    }}
+                                    onClick={() => addFileInputRef.current?.click()}
                                     className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all duration-200 ${
-                                        isDragOver
+                                        isAddDragOver
                                             ? 'border-primary bg-primary/5'
-                                            : fileToUpload
+                                            : addFile
                                               ? 'border-emerald-500/50 bg-emerald-50/20 dark:bg-emerald-950/10'
                                               : 'border-input hover:border-primary/50 hover:bg-muted/30'
                                     }`}
                                 >
                                     <input
                                         type="file"
-                                        ref={fileInputRef}
+                                        ref={addFileInputRef}
                                         accept=".pdf,.docx,.doc,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
-                                        onChange={handleFileInputChange}
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file && validateFile(file)) setAddFile(file);
+                                        }}
                                         className="hidden"
                                     />
 
-                                    {fileToUpload ? (
+                                    {addFile ? (
                                         <div className="space-y-1 text-xs">
                                             <FileCheck className="size-7 mx-auto text-emerald-600" />
                                             <div className="font-semibold text-foreground truncate max-w-sm mx-auto">
-                                                {fileToUpload.name}
+                                                {addFile.name}
                                             </div>
                                             <div className="text-[11px] text-muted-foreground">
-                                                {(fileToUpload.size / (1024 * 1024)).toFixed(2)} MB • Click or drag to replace
+                                                {(addFile.size / (1024 * 1024)).toFixed(2)} MB • Click or drop to replace
                                             </div>
                                         </div>
                                     ) : (
                                         <div className="space-y-1 text-xs">
                                             <UploadCloud className="size-7 mx-auto text-muted-foreground/80" />
                                             <div className="font-medium text-foreground">
-                                                Click to browse or drag & drop template file here
+                                                Click to browse or drop optional template file here
                                             </div>
                                             <div className="text-[11px] text-muted-foreground">
-                                                Supports PDF (.pdf) and Microsoft Word (.docx, .doc) up to 15 MB
+                                                Supports PDF (.pdf) and Word (.docx, .doc) up to 15 MB
                                             </div>
                                         </div>
                                     )}
                                 </div>
-
-                                {selectedItem?.has_template && !fileToUpload && (
-                                    <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 mt-1 bg-muted/40 p-2 rounded-md border border-border/50">
-                                        <FileText className="size-3.5 text-primary shrink-0" />
-                                        <span>
-                                            Current active file: <strong>{selectedItem.original_filename}</strong> ({selectedItem.file_size})
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Instructions textarea */}
-                            <div className="space-y-1.5">
-                                <Label htmlFor="instructions-input" className="text-xs font-medium">
-                                    Guidance / Instructions for Interns (Optional)
-                                </Label>
-                                <Textarea
-                                    id="instructions-input"
-                                    value={instructions}
-                                    onChange={(e) => setInstructions(e.target.value)}
-                                    placeholder="e.g. Fill out all sections in blue ink, obtain parent/guardian signature, and scan in PDF format before submitting."
-                                    rows={3}
-                                    className="text-xs resize-none"
-                                />
-                                <p className="text-[11px] text-muted-foreground">
-                                    Interns will see these instructions when downloading the blank format.
-                                </p>
                             </div>
                         </div>
 
@@ -1308,30 +1468,287 @@ export default function DocumentTemplates({
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => setIsUploadModalOpen(false)}
-                                disabled={isSubmitting}
+                                onClick={() => setIsAddModalOpen(false)}
+                                disabled={isAddSubmitting}
                             >
                                 Cancel
                             </Button>
                             <Button
                                 type="submit"
                                 size="sm"
-                                disabled={
-                                    isSubmitting ||
-                                    !selectedDocType ||
-                                    (!selectedItem?.has_template && !fileToUpload)
-                                }
+                                disabled={isAddSubmitting || !addName.trim()}
                                 className="gap-1.5"
                             >
-                                {isSubmitting ? (
+                                {isAddSubmitting ? (
+                                    <>
+                                        <Loader2 className="size-3.5 animate-spin" />
+                                        Creating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Plus className="size-3.5" />
+                                        Create Document
+                                    </>
+                                )}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* ── Edit Document Requirement Dialog ────────────────────────── */}
+            <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+                <DialogContent className="max-w-lg">
+                    <form onSubmit={handleEditSubmit} className="space-y-4">
+                        <DialogHeader>
+                            <DialogTitle className="text-base font-semibold flex items-center gap-2">
+                                <Pencil className="size-5 text-primary" />
+                                Edit Document Requirement
+                            </DialogTitle>
+                            <DialogDescription className="text-xs">
+                                Update details, instructions, or template file for {editItem?.name}.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="space-y-3.5">
+                            {/* Document Title */}
+                            <div className="space-y-1.5">
+                                <Label htmlFor="edit-name" className="text-xs font-medium">
+                                    Document Title / Requirement Name <span className="text-destructive">*</span>
+                                </Label>
+                                <Input
+                                    id="edit-name"
+                                    value={editName}
+                                    onChange={(e) => setEditName(e.target.value)}
+                                    placeholder="e.g. Parent's Consent"
+                                    className="text-xs"
+                                    required
+                                />
+                            </div>
+
+                            {/* Category Selector / Custom Category */}
+                            <div className="space-y-1.5">
+                                <Label htmlFor="edit-category" className="text-xs font-medium">
+                                    Category / Folder <span className="text-destructive">*</span>
+                                </Label>
+                                <Select
+                                    value={isEditCustomCategory ? '__custom__' : editCategory}
+                                    onValueChange={(val) => {
+                                        if (val === '__custom__') {
+                                            setIsEditCustomCategory(true);
+                                        } else {
+                                            setIsEditCustomCategory(false);
+                                            setEditCategory(val);
+                                        }
+                                    }}
+                                >
+                                    <SelectTrigger id="edit-category" className="text-xs">
+                                        <SelectValue placeholder="Select category..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {availableCategories.map((cat) => (
+                                            <SelectItem key={cat} value={cat} className="text-xs">
+                                                {cat}
+                                            </SelectItem>
+                                        ))}
+                                        <SelectItem value="__custom__" className="text-xs font-semibold text-primary">
+                                            + Add Custom Category...
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+
+                                {isEditCustomCategory && (
+                                    <Input
+                                        value={editCustomCategory}
+                                        onChange={(e) => setEditCustomCategory(e.target.value)}
+                                        placeholder="Enter category name..."
+                                        className="text-xs mt-1.5"
+                                        required
+                                        autoFocus
+                                    />
+                                )}
+                            </div>
+
+                            {/* Description */}
+                            <div className="space-y-1.5">
+                                <Label htmlFor="edit-description" className="text-xs font-medium">
+                                    Requirement Description (Optional)
+                                </Label>
+                                <Textarea
+                                    id="edit-description"
+                                    value={editDescription}
+                                    onChange={(e) => setEditDescription(e.target.value)}
+                                    placeholder="Brief summary explaining what this document is for..."
+                                    rows={2}
+                                    className="text-xs resize-none"
+                                />
+                            </div>
+
+                            {/* Required Checkbox */}
+                            <div className="flex items-start gap-2.5 rounded-lg border border-border/70 p-3 bg-muted/20">
+                                <Checkbox
+                                    id="edit-required"
+                                    checked={editRequired}
+                                    onCheckedChange={(checked) => setEditRequired(!!checked)}
+                                    className="mt-0.5"
+                                />
+                                <div className="space-y-0.5 leading-none">
+                                    <Label htmlFor="edit-required" className="text-xs font-medium cursor-pointer">
+                                        Mandatory / Required Document
+                                    </Label>
+                                    <p className="text-[11px] text-muted-foreground">
+                                        Interns cannot complete clearance without having an approved upload for this requirement.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Guidance & Instructions */}
+                            <div className="space-y-1.5">
+                                <Label htmlFor="edit-instructions" className="text-xs font-medium">
+                                    Intern Guidance & Instructions (Optional)
+                                </Label>
+                                <Textarea
+                                    id="edit-instructions"
+                                    value={editInstructions}
+                                    onChange={(e) => setEditInstructions(e.target.value)}
+                                    placeholder="e.g. Sign in blue ink, obtain parent/guardian signature..."
+                                    rows={2}
+                                    className="text-xs resize-none"
+                                />
+                            </div>
+
+                            {/* Template File Section */}
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-medium">
+                                    Blank Template File <span className="text-muted-foreground font-normal">(Optional)</span>
+                                </Label>
+
+                                {editItem?.has_template && !removeTemplate && !editFile && (
+                                    <div className="text-xs bg-muted/40 p-3 rounded-lg border border-border/50 flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <FileText className="size-4 text-primary shrink-0" />
+                                            <div className="truncate">
+                                                <span className="font-semibold text-foreground">{editItem.original_filename}</span>{' '}
+                                                <span className="text-muted-foreground">({editItem.file_size})</span>
+                                            </div>
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setRemoveTemplate(true)}
+                                            className="h-7 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+                                        >
+                                            Remove Template
+                                        </Button>
+                                    </div>
+                                )}
+
+                                {removeTemplate && !editFile && (
+                                    <div className="text-xs bg-amber-500/10 text-amber-700 dark:text-amber-300 p-2.5 rounded-lg border border-amber-500/20 flex items-center justify-between">
+                                        <span>Template file will be removed upon saving.</span>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setRemoveTemplate(false)}
+                                            className="h-6 text-xs"
+                                        >
+                                            Undo
+                                        </Button>
+                                    </div>
+                                )}
+
+                                <div
+                                    onDragOver={(e) => {
+                                        e.preventDefault();
+                                        setIsEditDragOver(true);
+                                    }}
+                                    onDragLeave={() => setIsEditDragOver(false)}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        setIsEditDragOver(false);
+                                        const file = e.dataTransfer.files?.[0];
+                                        if (file && validateFile(file)) {
+                                            setEditFile(file);
+                                            setRemoveTemplate(false);
+                                        }
+                                    }}
+                                    onClick={() => editFileInputRef.current?.click()}
+                                    className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all duration-200 ${
+                                        isEditDragOver
+                                            ? 'border-primary bg-primary/5'
+                                            : editFile
+                                              ? 'border-emerald-500/50 bg-emerald-50/20 dark:bg-emerald-950/10'
+                                              : 'border-input hover:border-primary/50 hover:bg-muted/30'
+                                    }`}
+                                >
+                                    <input
+                                        type="file"
+                                        ref={editFileInputRef}
+                                        accept=".pdf,.docx,.doc,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file && validateFile(file)) {
+                                                setEditFile(file);
+                                                setRemoveTemplate(false);
+                                            }
+                                        }}
+                                        className="hidden"
+                                    />
+
+                                    {editFile ? (
+                                        <div className="space-y-1 text-xs">
+                                            <FileCheck className="size-7 mx-auto text-emerald-600" />
+                                            <div className="font-semibold text-foreground truncate max-w-sm mx-auto">
+                                                New file: {editFile.name}
+                                            </div>
+                                            <div className="text-[11px] text-muted-foreground">
+                                                {(editFile.size / (1024 * 1024)).toFixed(2)} MB • Click or drop to replace
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-1 text-xs">
+                                            <UploadCloud className="size-7 mx-auto text-muted-foreground/80" />
+                                            <div className="font-medium text-foreground">
+                                                {editItem?.has_template && !removeTemplate
+                                                    ? 'Click or drop file here to replace blank template'
+                                                    : 'Click or drop file here to attach blank template'}
+                                            </div>
+                                            <div className="text-[11px] text-muted-foreground">
+                                                Supports PDF (.pdf) and Word (.docx, .doc) up to 15 MB
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <DialogFooter className="gap-2 sm:gap-0 pt-2 border-t">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setIsEditModalOpen(false)}
+                                disabled={isEditSubmitting}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                size="sm"
+                                disabled={isEditSubmitting || !editName.trim()}
+                                className="gap-1.5"
+                            >
+                                {isEditSubmitting ? (
                                     <>
                                         <Loader2 className="size-3.5 animate-spin" />
                                         Saving...
                                     </>
                                 ) : (
                                     <>
-                                        <UploadCloud className="size-3.5" />
-                                        Save Template
+                                        <Pencil className="size-3.5" />
+                                        Save Changes
                                     </>
                                 )}
                             </Button>
@@ -1357,7 +1774,7 @@ export default function DocumentTemplates({
                     </DialogHeader>
 
                     <div className="bg-muted/40 p-4 rounded-xl border border-border/60 text-xs leading-relaxed text-foreground whitespace-pre-wrap">
-                        {instructionsModalItem?.instructions || 'No specific instructions added for this document template.'}
+                        {instructionsModalItem?.instructions || 'No specific instructions added for this document requirement.'}
                     </div>
 
                     <DialogFooter>
@@ -1373,12 +1790,12 @@ export default function DocumentTemplates({
                             onClick={() => {
                                 const it = instructionsModalItem;
                                 setInstructionsModalItem(null);
-                                if (it) openUploadModal(it);
+                                if (it) openEditModal(it);
                             }}
                             className="gap-1.5"
                         >
-                            <FileEdit className="size-3.5" />
-                            Edit Instructions
+                            <Pencil className="size-3.5" />
+                            Edit Guidance
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -1388,9 +1805,9 @@ export default function DocumentTemplates({
             <ConfirmationDialog
                 open={archiveOpen}
                 onOpenChange={setArchiveOpen}
-                title="Archive Blank Template"
-                description={`Move the blank template for "${archiveTarget?.name}" to the archive? Interns will no longer be able to download this format until it is restored.`}
-                confirmText="Archive Template"
+                title="Archive Document Requirement"
+                description={`Move "${archiveTarget?.name}" to the archive? Interns will no longer see this requirement in their checklist until it is restored.`}
+                confirmText="Archive Document"
                 cancelText="Cancel"
                 isDestructive={false}
                 onConfirm={submitArchive}
@@ -1400,9 +1817,9 @@ export default function DocumentTemplates({
             <ConfirmationDialog
                 open={restoreOpen}
                 onOpenChange={setRestoreOpen}
-                title="Restore Blank Template"
-                description={`Restore the blank template for "${restoreTarget?.name}"? It will become active and available for interns in your program again.`}
-                confirmText="Restore Template"
+                title="Restore Document Requirement"
+                description={`Restore "${restoreTarget?.name}"? It will become active and available for interns in your program again.`}
+                confirmText="Restore Document"
                 cancelText="Cancel"
                 isDestructive={false}
                 onConfirm={submitRestore}
@@ -1412,8 +1829,8 @@ export default function DocumentTemplates({
             <ConfirmationDialog
                 open={forceDeleteOpen}
                 onOpenChange={setForceDeleteOpen}
-                title="Permanently Delete Blank Template"
-                description={`Are you sure you want to permanently erase the blank template for "${forceDeleteTarget?.name}"? This action cannot be undone and will delete the physical file.`}
+                title="Permanently Delete Document Requirement"
+                description={`Are you sure you want to permanently erase "${forceDeleteTarget?.name}"? This action cannot be undone and will delete any associated template files.`}
                 confirmText="Delete Permanently"
                 cancelText="Cancel"
                 isDestructive={true}

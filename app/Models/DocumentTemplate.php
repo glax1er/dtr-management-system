@@ -12,8 +12,13 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int|null $program_id
  * @property string $document_type
- * @property string $original_filename
- * @property string $file_path
+ * @property string|null $name
+ * @property string|null $category
+ * @property string|null $description
+ * @property bool $required
+ * @property bool $is_custom
+ * @property string|null $original_filename
+ * @property string|null $file_path
  * @property int|null $file_size_bytes
  * @property string|null $mime_type
  * @property int $uploaded_by
@@ -29,6 +34,11 @@ class DocumentTemplate extends Model
     protected $fillable = [
         'program_id',
         'document_type',
+        'name',
+        'category',
+        'description',
+        'required',
+        'is_custom',
         'original_filename',
         'file_path',
         'file_size_bytes',
@@ -40,6 +50,8 @@ class DocumentTemplate extends Model
     protected $casts = [
         'file_size_bytes' => 'integer',
         'program_id' => 'integer',
+        'required' => 'boolean',
+        'is_custom' => 'boolean',
     ];
 
     public function program(): BelongsTo
@@ -50,6 +62,21 @@ class DocumentTemplate extends Model
     public function uploader(): BelongsTo
     {
         return $this->belongsTo(User::class, 'uploaded_by', 'id');
+    }
+
+    public function getDisplayNameAttribute(): string
+    {
+        return $this->name ?: (InternDocument::getTypeConfig($this->document_type)['name'] ?? $this->document_type);
+    }
+
+    public function getDisplayCategoryAttribute(): string
+    {
+        return $this->category ?: (InternDocument::getTypeConfig($this->document_type)['category'] ?? 'Pre Deployment');
+    }
+
+    public function getDisplayDescriptionAttribute(): string
+    {
+        return $this->description ?: (InternDocument::getTypeConfig($this->document_type)['description'] ?? '');
     }
 
     public function getFormattedFileSizeAttribute(): string
@@ -67,8 +94,17 @@ class DocumentTemplate extends Model
 
     public function getFileExtensionAttribute(): string
     {
+        if (! $this->original_filename) {
+            return 'FILE';
+        }
+
         $ext = pathinfo($this->original_filename, PATHINFO_EXTENSION);
 
         return strtoupper($ext ?: 'FILE');
+    }
+
+    public function hasFile(): bool
+    {
+        return ! empty($this->file_path);
     }
 }

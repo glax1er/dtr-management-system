@@ -224,3 +224,54 @@ test('OJT supervisor can upload blank template formats and interns can download 
     ]);
 });
 
+test('intern can see custom document requirements and upload PDF documents for them', function () {
+    Storage::fake('local');
+    [$intern, $profile, $hte, $program] = createTestIntern();
+
+    // Create custom document requirement for the intern's program
+    $supervisorUser = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
+    \App\Models\SupervisorProfile::create([
+        'user_id' => $supervisorUser->id,
+        'program_id' => $program->program_id,
+        'supervisor_type' => 'ojt',
+        'status' => 'active',
+    ]);
+
+    $this->actingAs($supervisorUser)->post(route('supervisor.document-templates.store'), [
+        'name' => 'Vaccination Record',
+        'category' => 'Pre Deployment',
+        'description' => 'Proof of vaccination.',
+        'required' => true,
+    ])->assertSessionHasNoErrors();
+
+    $customTemplate = \App\Models\DocumentTemplate::where('name', 'Vaccination Record')->firstOrFail();
+
+    // Intern checklist should have 13 items
+    $this->actingAs($intern)
+        ->get(route('intern.documents.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('checklist', 13)
+            ->where('stats.total_required', 13)
+        );
+
+    // Intern uploads PDF for custom document
+    $pdfFile = UploadedFile::fake()->create('vaccination_card.pdf', 500, 'application/pdf');
+
+    $this->actingAs($intern)
+        ->post(route('intern.documents.store'), [
+            'document_type' => $customTemplate->document_type,
+            'file' => $pdfFile,
+        ])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+
+    $this->assertDatabaseHas('intern_documents', [
+        'user_id' => $intern->id,
+        'document_type' => $customTemplate->document_type,
+        'original_filename' => 'vaccination_card.pdf',
+        'status' => InternDocument::STATUS_PENDING,
+    ]);
+});
+
+

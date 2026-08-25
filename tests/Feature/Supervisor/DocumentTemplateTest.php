@@ -147,3 +147,102 @@ test('OJT supervisor can upload, update, soft delete, restore, and force delete 
 
     $this->assertDatabaseMissing('document_templates', ['id' => $template->id]);
 });
+
+test('OJT supervisor can add a new custom document requirement with optional template and edit it', function () {
+    Storage::fake('local');
+    [$supervisor, $profile, $program] = createTestOjtSupervisor();
+
+    // 1. Add new custom document requirement
+    $this->actingAs($supervisor)
+        ->post(route('supervisor.document-templates.store'), [
+            'name' => 'Certificate of Good Moral',
+            'category' => 'Pre Deployment',
+            'description' => 'Official certificate from dean office.',
+            'required' => true,
+            'instructions' => 'Must have university dry seal.',
+        ])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+
+    $this->assertDatabaseHas('document_templates', [
+        'program_id' => $program->program_id,
+        'name' => 'Certificate of Good Moral',
+        'category' => 'Pre Deployment',
+        'is_custom' => true,
+        'required' => true,
+        'file_path' => null,
+    ]);
+
+    $customDoc = DocumentTemplate::where('name', 'Certificate of Good Moral')->firstOrFail();
+
+    // 2. Edit the custom document and attach a blank template
+    $templateFile = UploadedFile::fake()->create('good_moral_template.docx', 500, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+
+    $this->actingAs($supervisor)
+        ->post(route('supervisor.document-templates.update', $customDoc->document_type), [
+            'name' => 'Certificate of Good Moral Character (Updated)',
+            'category' => 'Pre Deployment',
+            'description' => 'Updated description.',
+            'required' => false,
+            'instructions' => 'Updated instruction.',
+            'file' => $templateFile,
+        ])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+
+    $customDoc->refresh();
+    expect($customDoc->name)->toBe('Certificate of Good Moral Character (Updated)');
+    expect($customDoc->required)->toBeFalse();
+    expect($customDoc->original_filename)->toBe('good_moral_template.docx');
+    expect($customDoc->hasFile())->toBeTrue();
+
+    // 3. View templates index - should include 12 predefined + 1 custom = 13 items
+    $this->actingAs($supervisor)
+        ->get(route('supervisor.document-templates.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('checklist', 13)
+            ->where('total_types', 13)
+            ->where('total_templates', 1)
+        );
+
+    // 4. Archive custom document
+    $this->actingAs($supervisor)
+        ->delete(route('supervisor.document-templates.destroy', $customDoc->document_type))
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+
+    $this->assertSoftDeleted('document_templates', ['id' => $customDoc->id]);
+
+    // 5. Restore custom document
+    $this->actingAs($supervisor)
+        ->post(route('supervisor.document-templates.restore', $customDoc->id))
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+
+    $customDoc->refresh();
+    expect($customDoc->deleted_at)->toBeNull();
+});
+
+test('OJT supervisor can archive a predefined document requirement that has no previous DB record', function () {
+    [$supervisor, $profile, $program] = createTestOjtSupervisor();
+
+    // Archive 'outside_hte_nda'
+    $this->actingAs($supervisor)
+        ->delete(route('supervisor.document-templates.destroy', 'outside_hte_nda'))
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+
+    $this->assertSoftDeleted('document_templates', [
+        'program_id' => $program->program_id,
+        'document_type' => 'outside_hte_nda',
+    ]);
+
+    // Total types should now be 11 (12 - 1 archived)
+    $this->actingAs($supervisor)
+        ->get(route('supervisor.document-templates.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('checklist', 11)
+            ->where('total_types', 11)
+            ->where('total_archived', 1)
+        );
+});

@@ -40,10 +40,12 @@ class DocumentController extends Controller
         $totalSubmitted = 0;
         $totalApproved = 0;
 
-        foreach (InternDocument::DOCUMENT_TYPES as $typeKey => $typeConfig) {
+        $documentTypes = InternDocument::getDocumentTypesForProgram($internProfile?->program_id);
+
+        foreach ($documentTypes as $typeKey => $typeConfig) {
             $uploaded = $uploadedDocs->get($typeKey);
             $template = $templates->get($typeKey);
-            $isRequired = $typeConfig['required'];
+            $isRequired = (bool) $typeConfig['required'];
 
             if ($isRequired) {
                 $totalRequired++;
@@ -65,6 +67,7 @@ class DocumentController extends Controller
                 'category' => $typeConfig['category'],
                 'description' => $typeConfig['description'],
                 'required' => $isRequired,
+                'is_custom' => $typeConfig['is_custom'] ?? false,
                 'status' => $uploaded ? $uploaded->status : 'missing',
                 'id' => $uploaded?->id,
                 'original_filename' => $uploaded?->original_filename,
@@ -76,13 +79,13 @@ class DocumentController extends Controller
                 'preview_url' => $uploaded ? route('intern.documents.preview', $uploaded->id) : null,
                 'download_url' => $uploaded ? route('intern.documents.download', $uploaded->id) : null,
                 // Blank Template data
-                'has_template' => $template !== null,
+                'has_template' => $template !== null && ! empty($template->file_path),
                 'template_id' => $template?->id,
                 'template_filename' => $template?->original_filename,
                 'template_size' => $template?->formatted_file_size,
                 'template_extension' => $template?->file_extension,
                 'template_instructions' => $template?->instructions,
-                'template_download_url' => $template ? route('intern.documents.template.download', $template->id) : null,
+                'template_download_url' => $template && ! empty($template->file_path) ? route('intern.documents.template.download', $template->id) : null,
             ];
         }
 
@@ -118,7 +121,7 @@ class DocumentController extends Controller
             abort(403, 'Unauthorized access to this template.');
         }
 
-        if (! Storage::disk('local')->exists($documentTemplate->file_path)) {
+        if (! $documentTemplate->file_path || ! Storage::disk('local')->exists($documentTemplate->file_path)) {
             abort(404, 'Template file not found on server.');
         }
 
@@ -129,8 +132,12 @@ class DocumentController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $user = $request->user();
+        $internProfile = $user->internProfile;
+        $documentTypes = InternDocument::getDocumentTypesForProgram($internProfile?->program_id);
+
         $validated = $request->validate([
-            'document_type' => ['required', 'string', Rule::in(array_keys(InternDocument::DOCUMENT_TYPES))],
+            'document_type' => ['required', 'string', Rule::in(array_keys($documentTypes))],
             'file' => [
                 'required',
                 'file',
@@ -144,7 +151,6 @@ class DocumentController extends Controller
             'file.max' => 'The PDF document must not exceed 10 MB in file size.',
         ]);
 
-        $user = $request->user();
         $file = $request->file('file');
         $documentType = $validated['document_type'];
 
@@ -178,7 +184,7 @@ class DocumentController extends Controller
             ]
         );
 
-        $docConfig = InternDocument::getTypeConfig($documentType);
+        $docConfig = InternDocument::getTypeConfig($documentType, $internProfile?->program_id);
         $docName = $docConfig['name'] ?? 'Document';
 
         return back()->with('success', "{$docName} uploaded successfully and submitted for review.");

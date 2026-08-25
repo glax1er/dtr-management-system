@@ -41,8 +41,9 @@ class DocumentReviewController extends Controller
             ->get()
             ->keyBy('document_type');
 
+        $documentTypes = InternDocument::getDocumentTypesForProgram($internProfile->program_id);
         $checklist = [];
-        foreach (InternDocument::DOCUMENT_TYPES as $typeKey => $typeConfig) {
+        foreach ($documentTypes as $typeKey => $typeConfig) {
             $uploaded = $uploadedDocs->get($typeKey);
             $checklist[] = [
                 'document_type' => $typeKey,

@@ -8,7 +8,7 @@ use App\Models\InternDocument;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -27,38 +27,69 @@ class DocumentTemplateController extends Controller
         $program = $supervisor->program;
         $programId = $supervisor->program_id;
 
-        // Active templates
+        // Active templates in database
         $templates = DocumentTemplate::query()
             ->where('program_id', $programId)
             ->get()
             ->keyBy('document_type');
 
-        // Archived / soft-deleted templates
+        // Archived / soft-deleted templates in database
         $archivedTemplates = DocumentTemplate::onlyTrashed()
             ->where('program_id', $programId)
             ->with('uploader')
             ->orderBy('deleted_at', 'desc')
             ->get();
 
+        $trashedKeys = $archivedTemplates->pluck('document_type')->all();
+
         $checklist = [];
+
+        // 1. Predefined types (unless archived)
         foreach (InternDocument::DOCUMENT_TYPES as $typeKey => $typeConfig) {
+            if (in_array($typeKey, $trashedKeys, true)) {
+                continue;
+            }
+
             $template = $templates->get($typeKey);
 
             $checklist[] = [
                 'document_type' => $typeKey,
-                'name' => $typeConfig['name'],
-                'category' => $typeConfig['category'],
-                'description' => $typeConfig['description'],
-                'required' => $typeConfig['required'],
+                'name' => $template?->name ?: $typeConfig['name'],
+                'category' => $template?->category ?: $typeConfig['category'],
+                'description' => $template?->description ?: $typeConfig['description'],
+                'required' => $template ? (bool) $template->required : (bool) $typeConfig['required'],
+                'is_custom' => false,
                 'template_id' => $template?->id,
-                'has_template' => $template !== null,
+                'has_template' => $template !== null && ! empty($template->file_path),
                 'original_filename' => $template?->original_filename,
                 'file_size' => $template?->formatted_file_size,
                 'file_extension' => $template?->file_extension,
                 'instructions' => $template?->instructions,
                 'uploaded_at' => $template?->updated_at?->format('M d, Y g:i A'),
-                'download_url' => $template ? route('supervisor.document-templates.download', $template->id) : null,
+                'download_url' => $template && ! empty($template->file_path) ? route('supervisor.document-templates.download', $template->id) : null,
             ];
+        }
+
+        // 2. Custom active types
+        foreach ($templates as $typeKey => $template) {
+            if ($template->is_custom) {
+                $checklist[] = [
+                    'document_type' => $typeKey,
+                    'name' => $template->display_name,
+                    'category' => $template->display_category,
+                    'description' => $template->display_description,
+                    'required' => (bool) $template->required,
+                    'is_custom' => true,
+                    'template_id' => $template->id,
+                    'has_template' => ! empty($template->file_path),
+                    'original_filename' => $template->original_filename,
+                    'file_size' => $template->formatted_file_size,
+                    'file_extension' => $template->file_extension,
+                    'instructions' => $template->instructions,
+                    'uploaded_at' => $template->updated_at?->format('M d, Y g:i A'),
+                    'download_url' => ! empty($template->file_path) ? route('supervisor.document-templates.download', $template->id) : null,
+                ];
+            }
         }
 
         // Distinct categories / folders metadata
@@ -74,32 +105,41 @@ class DocumentTemplateController extends Controller
             ];
         }
 
-        // Archived templates list for Trash/Archives view
-        $archived = $archivedTemplates->map(fn (DocumentTemplate $t) => [
-            'id' => $t->id,
-            'document_type' => $t->document_type,
-            'name' => InternDocument::getTypeConfig($t->document_type)['name'] ?? $t->document_type,
-            'category' => InternDocument::getTypeConfig($t->document_type)['category'] ?? 'General',
-            'original_filename' => $t->original_filename,
-            'file_size' => $t->formatted_file_size,
-            'file_extension' => $t->file_extension,
-            'instructions' => $t->instructions,
-            'deleted_at' => $t->deleted_at?->format('M d, Y g:i A'),
-            'deleted_at_human' => $t->deleted_at?->diffForHumans(),
-            'uploaded_by_name' => $t->uploader?->name ?? 'Supervisor',
-        ])->values()->all();
+        // Archived list for Trash/Archives view
+        $archived = $archivedTemplates->map(function (DocumentTemplate $t) {
+            $preConfig = InternDocument::DOCUMENT_TYPES[$t->document_type] ?? null;
+
+            return [
+                'id' => $t->id,
+                'document_type' => $t->document_type,
+                'name' => $t->name ?: ($preConfig['name'] ?? $t->document_type),
+                'category' => $t->category ?: ($preConfig['category'] ?? 'General'),
+                'description' => $t->description ?: ($preConfig['description'] ?? ''),
+                'required' => (bool) ($t->required ?? ($preConfig['required'] ?? true)),
+                'is_custom' => (bool) $t->is_custom,
+                'has_template' => ! empty($t->file_path),
+                'original_filename' => $t->original_filename,
+                'file_size' => $t->formatted_file_size,
+                'file_extension' => $t->file_extension,
+                'instructions' => $t->instructions,
+                'deleted_at' => $t->deleted_at?->format('M d, Y g:i A'),
+                'deleted_at_human' => $t->deleted_at?->diffForHumans(),
+                'uploaded_by_name' => $t->uploader?->name ?? 'Supervisor',
+            ];
+        })->values()->all();
 
         return Inertia::render('supervisor/document-templates', [
             'checklist' => $checklist,
             'folders' => $folders,
             'archived' => $archived,
+            'categories' => $categories,
             'program' => [
                 'program_id' => $program?->program_id,
                 'program_name' => $program?->program_name ?? 'My Program',
             ],
-            'total_templates' => $templates->count(),
-            'total_types' => count(InternDocument::DOCUMENT_TYPES),
-            'total_archived' => $archivedTemplates->count(),
+            'total_templates' => count(array_filter($checklist, fn ($item) => $item['has_template'])),
+            'total_types' => count($checklist),
+            'total_archived' => count($archived),
         ]);
     }
 
@@ -108,80 +148,257 @@ class DocumentTemplateController extends Controller
         $supervisor = $request->user()->supervisorProfile;
 
         if (! $supervisor || ! $supervisor->isOjtSupervisor()) {
-            abort(403, 'Only OJT Program Supervisors can upload document templates.');
+            abort(403, 'Only OJT Program Supervisors can manage document requirements.');
         }
 
         $programId = $supervisor->program_id;
         $documentType = $request->input('document_type');
 
-        $existing = DocumentTemplate::withTrashed()
-            ->where('program_id', $programId)
-            ->where('document_type', $documentType)
-            ->first();
+        // Check if this is a template upload for an existing predefined or custom type
+        if ($documentType && (array_key_exists($documentType, InternDocument::DOCUMENT_TYPES) || DocumentTemplate::where('program_id', $programId)->where('document_type', $documentType)->exists())) {
+            $existing = DocumentTemplate::withTrashed()
+                ->where('program_id', $programId)
+                ->where('document_type', $documentType)
+                ->first();
 
-        $isFileRequired = ! $existing || $existing->trashed();
+            $validated = $request->validate([
+                'document_type' => ['required', 'string'],
+                'file' => [
+                    'nullable',
+                    'file',
+                    'mimes:pdf,docx,doc',
+                    'max:15360', // 15MB
+                ],
+                'instructions' => ['nullable', 'string', 'max:1000'],
+                'name' => ['nullable', 'string', 'max:150'],
+                'category' => ['nullable', 'string', 'max:100'],
+                'description' => ['nullable', 'string', 'max:500'],
+                'required' => ['nullable', 'boolean'],
+            ], [
+                'file.mimes' => 'The template must be a PDF or Microsoft Word document (.pdf, .docx, .doc).',
+                'file.max' => 'The template file size must not exceed 15 MB.',
+            ]);
 
+            $docConfig = InternDocument::getTypeConfig($documentType, $programId);
+            $docName = $validated['name'] ?? ($docConfig['name'] ?? 'Document');
+
+            if ($request->hasFile('file')) {
+                $file = $request->file('file');
+
+                if ($existing && $existing->file_path && Storage::disk('local')->exists($existing->file_path)) {
+                    Storage::disk('local')->delete($existing->file_path);
+                }
+
+                $path = $file->store("document-templates/{$programId}", 'local');
+
+                if ($existing) {
+                    $existing->original_filename = $file->getClientOriginalName();
+                    $existing->file_path = $path;
+                    $existing->file_size_bytes = $file->getSize();
+                    $existing->mime_type = $file->getMimeType();
+                    $existing->uploaded_by = $request->user()->id;
+                    if (isset($validated['instructions'])) {
+                        $existing->instructions = $validated['instructions'];
+                    }
+                    if (! empty($validated['name'])) {
+                        $existing->name = $validated['name'];
+                    }
+                    if (! empty($validated['category'])) {
+                        $existing->category = $validated['category'];
+                    }
+                    if (isset($validated['description'])) {
+                        $existing->description = $validated['description'];
+                    }
+                    if (isset($validated['required'])) {
+                        $existing->required = $request->boolean('required', true);
+                    }
+
+                    if ($existing->trashed()) {
+                        $existing->restore();
+                    }
+
+                    $existing->save();
+                } else {
+                    $isPredefined = array_key_exists($documentType, InternDocument::DOCUMENT_TYPES);
+                    DocumentTemplate::create([
+                        'program_id' => $programId,
+                        'document_type' => $documentType,
+                        'name' => $validated['name'] ?? ($docConfig['name'] ?? null),
+                        'category' => $validated['category'] ?? ($docConfig['category'] ?? null),
+                        'description' => $validated['description'] ?? ($docConfig['description'] ?? null),
+                        'required' => isset($validated['required']) ? $request->boolean('required', true) : ($docConfig['required'] ?? true),
+                        'is_custom' => ! $isPredefined,
+                        'original_filename' => $file->getClientOriginalName(),
+                        'file_path' => $path,
+                        'file_size_bytes' => $file->getSize(),
+                        'mime_type' => $file->getMimeType(),
+                        'uploaded_by' => $request->user()->id,
+                        'instructions' => $validated['instructions'] ?? null,
+                    ]);
+                }
+            } else {
+                // Updating metadata or instructions
+                if ($existing && ! $existing->trashed()) {
+                    if (isset($validated['instructions'])) {
+                        $existing->instructions = $validated['instructions'];
+                    }
+                    if (! empty($validated['name'])) {
+                        $existing->name = $validated['name'];
+                    }
+                    if (! empty($validated['category'])) {
+                        $existing->category = $validated['category'];
+                    }
+                    if (isset($validated['description'])) {
+                        $existing->description = $validated['description'];
+                    }
+                    if (isset($validated['required'])) {
+                        $existing->required = $request->boolean('required', true);
+                    }
+                    $existing->save();
+                }
+            }
+
+            return back()->with('success', "Document requirement for {$docName} saved successfully.");
+        }
+
+        // Creating a brand new document requirement (custom)
         $validated = $request->validate([
-            'document_type' => ['required', 'string', Rule::in(array_keys(InternDocument::DOCUMENT_TYPES))],
+            'name' => ['required', 'string', 'max:150'],
+            'category' => ['required', 'string', 'max:100'],
+            'description' => ['nullable', 'string', 'max:500'],
+            'required' => ['nullable', 'boolean'],
+            'instructions' => ['nullable', 'string', 'max:1000'],
             'file' => [
-                $isFileRequired ? 'required' : 'nullable',
+                'nullable',
                 'file',
                 'mimes:pdf,docx,doc',
                 'max:15360', // 15MB
             ],
-            'instructions' => ['nullable', 'string', 'max:500'],
         ], [
-            'file.required' => 'Please select a template file to upload.',
-            'file.mimes' => 'The template must be a PDF or Microsoft Word document (.pdf, .docx, .doc).',
+            'name.required' => 'Please enter a document title.',
+            'category.required' => 'Please select or enter a category.',
+            'file.mimes' => 'The blank template must be a PDF or Microsoft Word document (.pdf, .docx, .doc).',
             'file.max' => 'The template file size must not exceed 15 MB.',
         ]);
 
-        $docConfig = InternDocument::getTypeConfig($documentType);
-        $docName = $docConfig['name'] ?? 'Document';
+        $baseSlug = Str::slug($validated['name'], '_');
+        $slug = $baseSlug ?: 'custom_doc';
+        $uniqueDocType = $slug;
+        $counter = 1;
+
+        while (
+            array_key_exists($uniqueDocType, InternDocument::DOCUMENT_TYPES) ||
+            DocumentTemplate::withTrashed()->where('program_id', $programId)->where('document_type', $uniqueDocType)->exists()
+        ) {
+            $uniqueDocType = "{$slug}_{$counter}";
+            $counter++;
+        }
+
+        $filePath = null;
+        $originalFilename = null;
+        $fileSizeBytes = null;
+        $mimeType = null;
 
         if ($request->hasFile('file')) {
             $file = $request->file('file');
-
-            if ($existing && $existing->file_path && Storage::disk('local')->exists($existing->file_path)) {
-                Storage::disk('local')->delete($existing->file_path);
-            }
-
-            $path = $file->store("document-templates/{$programId}", 'local');
-
-            if ($existing) {
-                $existing->original_filename = $file->getClientOriginalName();
-                $existing->file_path = $path;
-                $existing->file_size_bytes = $file->getSize();
-                $existing->mime_type = $file->getMimeType();
-                $existing->uploaded_by = $request->user()->id;
-                $existing->instructions = $validated['instructions'] ?? null;
-
-                if ($existing->trashed()) {
-                    $existing->restore();
-                }
-
-                $existing->save();
-            } else {
-                DocumentTemplate::create([
-                    'program_id' => $programId,
-                    'document_type' => $documentType,
-                    'original_filename' => $file->getClientOriginalName(),
-                    'file_path' => $path,
-                    'file_size_bytes' => $file->getSize(),
-                    'mime_type' => $file->getMimeType(),
-                    'uploaded_by' => $request->user()->id,
-                    'instructions' => $validated['instructions'] ?? null,
-                ]);
-            }
-        } else {
-            // Only updating instructions on active existing template
-            if ($existing && ! $existing->trashed()) {
-                $existing->instructions = $validated['instructions'] ?? null;
-                $existing->save();
-            }
+            $filePath = $file->store("document-templates/{$programId}", 'local');
+            $originalFilename = $file->getClientOriginalName();
+            $fileSizeBytes = $file->getSize();
+            $mimeType = $file->getMimeType();
         }
 
-        return back()->with('success', "Blank template for {$docName} saved successfully.");
+        DocumentTemplate::create([
+            'program_id' => $programId,
+            'document_type' => $uniqueDocType,
+            'name' => $validated['name'],
+            'category' => $validated['category'],
+            'description' => $validated['description'] ?? null,
+            'required' => $request->boolean('required', true),
+            'is_custom' => true,
+            'original_filename' => $originalFilename,
+            'file_path' => $filePath,
+            'file_size_bytes' => $fileSizeBytes,
+            'mime_type' => $mimeType,
+            'uploaded_by' => $request->user()->id,
+            'instructions' => $validated['instructions'] ?? null,
+        ]);
+
+        return back()->with('success', "Document requirement \"{$validated['name']}\" created successfully.");
+    }
+
+    public function update(Request $request, string $documentType): RedirectResponse
+    {
+        $supervisor = $request->user()->supervisorProfile;
+
+        if (! $supervisor || ! $supervisor->isOjtSupervisor()) {
+            abort(403, 'Only OJT Program Supervisors can manage document requirements.');
+        }
+
+        $programId = $supervisor->program_id;
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:150'],
+            'category' => ['required', 'string', 'max:100'],
+            'description' => ['nullable', 'string', 'max:500'],
+            'required' => ['nullable', 'boolean'],
+            'instructions' => ['nullable', 'string', 'max:1000'],
+            'file' => [
+                'nullable',
+                'file',
+                'mimes:pdf,docx,doc',
+                'max:15360', // 15MB
+            ],
+            'remove_template' => ['nullable', 'boolean'],
+        ], [
+            'name.required' => 'Please enter a document title.',
+            'category.required' => 'Please select or enter a category.',
+            'file.mimes' => 'The blank template must be a PDF or Microsoft Word document (.pdf, .docx, .doc).',
+            'file.max' => 'The template file size must not exceed 15 MB.',
+        ]);
+
+        $template = DocumentTemplate::where('program_id', $programId)
+            ->where('document_type', $documentType)
+            ->first();
+
+        $isPredefined = array_key_exists($documentType, InternDocument::DOCUMENT_TYPES);
+
+        if (! $template) {
+            $template = new DocumentTemplate([
+                'program_id' => $programId,
+                'document_type' => $documentType,
+                'is_custom' => ! $isPredefined,
+            ]);
+        }
+
+        $template->name = $validated['name'];
+        $template->category = $validated['category'];
+        $template->description = $validated['description'] ?? null;
+        $template->required = $request->boolean('required', true);
+        $template->instructions = $validated['instructions'] ?? null;
+        $template->uploaded_by = $request->user()->id;
+
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            if ($template->file_path && Storage::disk('local')->exists($template->file_path)) {
+                Storage::disk('local')->delete($template->file_path);
+            }
+            $template->file_path = $file->store("document-templates/{$programId}", 'local');
+            $template->original_filename = $file->getClientOriginalName();
+            $template->file_size_bytes = $file->getSize();
+            $template->mime_type = $file->getMimeType();
+        } elseif ($request->boolean('remove_template')) {
+            if ($template->file_path && Storage::disk('local')->exists($template->file_path)) {
+                Storage::disk('local')->delete($template->file_path);
+            }
+            $template->file_path = null;
+            $template->original_filename = null;
+            $template->file_size_bytes = null;
+            $template->mime_type = null;
+        }
+
+        $template->save();
+
+        return back()->with('success', "Document requirement \"{$validated['name']}\" updated successfully.");
     }
 
     public function download(Request $request, DocumentTemplate $documentTemplate): BinaryFileResponse
@@ -198,7 +415,7 @@ class DocumentTemplateController extends Controller
             }
         }
 
-        if (! Storage::disk('local')->exists($documentTemplate->file_path)) {
+        if (! $documentTemplate->file_path || ! Storage::disk('local')->exists($documentTemplate->file_path)) {
             abort(404, 'Template file not found.');
         }
 
@@ -207,24 +424,51 @@ class DocumentTemplateController extends Controller
         return response()->download($fullPath, $documentTemplate->original_filename);
     }
 
-    public function destroy(Request $request, DocumentTemplate $documentTemplate): RedirectResponse
+    public function destroy(Request $request, string $documentType): RedirectResponse
     {
         $user = $request->user();
         $supervisor = $user->supervisorProfile;
 
         if (! $user->isAdmin()) {
-            if (! $supervisor || ! $supervisor->isOjtSupervisor() || $supervisor->program_id !== $documentTemplate->program_id) {
+            if (! $supervisor || ! $supervisor->isOjtSupervisor()) {
                 abort(403, 'Unauthorized action.');
             }
         }
 
-        $docConfig = InternDocument::getTypeConfig($documentTemplate->document_type);
-        $docName = $docConfig['name'] ?? 'Document';
+        $programId = $supervisor->program_id;
 
-        // Soft delete moves template to archive/trash without deleting physical file
-        $documentTemplate->delete();
+        // Check if $documentType is numeric ID or string key
+        $template = is_numeric($documentType)
+            ? DocumentTemplate::where('program_id', $programId)->find((int) $documentType)
+            : DocumentTemplate::where('program_id', $programId)->where('document_type', $documentType)->first();
 
-        return back()->with('success', "Blank template for {$docName} moved to archive.");
+        if (! $template) {
+            $typeKey = is_numeric($documentType) ? null : $documentType;
+            if ($typeKey && array_key_exists($typeKey, InternDocument::DOCUMENT_TYPES)) {
+                $config = InternDocument::DOCUMENT_TYPES[$typeKey];
+                $template = DocumentTemplate::create([
+                    'program_id' => $programId,
+                    'document_type' => $typeKey,
+                    'name' => $config['name'],
+                    'category' => $config['category'],
+                    'description' => $config['description'],
+                    'required' => $config['required'],
+                    'is_custom' => false,
+                    'uploaded_by' => $user->id,
+                ]);
+                $template->delete();
+                $docName = $config['name'];
+
+                return back()->with('success', "Document requirement \"{$docName}\" moved to archive.");
+            }
+
+            abort(404, 'Document requirement not found.');
+        }
+
+        $docName = $template->display_name;
+        $template->delete();
+
+        return back()->with('success', "Document requirement \"{$docName}\" moved to archive.");
     }
 
     public function restore(Request $request, int $id): RedirectResponse
@@ -242,10 +486,9 @@ class DocumentTemplateController extends Controller
 
         $template->restore();
 
-        $docConfig = InternDocument::getTypeConfig($template->document_type);
-        $docName = $docConfig['name'] ?? 'Document';
+        $docName = $template->display_name;
 
-        return back()->with('success', "Blank template for {$docName} restored successfully.");
+        return back()->with('success', "Document requirement \"{$docName}\" restored successfully.");
     }
 
     public function forceDelete(Request $request, int $id): RedirectResponse
@@ -265,11 +508,9 @@ class DocumentTemplateController extends Controller
             Storage::disk('local')->delete($template->file_path);
         }
 
-        $docConfig = InternDocument::getTypeConfig($template->document_type);
-        $docName = $docConfig['name'] ?? 'Document';
-
+        $docName = $template->display_name;
         $template->forceDelete();
 
-        return back()->with('success', "Blank template for {$docName} permanently deleted.");
+        return back()->with('success', "Document requirement \"{$docName}\" permanently deleted.");
     }
 }
