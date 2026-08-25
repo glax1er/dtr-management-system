@@ -6,6 +6,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -75,6 +76,16 @@ class User extends Authenticatable implements PasskeyUser
     public function supervisorProfile(): HasOne
     {
         return $this->hasOne(SupervisorProfile::class, 'user_id', 'id');
+    }
+
+    /**
+     * Uploaded requirement documents for this user (if role = intern).
+     *
+     * @return HasMany<InternDocument, $this>
+     */
+    public function internDocuments(): HasMany
+    {
+        return $this->hasMany(InternDocument::class, 'user_id', 'id');
     }
 
     public function isAdmin(): bool

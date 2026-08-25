@@ -1,5 +1,16 @@
 import { Head, router } from '@inertiajs/react';
 import {
+    Award,
+    CheckCircle2,
+    ChevronLeft,
+    ChevronRight,
+    Clock,
+    FileCheck2,
+    GraduationCap,
+    SlidersHorizontal,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import type { FormEvent, KeyboardEvent } from 'react';
     Building2,
     Clock,
     GraduationCap,
@@ -24,6 +35,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { CompletionSummaryDialog } from '@/components/completion-summary-dialog';
+import { InternDocumentsDialog } from '@/components/intern-documents-dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Table,
@@ -43,6 +56,13 @@ interface StudentRow {
     contact_number: string | null;
     hte_name: string;
     total_hours: number;
+    required_hours: number;
+    progress_percent: number;
+    hours_completed: boolean;
+    approved_docs_count: number;
+    total_required_docs_count: number;
+    docs_completed: boolean;
+    is_completed: boolean;
 }
 
 interface HteOption {
@@ -53,12 +73,15 @@ interface HteOption {
 interface Filters {
     search: string;
     hte_id: number | null;
+    completion_status?: 'all' | 'completed' | 'in_progress';
     per_page: number;
 }
 
 interface MyStudentsProps {
     students: Paginated<StudentRow>;
     studentCount: number;
+    completedCount?: number;
+    inProgressCount?: number;
     scopeName?: string;
     hteOptions: HteOption[];
     filters: Filters;
@@ -67,36 +90,34 @@ interface MyStudentsProps {
 type ViewMode = 'table' | 'grid';
 
 const ALL_HTES = 'all';
+const ALL_STATUSES = 'all';
 
 function formatLongDuration(hours: number): string {
     if (hours <= 0) {
-        return '—';
+        return '0 hrs';
     }
-
-    const totalMinutes = Math.round(hours * 60);
-    const wholeHours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-
-    const parts: string[] = [];
-
-    if (wholeHours > 0) {
-        parts.push(`${wholeHours} ${wholeHours === 1 ? 'hour' : 'hours'}`);
-    }
-
-    if (minutes > 0) {
-        parts.push(`${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`);
-    }
-
-    return parts.length > 0 ? parts.join(' ') : '0 minutes';
+    return `${hours.toFixed(1)} hrs`;
 }
 
 export default function MyStudents({
     students,
     studentCount,
+    completedCount = 0,
+    inProgressCount = 0,
     scopeName,
     hteOptions,
     filters,
 }: MyStudentsProps) {
+    const [search, setSearch] = useState(filters.search || '');
+    const [perPageDraft, setPerPageDraft] = useState(String(filters.per_page));
+
+    useEffect(() => {
+        setSearch(filters.search || '');
+    }, [filters.search]);
+
+    // Base params shared by every navigation action — anything that
+    // changes what rows match (search/hte_id/completion_status) resets back to page 1 by
+    // simply omitting the page param.
     const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters.search);
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -104,6 +125,7 @@ export default function MyStudents({
     const baseParams = () => ({
         search: filters.search || undefined,
         hte_id: filters.hte_id ? String(filters.hte_id) : undefined,
+        completion_status: filters.completion_status && filters.completion_status !== 'all' ? filters.completion_status : undefined,
         per_page: String(filters.per_page),
     });
 
@@ -130,6 +152,28 @@ export default function MyStudents({
             hte_id: value === ALL_HTES ? undefined : value,
             page: undefined,
         });
+    };
+
+    const changeCompletionStatus = (value: string) => {
+        visit({
+            ...baseParams(),
+            completion_status: value === ALL_STATUSES ? undefined : value,
+        });
+    };
+
+    const commitPerPage = () => {
+        const parsed = parseInt(perPageDraft, 10);
+        const clamped = Number.isNaN(parsed)
+            ? filters.per_page
+            : Math.min(MAX_PER_PAGE, Math.max(MIN_PER_PAGE, parsed));
+
+        setPerPageDraft(String(clamped));
+
+        if (clamped === filters.per_page) {
+            return;
+        }
+
+        visit({ ...baseParams(), per_page: String(clamped) });
     };
 
     const goToPage = (page: number) => {
@@ -206,127 +250,175 @@ export default function MyStudents({
                                         <SelectItem key={hte.hte_id} value={String(hte.hte_id)}>
                                             {hte.hte_name}
                                         </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="sm:hidden">
-                            <Select
-                                value={filters.hte_id ? String(filters.hte_id) : ALL_HTES}
-                                onValueChange={changeHte}
-                            >
-                                <SelectTrigger className="inline-flex size-9 items-center justify-center p-0 [&>span]:hidden [&>svg:last-child]:hidden">
-                                    <SlidersHorizontal className="size-4 text-muted-foreground" />
-                                </SelectTrigger>
-                                <SelectContent align="end">
-                                    <SelectItem value={ALL_HTES}>All HTEs</SelectItem>
-                                    {hteOptions.map((hte) => (
-                                        <SelectItem key={hte.hte_id} value={String(hte.hte_id)}>
-                                            {hte.hte_name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                                        {hteOptions.map((hte) => (
+                                            <SelectItem
+                                                key={hte.hte_id}
+                                                value={String(hte.hte_id)}
+                                            >
+                                                {hte.hte_name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
 
-                        {/* View toggle — desktop only */}
-                        <div className="hidden sm:block">
-                            <Tabs value={view} onValueChange={(v) => setView(v as ViewMode)}>
-                                <TabsList>
-                                    <TabsTrigger value="table"><TableIcon className="size-4" /></TabsTrigger>
-                                    <TabsTrigger value="grid"><LayoutGrid className="size-4" /></TabsTrigger>
-                                </TabsList>
-                            </Tabs>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Mobile inline search */}
-                {mobileSearchOpen && (
-                    <form
-                        onSubmit={(e) => { applySearch(e); setMobileSearchOpen(false); }}
-                        className="flex items-center gap-2 sm:hidden w-full"
-                    >
-                        <div className="relative flex-1">
-                            <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-                            <input
-                                autoFocus
-                                type="text"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search students…"
-                                className="h-9 w-full rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
-                            />
-                            {search && (
-                                <button
-                                    type="button"
-                                    onClick={() => { clearSearch(); setMobileSearchOpen(false); }}
-                                    className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            <div className="flex flex-col gap-1.5">
+                                <Label
+                                    htmlFor="completion-filter"
+                                    className="text-xs text-muted-foreground"
                                 >
-                                    <X className="size-3.5" />
-                                </button>
-                            )}
-                        </div>
-                        <Button type="submit" size="sm">Search</Button>
-                    </form>
-                )}
+                                    Completion Status
+                                </Label>
+                                <Select
+                                    value={filters.completion_status || ALL_STATUSES}
+                                    onValueChange={changeCompletionStatus}
+                                >
+                                    <SelectTrigger
+                                        id="completion-filter"
+                                        className="w-full sm:w-48"
+                                    >
+                                        <SlidersHorizontal className="mr-1.5 size-3.5 text-muted-foreground" />
+                                        <SelectValue placeholder="All Status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value={ALL_STATUSES}>
+                                            All Students
+                                        </SelectItem>
+                                        <SelectItem value="completed">
+                                            Completed Requirements ({completedCount})
+                                        </SelectItem>
+                                        <SelectItem value="in_progress">
+                                            In Progress ({inProgressCount})
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            </div>
+                        </form>
 
-                {/* Content */}
-                {students.data.length === 0 ? (
-                    <Card>
-                        <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                            No students {filters.search || filters.hte_id ? 'match this filter.' : 'assigned yet.'}
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <>
-                        {/* Table view — desktop */}
-                        {view === 'table' && (
-                            <div className="hidden sm:block">
-                                <Card>
-                                    <CardContent className="p-0">
-                                        <Table>
-                                            <TableHeader className="bg-muted/40">
-                                                <TableRow>
-                                                    <TableHead className="px-6 font-semibold">Student</TableHead>
-                                                    <TableHead className="px-6 text-center font-semibold">ID Number</TableHead>
-                                                    <TableHead className="px-6 text-center font-semibold">Contact Number</TableHead>
-                                                    <TableHead className="px-6 text-center font-semibold">Assigned HTE</TableHead>
-                                                    <TableHead className="px-6 text-right font-semibold">Hours Rendered</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {students.data.map((student) => (
-                                                    <TableRow key={student.intern_user_id}>
-                                                        <TableCell className="px-6">
-                                                            <p className="font-medium whitespace-nowrap text-foreground">{student.name}</p>
-                                                            <p
-                                                                className="max-w-[200px] truncate text-xs text-muted-foreground"
-                                                                title={student.email}
-                                                            >
-                                                                {student.email}
-                                                            </p>
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-center text-muted-foreground tabular-nums whitespace-nowrap">
-                                                            {student.id_number ?? '—'}
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-center text-muted-foreground tabular-nums whitespace-nowrap">
-                                                            {student.contact_number ?? '—'}
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-center whitespace-nowrap">
-                                                            <Badge variant="outline" className="font-normal text-xs">
-                                                                {student.hte_name}
-                                                            </Badge>
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-right font-medium whitespace-nowrap text-foreground">
-                                                            {formatLongDuration(student.total_hours)}
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </CardContent>
-                                </Card>
+                        {students.data.length === 0 ? (
+                            <p className="py-8 text-center text-sm text-muted-foreground">
+                                No interns match{' '}
+                                {filters.search !== '' || filters.hte_id || (filters.completion_status && filters.completion_status !== 'all')
+                                    ? 'these filters.'
+                                    : 'your program yet.'}
+                            </p>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full min-w-[720px] text-sm">
+                                    <thead>
+                                        <tr className="border-b text-left text-muted-foreground">
+                                            <th className="py-2.5 pr-4 font-medium">
+                                                Name
+                                            </th>
+                                            <th className="py-2.5 pr-4 font-medium">
+                                                ID Number
+                                            </th>
+                                            <th className="py-2.5 pr-4 font-medium">
+                                                Assigned HTE
+                                            </th>
+                                            <th className="py-2.5 pr-4 font-medium">
+                                                Hours Rendered
+                                            </th>
+                                            <th className="py-2.5 pr-4 font-medium">
+                                                Documents
+                                            </th>
+                                            <th className="py-2.5 pr-4 font-medium">
+                                                Requirement Status
+                                            </th>
+                                            <th className="py-2.5 font-medium text-right">
+                                                Actions
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {students.data.map((student) => (
+                                            <tr
+                                                key={student.intern_user_id}
+                                                className="border-b last:border-0 hover:bg-muted/40"
+                                            >
+                                                <td className="py-3 pr-4">
+                                                    <p className="font-medium whitespace-nowrap">
+                                                        {student.name}
+                                                    </p>
+                                                    <p
+                                                        className="max-w-[160px] truncate text-xs text-muted-foreground"
+                                                        title={student.email}
+                                                    >
+                                                        {student.email}
+                                                    </p>
+                                                <td className="py-3 pr-4 whitespace-nowrap">
+                                                    {student.id_number ?? '—'}
+                                                </td>
+                                                <td
+                                                    className="max-w-[140px] truncate py-3 pr-4"
+                                                    title={student.hte_name}
+                                                >
+                                                    {student.hte_name}
+                                                </td>
+                                                <td className="py-3 pr-4 whitespace-nowrap">
+                                                    <div className="flex flex-col gap-1 min-w-[110px]">
+                                                        <div className="flex justify-between text-xs">
+                                                            <span className="font-medium">{formatHours(student.total_hours)}</span>
+                                                            <span className="text-muted-foreground">/ {student.required_hours}h</span>
+                                                        </div>
+                                                        <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                                                            <div
+                                                                className={`h-full rounded-full ${
+                                                                    student.hours_completed ? 'bg-emerald-500' : 'bg-primary'
+                                                                }`}
+                                                                style={{ width: `${Math.min(100, student.progress_percent)}%` }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="py-3 pr-4 whitespace-nowrap">
+                                                    <Badge
+                                                        variant="outline"
+                                                        className={`text-xs gap-1 ${
+                                                            student.docs_completed
+                                                                ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-300'
+                                                                : 'bg-muted text-muted-foreground'
+                                                        }`}
+                                                    >
+                                                        <FileCheck2 className="size-3" />
+                                                        {student.approved_docs_count} / {student.total_required_docs_count} Approved
+                                                    </Badge>
+                                                </td>
+                                                <td className="py-3 pr-4 whitespace-nowrap">
+                                                    {student.is_completed ? (
+                                                        <Badge className="bg-emerald-600 text-white hover:bg-emerald-600 text-xs gap-1">
+                                                            <CheckCircle2 className="size-3.5" />
+                                                            Completed
+                                                        </Badge>
+                                                    ) : (
+                                                        <Badge
+                                                            variant="secondary"
+                                                            className="text-xs text-muted-foreground font-normal"
+                                                        >
+                                                            {student.hours_completed
+                                                                ? 'Hours Met • Docs Pending'
+                                                                : `${Math.round(student.progress_percent)}% Rendered`}
+                                                        </Badge>
+                                                    )}
+                                                </td>
+                                                <td className="py-3 whitespace-nowrap text-right">
+                                                    <div className="flex items-center justify-end gap-1.5">
+                                                        <CompletionSummaryDialog
+                                                            internUserId={student.intern_user_id}
+                                                            internName={student.name}
+                                                            isCompleted={student.is_completed}
+                                                        />
+                                                        <InternDocumentsDialog
+                                                            internUserId={student.intern_user_id}
+                                                            internName={student.name}
+                                                        />
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
                         )}
 
