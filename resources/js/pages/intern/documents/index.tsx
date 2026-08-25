@@ -12,6 +12,7 @@ import {
     Loader2,
     RefreshCw,
     Trash2,
+    Paperclip,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -209,16 +210,16 @@ export default function InternDocuments({
         <>
             <Head title="My Documents" />
 
-            <div className="flex h-full flex-1 flex-col gap-5 px-3 py-4 sm:p-6 max-w-6xl mx-auto w-full">
+            <div className="flex h-full flex-1 flex-col gap-4 p-4">
                 {/* Header */}
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+                        <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
+                            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                                <Paperclip className="size-5" />
+                            </span>
                             My Documents
                         </h1>
-                        <p className="text-xs text-muted-foreground">
-                            Upload and manage your required internship clearance documents (PDF only).
-                        </p>
                     </div>
 
                     {/* Progress indicator */}
