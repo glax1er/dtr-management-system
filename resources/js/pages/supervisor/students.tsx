@@ -11,16 +11,23 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { FormEvent, KeyboardEvent } from 'react';
+    Building2,
+    Clock,
+    GraduationCap,
+    LayoutGrid,
+    Phone,
+    Search,
+    SlidersHorizontal,
+    Table as TableIcon,
+    X,
+} from 'lucide-react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
+import { NumberedPagination } from '@/components/numbered-pagination';
+import type { Paginated } from '@/components/pagination-footer';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Select,
     SelectContent,
@@ -30,6 +37,16 @@ import {
 } from '@/components/ui/select';
 import { CompletionSummaryDialog } from '@/components/completion-summary-dialog';
 import { InternDocumentsDialog } from '@/components/intern-documents-dialog';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import { dashboard } from '@/routes';
 
 interface StudentRow {
     intern_user_id: number;
@@ -48,16 +65,6 @@ interface StudentRow {
     is_completed: boolean;
 }
 
-interface PaginatedStudents {
-    data: StudentRow[];
-    current_page: number;
-    last_page: number;
-    per_page: number;
-    total: number;
-    from: number | null;
-    to: number | null;
-}
-
 interface HteOption {
     hte_id: number;
     hte_name: string;
@@ -71,7 +78,7 @@ interface Filters {
 }
 
 interface MyStudentsProps {
-    students: PaginatedStudents;
+    students: Paginated<StudentRow>;
     studentCount: number;
     completedCount?: number;
     inProgressCount?: number;
@@ -80,17 +87,12 @@ interface MyStudentsProps {
     filters: Filters;
 }
 
-const MIN_PER_PAGE = 1;
-const MAX_PER_PAGE = 100;
+type ViewMode = 'table' | 'grid';
 
-// Radix's Select doesn't allow an item with an empty-string value, so
-// "every HTE" gets its own sentinel that we translate back to
-// undefined (i.e. no hte_id filter) before it hits the URL.
 const ALL_HTES = 'all';
 const ALL_STATUSES = 'all';
 
-/** 8.5 → "8.5 hrs" */
-function formatHours(hours: number): string {
+function formatLongDuration(hours: number): string {
     if (hours <= 0) {
         return '0 hrs';
     }
@@ -116,6 +118,10 @@ export default function MyStudents({
     // Base params shared by every navigation action — anything that
     // changes what rows match (search/hte_id/completion_status) resets back to page 1 by
     // simply omitting the page param.
+    const [view, setView] = useState<ViewMode>('table');
+    const [search, setSearch] = useState(filters.search);
+    const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
     const baseParams = () => ({
         search: filters.search || undefined,
         hte_id: filters.hte_id ? String(filters.hte_id) : undefined,
@@ -132,18 +138,19 @@ export default function MyStudents({
 
     const applySearch = (e: FormEvent) => {
         e.preventDefault();
-        visit({ ...baseParams(), search: search || undefined });
+        visit({ ...baseParams(), search: search || undefined, page: undefined });
     };
 
     const clearSearch = () => {
         setSearch('');
-        visit({ ...baseParams(), search: undefined });
+        visit({ ...baseParams(), search: undefined, page: undefined });
     };
 
     const changeHte = (value: string) => {
         visit({
             ...baseParams(),
             hte_id: value === ALL_HTES ? undefined : value,
+            page: undefined,
         });
     };
 
@@ -170,106 +177,78 @@ export default function MyStudents({
     };
 
     const goToPage = (page: number) => {
-        if (page < 1 || page > students.last_page) {
-            return;
-        }
-
         visit({ ...baseParams(), page: String(page) });
+    };
+
+    const changePerPage = (perPage: number) => {
+        visit({ ...baseParams(), per_page: String(perPage), page: undefined });
     };
 
     return (
         <>
             <Head title="My Students" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl px-3 py-4 sm:p-6">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex h-full flex-1 flex-col gap-4 p-4">
+                {/* Header toolbar */}
+                <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl flex items-center gap-2">
-                            <GraduationCap className="size-6 text-primary" />
+                        <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
+                            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                                <GraduationCap className="size-5" />
+                            </span>
                             My Students
                         </h1>
-                        <p className="text-sm text-muted-foreground">
-                            {`${studentCount} intern${studentCount === 1 ? '' : 's'} in the ${scopeName ?? 'selected'} program, across every HTE.`}
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            {studentCount} intern{studentCount === 1 ? '' : 's'} in {scopeName ?? 'your program'}, across every HTE.
                         </p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-400 gap-1.5 py-1 px-2.5">
-                            <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-                            <span className="font-semibold">{completedCount}</span> Completed Requirements
-                        </Badge>
-                        <Badge variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-400 gap-1.5 py-1 px-2.5">
-                            <Clock className="size-3.5 text-amber-600 dark:text-amber-400" />
-                            <span className="font-semibold">{inProgressCount}</span> In Progress
-                        </Badge>
-                    </div>
-                </div>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-base">
-                            Assigned Interns &amp; Requirement Status
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-col gap-5">
-                        <form
-                            onSubmit={applySearch}
-                            className="flex flex-wrap items-end gap-2"
-                        >
-                            <div className="flex flex-col gap-1.5">
-                                <Label
-                                    htmlFor="search"
-                                    className="text-xs text-muted-foreground"
-                                >
-                                    Search by name
-                                </Label>
-                                <Input
-                                    id="search"
-                                    value={search}
-                                    onChange={(e) =>
-                                        setSearch(e.target.value)
-                                    }
-                                    placeholder="e.g. Juan Dela Cruz"
-                                    className="w-52"
-                                />
-                            </div>
-                            <Button type="submit" variant="secondary" size="sm">
-                                Search
-                            </Button>
-                            {filters.search !== '' && (
-                                <Button
+                        {/* Desktop search */}
+                        <form onSubmit={applySearch} className="relative hidden sm:block">
+                            <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                            <input
+                                type="text"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder="Search students…"
+                                className="h-9 w-48 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
+                            />
+                            {search && (
+                                <button
                                     type="button"
-                                    variant="ghost"
-                                    size="sm"
                                     onClick={clearSearch}
+                                    className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                                 >
-                                    Clear
-                                </Button>
+                                    <X className="size-3.5" />
+                                </button>
                             )}
+                        </form>
 
-                            <div className="flex flex-col gap-1.5">
-                                <Label
-                                    htmlFor="hte-filter"
-                                    className="text-xs text-muted-foreground"
-                                >
-                                    Assigned HTE
-                                </Label>
-                                <Select
-                                    value={
-                                        filters.hte_id
-                                            ? String(filters.hte_id)
-                                            : ALL_HTES
-                                    }
-                                    onValueChange={changeHte}
-                                >
-                                    <SelectTrigger
-                                        id="hte-filter"
-                                        className="w-48"
-                                    >
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value={ALL_HTES}>
-                                            All HTEs
+                        {/* Mobile search toggle */}
+                        <button
+                            type="button"
+                            onClick={() => setMobileSearchOpen((o) => !o)}
+                            className="inline-flex size-9 items-center justify-center rounded-md border bg-background text-muted-foreground hover:text-foreground sm:hidden"
+                            aria-label="Toggle search"
+                        >
+                            {mobileSearchOpen ? <X className="size-4" /> : <Search className="size-4" />}
+                        </button>
+
+                        {/* HTE filter dropdown */}
+                        <div className="hidden sm:block">
+                            <Select
+                                value={filters.hte_id ? String(filters.hte_id) : ALL_HTES}
+                                onValueChange={changeHte}
+                            >
+                                <SelectTrigger className="h-9 w-44">
+                                    <SlidersHorizontal className="mr-1 size-3.5 shrink-0 text-muted-foreground" />
+                                    <SelectValue placeholder="All HTEs" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value={ALL_HTES}>All HTEs</SelectItem>
+                                    {hteOptions.map((hte) => (
+                                        <SelectItem key={hte.hte_id} value={String(hte.hte_id)}>
+                                            {hte.hte_name}
                                         </SelectItem>
                                         {hteOptions.map((hte) => (
                                             <SelectItem
@@ -443,87 +422,91 @@ export default function MyStudents({
                             </div>
                         )}
 
-                        {students.total > 0 && (
-                            <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-                                <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                                    <span>
-                                        Showing {students.from}–{students.to} of{' '}
-                                        {students.total} intern
-                                        {students.total === 1 ? '' : 's'}
-                                    </span>
-                                    <div className="flex items-center gap-2">
-                                        <Label
-                                            htmlFor="per-page"
-                                            className="text-xs whitespace-nowrap"
-                                        >
-                                            Rows per page
-                                        </Label>
-                                        <Input
-                                            id="per-page"
-                                            type="number"
-                                            inputMode="numeric"
-                                            min={MIN_PER_PAGE}
-                                            max={MAX_PER_PAGE}
-                                            value={perPageDraft}
-                                            onChange={(e) =>
-                                                setPerPageDraft(e.target.value)
-                                            }
-                                            onBlur={commitPerPage}
-                                            onKeyDown={(
-                                                e: KeyboardEvent<HTMLInputElement>,
-                                            ) => {
-                                                if (e.key === 'Enter') {
-                                                    e.preventDefault();
-                                                    commitPerPage();
-                                                }
-                                            }}
-                                            className="h-8 w-[4.5rem]"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={students.current_page <= 1}
-                                        onClick={() =>
-                                            goToPage(students.current_page - 1)
-                                        }
-                                    >
-                                        <ChevronLeft className="size-3.5" />
-                                        Previous
-                                    </Button>
-                                    <span className="min-w-24 text-center text-sm text-muted-foreground">
-                                        Page {students.current_page} of{' '}
-                                        {students.last_page}
-                                    </span>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={
-                                            students.current_page >=
-                                            students.last_page
-                                        }
-                                        onClick={() =>
-                                            goToPage(students.current_page + 1)
-                                        }
-                                    >
-                                        Next
-                                        <ChevronRight className="size-3.5" />
-                                    </Button>
-                                </div>
+                        {/* Grid view — desktop */}
+                        {view === 'grid' && (
+                            <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {students.data.map((student) => (
+                                    <Card key={student.intern_user_id} className="flex flex-col justify-between">
+                                        <CardHeader className="pb-3">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="min-w-0">
+                                                    <CardTitle className="text-base font-semibold truncate">
+                                                        {student.name}
+                                                    </CardTitle>
+                                                    <p className="text-xs text-muted-foreground truncate mt-0.5" title={student.email}>
+                                                        {student.email}
+                                                    </p>
+                                                </div>
+                                                <Badge variant="outline" className="shrink-0 text-xs font-mono">
+                                                    {student.id_number ?? 'No ID'}
+                                                </Badge>
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent className="flex flex-col gap-2.5 text-xs text-muted-foreground pt-0">
+                                            {student.contact_number && (
+                                                <div className="flex items-center gap-2">
+                                                    <Phone className="size-3.5 shrink-0" />
+                                                    <span>{student.contact_number}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex items-center gap-2">
+                                                <Building2 className="size-3.5 shrink-0" />
+                                                <span className="truncate font-medium text-foreground">{student.hte_name}</span>
+                                            </div>
+                                            <div className="mt-2 flex items-center justify-between border-t pt-2">
+                                                <span className="flex items-center gap-1.5 text-muted-foreground">
+                                                    <Clock className="size-3.5" /> Rendered:
+                                                </span>
+                                                <span className="font-semibold text-foreground text-xs">
+                                                    {formatLongDuration(student.total_hours)}
+                                                </span>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))}
                             </div>
                         )}
-                    </CardContent>
-                </Card>
+
+                        {/* Mobile list view */}
+                        <div className="sm:hidden flex flex-col gap-3">
+                            {students.data.map((student) => (
+                                <Card key={student.intern_user_id}>
+                                    <CardContent className="p-4 flex flex-col gap-2">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="min-w-0">
+                                                <p className="font-semibold text-sm text-foreground truncate">{student.name}</p>
+                                                <p className="text-xs text-muted-foreground truncate">{student.email}</p>
+                                            </div>
+                                            <Badge variant="outline" className="text-xs shrink-0 font-mono">
+                                                {student.id_number ?? 'No ID'}
+                                            </Badge>
+                                        </div>
+                                        <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t">
+                                            <span className="truncate max-w-[160px] font-medium text-foreground">{student.hte_name}</span>
+                                            <span className="font-semibold text-foreground">{formatLongDuration(student.total_hours)}</span>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+
+                        <NumberedPagination
+                            meta={students}
+                            itemLabel="student"
+                            onPageChange={goToPage}
+                            onPerPageChange={changePerPage}
+                            idPrefix="students-per-page"
+                        />
+                    </>
+                )}
             </div>
         </>
     );
 }
 
 MyStudents.layout = {
-    breadcrumbs: [{ title: 'My Students', href: '/supervisor/interns' }],
+    breadcrumbs: [
+        { title: 'Dashboard', href: dashboard() },
+        { title: 'My Students', href: '/supervisor/interns' },
+    ],
 };

@@ -6,8 +6,8 @@ use App\Http\Controllers\Admin\InternController;
 use App\Http\Controllers\Admin\InternApprovalController;
 use App\Http\Controllers\Admin\SupervisorController;
 use App\Http\Controllers\Admin\KioskController;
-use App\Http\Controllers\Admin\SchedulePeriodController as AdminScheduleController;
 use App\Http\Controllers\Admin\ProgramController;
+use App\Http\Controllers\Admin\SchedulePeriodController as AdminScheduleController;
 use App\Http\Controllers\Intern\QrCodeImageController;
 use App\Http\Controllers\Intern\DashboardController as InternDashboardController;
 use App\Http\Controllers\Intern\DtrReportController;
@@ -170,5 +170,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 Route::get('kiosk/{token}', [KioskScanController::class, 'show'])->name('kiosk.scan.show');
 Route::post('kiosk/{token}/scan', [KioskScanController::class, 'store'])->name('kiosk.scan.store');
-
 require __DIR__ . '/settings.php';

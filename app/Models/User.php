@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -103,7 +102,6 @@ class User extends Authenticatable implements PasskeyUser
     {
         return $this->role === self::ROLE_INTERN;
     }
-
     /**
      * The named route this user should land on after login, or when
      * hitting the generic /dashboard redirect.

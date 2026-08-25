@@ -9,18 +9,34 @@ interface ToastFlash {
 
 interface FlashPageProps {
     toast?: ToastFlash | null;
+    flash?: {
+        toast?: ToastFlash | null;
+        success?: string | null;
+        error?: string | null;
+    };
     [key: string]: unknown;
 }
 
 export function FlashToaster() {
-    const { toast } = usePage<FlashPageProps>().props;
+    const { toast, flash } = usePage<FlashPageProps>().props;
 
     useEffect(() => {
-        if (!toast?.message) return;
+        const flashToast = toast ?? flash?.toast;
+        if (flashToast?.message) {
+            const fn = sonnerToast[flashToast.type] ?? sonnerToast.success;
+            fn(flashToast.message);
+            return;
+        }
 
-        const fn = sonnerToast[toast.type] ?? sonnerToast.success;
-        fn(toast.message);
-    }, [toast]);
+        if (flash?.success) {
+            sonnerToast.success(flash.success);
+            return;
+        }
+
+        if (flash?.error) {
+            sonnerToast.error(flash.error);
+        }
+    }, [toast, flash]);
 
     return null;
 }

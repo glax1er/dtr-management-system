@@ -2,16 +2,22 @@ import { Head, router } from '@inertiajs/react';
 import { toast } from 'sonner';
 import {
     AlertTriangle,
-    CalendarDays,
+    Check,
+    ChevronsUpDown,
     History,
     Info,
     LoaderCircle,
+    PenLine,
     Plus,
+    Search,
     Trash2,
     UserRound,
+    X,
 } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
     Card,
     CardContent,
@@ -30,17 +36,18 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 
 interface Intern {
     user_id: number;
     name: string;
+    id_number?: string | null;
+    program_name?: string | null;
 }
 
 interface Entry {
@@ -67,6 +74,8 @@ const emptyEntry = (): Entry => ({
 
 export default function ManualAttendance({ interns }: ManualAttendanceProps) {
     const [internId, setInternId] = useState('');
+    const [searchOpen, setSearchOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
     const [entries, setEntries] = useState<Entry[]>([emptyEntry()]);
     const [processing, setProcessing] = useState(false);
 
@@ -87,6 +96,18 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
         () => interns.find((intern) => String(intern.user_id) === internId),
         [internId, interns],
     );
+
+    const filteredInterns = useMemo(() => {
+        const q = searchQuery.trim().toLowerCase();
+        if (!q) return interns;
+
+        return interns.filter(
+            (intern) =>
+                intern.name.toLowerCase().includes(q) ||
+                (intern.id_number && intern.id_number.toLowerCase().includes(q)) ||
+                (intern.program_name && intern.program_name.toLowerCase().includes(q)),
+        );
+    }, [interns, searchQuery]);
 
     // A row only needs a date plus *either* a time in or a time out (or
     // both) — a supervisor might only know one side of the shift, e.g.
@@ -231,10 +252,22 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
         }
     };
 
+    const handleSelectIntern = (value: string) => {
+        setInternId(value);
+        setConflicts([]);
+        setRowNotices(entries.map(() => null));
+
+        // Re-check any rows that already have a date filled in.
+        entries.forEach((entry, index) => {
+            if (entry.date) {
+                void lookupExisting(index, entry.date, value);
+            }
+        });
+    };
+
     const submit = async (force = false) => {
         if (!internId) {
             toast.error('Select an intern first.');
-
             return;
         }
 
@@ -246,7 +279,6 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
             showError(
                 'Each record needs a date and at least a time in or a time out. Complete or remove unfinished rows before saving.',
             );
-
             return;
         }
 
@@ -254,7 +286,6 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
             showError(
                 'Add at least one attendance record with a date and a time in or time out.',
             );
-
             return;
         }
 
@@ -323,11 +354,15 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
                 {
                     preserveScroll: true,
                     onSuccess: () => {
+                        toast.success('Attendance records saved successfully.');
                         setConflicts([]);
                         setEntries([emptyEntry()]);
                         setRowNotices([null]);
                     },
                     onError: () => {
+                        toast.error(
+                            'The records could not be saved. Please review the details and try again.',
+                        );
                         showError(
                             'The records could not be saved. Please review the details and try again.',
                         );
@@ -337,12 +372,12 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
             );
         } catch (caughtError) {
             setProcessing(false);
-
-            showError(
+            const msg =
                 caughtError instanceof Error
                     ? caughtError.message
-                    : 'Something went wrong. Please try again.',
-            );
+                    : 'Something went wrong. Please try again.';
+            toast.error(msg);
+            showError(msg);
         }
     };
 
@@ -350,31 +385,24 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
         <>
             <Head title="Manual Attendance" />
 
-            {/*
-              Mobile: the overall page scrolls.
-              Desktop: the page stays fixed and only the records list scrolls.
-              Change 4rem if your dashboard header uses a different height.
-            */}
             <div className="flex w-full flex-1 flex-col gap-4 p-4 sm:gap-5 sm:p-5 lg:h-[calc(100dvh-4rem)] lg:overflow-hidden lg:p-6">
-                <section className="flex shrink-0 items-center gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-                        <CalendarDays className="size-5" />
-                    </div>
-
+                <div className="flex flex-wrap items-center justify-between gap-3 shrink-0">
                     <div>
-                        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-                            Manual attendance
+                        <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
+                            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                                <PenLine className="size-5" />
+                            </span>
+                            Manual Attendance
                         </h1>
-                        <p className="mt-0.5 text-sm text-muted-foreground">
-                            Add verified attendance from paper records or missed
-                            kiosk scans.
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            Add verified attendance from paper records or missed kiosk scans.
                         </p>
                     </div>
-                </section>
+                </div>
 
-                <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(220px,0.75fr)_minmax(0,1.7fr)] lg:overflow-hidden">
+                <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(260px,0.85fr)_minmax(0,1.7fr)] lg:overflow-hidden">
                     <Card className="h-fit border-border/70 shadow-sm">
-                        <CardHeader className="">
+                        <CardHeader className="pb-3">
                             <div className="flex items-center gap-2">
                                 <UserRound className="size-4 text-primary" />
                                 <CardTitle className="text-base">
@@ -382,53 +410,118 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
                                 </CardTitle>
                             </div>
                             <CardDescription>
-                                Select the person whose attendance you are
-                                adding.
+                                Select the person whose attendance you are adding.
                             </CardDescription>
                         </CardHeader>
 
                         <CardContent className="space-y-3">
                             <div className="space-y-1.5">
-                                <Label htmlFor="intern">Intern name</Label>
+                                <Label htmlFor="intern-combobox">Intern name</Label>
 
-                                <Select
-                                    value={internId}
-                                    onValueChange={(value) => {
-                                        setInternId(value);
-                                        setConflicts([]);
-                                        setRowNotices(entries.map(() => null));
+                                <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            id="intern-combobox"
+                                            type="button"
+                                            variant="outline"
+                                            role="combobox"
+                                            aria-expanded={searchOpen}
+                                            className="w-full justify-between h-10 px-3 bg-background font-normal text-left shadow-xs border-border hover:bg-accent/40"
+                                        >
+                                            {selectedIntern ? (
+                                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                                    <UserRound className="size-4 text-primary shrink-0" />
+                                                    <span className="truncate font-medium text-foreground text-sm">
+                                                        {selectedIntern.name}
+                                                    </span>
+                                                    {selectedIntern.id_number && (
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="px-1.5 py-0 text-[10px] font-mono shrink-0 hidden sm:inline-flex"
+                                                        >
+                                                            {selectedIntern.id_number}
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <span className="text-muted-foreground text-sm flex items-center gap-2">
+                                                    <UserRound className="size-4 text-muted-foreground/60 shrink-0" />
+                                                    Search or choose an intern...
+                                                </span>
+                                            )}
+                                            <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground ml-2 opacity-70" />
+                                        </Button>
+                                    </PopoverTrigger>
 
-                                        // Re-check any rows that already
-                                        // have a date filled in, since a
-                                        // different intern can have a
-                                        // completely different record (or
-                                        // none) for that same day.
-                                        entries.forEach((entry, index) => {
-                                            if (entry.date) {
-                                                void lookupExisting(
-                                                    index,
-                                                    entry.date,
-                                                    value,
-                                                );
-                                            }
-                                        });
-                                    }}
-                                >
-                                    <SelectTrigger id="intern">
-                                        <SelectValue placeholder="Choose an intern" />
-                                    </SelectTrigger>
+                                    <PopoverContent
+                                        className="w-[calc(100vw-2rem)] max-w-sm sm:w-[var(--radix-popover-trigger-width)] p-0 shadow-lg rounded-xl border border-border bg-popover"
+                                        align="start"
+                                        sideOffset={6}
+                                    >
+                                        <div className="flex items-center border-b border-border px-3 py-2.5 gap-2">
+                                            <Search className="size-4 shrink-0 text-muted-foreground" />
+                                            <input
+                                                type="text"
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                placeholder="Search by name, ID, or program..."
+                                                className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                                                autoFocus
+                                            />
+                                            {searchQuery && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSearchQuery('')}
+                                                    className="rounded-full p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted"
+                                                >
+                                                    <X className="size-3.5" />
+                                                </button>
+                                            )}
+                                        </div>
 
-                                    <SelectContent>
-                                        {interns.map((intern) => (
-                                            <SelectItem
-                                                key={intern.user_id}
-                                                value={String(intern.user_id)}
-                                            >
-                                                {intern.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                        <div className="max-h-60 overflow-y-auto p-1.5 space-y-0.5">
+                                            {filteredInterns.length === 0 ? (
+                                                <div className="py-6 text-center text-xs text-muted-foreground">
+                                                    No interns found matching &ldquo;{searchQuery}&rdquo;
+                                                </div>
+                                            ) : (
+                                                filteredInterns.map((intern) => {
+                                                    const isSelected = String(intern.user_id) === internId;
+
+                                                    return (
+                                                        <button
+                                                            key={intern.user_id}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                handleSelectIntern(String(intern.user_id));
+                                                                setSearchOpen(false);
+                                                                setSearchQuery('');
+                                                            }}
+                                                            className={cn(
+                                                                'w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-sm transition-colors',
+                                                                isSelected
+                                                                    ? 'bg-primary/10 text-primary font-medium'
+                                                                    : 'text-foreground hover:bg-accent hover:text-accent-foreground',
+                                                            )}
+                                                        >
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className="truncate text-sm font-medium">{intern.name}</p>
+                                                                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                                                                    {intern.id_number && <span>ID: {intern.id_number}</span>}
+                                                                    {intern.id_number && intern.program_name && <span>•</span>}
+                                                                    {intern.program_name && (
+                                                                        <span className="truncate">{intern.program_name}</span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            {isSelected && <Check className="size-4 shrink-0 text-primary ml-2" />}
+                                                        </button>
+                                                    );
+                                                })
+                                            )}
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
                             </div>
 
                             {selectedIntern ? (
@@ -509,13 +602,12 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
                                                 >
                                                     Date
                                                 </Label>
-                                                <Input
+                                                <DatePicker
                                                     id={`date-${index}`}
-                                                    type="date"
-                                                    value={entry.date}
-                                                    onChange={(event) => {
-                                                        const value =
-                                                            event.target.value;
+                                                    date={entry.date}
+                                                    placeholder="Select date"
+                                                    clearable
+                                                    onDateChange={(value) => {
                                                         updateRow(
                                                             index,
                                                             'date',

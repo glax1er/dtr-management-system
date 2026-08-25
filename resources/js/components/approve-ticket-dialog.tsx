@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
+import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -21,9 +22,9 @@ type TicketActionsProps = {
 };
 
 export const badgeStyles: Record<TicketActionsProps['type'], string> = {
-    missing_time_in: 'bg-red-100 text-red-400 border-red-500',
-    open: 'bg-amber-100 text-amber-400 border-amber-500',
-    no_record: 'bg-red-100 text-red-400 border-red-500',
+    missing_time_in: 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-950/50 dark:text-yellow-300 dark:border-yellow-800',
+    open: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800',
+    no_record: 'bg-red-100 text-red-800 border-red-300 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800',
 };
 
 const typeLabel: Record<TicketActionsProps['type'], string> = {
@@ -92,7 +93,10 @@ export function TicketActions({ ticketId, type, proposedTimeIn, proposedTimeOut 
             },
             {
                 preserveScroll: true,
-                onSuccess: () => setOpenApprove(false),
+                onSuccess: () => {
+                    toast.success('Resolution request approved.');
+                    setOpenApprove(false);
+                },
                 onError: (errors) => toast.error(Object.values(errors)[0] ?? 'Could not approve this ticket.'),
                 onFinish: () => setProcessing(false),
             },
@@ -106,7 +110,10 @@ export function TicketActions({ ticketId, type, proposedTimeIn, proposedTimeOut 
             {},
             {
                 preserveScroll: true,
-                onSuccess: () => setOpenReject(false),
+                onSuccess: () => {
+                    toast.success('Resolution request rejected.');
+                    setOpenReject(false);
+                },
                 onError: (errors) => toast.error(Object.values(errors)[0] ?? 'Could not reject this ticket.'),
                 onFinish: () => setProcessing(false),
             },
@@ -129,9 +136,7 @@ export function TicketActions({ ticketId, type, proposedTimeIn, proposedTimeOut 
                     <DialogHeader>
                         <div className="flex items-center gap-2">
                             <DialogTitle>Confirm Approval</DialogTitle>
-                            <Badge className={badgeStyles[type]}>
-                                {typeLabel[type]}
-                            </Badge>
+                            <AttendanceBadge status={type} />
                         </div>
                         <DialogDescription className="space-y-3">
                             <p>Are you sure you want to approve this resolution ticket? This action cannot be undone.</p>
@@ -173,9 +178,7 @@ export function TicketActions({ ticketId, type, proposedTimeIn, proposedTimeOut 
                     <DialogHeader>
                         <div className="flex items-center gap-2">
                             <DialogTitle>Confirm Rejection</DialogTitle>
-                            <Badge className={badgeStyles[type]}>
-                                {typeLabel[type]}
-                            </Badge>
+                            <AttendanceBadge status={type} />
                         </div>
                         <DialogDescription className="space-y-3">
                             <p>Reject this resolution request? The day will go back to looking missing.</p>

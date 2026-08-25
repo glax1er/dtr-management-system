@@ -1,10 +1,11 @@
 import { Head, router } from '@inertiajs/react';
-import { CalendarDays, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Calendar, CalendarDays, CalendarClock, Clock, Pencil, Plus, Sparkles, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
     Dialog,
     DialogContent,
@@ -16,6 +17,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -77,52 +79,190 @@ function PeriodForm({
     form: FormState;
     onChange: (patch: Partial<FormState>) => void;
 }) {
+    const handleSetAllWeekdays = (time: string) => {
+        const updated = { ...form.daySchedule };
+        (['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const).forEach(
+            (day) => {
+                updated[day] = time;
+            }
+        );
+        onChange({ daySchedule: updated });
+    };
+
+    const handleClearAll = () => {
+        const cleared = Object.fromEntries(DAYS.map((d) => [d, '']));
+        onChange({ daySchedule: cleared });
+    };
+
     return (
-        <div className="flex flex-col gap-4">
-            {/* Date range + name */}
-            <div className="grid gap-3 sm:grid-cols-3">
+        <div className="flex flex-col gap-5 py-2">
+            {/* Section 1: Period Details */}
+            <div className="flex flex-col gap-4 rounded-xl border bg-muted/20 p-4">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <Calendar className="size-3.5" />
+                    <span>Period Details</span>
+                </div>
+
+                {/* Period Name */}
                 <div className="grid gap-1.5">
-                    <Label>Name <span className="text-muted-foreground">(optional)</span></Label>
+                    <Label htmlFor="period-name" className="text-sm font-medium">
+                        Period Name <span className="text-xs font-normal text-muted-foreground">(optional)</span>
+                    </Label>
                     <Input
+                        id="period-name"
                         value={form.name}
                         onChange={(e) => onChange({ name: e.target.value })}
-                        placeholder="e.g. Off-semester AY 2026-2027"
+                        placeholder="e.g. 1st Semester AY 2026-2027, Summer Term"
+                        className="h-9"
                     />
                 </div>
-                <div className="grid gap-1.5">
-                    <Label>Start Date</Label>
-                    <Input
-                        type="date"
-                        value={form.startDate}
-                        onChange={(e) => onChange({ startDate: e.target.value })}
-                    />
-                </div>
-                <div className="grid gap-1.5">
-                    <Label>End Date</Label>
-                    <Input
-                        type="date"
-                        value={form.endDate}
-                        min={form.startDate || undefined}
-                        onChange={(e) => onChange({ endDate: e.target.value })}
-                    />
+
+                {/* Date range in 2 spacious columns */}
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="grid gap-1.5">
+                        <Label htmlFor="start-date" className="text-sm font-medium">
+                            Start Date <span className="text-destructive">*</span>
+                        </Label>
+                        <DatePicker
+                            id="start-date"
+                            date={form.startDate}
+                            onDateChange={(d) => onChange({ startDate: d })}
+                            placeholder="Select start date"
+                            maxDate={form.endDate || undefined}
+                            clearable
+                            className="h-9"
+                        />
+                    </div>
+                    <div className="grid gap-1.5">
+                        <Label htmlFor="end-date" className="text-sm font-medium">
+                            End Date <span className="text-destructive">*</span>
+                        </Label>
+                        <DatePicker
+                            id="end-date"
+                            date={form.endDate}
+                            onDateChange={(d) => onChange({ endDate: d })}
+                            placeholder="Select end date"
+                            minDate={form.startDate || undefined}
+                            clearable
+                            className="h-9"
+                        />
+                    </div>
                 </div>
             </div>
 
-            {/* Day schedule */}
-            <div className="grid gap-2 sm:grid-cols-2">
-                {DAYS.map((day) => (
-                    <div key={day} className="flex items-center rounded-lg border bg-background px-3 py-1">
-                        <span className="w-24 shrink-0 text-sm font-medium">{DAY_LABELS[day]}</span>
-                        <Input
-                            type="time"
-                            value={form.daySchedule[day]}
-                            onChange={(e) =>
-                                onChange({ daySchedule: { ...form.daySchedule, [day]: e.target.value } })
-                            }
-                            className="h-8 flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 text-xs"
-                        />
+            {/* Section 2: Daily Expected Start Time */}
+            <div className="flex flex-col gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                            <Clock className="size-4 text-primary" />
+                            Expected Start Times
+                        </Label>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                            Set arrival time for workdays. Days left blank are rest / off days.
+                        </p>
                     </div>
-                ))}
+
+                    {/* Quick presets */}
+                    <div className="flex items-center gap-1.5">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleSetAllWeekdays('08:00')}
+                            className="h-7 text-xs px-2 gap-1 rounded-md text-muted-foreground hover:text-foreground"
+                        >
+                            <Sparkles className="size-3 text-primary" />
+                            Mon–Fri 8:00 AM
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleClearAll}
+                            className="h-7 text-xs px-2 text-muted-foreground hover:text-destructive"
+                        >
+                            Clear
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Day schedule cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {DAYS.map((day) => {
+                        const isSet = Boolean(form.daySchedule[day]);
+                        const isWeekend = day === 'saturday' || day === 'sunday';
+
+                        return (
+                            <div
+                                key={day}
+                                className={cn(
+                                    "flex items-center justify-between rounded-xl border p-2.5 px-3.5 transition-all gap-3",
+                                    isSet
+                                        ? "border-primary/40 bg-primary/5 dark:bg-primary/10 shadow-xs"
+                                        : "border-border bg-background/60 hover:bg-muted/30"
+                                )}
+                            >
+                                <div className="flex items-center gap-2.5 min-w-28">
+                                    <span
+                                        className={cn(
+                                            "size-2 rounded-full shrink-0",
+                                            isSet
+                                                ? "bg-primary"
+                                                : "bg-muted-foreground/30"
+                                        )}
+                                    />
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-medium leading-none">
+                                            {DAY_LABELS[day]}
+                                        </span>
+                                        <span className="text-[10px] text-muted-foreground mt-0.5">
+                                            {isWeekend ? 'Weekend' : 'Weekday'}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 flex-1 max-w-[140px]">
+                                    <Input
+                                        type="time"
+                                        value={form.daySchedule[day] ?? ''}
+                                        onChange={(e) =>
+                                            onChange({
+                                                daySchedule: {
+                                                    ...form.daySchedule,
+                                                    [day]: e.target.value,
+                                                },
+                                            })
+                                        }
+                                        className={cn(
+                                            "h-8 text-xs rounded-lg px-2 bg-background",
+                                            isSet
+                                                ? "font-medium text-foreground border-primary/30"
+                                                : "text-muted-foreground border-input"
+                                        )}
+                                    />
+                                    {isSet && (
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                onChange({
+                                                    daySchedule: {
+                                                        ...form.daySchedule,
+                                                        [day]: '',
+                                                    },
+                                                })
+                                            }
+                                            className="text-muted-foreground hover:text-destructive p-1 rounded-md hover:bg-muted cursor-pointer"
+                                            title="Clear day"
+                                        >
+                                            <X className="size-3" />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );
@@ -218,7 +358,7 @@ export default function AdminSchedule({ periods }: { periods: SchedulePeriod[] }
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
                         <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-                            <CalendarDays className="size-5" />
+                            <CalendarClock className="size-5" />
                         </span>
                         Global Schedule
                     </h1>
@@ -314,19 +454,23 @@ export default function AdminSchedule({ periods }: { periods: SchedulePeriod[] }
 
             {/* ── Add dialog ───────────────────────────────────────────────── */}
             <Dialog open={addOpen} onOpenChange={setAddOpen}>
-                <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>Add Schedule Period</DialogTitle>
-                        <DialogDescription>
-                            Set the date range and expected start time for each day of the week.
-                            Leave a day blank if there's no work that day.
+                <DialogContent className="max-h-[92vh] sm:max-w-2xl overflow-y-auto p-6 gap-5">
+                    <DialogHeader className="gap-1.5 pb-3 border-b">
+                        <DialogTitle className="text-xl font-semibold flex items-center gap-2.5">
+                            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-xs">
+                                <CalendarDays className="size-5" />
+                            </span>
+                            Add Schedule Period
+                        </DialogTitle>
+                        <DialogDescription className="text-xs sm:text-sm text-muted-foreground">
+                            Set the effective date range and expected arrival time for each workday.
                         </DialogDescription>
                     </DialogHeader>
                     <PeriodForm
                         form={addForm}
                         onChange={(patch) => setAddForm((f) => ({ ...f, ...patch }))}
                     />
-                    <DialogFooter>
+                    <DialogFooter className="pt-3 border-t gap-2 sm:gap-0">
                         <Button variant="outline" onClick={() => setAddOpen(false)}>
                             Cancel
                         </Button>
@@ -337,10 +481,15 @@ export default function AdminSchedule({ periods }: { periods: SchedulePeriod[] }
 
             {/* ── Edit dialog ──────────────────────────────────────────────── */}
             <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>Edit Period</DialogTitle>
-                        <DialogDescription>
+                <DialogContent className="max-h-[92vh] sm:max-w-2xl overflow-y-auto p-6 gap-5">
+                    <DialogHeader className="gap-1.5 pb-3 border-b">
+                        <DialogTitle className="text-xl font-semibold flex items-center gap-2.5">
+                            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-xs">
+                                <CalendarDays className="size-5" />
+                            </span>
+                            Edit Schedule Period
+                        </DialogTitle>
+                        <DialogDescription className="text-xs sm:text-sm text-muted-foreground">
                             Update the date range or expected start times for each day.
                         </DialogDescription>
                     </DialogHeader>
@@ -348,7 +497,7 @@ export default function AdminSchedule({ periods }: { periods: SchedulePeriod[] }
                         form={editForm}
                         onChange={(patch) => setEditForm((f) => ({ ...f, ...patch }))}
                     />
-                    <DialogFooter>
+                    <DialogFooter className="pt-3 border-t gap-2 sm:gap-0">
                         <Button variant="outline" onClick={() => setEditOpen(false)}>
                             Cancel
                         </Button>

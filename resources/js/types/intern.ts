@@ -1,3 +1,18 @@
+export type PaginatedData<T> = {
+    data: T[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number | null;
+    to: number | null;
+    links: Array<{
+        url: string | null;
+        label: string;
+        active: boolean;
+    }>;
+};
+
 export type InternProfileSummary = {
     photo_url: string | null;
     name: string;
@@ -6,11 +21,6 @@ export type InternProfileSummary = {
     hte_name: string;
     program_name: string;
     status: 'pending' | 'approved' | 'rejected';
-    /**
-     * Whether a QR code has been generated yet. The actual QR
-     * generation/display flow is being built separately — this flag is
-     * only used to decide what placeholder text to show.
-     */
     has_qr_code: boolean;
 };
 
@@ -36,11 +46,6 @@ export type AttendanceDay = {
     lunch_deducted: boolean;
     status: 'open' | 'missing_time_in' | 'no_record' | 'complete';
     raw_scan_count: number;
-    /**
-     * A pending resolution ticket's id, if one already exists for this
-     * date — null otherwise. Drives whether the row shows "Request
-     * Resolution" or a "Pending" state with a cancel option.
-     */
     pending_ticket_id: number | null;
 };
 
@@ -48,9 +53,9 @@ export type InternDashboardProps = {
     profile: InternProfileSummary;
     today: TodayAttendance;
     hours: HoursSummary;
-    month: string; // 'YYYY-MM'
-    monthLabel: string; // e.g. 'July 2026'
-    logs: AttendanceDay[];
+    month: string;
+    monthLabel: string;
+    logs: PaginatedData<AttendanceDay>;
     monthTotalHours: number;
     canGoNextMonth: boolean;
 };

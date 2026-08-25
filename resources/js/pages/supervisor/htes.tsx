@@ -1,11 +1,26 @@
 import { Head, router } from '@inertiajs/react';
-import { Building2, ChevronDown, Search, SlidersHorizontal, X } from 'lucide-react';
+import {
+    Building2,
+    ChevronDown,
+    Clock,
+    LayoutGrid,
+    Mail,
+    MapPin,
+    Phone,
+    Search,
+    SlidersHorizontal,
+    Table as TableIcon,
+    User,
+    Users,
+    X,
+} from 'lucide-react';
 import { Fragment, useState } from 'react';
 import type { FormEvent } from 'react';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Select,
     SelectContent,
@@ -13,6 +28,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Table,
     TableBody,
@@ -21,6 +37,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { dashboard } from '@/routes';
 
 interface HteInternRow {
     intern_user_id: number;
@@ -65,13 +82,10 @@ interface HtesIndexProps {
     filters: Filters;
 }
 
-// Radix's Select doesn't allow an item with an empty-string value, so
-// "every status" gets its own sentinel that we translate back to
-// undefined (i.e. no status filter) before it hits the URL.
+type ViewMode = 'table' | 'grid';
+
 const ALL_STATUSES = 'all';
 
-/** 8.5 → "8 hours 30 minutes" — same long-form duration used on the
- * My Students roster, so hours read consistently across both views. */
 function formatLongDuration(hours: number): string {
     if (hours <= 0) {
         return '—';
@@ -100,17 +114,13 @@ export default function SupervisorHtes({
     scopeName,
     filters,
 }: HtesIndexProps) {
+    const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters.search);
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-    // Which HTE rows are currently expanded to show their intern list —
-    // more than one can be open at once.
     const [expandedHteIds, setExpandedHteIds] = useState<Set<number>>(
         new Set(),
     );
 
-    // Base params shared by every navigation action — anything that
-    // changes what rows match (search/status) resets back to page 1 by
-    // simply omitting the page param.
     const baseParams = () => ({
         search: filters.search || undefined,
         status: filters.status ?? undefined,
@@ -137,7 +147,7 @@ export default function SupervisorHtes({
     const changeStatus = (value: string) => {
         visit({
             ...baseParams(),
-            status: value === ALL_STATUSES ? undefined : value,
+            status: value === ALL_STATUSES ? undefined : (value as 'active' | 'inactive'),
             page: undefined,
         });
     };
@@ -169,22 +179,22 @@ export default function SupervisorHtes({
             <Head title="HTEs" />
 
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
-                {/* ── Header toolbar ──────────────────────────────────────────── */}
+                {/* Header toolbar */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h1 className="flex items-center gap-3 text-xl font-semibold tracking-tight sm:text-2xl">
+                        <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
                             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
                                 <Building2 className="size-5" />
                             </span>
                             Host Training Establishments
                         </h1>
-                        <p className="mt-1 ml-13 text-sm text-muted-foreground">
-                            {`${hteCount} HTE${hteCount === 1 ? '' : 's'} currently hosting interns from the ${scopeName ?? 'selected'} program.`}
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            {hteCount} HTE{hteCount === 1 ? '' : 's'} hosting interns from {scopeName ?? 'your program'}.
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        {/* Desktop: full search input */}
+                    <div className="flex flex-wrap items-center gap-2">
+                        {/* Desktop search */}
                         <form onSubmit={applySearch} className="relative hidden sm:block">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                             <input
@@ -192,7 +202,7 @@ export default function SupervisorHtes({
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 placeholder="Search HTEs…"
-                                className="h-9 w-44 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
+                                className="h-9 w-48 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
                             {search && (
                                 <button
@@ -205,7 +215,7 @@ export default function SupervisorHtes({
                             )}
                         </form>
 
-                        {/* Mobile: search icon toggle */}
+                        {/* Mobile search toggle */}
                         <button
                             type="button"
                             onClick={() => setMobileSearchOpen((o) => !o)}
@@ -215,13 +225,13 @@ export default function SupervisorHtes({
                             {mobileSearchOpen ? <X className="size-4" /> : <Search className="size-4" />}
                         </button>
 
-                        {/* Status filter — full on sm+, icon-only on mobile */}
+                        {/* Status filter */}
                         <div className="hidden sm:block">
                             <Select
                                 value={filters.status ?? ALL_STATUSES}
                                 onValueChange={changeStatus}
                             >
-                                <SelectTrigger className="h-9 w-36">
+                                <SelectTrigger className="h-9 w-40">
                                     <SlidersHorizontal className="mr-1 size-3.5 shrink-0 text-muted-foreground" />
                                     <SelectValue placeholder="All Status" />
                                 </SelectTrigger>
@@ -247,17 +257,27 @@ export default function SupervisorHtes({
                                 </SelectContent>
                             </Select>
                         </div>
+
+                        {/* View toggle — desktop only */}
+                        <div className="hidden sm:block">
+                            <Tabs value={view} onValueChange={(v) => setView(v as ViewMode)}>
+                                <TabsList>
+                                    <TabsTrigger value="table"><TableIcon className="size-4" /></TabsTrigger>
+                                    <TabsTrigger value="grid"><LayoutGrid className="size-4" /></TabsTrigger>
+                                </TabsList>
+                            </Tabs>
+                        </div>
                     </div>
                 </div>
 
-                {/* Mobile inline search bar */}
+                {/* Mobile inline search */}
                 {mobileSearchOpen && (
                     <form
                         onSubmit={(e) => {
                             applySearch(e);
                             setMobileSearchOpen(false);
                         }}
-                        className="flex items-center gap-2 sm:hidden"
+                        className="flex items-center gap-2 sm:hidden w-full"
                     >
                         <div className="relative flex-1">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -286,7 +306,7 @@ export default function SupervisorHtes({
                     </form>
                 )}
 
-                {/* ── Content ─────────────────────────────────────────────────── */}
+                {/* Content */}
                 {htes.data.length === 0 ? (
                     <Card>
                         <CardContent className="py-8 text-center text-sm text-muted-foreground">
@@ -294,121 +314,254 @@ export default function SupervisorHtes({
                         </CardContent>
                     </Card>
                 ) : (
-                    <Card>
-                        <CardContent className="p-0">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="w-8 px-4" />
-                                        <TableHead className="px-6">
-                                            Host Training Establishment
-                                        </TableHead>
-                                        <TableHead className="px-6 text-center">Address</TableHead>
-                                        <TableHead className="px-6 text-center">Contact</TableHead>
-                                        <TableHead className="px-6 text-center">Status</TableHead>
-                                        <TableHead className="px-6 text-center">Interns</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {htes.data.map((hte) => {
-                                        const isExpanded = expandedHteIds.has(hte.hte_id);
-
-                                        return (
-                                            <Fragment key={hte.hte_id}>
-                                                <TableRow
-                                                    onClick={() => toggleExpanded(hte.hte_id)}
-                                                    className="cursor-pointer"
-                                                    aria-expanded={isExpanded}
-                                                >
-                                                    <TableCell className="px-4 text-muted-foreground">
-                                                        <ChevronDown
-                                                            className={`size-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell className="px-6 font-medium">
-                                                        {hte.hte_name}
-                                                    </TableCell>
-                                                    <TableCell
-                                                        className="max-w-xs truncate px-6 text-center text-muted-foreground"
-                                                        title={hte.address ?? undefined}
-                                                    >
-                                                        {hte.address ?? '—'}
-                                                    </TableCell>
-                                                    <TableCell className="px-6 text-center">
-                                                        <p className="truncate" title={hte.contact_person ?? undefined}>
-                                                            {hte.contact_person ?? '—'}
-                                                        </p>
-                                                        {hte.contact_number && (
-                                                            <p className="truncate text-xs text-muted-foreground">
-                                                                {hte.contact_number}
-                                                            </p>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell className="px-6 text-center">
-                                                        <StatusBadge status={hte.status} />
-                                                    </TableCell>
-                                                    <TableCell className="px-6 text-center">
-                                                        {hte.interns_count}
-                                                    </TableCell>
+                    <>
+                        {/* Table view */}
+                        {view === 'table' && (
+                            <div className="hidden sm:block">
+                                <Card>
+                                    <CardContent className="p-0">
+                                        <Table>
+                                            <TableHeader className="bg-muted/40">
+                                                <TableRow>
+                                                    <TableHead className="w-8 px-4" />
+                                                    <TableHead className="px-6 font-semibold">Host Training Establishment</TableHead>
+                                                    <TableHead className="px-6 text-center font-semibold">Address</TableHead>
+                                                    <TableHead className="px-6 text-center font-semibold">Contact</TableHead>
+                                                    <TableHead className="px-6 text-center font-semibold">Status</TableHead>
+                                                    <TableHead className="px-6 text-center font-semibold">Interns</TableHead>
                                                 </TableRow>
-                                                {isExpanded && (
-                                                    <TableRow className="bg-muted/20 hover:bg-muted/20">
-                                                        <TableCell colSpan={6} className="px-6 py-3">
-                                                            {hte.interns.length === 0 ? (
-                                                                <p className="text-sm text-muted-foreground">
-                                                                    No interns from your program here yet.
-                                                                </p>
-                                                            ) : (
-                                                                <Table>
-                                                                    <TableHeader>
-                                                                        <TableRow>
-                                                                            <TableHead>Name</TableHead>
-                                                                            <TableHead>Email</TableHead>
-                                                                            <TableHead>ID Number</TableHead>
-                                                                            <TableHead>Contact</TableHead>
-                                                                            <TableHead>Hours Rendered</TableHead>
-                                                                        </TableRow>
-                                                                    </TableHeader>
-                                                                    <TableBody>
-                                                                        {hte.interns.map((intern) => (
-                                                                            <TableRow key={intern.intern_user_id}>
-                                                                                <TableCell className="font-medium whitespace-nowrap">
-                                                                                    {intern.name}
-                                                                                </TableCell>
-                                                                                <TableCell className="whitespace-nowrap">
-                                                                                    {intern.email}
-                                                                                </TableCell>
-                                                                                <TableCell className="whitespace-nowrap">
-                                                                                    {intern.id_number ?? '—'}
-                                                                                </TableCell>
-                                                                                <TableCell className="whitespace-nowrap">
-                                                                                    {intern.contact_number ?? '—'}
-                                                                                </TableCell>
-                                                                                <TableCell className="whitespace-nowrap">
-                                                                                    {formatLongDuration(intern.total_hours)}
-                                                                                </TableCell>
-                                                                            </TableRow>
-                                                                        ))}
-                                                                    </TableBody>
-                                                                </Table>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {htes.data.map((hte) => {
+                                                    const isExpanded = expandedHteIds.has(hte.hte_id);
+
+                                                    return (
+                                                        <Fragment key={hte.hte_id}>
+                                                            <TableRow
+                                                                onClick={() => toggleExpanded(hte.hte_id)}
+                                                                className="cursor-pointer hover:bg-muted/50"
+                                                                aria-expanded={isExpanded}
+                                                            >
+                                                                <TableCell className="px-4 text-muted-foreground">
+                                                                    <ChevronDown
+                                                                        className={`size-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                                                    />
+                                                                </TableCell>
+                                                                <TableCell className="px-6 font-medium text-foreground">
+                                                                    {hte.hte_name}
+                                                                </TableCell>
+                                                                <TableCell
+                                                                    className="max-w-xs truncate px-6 text-center text-muted-foreground"
+                                                                    title={hte.address ?? undefined}
+                                                                >
+                                                                    {hte.address ?? '—'}
+                                                                </TableCell>
+                                                                <TableCell className="px-6 text-center">
+                                                                    <p className="truncate text-foreground font-medium" title={hte.contact_person ?? undefined}>
+                                                                        {hte.contact_person ?? '—'}
+                                                                    </p>
+                                                                    {hte.contact_number && (
+                                                                        <p className="truncate text-xs text-muted-foreground">
+                                                                            {hte.contact_number}
+                                                                        </p>
+                                                                    )}
+                                                                </TableCell>
+                                                                <TableCell className="px-6 text-center">
+                                                                    <StatusBadge status={hte.status} />
+                                                                </TableCell>
+                                                                <TableCell className="px-6 text-center font-semibold text-foreground">
+                                                                    {hte.interns_count}
+                                                                </TableCell>
+                                                            </TableRow>
+                                                            {isExpanded && (
+                                                                <TableRow className="bg-muted/15 hover:bg-muted/15">
+                                                                    <TableCell colSpan={6} className="px-6 py-4">
+                                                                        {hte.interns.length === 0 ? (
+                                                                            <p className="text-sm text-muted-foreground">
+                                                                                No interns from your program here yet.
+                                                                            </p>
+                                                                        ) : (
+                                                                            <div className="rounded-lg border bg-card overflow-hidden">
+                                                                                <Table>
+                                                                                    <TableHeader className="bg-muted/40">
+                                                                                        <TableRow>
+                                                                                            <TableHead className="px-4 font-semibold">Intern</TableHead>
+                                                                                            <TableHead className="px-4 text-center font-semibold">ID Number</TableHead>
+                                                                                            <TableHead className="px-4 text-center font-semibold">Contact</TableHead>
+                                                                                            <TableHead className="px-4 text-right font-semibold">Hours Rendered</TableHead>
+                                                                                        </TableRow>
+                                                                                    </TableHeader>
+                                                                                    <TableBody>
+                                                                                        {hte.interns.map((intern) => (
+                                                                                            <TableRow key={intern.intern_user_id}>
+                                                                                                <TableCell className="px-4">
+                                                                                                    <p className="font-medium text-foreground whitespace-nowrap">{intern.name}</p>
+                                                                                                    <p className="text-xs text-muted-foreground max-w-[200px] truncate" title={intern.email}>{intern.email}</p>
+                                                                                                </TableCell>
+                                                                                                <TableCell className="px-4 text-center whitespace-nowrap text-muted-foreground tabular-nums">
+                                                                                                    {intern.id_number ?? '—'}
+                                                                                                </TableCell>
+                                                                                                <TableCell className="px-4 text-center whitespace-nowrap text-muted-foreground tabular-nums">
+                                                                                                    {intern.contact_number ?? '—'}
+                                                                                                </TableCell>
+                                                                                                <TableCell className="px-4 whitespace-nowrap text-right font-medium text-foreground">
+                                                                                                    {formatLongDuration(intern.total_hours)}
+                                                                                                </TableCell>
+                                                                                            </TableRow>
+                                                                                        ))}
+                                                                                    </TableBody>
+                                                                                </Table>
+                                                                            </div>
+                                                                        )}
+                                                                    </TableCell>
+                                                                </TableRow>
                                                             )}
-                                                        </TableCell>
-                                                    </TableRow>
+                                                        </Fragment>
+                                                    );
+                                                })}
+                                            </TableBody>
+                                        </Table>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )}
+
+                        {/* Grid view — desktop */}
+                        {view === 'grid' && (
+                            <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {htes.data.map((hte) => {
+                                    const isExpanded = expandedHteIds.has(hte.hte_id);
+
+                                    return (
+                                        <Card key={hte.hte_id} className="flex flex-col justify-between">
+                                            <CardHeader className="pb-3">
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <CardTitle className="text-base font-semibold truncate">
+                                                        {hte.hte_name}
+                                                    </CardTitle>
+                                                    <StatusBadge status={hte.status} />
+                                                </div>
+                                            </CardHeader>
+                                            <CardContent className="flex flex-col gap-2.5 text-xs text-muted-foreground">
+                                                {hte.address && (
+                                                    <div className="flex items-center gap-2">
+                                                        <MapPin className="size-3.5 shrink-0" />
+                                                        <span className="truncate">{hte.address}</span>
+                                                    </div>
                                                 )}
-                                            </Fragment>
-                                        );
-                                    })}
-                                </TableBody>
-                            </Table>
-                            <NumberedPagination
-                                meta={htes}
-                                itemLabel="HTE"
-                                onPageChange={goToPage}
-                                onPerPageChange={changePerPage}
-                                idPrefix="htes-table-per-page"
-                            />
-                        </CardContent>
-                    </Card>
+                                                {hte.contact_person && (
+                                                    <div className="flex items-center gap-2">
+                                                        <User className="size-3.5 shrink-0" />
+                                                        <span className="truncate">{hte.contact_person}</span>
+                                                    </div>
+                                                )}
+                                                {hte.contact_number && (
+                                                    <div className="flex items-center gap-2">
+                                                        <Phone className="size-3.5 shrink-0" />
+                                                        <span>{hte.contact_number}</span>
+                                                    </div>
+                                                )}
+                                                <div className="mt-2 flex items-center justify-between border-t pt-2">
+                                                    <span className="flex items-center gap-1.5 text-muted-foreground">
+                                                        <Users className="size-3.5" /> Assigned Interns:
+                                                    </span>
+                                                    <Badge variant="secondary" className="font-semibold text-xs">
+                                                        {hte.interns_count}
+                                                    </Badge>
+                                                </div>
+
+                                                {hte.interns.length > 0 && (
+                                                    <div className="mt-2">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="w-full text-xs h-7 justify-between"
+                                                            onClick={() => toggleExpanded(hte.hte_id)}
+                                                        >
+                                                            <span>{isExpanded ? 'Hide Interns' : 'View Interns'}</span>
+                                                            <ChevronDown className={`size-3.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                                        </Button>
+                                                        {isExpanded && (
+                                                            <div className="mt-2 flex flex-col gap-1.5 rounded-md border p-2 bg-muted/20">
+                                                                {hte.interns.map((intern) => (
+                                                                    <div key={intern.intern_user_id} className="flex items-center justify-between text-[11px]">
+                                                                        <span className="font-medium text-foreground truncate">{intern.name}</span>
+                                                                        <span className="text-muted-foreground">{formatLongDuration(intern.total_hours)}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        {/* Mobile list view */}
+                        <div className="sm:hidden flex flex-col gap-3">
+                            {htes.data.map((hte) => {
+                                const isExpanded = expandedHteIds.has(hte.hte_id);
+
+                                return (
+                                    <Card key={hte.hte_id}>
+                                        <CardContent className="p-4 flex flex-col gap-2">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <p className="font-semibold text-sm text-foreground">{hte.hte_name}</p>
+                                                <StatusBadge status={hte.status} />
+                                            </div>
+                                            {hte.address && (
+                                                <p className="text-xs text-muted-foreground">{hte.address}</p>
+                                            )}
+                                            <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t">
+                                                <span>{hte.contact_person ?? 'No contact person'}</span>
+                                                <Badge variant="secondary" className="text-xs font-semibold">
+                                                    {hte.interns_count} intern{hte.interns_count === 1 ? '' : 's'}
+                                                </Badge>
+                                            </div>
+
+                                            {hte.interns.length > 0 && (
+                                                <div className="pt-1">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="w-full text-xs h-7 justify-between"
+                                                        onClick={() => toggleExpanded(hte.hte_id)}
+                                                    >
+                                                        <span>{isExpanded ? 'Hide Interns' : 'View Interns'}</span>
+                                                        <ChevronDown className={`size-3.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                                    </Button>
+                                                    {isExpanded && (
+                                                        <div className="mt-2 flex flex-col gap-1.5 rounded-md border p-2 bg-muted/20">
+                                                            {hte.interns.map((intern) => (
+                                                                <div key={intern.intern_user_id} className="flex items-center justify-between text-xs border-b last:border-0 pb-1 last:pb-0">
+                                                                    <div>
+                                                                        <p className="font-medium text-foreground">{intern.name}</p>
+                                                                        <p className="text-[10px] text-muted-foreground font-mono">{intern.id_number ?? 'No ID'}</p>
+                                                                    </div>
+                                                                    <span className="font-medium text-muted-foreground">{formatLongDuration(intern.total_hours)}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                );
+                            })}
+                        </div>
+
+                        <NumberedPagination
+                            meta={htes}
+                            itemLabel="HTE"
+                            onPageChange={goToPage}
+                            onPerPageChange={changePerPage}
+                            idPrefix="htes-table-per-page"
+                        />
+                    </>
                 )}
             </div>
         </>
@@ -416,5 +569,8 @@ export default function SupervisorHtes({
 }
 
 SupervisorHtes.layout = {
-    breadcrumbs: [{ title: 'HTEs', href: '/supervisor/htes' }],
+    breadcrumbs: [
+        { title: 'Dashboard', href: dashboard() },
+        { title: 'HTEs', href: '/supervisor/htes' },
+    ],
 };

@@ -67,7 +67,7 @@ class DtrReportController extends Controller
             from: $from,
             to: $to,
             approvedAt: $profile->approved_at,
-        );
+        )->filter(fn ($day) => $day->timeIn !== null || $day->timeOut !== null)->values();
 
         $html = view('reports.dtr', [
             'user' => $user,
