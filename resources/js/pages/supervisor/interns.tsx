@@ -19,8 +19,6 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -28,8 +26,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { InternDocumentsDialog } from '@/components/intern-documents-dialog';
 import { dashboard } from '@/routes';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
 
 interface AttendanceLogRow {
     date: string;
@@ -502,22 +502,16 @@ export default function MyInterns({
                                             {accumulatedHours.map((row) => (
                                                 <div
                                                     key={row.intern_user_id}
-                                                    className="flex items-center justify-between gap-2 rounded-lg border px-3 py-2.5"
+                                                    className="flex flex-col justify-center rounded-lg border px-3 py-2.5"
                                                 >
-                                                    <div className="flex flex-col min-w-0">
-                                                        <span className="text-sm font-medium truncate">
-                                                            {row.intern_name}
-                                                        </span>
-                                                        <span className="text-xs text-muted-foreground">
-                                                            {formatLongDuration(
-                                                                row.total_hours,
-                                                            )}
-                                                        </span>
-                                                    </div>
-                                                    <InternDocumentsDialog
-                                                        internUserId={row.intern_user_id}
-                                                        internName={row.intern_name}
-                                                    />
+                                                    <span className="text-sm font-medium truncate">
+                                                        {row.intern_name}
+                                                    </span>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {formatLongDuration(
+                                                            row.total_hours,
+                                                        )}
+                                                    </span>
                                                 </div>
                                             ))}
                                         </div>

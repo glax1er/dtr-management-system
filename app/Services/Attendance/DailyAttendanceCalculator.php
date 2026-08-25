@@ -34,7 +34,7 @@ class DailyAttendanceCalculator
     /**
      * @return Collection<int, DailyAttendance> ordered oldest date first
      */
-    public function forIntern(int $internUserId, int $hteId, ?Carbon $from = null, ?Carbon $to = null, ?CarbonInterface $approvedAt = null): Collection
+    public function forIntern(int $internUserId, int $hteId, ?CarbonInterface $from = null, ?CarbonInterface $to = null, ?CarbonInterface $approvedAt = null): Collection
     {
         $timezone = config('dtr.timezone');
 
@@ -80,7 +80,7 @@ class DailyAttendanceCalculator
      * @param  Collection<int, string>  $existingDates
      * @return Collection<string, DailyAttendance> keyed by date string
      */
-    private function missingWorkdays(Collection $existingDates, CarbonInterface $approvedAt, string $timezone, ?Carbon $from, ?Carbon $to, int $hteId): Collection
+    private function missingWorkdays(Collection $existingDates, CarbonInterface $approvedAt, string $timezone, ?CarbonInterface $from, ?CarbonInterface $to, int $hteId): Collection
     {
         $yesterday = Carbon::now($timezone)->subDay()->startOfDay();
 
@@ -129,7 +129,7 @@ class DailyAttendanceCalculator
      * from the daily breakdown rather than stored anywhere, so it's
      * always consistent with what the intern sees in their log table.
      */
-    public function totalHours(int $internUserId, int $hteId, ?Carbon $from = null, ?Carbon $to = null): float
+    public function totalHours(int $internUserId, int $hteId, ?CarbonInterface $from = null, ?CarbonInterface $to = null): float
     {
         return round(
             $this->forIntern($internUserId, $hteId, $from, $to)->sum('hoursRendered'),

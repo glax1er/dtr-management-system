@@ -314,7 +314,6 @@ export default function MyStudents({
                                     </SelectContent>
                                 </Select>
                             </div>
-                            </div>
                         </form>
 
                         {students.data.length === 0 ? (
@@ -368,6 +367,7 @@ export default function MyStudents({
                                                     >
                                                         {student.email}
                                                     </p>
+                                                </td>
                                                 <td className="py-3 pr-4 whitespace-nowrap">
                                                     {student.id_number ?? '—'}
                                                 </td>
