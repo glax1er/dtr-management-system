@@ -105,7 +105,7 @@ class User extends Authenticatable implements PasskeyUser
     {
         return match (true) {
             $this->isAdmin() => 'admin.dashboard',
-            $this->isSupervisor() && $this->supervisorProfile?->isOjtSupervisor() => 'supervisor.interns.index',
+            $this->isSupervisor() && ! $this->supervisorProfile?->isHteSupervisor() => 'supervisor.students.index',
             $this->isSupervisor() => 'supervisor.dashboard',
             $this->isIntern() => 'intern.dashboard',
             default => throw new \UnexpectedValueException('Invalid user role.'),

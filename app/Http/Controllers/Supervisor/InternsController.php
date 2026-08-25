@@ -47,8 +47,10 @@ class InternsController extends Controller
      * the same way as the HTE attendance log (InternsController::attendanceLogs)
      * so both surfaces behave consistently once a roster grows past a page.
      */
-    private function roster(Request $request, SupervisorProfile $supervisorProfile): Response
+    public function roster(Request $request): Response
     {
+        $supervisorProfile = $request->user()->supervisorProfile;
+
         $validated = $request->validate([
             'search' => ['nullable', 'string', 'max:255'],
             'hte_id' => ['nullable', 'integer'],
@@ -59,7 +61,7 @@ class InternsController extends Controller
         $search = trim($validated['search'] ?? '');
         $hteId = $validated['hte_id'] ?? null;
 
-        $internsQuery = $supervisorProfile->getAssignedInterns()
+        $internsQuery = $supervisorProfile->getOjtAssignedInterns()
         ->where('status', 'approved')
         ->with('user', 'hte');
 
@@ -126,10 +128,13 @@ class InternsController extends Controller
      * Full attendance log for an HTE Supervisor's own HTE — date/range
      * picker, per-day time in/out, punctuality, and accumulated hours.
      */
-    private function attendanceLogs(Request $request, SupervisorProfile $supervisorProfile): Response
-    {
-        $timezone = config('dtr.timezone');
-        $today = Carbon::now($timezone);
+
+    public function attendanceLogs(Request $request): Response
+                   {
+        $supervisorProfile = $request->user()->supervisorProfile;
+
+         $timezone = config('dtr.timezone');
+         $today = Carbon::now($timezone);
 
         $validated = $request->validate([
             'month' => ['nullable', 'date_format:Y-m'],
@@ -164,7 +169,7 @@ class InternsController extends Controller
         $search = trim($validated['search'] ?? '');
         $remarks = $validated['remarks'] ?? null;
 
-        $internsQuery = $supervisorProfile->getAssignedInterns()
+        $internsQuery = $supervisorProfile->getHteAssignedInterns()
             ->where('status', 'approved')
             ->with('user', 'hte', 'program');
 

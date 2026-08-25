@@ -29,13 +29,13 @@ class DashboardController extends Controller
         // OJT Supervisors don't have a dashboard of their own — login and
         // the generic /dashboard route already send them straight to their
         // roster, but this catches a direct hit or stale bookmark too.
-        if ($supervisorProfile->isOjtSupervisor()) {
-            return redirect()->route('supervisor.interns.index');
-        }
+if (! $supervisorProfile->isHteSupervisor()) {
+      return redirect()->route('supervisor.students.index');
+  }
 
-        $internUserIds = $supervisorProfile->getAssignedInterns()
-            ->where('status', 'approved')
-            ->pluck('user_id');
+$internUserIds = $supervisorProfile->getHteAssignedInterns()
+      ->where('status', 'approved')
+      ->pluck('user_id');
 
         $myInternsCount = $internUserIds->count();
 

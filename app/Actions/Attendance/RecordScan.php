@@ -56,6 +56,7 @@ class RecordScan
             idNumber: $internProfile->id_number,
             programName: $internProfile->program?->program_name ?? 'Deleted Program',
             hteName: $internProfile->hte?->hte_name ?? 'Deleted HTE',
+            photoUrl: $internProfile->profile_photo_url,
             label: $this->labelForScanCountToday($internProfile->user_id, $at),
             timestamp: $isDuplicate ? $lastScan->scan_timestamp : $at,
             isDuplicate: $isDuplicate,

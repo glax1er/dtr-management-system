@@ -37,7 +37,7 @@ const hteSupervisorNavItems: NavItem[] = [
 ];
 
 const ojtSupervisorNavItems: NavItem[] = [
-    { title: 'My Students', href: '/supervisor/interns', icon: GraduationCap },
+    { title: 'My Students', href: '/supervisor/students', icon: GraduationCap },
     { title: 'HTEs', href: '/supervisor/htes', icon: Building },
 ];
 
@@ -69,15 +69,13 @@ const footerNavItems: NavItem[] = [];
 export function AppSidebar() {
     const { auth } = usePage<PageProps>().props;
 
-    const isOjtSupervisor = auth.user.supervisor_type === 'ojt';
+    const isHteSupervisor = auth.user.is_hte_supervisor;
+    const isOjtSupervisor = auth.user.is_ojt_supervisor;
 
-    const supervisorNavItems: NavItem[] = isOjtSupervisor
-        ? ojtSupervisorNavItems
-        : [
-              ...hteSupervisorNavItems,
-              resolutionTicketsNavItem,
-              manualAttendanceNavItem,
-          ];
+    const supervisorNavItems: NavItem[] = [
+        ...(isHteSupervisor ? [...hteSupervisorNavItems, resolutionTicketsNavItem, manualAttendanceNavItem] : []),
+        ...(isOjtSupervisor ? ojtSupervisorNavItems : []),
+    ];
 
     const mainNavItems =
         auth.user.role === 'admin' ? adminNavItems : auth.user.role === 'supervisor' ? supervisorNavItems : internNavItems;

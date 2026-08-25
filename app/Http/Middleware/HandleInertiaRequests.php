@@ -69,8 +69,38 @@ class HandleInertiaRequests extends Middleware
                     // the sidebar) hide resolution-ticket actions for OJT
                     // Supervisors without needing a per-page prop.
                     'supervisor_type' => $user->isSupervisor()
-                        ? $user->supervisorProfile?->supervisor_type
-                        : null,
+                    ? $user->supervisorProfile?->supervisor_type
+                    : null,
+                    'is_hte_supervisor' => $user->isSupervisor()
+                    ? ($user->supervisorProfile?->isHteSupervisor() ?? false)
+                    : false,
+                    'is_ojt_supervisor' => $user->isSupervisor()
+                    ? ($user->supervisorProfile?->isOjtSupervisor() ?? false)
+                    : false,
+                    'auth' => [
+    'user' => $user ? [
+        ...$user->toArray(),
+        // Only meaningful for supervisors — lets the UI (e.g.
+        // the sidebar) hide resolution-ticket actions for OJT
+        // Supervisors without needing a per-page prop.
+        'supervisor_type' => $user->isSupervisor()
+            ? $user->supervisorProfile?->supervisor_type
+            : null,
+        // Independent capability flags — a supervisor can be
+        // both, one, or neither. Used by the sidebar to show
+        // both nav sections for a dual-role supervisor instead
+        // of assuming exactly one type.
+        'is_hte_supervisor' => $user->isSupervisor()
+            ? ($user->supervisorProfile?->isHteSupervisor() ?? false)
+            : false,
+        'is_ojt_supervisor' => $user->isSupervisor()
+            ? ($user->supervisorProfile?->isOjtSupervisor() ?? false)
+            : false,
+        'avatar' => $user->isIntern()
+            ? $user->internProfile?->profile_photo_url
+            : null,
+    ] : null,
+],
                     'avatar' => $user->isIntern()
                         ? $user->internProfile?->profile_photo_url
                         : null,
