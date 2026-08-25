@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -151,33 +152,13 @@ export function CompletionSummaryDialog({
     const getDocStatusBadge = (status: DocumentChecklistItem['status']) => {
         switch (status) {
             case 'approved':
-                return (
-                    <Badge className="bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/25 dark:bg-emerald-500/20 dark:text-emerald-400">
-                        <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
-                        Approved
-                    </Badge>
-                );
+                return <StatusBadge status="approved" />;
             case 'pending_review':
-                return (
-                    <Badge className="bg-amber-500/15 text-amber-700 hover:bg-amber-500/25 dark:bg-amber-500/20 dark:text-amber-400">
-                        <Clock className="mr-1 h-3.5 w-3.5" />
-                        Pending Review
-                    </Badge>
-                );
+                return <StatusBadge status="pending_review" />;
             case 'rejected':
-                return (
-                    <Badge className="bg-rose-500/15 text-rose-700 hover:bg-rose-500/25 dark:bg-rose-500/20 dark:text-rose-400">
-                        <AlertCircle className="mr-1 h-3.5 w-3.5" />
-                        Needs Revision
-                    </Badge>
-                );
+                return <StatusBadge status="rejected" label="Needs Revision" />;
             default:
-                return (
-                    <Badge variant="outline" className="text-muted-foreground border-dashed">
-                        <XCircle className="mr-1 h-3.5 w-3.5" />
-                        Not Uploaded
-                    </Badge>
-                );
+                return <StatusBadge status="not_uploaded" />;
         }
     };
 
