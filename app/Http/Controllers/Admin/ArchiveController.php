@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceLog;
+use App\Models\DocumentTemplate;
 use App\Models\Hte;
+use App\Models\InternDocument;
 use App\Models\InternProfile;
 use App\Models\Program;
 use App\Models\SupervisorProfile;
@@ -24,7 +26,7 @@ class ArchiveController extends Controller
     public function index(Request $request): Response
     {
         $validated = $request->validate([
-            'type' => ['nullable', 'in:htes,supervisors,interns,programs'],
+            'type' => ['nullable', 'in:htes,supervisors,interns,programs,templates'],
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
 
@@ -70,6 +72,16 @@ class ArchiveController extends Controller
                     'detail' => $program->required_hours ? "{$program->required_hours} hrs" : 'No hours set',
                     'deleted_at' => $program->deleted_at->format('M d, Y h:i A'),
                 ]),
+            'templates' => DocumentTemplate::onlyTrashed()
+                ->with(['program', 'uploader'])
+                ->orderBy('deleted_at', 'desc')
+                ->paginate(self::PER_PAGE, ['*'], 'page', $page)
+                ->through(fn (DocumentTemplate $template) => [
+                    'id' => $template->id,
+                    'name' => InternDocument::getTypeConfig($template->document_type)['name'] ?? $template->document_type,
+                    'detail' => ($template->program?->program_name ?? 'Program') . ' • ' . $template->original_filename,
+                    'deleted_at' => $template->deleted_at->format('M d, Y h:i A'),
+                ]),
         };
 
         return Inertia::render('admin/archives/index', [
@@ -112,6 +124,13 @@ class ArchiveController extends Controller
                     $profile->forceDelete();
                     User::where('id', $userId)->delete();
 
+                } elseif ($type === 'templates') {
+                    $template = DocumentTemplate::onlyTrashed()->findOrFail($id);
+                    if ($template->file_path && Storage::disk('local')->exists($template->file_path)) {
+                        Storage::disk('local')->delete($template->file_path);
+                    }
+                    $template->forceDelete();
+
                 } else {
                     $this->modelFor($type)::onlyTrashed()->findOrFail($id)->forceDelete();
                 }
@@ -133,6 +152,7 @@ class ArchiveController extends Controller
             'supervisors' => SupervisorProfile::class,
             'interns' => InternProfile::class,
             'programs' => Program::class,
+            'templates' => DocumentTemplate::class,
             default => abort(404),
         };
     }

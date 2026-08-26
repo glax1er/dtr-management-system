@@ -80,7 +80,8 @@ class InternsController extends Controller
             ->orderBy('hte_name')
             ->get(['hte_id', 'hte_name']);
 
-        $requiredDocKeys = array_keys(array_filter(InternDocument::DOCUMENT_TYPES, fn ($c) => $c['required'] ?? false));
+        $programDocTypes = InternDocument::getDocumentTypesForProgram($supervisorProfile->program_id);
+        $requiredDocKeys = array_keys(array_filter($programDocTypes, fn ($c) => $c['required'] ?? false));
         $totalRequiredDocsCount = count($requiredDocKeys);
 
         $allStudents = $internsQuery->get()
@@ -216,9 +217,10 @@ class InternsController extends Controller
         $totalRequiredDocs = 0;
         $approvedRequiredDocs = 0;
 
-        foreach (InternDocument::DOCUMENT_TYPES as $typeKey => $typeConfig) {
+        $programDocTypes = InternDocument::getDocumentTypesForProgram($internProfile->program_id);
+        foreach ($programDocTypes as $typeKey => $typeConfig) {
             $uploaded = $uploadedDocs->get($typeKey);
-            $isReq = $typeConfig['required'];
+            $isReq = (bool) $typeConfig['required'];
             if ($isReq) {
                 $totalRequiredDocs++;
                 if ($uploaded && $uploaded->status === InternDocument::STATUS_APPROVED) {

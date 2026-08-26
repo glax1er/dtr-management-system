@@ -18,6 +18,7 @@ import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -177,32 +178,13 @@ export default function InternDocuments({
     const getStatusBadge = (status: DocumentItem['status']) => {
         switch (status) {
             case 'approved':
-                return (
-                    <Badge className="bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/25 dark:bg-emerald-500/20 dark:text-emerald-400 font-medium text-[11px] h-5">
-                        <CheckCircle2 className="mr-1 h-3 w-3" />
-                        Approved
-                    </Badge>
-                );
+                return <StatusBadge status="approved" />;
             case 'pending_review':
-                return (
-                    <Badge className="bg-amber-500/15 text-amber-700 hover:bg-amber-500/25 dark:bg-amber-500/20 dark:text-amber-400 font-medium text-[11px] h-5">
-                        <Clock className="mr-1 h-3 w-3" />
-                        Under Review
-                    </Badge>
-                );
+                return <StatusBadge status="pending_review" label="Under Review" />;
             case 'rejected':
-                return (
-                    <Badge className="bg-destructive/15 text-destructive hover:bg-destructive/25 dark:bg-destructive/20 dark:text-red-400 font-medium text-[11px] h-5">
-                        <AlertCircle className="mr-1 h-3 w-3" />
-                        Needs Revision
-                    </Badge>
-                );
+                return <StatusBadge status="rejected" label="Needs Revision" />;
             default:
-                return (
-                    <Badge variant="outline" className="text-muted-foreground font-normal text-[11px] h-5">
-                        Not Submitted
-                    </Badge>
-                );
+                return <StatusBadge status="not_submitted" />;
         }
     };
 

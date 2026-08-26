@@ -13,11 +13,13 @@ import {
     QrCode,
     TrendingUp,
     User as UserIcon,
+    X,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { StatCard } from '@/components/dashboard-analytics';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { HoursProgressRing } from '@/components/hours-progress-ring';
 import { ResolutionRequestDialog } from '@/components/resolution-request-dialog';
 import { Badge } from '@/components/ui/badge';
@@ -88,6 +90,9 @@ export default function InternDashboard({
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [startDate, setStartDate] = useState<string>('');
     const [endDate, setEndDate] = useState<string>('');
+    const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+    const [cancelTarget, setCancelTarget] = useState<{ ticketId: number; date: string } | null>(null);
+    const [isCancelling, setIsCancelling] = useState(false);
 
     const goToMonth = (targetMonth: string) => {
         router.get(
@@ -134,19 +139,30 @@ export default function InternDashboard({
         });
     };
 
-    const cancelRequest = (ticketId: number) => {
-        if (!confirm('Cancel this resolution request?')) {
+    const handleOpenCancelDialog = (ticketId: number, date: string) => {
+        setCancelTarget({ ticketId, date });
+        setCancelDialogOpen(true);
+    };
+
+    const handleConfirmCancel = () => {
+        if (!cancelTarget) {
             return;
         }
 
+        setIsCancelling(true);
         router.patch(
-            `/intern/resolution-tickets/${ticketId}/cancel`,
+            `/intern/resolution-tickets/${cancelTarget.ticketId}/cancel`,
             {},
             {
                 preserveScroll: true,
-                onSuccess: () => toast.success('Resolution request cancelled.'),
+                onSuccess: () => {
+                    toast.success('Resolution request cancelled.');
+                    setCancelDialogOpen(false);
+                    setCancelTarget(null);
+                },
                 onError: () =>
                     toast.error('Could not cancel resolution request.'),
+                onFinish: () => setIsCancelling(false),
             },
         );
     };
@@ -606,20 +622,22 @@ export default function InternDashboard({
                                                             )}
                                                         </TableCell>
                                                         <TableCell className="text-center">
-    <AttendanceBadge status={log.status} />
+    <AttendanceBadge status={log.pending_ticket_id !== null ? 'pending_review' : log.status} />
 </TableCell>
                                                         <TableCell className="pr-6 text-center">
                                                             {log.status === 'complete' ? (
                                                                 <span className="text-xs text-muted-foreground/50">—</span>
                                                             ) : log.pending_ticket_id !== null ? (
-                                                                <div className="flex items-center justify-center gap-2">
-                                                                    <AttendanceBadge status="pending_review" />
+                                                                <div className="flex items-center justify-center">
                                                                     <Button
                                                                         size="sm"
-                                                                        variant="ghost"
-                                                                        className="h-7 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                                                        variant="outline"
+                                                                        className="h-7 gap-1 border-destructive/30 px-2.5 text-xs font-medium text-destructive hover:border-destructive hover:bg-destructive hover:text-white"
                                                                         onClick={() =>
-                                                                            cancelRequest(log.pending_ticket_id!)
+                                                                            handleOpenCancelDialog(
+                                                                                log.pending_ticket_id!,
+                                                                                log.date,
+                                                                            )
                                                                         }
                                                                     >
                                                                         Cancel
@@ -662,7 +680,7 @@ export default function InternDashboard({
                                                             {log.day}
                                                         </p>
                                                     </div>
-                                                    <AttendanceBadge status={log.status} />
+                                                    <AttendanceBadge status={log.pending_ticket_id !== null ? 'pending_review' : log.status} />
                                                 </div>
 
                                                 <div className="grid grid-cols-3 gap-2 text-center">
@@ -698,19 +716,19 @@ export default function InternDashboard({
                                                             Complete
                                                         </span>
                                                     ) : log.pending_ticket_id !== null ? (
-                                                        <div className="flex items-center gap-2">
-                                                            <AttendanceBadge status="pending_review" />
-                                                            <Button
-                                                                size="sm"
-                                                                variant="ghost"
-                                                                className="h-7 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                                                onClick={() =>
-                                                                    cancelRequest(log.pending_ticket_id!)
-                                                                }
-                                                            >
-                                                                Cancel
-                                                            </Button>
-                                                        </div>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            className="h-7 gap-1 border-destructive/30 px-2.5 text-xs font-medium text-destructive hover:border-destructive hover:bg-destructive hover:text-white"
+                                                            onClick={() =>
+                                                                handleOpenCancelDialog(
+                                                                    log.pending_ticket_id!,
+                                                                    log.date,
+                                                                )
+                                                            }
+                                                        >
+                                                            Cancel
+                                                        </Button>
                                                     ) : (
                                                         <ResolutionRequestDialog
                                                             date={log.date}
@@ -739,6 +757,21 @@ export default function InternDashboard({
                     </CardContent>
                 </Card>
             </div>
+
+            <ConfirmationDialog
+                open={cancelDialogOpen}
+                onOpenChange={setCancelDialogOpen}
+                title="Cancel Resolution Request"
+                description={
+                    cancelTarget?.date
+                        ? `Are you sure you want to cancel the resolution request for ${cancelTarget.date}?`
+                        : 'Are you sure you want to cancel this resolution request?'
+                }
+                onConfirm={handleConfirmCancel}
+                confirmText="Cancel Request"
+                isDestructive
+                isLoading={isCancelling}
+            />
         </>
     );
 }
