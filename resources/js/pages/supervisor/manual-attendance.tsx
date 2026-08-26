@@ -385,8 +385,8 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
         <>
             <Head title="Manual Attendance" />
 
-            <div className="flex w-full flex-1 flex-col gap-4 p-4 sm:gap-5 sm:p-5 lg:h-[calc(100dvh-4rem)] lg:overflow-hidden lg:p-6">
-                <div className="flex flex-wrap items-center justify-between gap-3 shrink-0">
+            <div className="flex w-full flex-1 flex-col gap-4 p-4 ">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
                             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">

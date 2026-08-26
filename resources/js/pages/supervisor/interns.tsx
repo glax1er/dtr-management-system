@@ -688,7 +688,7 @@ export default function MyInterns({
                         {view === 'table' && (
                             <div className="hidden sm:block">
                                 <Card className="flex-1">
-                                    <CardHeader className="flex flex-row items-center justify-between px-6 py-4">
+                                    <CardHeader className="flex flex-row items-center justify-between ">
                                         <CardTitle className="text-base font-semibold">
                                             Attendance Logs
                                         </CardTitle>
