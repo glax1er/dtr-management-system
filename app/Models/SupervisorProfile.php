@@ -74,32 +74,42 @@ class SupervisorProfile extends Model
     }
 
     /**
-     * Check if this is an HTE Supervisor.
+     * True if this supervisor has HTE-scope capability — assigned to a
+     * specific HTE. Independent of isOjtSupervisor(): a supervisor can
+     * be both, one, or (in practice, never intentionally) neither.
      */
     public function isHteSupervisor(): bool
     {
-        return $this->supervisor_type === 'hte';
+        return $this->hte_id !== null;
     }
 
     /**
-     * Check if this is an OJT Supervisor.
+     * True if this supervisor has OJT-scope capability — assigned to
+     * oversee a whole program. Independent of isHteSupervisor().
      */
     public function isOjtSupervisor(): bool
     {
-        return $this->supervisor_type === 'ojt';
+        return $this->program_id !== null;
     }
 
     /**
-     * Get all assigned interns for this supervisor (works for both HTE and OJT).
-     * For HTE supervisors: returns interns from their assigned HTE.
-     * For OJT supervisors: returns all interns from their assigned program.
+     * Interns assigned to this supervisor's HTE. Only meaningful if
+     * isHteSupervisor() is true — for a dual-role supervisor, this is
+     * explicitly the HTE-side roster, never guessed from "primary type".
      */
-    public function getAssignedInterns(): mixed
+    public function getHteAssignedInterns(): mixed
     {
-        if ($this->isHteSupervisor()) {
-            return $this->hte?->internProfiles() ?? \App\Models\InternProfile::whereRaw('1 = 0');
-        }
+        return $this->hte?->internProfiles() ?? \App\Models\InternProfile::whereRaw('1 = 0');
+    }
 
+    /**
+     * Interns in this supervisor's program, across every HTE. Only
+     * meaningful if isOjtSupervisor() is true — the OJT-side roster,
+     * kept explicitly separate from getHteAssignedInterns() so a
+     * dual-role supervisor's two views never get crossed.
+     */
+    public function getOjtAssignedInterns(): mixed
+    {
         return $this->program?->internProfiles() ?? \App\Models\InternProfile::whereRaw('1 = 0');
     }
 

@@ -49,8 +49,7 @@ class Hte extends Model
      */
     public function supervisorProfiles(): HasMany
     {
-        return $this->hasMany(SupervisorProfile::class, 'hte_id', 'hte_id')
-            ->where('supervisor_type', 'hte');
+        return $this->hasMany(SupervisorProfile::class, 'hte_id', 'hte_id');
     }
 
     /**

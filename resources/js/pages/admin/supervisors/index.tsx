@@ -7,6 +7,7 @@ import {
     Power,
     PowerOff,
     Search,
+    ShieldPlus,
     SlidersHorizontal,
     Table as TableIcon,
     Users,
@@ -60,6 +61,8 @@ interface Supervisor {
     name: string;
     email: string;
     supervisor_type: 'hte' | 'ojt';
+    is_hte_supervisor: boolean;
+    is_ojt_supervisor: boolean;
     scope_name: string;
     status: 'active' | 'inactive';
     hte_id: number | null;
@@ -93,6 +96,12 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
     const [archiveOpen, setArchiveOpen] = useState(false);
     const [archiveId, setArchiveId] = useState<number | null>(null);
     const [archiveName, setArchiveName] = useState('');
+
+    const [grantingSupervisor, setGrantingSupervisor] = useState<Supervisor | null>(null);
+    const grantForm = useForm({ hte_id: '', program_id: '' });
+    const grantRoleType: 'hte' | 'ojt' | null = grantingSupervisor
+        ? (!grantingSupervisor.is_hte_supervisor ? 'hte' : 'ojt')
+        : null;
 
     const addForm = useForm({
         name: '',
@@ -186,9 +195,27 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
         setArchiveId(null);
         setArchiveName('');
     };
+    
+    const openGrantDialog = (supervisor: Supervisor) => {
+        grantForm.reset();
+        grantForm.clearErrors();
+        setGrantingSupervisor(supervisor);
+    };
+
+    const handleGrantSubmit = (e: FormEvent) => {
+        e.preventDefault();
+        if (!grantingSupervisor || !grantRoleType) return;
+        const url = grantRoleType === 'hte'
+            ? `/admin/supervisors/${grantingSupervisor.user_id}/grant-hte`
+            : `/admin/supervisors/${grantingSupervisor.user_id}/grant-ojt`;
+        grantForm.post(url, {
+            preserveScroll: true,
+            onSuccess: () => { grantForm.reset(); setGrantingSupervisor(null); },
+        });
+    };
 
     // ── Per-row actions (shared between table and grid) ────────────────────
-    const SupervisorActions = ({ supervisor }: { supervisor: Supervisor }) => (
+        const SupervisorActions = ({ supervisor }: { supervisor: Supervisor }) => (
         <div className="flex justify-center gap-1">
             <Tooltip>
                 <TooltipTrigger asChild>
@@ -225,6 +252,21 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                     {supervisor.status === 'active' ? 'Archive inactive supervisors only' : 'Archive'}
                 </TooltipContent>
             </Tooltip>
+
+                        <div className="size-9">
+                {(!supervisor.is_hte_supervisor || !supervisor.is_ojt_supervisor) && (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => openGrantDialog(supervisor)}>
+                                <ShieldPlus className="size-4 text-violet-600" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            {!supervisor.is_hte_supervisor ? 'Grant HTE Supervisor role' : 'Grant OJT Supervisor role'}
+                        </TooltipContent>
+                    </Tooltip>
+                )}
+            </div>
         </div>
     );
 
@@ -385,7 +427,10 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                                                             {supervisor.email}
                                                         </TableCell>
                                                         <TableCell className="px-6 text-center">
-                                                            <TypeBadge type={supervisor.supervisor_type} />
+                                                            <div className="flex flex-wrap justify-center gap-1">
+                                                                {supervisor.is_hte_supervisor && <TypeBadge type="hte" />}
+                                                                {supervisor.is_ojt_supervisor && <TypeBadge type="ojt" />}
+                                                            </div>
                                                         </TableCell>
                                                         <TableCell className="max-w-[180px] truncate px-6 text-center" title={supervisor.scope_name}>
                                                             {supervisor.scope_name}
@@ -427,7 +472,8 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                                                         {supervisor.email}
                                                     </p>
                                                     <div className="mt-2 flex flex-wrap gap-1.5">
-                                                <TypeBadge type={supervisor.supervisor_type} />
+                                                {supervisor.is_hte_supervisor && <TypeBadge type="hte" />}
+                                                {supervisor.is_ojt_supervisor && <TypeBadge type="ojt" />}
                                                 <StatusBadge status={supervisor.status} />
                                             </div>
                                                 </div>
@@ -639,6 +685,70 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                         </DialogFooter>
                     </form>
                 </DialogContent>
+            </Dialog>
+
+                        {/* ── Grant additional role dialog ────────────────────────────── */}
+            <Dialog open={grantingSupervisor !== null} onOpenChange={(open) => !open && setGrantingSupervisor(null)}>
+                <DialogContent>
+                    <form onSubmit={handleGrantSubmit} className="flex flex-col gap-4">
+                        <DialogHeader>
+                            <DialogTitle>
+                                Grant {grantRoleType === 'hte' ? 'HTE' : 'OJT'} Supervisor Role
+                            </DialogTitle>
+                            <DialogDescription>
+                                {grantingSupervisor?.name} will keep their existing role and also gain{' '}
+                                {grantRoleType === 'hte' ? 'HTE' : 'OJT'} Supervisor capability.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="flex flex-col gap-4">
+                            {grantRoleType === 'hte' ? (
+                                <div className="grid gap-1.5">
+                                    <Label htmlFor="grant_hte_id">Host Training Establishment</Label>
+                                    <Select value={grantForm.data.hte_id} onValueChange={(v) => grantForm.setData('hte_id', v)}>
+                                        <SelectTrigger id="grant_hte_id" className="w-full">
+                                            <SelectValue placeholder="Select HTE" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {htes.map((hte) => (
+                                                <SelectItem key={hte.hte_id} value={String(hte.hte_id)}>
+                                                    {hte.hte_name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <InputError message={grantForm.errors.hte_id} />
+                                </div>
+                            ) : (
+                                <div className="grid gap-1.5">
+                                    <Label htmlFor="grant_program_id">Program</Label>
+                                    <Select value={grantForm.data.program_id} onValueChange={(v) => grantForm.setData('program_id', v)}>
+                                        <SelectTrigger id="grant_program_id" className="w-full">
+                                            <SelectValue placeholder="Select program" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {programs.map((program) => (
+                                                <SelectItem key={program.program_id} value={String(program.program_id)}>
+                                                    {program.program_name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <InputError message={grantForm.errors.program_id} />
+                                </div>
+                            )}
+                        </div>
+
+                        <DialogFooter>
+                            <Button variant="outline" type="button" onClick={() => setGrantingSupervisor(null)}>
+                                Cancel
+                            </Button>
+                            <Button type="submit" disabled={grantForm.processing}>
+                                Grant Role
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>    
             </Dialog>
 
             {/* ── Archive confirmation ──────────────────────────────────────── */}

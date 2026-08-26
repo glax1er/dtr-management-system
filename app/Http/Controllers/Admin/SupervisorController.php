@@ -15,6 +15,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Http\Requests\Admin\GrantHteSupervisorRoleRequest;
+use App\Http\Requests\Admin\GrantOjtSupervisorRoleRequest;
 
 class SupervisorController extends Controller
 {
@@ -46,8 +48,10 @@ class SupervisorController extends Controller
             );
         }
 
-        if ($type !== null) {
-            $query->where('supervisor_type', $type);
+        if ($type === 'hte') {
+            $query->whereNotNull('hte_id');
+        } elseif ($type === 'ojt') {
+            $query->whereNotNull('program_id');
         }
 
         $supervisors = $query
@@ -59,6 +63,8 @@ class SupervisorController extends Controller
                 'name' => $profile->user->name,
                 'email' => $profile->user->email,
                 'supervisor_type' => $profile->supervisor_type,
+                'is_hte_supervisor' => $profile->isHteSupervisor(),
+                'is_ojt_supervisor' => $profile->isOjtSupervisor(),
                 'scope_name' => $profile->getScopeName(),
                 'status' => $profile->status,
                 'hte_id' => $profile->hte_id,
@@ -163,6 +169,22 @@ class SupervisorController extends Controller
         });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Supervisor updated.']);
+        return back();
+    }
+        public function grantHteRole(GrantHteSupervisorRoleRequest $request, SupervisorProfile $supervisorProfile): RedirectResponse
+    {
+        $supervisorProfile->update(['hte_id' => $request->validated('hte_id')]);
+        $supervisorProfile->hte?->refreshContactPerson();
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'HTE Supervisor role granted.']);
+        return back();
+    }
+
+    public function grantOjtRole(GrantOjtSupervisorRoleRequest $request, SupervisorProfile $supervisorProfile): RedirectResponse
+    {
+        $supervisorProfile->update(['program_id' => $request->validated('program_id')]);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'OJT Supervisor role granted.']);
         return back();
     }
 

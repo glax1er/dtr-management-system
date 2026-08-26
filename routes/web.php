@@ -86,6 +86,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::patch('supervisors/{supervisorProfile}', [SupervisorController::class, 'update'])->name('supervisors.update');
         Route::delete('supervisors/{supervisorProfile}', [SupervisorController::class, 'destroy'])->name('supervisors.destroy');
+        Route::post('supervisors/{supervisorProfile}/grant-hte', [SupervisorController::class, 'grantHteRole'])->name('supervisors.grant-hte');
+        Route::post('supervisors/{supervisorProfile}/grant-ojt', [SupervisorController::class, 'grantOjtRole'])->name('supervisors.grant-ojt');
         Route::patch('interns/{internProfile}', [InternController::class, 'update'])->name('interns.update');
         Route::delete('interns/{internProfile}', [InternApprovalController::class, 'destroy'])->name('interns.destroy');
         Route::delete('htes/{hte}', [HteController::class, 'destroy'])->name('htes.destroy');
@@ -99,7 +101,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware('role:' . User::ROLE_SUPERVISOR)->prefix('supervisor')->name('supervisor.')->group(function () {
         Route::get('dashboard', [\App\Http\Controllers\Supervisor\DashboardController::class, 'index'])->name('dashboard');
-        Route::get('interns', [InternsController::class, 'index'])->name('interns.index');
         Route::get('interns/{internUserId}/completion-summary', [InternsController::class, 'completionSummary'])->name('interns.completion-summary');
         Route::get('interns/{internUserId}/dtr-report', [InternsController::class, 'downloadInternDtr'])->name('interns.dtr-report');
 
@@ -107,6 +108,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // HTE, so only they get a roster of HTEs and Document Templates to manage.
         Route::middleware('ojt-supervisor')->group(function () {
             Route::get('htes', [SupervisorHtesController::class, 'index'])->name('htes.index');
+            Route::get('students', [InternsController::class, 'roster'])->name('students.index');
             Route::get('document-templates', [SupervisorDocumentTemplateController::class, 'index'])->name('document-templates.index');
             Route::post('document-templates', [SupervisorDocumentTemplateController::class, 'store'])->name('document-templates.store');
             Route::post('document-templates/{documentType}/update', [SupervisorDocumentTemplateController::class, 'update'])->name('document-templates.update');
@@ -120,6 +122,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // but only an HTE Supervisor resolves time conflicts or records
         // manual attendance — both are on-site, single-HTE actions.
         Route::middleware('hte-supervisor')->group(function () {
+            Route::get('interns', [InternsController::class, 'attendanceLogs'])->name('interns.index');
+            
             Route::get('resolution-tickets', [SupervisorResolutionTicketController::class, 'index'])
                 ->name('resolution-tickets.index');
             Route::patch('resolution-tickets/{resolutionTicket}/approve', [SupervisorResolutionTicketController::class, 'approve'])

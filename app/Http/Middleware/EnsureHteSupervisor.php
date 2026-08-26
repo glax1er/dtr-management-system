@@ -20,9 +20,9 @@ class EnsureHteSupervisor
     {
         $supervisorProfile = $request->user()?->supervisorProfile;
 
-        if (! $supervisorProfile || $supervisorProfile->isOjtSupervisor()) {
-            abort(403, 'OJT Supervisors cannot resolve time conflicts.');
-        }
+     if (! $supervisorProfile || ! $supervisorProfile->isHteSupervisor()) {
+      abort(403, 'OJT Supervisors cannot resolve time conflicts.');
+  }
 
         return $next($request);
     }

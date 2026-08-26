@@ -4,6 +4,8 @@ export type User = {
     email: string;
     role: 'admin' | 'supervisor' | 'intern';
     supervisor_type?: 'hte' | 'ojt' | null;
+    is_hte_supervisor?: boolean;
+    is_ojt_supervisor?: boolean;
     avatar?: string;
     email_verified_at: string | null;
     two_factor_enabled?: boolean;

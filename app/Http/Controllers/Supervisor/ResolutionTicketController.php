@@ -29,9 +29,10 @@ class ResolutionTicketController extends Controller
         // assigned to their HTE.
         $supervisorProfile = $request->user()->supervisorProfile;
 
-        // Defense in depth: OJT Supervisors cannot resolve tickets.
-        if ($supervisorProfile->isOjtSupervisor()) {
-            abort(403, 'OJT Supervisors cannot resolve time conflicts.');
+       
+        // Defense in depth: requires HTE capability to resolve tickets.
+        if (! $supervisorProfile->isHteSupervisor()) {
+            abort(403, 'This area is only available to HTE Supervisors.');
         }
 
         $internUserIds = InternProfile::query()
@@ -362,12 +363,9 @@ class ResolutionTicketController extends Controller
     ): void {
         $supervisorProfile = $request->user()->supervisorProfile;
 
-        if ($supervisorProfile->isOjtSupervisor()) {
-            abort(
-                403,
-                'OJT Supervisors cannot resolve time conflicts.'
-            );
-        }
+if (! $supervisorProfile->isHteSupervisor()) {
+      abort(403, 'OJT Supervisors cannot resolve time conflicts.');
+  }
 
         $internHteId = $resolutionTicket
             ->intern

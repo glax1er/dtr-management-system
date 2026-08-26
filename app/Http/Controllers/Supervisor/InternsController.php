@@ -47,8 +47,10 @@ class InternsController extends Controller
      * program, across every HTE — name, contact info, where they're
      * assigned, total hours rendered to date, and requirement completion status.
      */
-    private function roster(Request $request, SupervisorProfile $supervisorProfile): Response
+    public function roster(Request $request): Response
     {
+        $supervisorProfile = $request->user()->supervisorProfile;
+
         $validated = $request->validate([
             'search' => ['nullable', 'string', 'max:255'],
             'hte_id' => ['nullable', 'integer'],
@@ -61,7 +63,7 @@ class InternsController extends Controller
         $hteId = $validated['hte_id'] ?? null;
         $completionStatus = $validated['completion_status'] ?? 'all';
 
-        $internsQuery = $supervisorProfile->getAssignedInterns()
+        $internsQuery = $supervisorProfile->getOjtAssignedInterns()
             ->where('status', 'approved')
             ->with(['user', 'hte', 'program', 'internDocuments']);
 
@@ -375,10 +377,13 @@ class InternsController extends Controller
      * Full attendance log for an HTE Supervisor's own HTE — date/range
      * picker, per-day time in/out, punctuality, and accumulated hours.
      */
-    private function attendanceLogs(Request $request, SupervisorProfile $supervisorProfile): Response
-    {
-        $timezone = config('dtr.timezone');
-        $today = Carbon::now($timezone);
+
+    public function attendanceLogs(Request $request): Response
+                   {
+        $supervisorProfile = $request->user()->supervisorProfile;
+
+         $timezone = config('dtr.timezone');
+         $today = Carbon::now($timezone);
 
         $validated = $request->validate([
             'month' => ['nullable', 'date_format:Y-m'],
@@ -413,7 +418,7 @@ class InternsController extends Controller
         $search = trim($validated['search'] ?? '');
         $remarks = $validated['remarks'] ?? null;
 
-        $internsQuery = $supervisorProfile->getAssignedInterns()
+        $internsQuery = $supervisorProfile->getHteAssignedInterns()
             ->where('status', 'approved')
             ->with('user', 'hte', 'program');
 
