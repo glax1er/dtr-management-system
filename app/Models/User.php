@@ -107,11 +107,13 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     }
     /**
      * Determine if the user has verified their email address.
-     * Hard-coded/seeded admin is exempt from verification.
+     * Email verification is intern-only: admins are hard-coded/seeded
+     * and exempt, and HTE/OJT supervisors are provisioned directly by
+     * admins, so neither role is required to verify.
      */
     public function hasVerifiedEmail(): bool
     {
-        if ($this->isAdmin()) {
+        if ($this->isAdmin() || $this->isSupervisor()) {
             return true;
         }
 

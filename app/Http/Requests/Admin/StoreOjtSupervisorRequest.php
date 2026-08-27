@@ -18,7 +18,9 @@ class StoreOjtSupervisorRequest extends FormRequest
     public function rules(): array
     {
         return [
-            ...$this->profileRules(),
+            // OJT supervisors are provisioned by admins and are not
+            // restricted to official @usep.edu.ph email addresses.
+            ...$this->profileRules(restrictToUsepDomain: false),
             'program_id' => ['required', 'integer', Rule::exists('programs', 'program_id')],
         ];
     }

@@ -18,7 +18,9 @@ class StoreSupervisorRequest extends FormRequest
     public function rules(): array
     {
         return [
-            ...$this->profileRules(),
+            // HTE supervisors are provisioned by admins and are not
+            // restricted to official @usep.edu.ph email addresses.
+            ...$this->profileRules(restrictToUsepDomain: false),
             'hte_id' => ['required', 'integer', Rule::exists('htes', 'hte_id')],
         ];
     }

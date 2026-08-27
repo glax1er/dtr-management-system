@@ -17,6 +17,8 @@ class ProfileUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
-        return $this->profileRules($this->user()->id);
+        // The @usep.edu.ph restriction is intern-only; supervisors and
+        // admins may use any valid email address on their own profile.
+        return $this->profileRules($this->user()->id, $this->user()->isIntern());
     }
 }

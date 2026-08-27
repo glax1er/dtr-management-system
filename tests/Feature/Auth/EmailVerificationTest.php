@@ -37,12 +37,18 @@ test('unverified user can verify email using valid 6-digit code', function () {
     Event::fake();
 
     $user = User::factory()->unverified()->create([
-        'role' => User::ROLE_SUPERVISOR,
+        'role' => User::ROLE_INTERN,
     ]);
-    SupervisorProfile::create([
+    $hte = Hte::create(['hte_name' => 'Test HTE']);
+    $program = Program::create(['program_name' => 'BSIT']);
+    InternProfile::create([
         'user_id' => $user->id,
-        'supervisor_type' => 'ojt',
-        'status' => 'active',
+        'id_number' => '2026-88888',
+        'sex' => 'male',
+        'hte_id' => $hte->hte_id,
+        'program_id' => $program->program_id,
+        'status' => 'approved',
+        'privacy_accepted_at' => now(),
     ]);
 
     $code = EmailVerificationCode::generateFor($user->email);
@@ -120,4 +126,42 @@ test('admin account is always considered verified and exempt', function () {
 
     expect($admin->isAdmin())->toBeTrue();
     expect($admin->hasVerifiedEmail())->toBeTrue();
+});
+
+test('hte and ojt supervisor accounts are always considered verified and exempt', function () {
+    $hteSupervisor = User::factory()->unverified()->create([
+        'role' => User::ROLE_SUPERVISOR,
+    ]);
+    SupervisorProfile::create([
+        'user_id' => $hteSupervisor->id,
+        'supervisor_type' => 'hte',
+        'status' => 'active',
+    ]);
+
+    $ojtSupervisor = User::factory()->unverified()->create([
+        'role' => User::ROLE_SUPERVISOR,
+    ]);
+    SupervisorProfile::create([
+        'user_id' => $ojtSupervisor->id,
+        'supervisor_type' => 'ojt',
+        'status' => 'active',
+    ]);
+
+    expect($hteSupervisor->hasVerifiedEmail())->toBeTrue();
+    expect($ojtSupervisor->hasVerifiedEmail())->toBeTrue();
+});
+
+test('verified user or supervisor is redirected away from verification screen', function () {
+    $supervisor = User::factory()->unverified()->create([
+        'role' => User::ROLE_SUPERVISOR,
+    ]);
+    SupervisorProfile::create([
+        'user_id' => $supervisor->id,
+        'supervisor_type' => 'ojt',
+        'status' => 'active',
+    ]);
+
+    $response = $this->actingAs($supervisor)->get(route('verification.notice'));
+
+    $response->assertRedirect(route('dashboard'));
 });

@@ -20,7 +20,11 @@ class ProfileController extends Controller
     public function edit(Request $request): Response
     {
         return Inertia::render('settings/profile', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            // Email verification is intern-only — supervisors and admins
+            // are exempt (see User::hasVerifiedEmail()), so they should
+            // never see the "verify your email" prompt on this page.
+            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail
+                && $request->user()->isIntern(),
             'status' => $request->session()->get('status'),
         ]);
     }
