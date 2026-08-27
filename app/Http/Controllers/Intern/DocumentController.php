@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Intern;
 use App\Http\Controllers\Controller;
 use App\Models\DocumentTemplate;
 use App\Models\InternDocument;
+use App\Models\User;
+use App\Notifications\InternDocumentNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -166,7 +168,7 @@ class DocumentController extends Controller
 
         $path = $file->store("intern-documents/{$user->id}", 'local');
 
-        InternDocument::updateOrCreate(
+        $internDoc = InternDocument::updateOrCreate(
             [
                 'user_id' => $user->id,
                 'document_type' => $documentType,
@@ -186,6 +188,31 @@ class DocumentController extends Controller
 
         $docConfig = InternDocument::getTypeConfig($documentType, $internProfile?->program_id);
         $docName = $docConfig['name'] ?? 'Document';
+
+        // Notify supervisors overseeing this intern (by HTE or Program)
+        User::query()
+            ->where('role', User::ROLE_SUPERVISOR)
+            ->whereHas('supervisorProfile', function ($query) use ($internProfile) {
+                $query->where(function ($q) use ($internProfile) {
+                    if ($internProfile?->hte_id) {
+                        $q->where('hte_id', $internProfile->hte_id);
+                    }
+                    if ($internProfile?->program_id) {
+                        $q->orWhere('program_id', $internProfile->program_id);
+                    }
+                });
+            })
+            ->get()
+            ->each(function (User $supervisor) use ($internDoc, $user, $docName) {
+                $supervisor->notify(
+                    new InternDocumentNotification(
+                        internDocument: $internDoc,
+                        event: InternDocumentNotification::DOCUMENT_SUBMITTED,
+                        actor: $user,
+                        docName: $docName,
+                    )
+                );
+            });
 
         return back()->with('success', "{$docName} uploaded successfully and submitted for review.");
     }

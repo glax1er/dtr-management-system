@@ -1,5 +1,5 @@
 import { router, usePage } from '@inertiajs/react';
-import { BellOff, Check, ChevronRight, Search } from 'lucide-react';
+import { BellOff, Check, CheckCheck, ChevronRight, Search, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -29,6 +29,8 @@ const CATEGORY_FILTERS: { value: CategoryFilter; label: string }[] = [
     { value: 'approved', label: NOTIFICATION_CATEGORY_LABELS.approved },
     { value: 'rejected', label: NOTIFICATION_CATEGORY_LABELS.rejected },
     { value: 'pending', label: NOTIFICATION_CATEGORY_LABELS.pending },
+    { value: 'milestone', label: NOTIFICATION_CATEGORY_LABELS.milestone },
+    { value: 'attendance', label: NOTIFICATION_CATEGORY_LABELS.attendance },
     { value: 'general', label: NOTIFICATION_CATEGORY_LABELS.general },
 ];
 
@@ -94,6 +96,24 @@ export default function NotificationsPage() {
 
     const clearNotifications = () => {
         router.delete('/notifications', {
+            preserveScroll: true,
+            preserveState: true,
+        });
+    };
+
+    const markAllAsRead = () => {
+        router.post(
+            '/notifications/mark-all-read',
+            {},
+            {
+                preserveScroll: true,
+                preserveState: true,
+            },
+        );
+    };
+
+    const deleteNotification = (notification: Notification) => {
+        router.delete(`/notifications/${notification.id}`, {
             preserveScroll: true,
             preserveState: true,
         });
@@ -194,15 +214,28 @@ export default function NotificationsPage() {
                     </p>
                 </div>
 
-                {items.length > 0 && (
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={clearNotifications}
-                    >
-                        Clear all
-                    </Button>
-                )}
+                <div className="flex flex-wrap items-center gap-2">
+                    {count > 0 && (
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={markAllAsRead}
+                        >
+                            <CheckCheck className="mr-1.5 size-4" />
+                            Mark all as read
+                        </Button>
+                    )}
+
+                    {items.length > 0 && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={clearNotifications}
+                        >
+                            Clear all
+                        </Button>
+                    )}
+                </div>
             </div>
 
             {items.length > 0 && (
@@ -397,6 +430,21 @@ export default function NotificationsPage() {
                                                         <Check className="size-4" />
                                                     </Button>
                                                 )}
+
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    title="Delete notification"
+                                                    className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                                    onClick={() =>
+                                                        deleteNotification(
+                                                            notification,
+                                                        )
+                                                    }
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                </Button>
 
                                                 <Button
                                                     type="button"

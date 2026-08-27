@@ -49,6 +49,8 @@ class RecordScan
                 'kiosk_id' => $kiosk->id,
                 'scan_timestamp' => $at,
             ]);
+
+            app(\App\Services\Attendance\CheckHoursMilestones::class)->check($internProfile);
         }
 
         return new ScanResult(

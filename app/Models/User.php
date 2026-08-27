@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,6 +15,8 @@ use Illuminate\Support\Carbon;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use App\Models\EmailVerificationCode;
+use App\Notifications\EmailVerificationCodeNotification;
 
 /**
  * @property int $id
@@ -29,9 +32,9 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['role', 'name', 'email', 'password'])]
+#[Fillable(['role', 'name', 'email', 'password', 'notification_preferences'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
-class User extends Authenticatable implements PasskeyUser
+class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
@@ -41,6 +44,16 @@ class User extends Authenticatable implements PasskeyUser
     public const ROLE_ADMIN = 'admin';
     public const ROLE_SUPERVISOR = 'supervisor';
     public const ROLE_INTERN = 'intern';
+
+    /**
+     * Default notification preferences.
+     */
+    public const DEFAULT_NOTIFICATION_PREFERENCES = [
+        'document_updates' => true,
+        'milestone_alerts' => true,
+        'attendance_alerts' => true,
+        'ticket_updates' => true,
+    ];
 
     /**
      * Get the attributes that should be cast.
@@ -53,7 +66,31 @@ class User extends Authenticatable implements PasskeyUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            'notification_preferences' => 'array',
         ];
+    }
+
+    /**
+     * Get user notification preferences merged with defaults.
+     *
+     * @return array<string, bool>
+     */
+    public function getNotificationPreferences(): array
+    {
+        return array_merge(
+            self::DEFAULT_NOTIFICATION_PREFERENCES,
+            $this->notification_preferences ?? []
+        );
+    }
+
+    /**
+     * Check if user has opted into a specific notification type.
+     */
+    public function wantsNotification(string $key): bool
+    {
+        $prefs = $this->getNotificationPreferences();
+
+        return (bool) ($prefs[$key] ?? true);
     }
 
     /**
@@ -102,6 +139,30 @@ class User extends Authenticatable implements PasskeyUser
     {
         return $this->role === self::ROLE_INTERN;
     }
+    /**
+     * Determine if the user has verified their email address.
+     * Email verification is intern-only: admins are hard-coded/seeded
+     * and exempt, and HTE/OJT supervisors are provisioned directly by
+     * admins, so neither role is required to verify.
+     */
+    public function hasVerifiedEmail(): bool
+    {
+        if ($this->isAdmin() || $this->isSupervisor()) {
+            return true;
+        }
+
+        return ! is_null($this->email_verified_at);
+    }
+
+    /**
+     * Send the email verification 6-digit code notification.
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        $code = EmailVerificationCode::generateFor($this->email);
+        $this->notify(new EmailVerificationCodeNotification($code));
+    }
+
     /**
      * The named route this user should land on after login, or when
      * hitting the generic /dashboard redirect.

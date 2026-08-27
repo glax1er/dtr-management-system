@@ -48,6 +48,24 @@ class NotificationController extends Controller
         return back();
     }
 
+    public function markAllRead(Request $request): RedirectResponse
+    {
+        $request->user()->unreadNotifications->markAsRead();
+
+        return back();
+    }
+
+    public function destroy(Request $request, string $notification): RedirectResponse
+    {
+        $request->user()
+            ->notifications()
+            ->whereKey($notification)
+            ->firstOrFail()
+            ->delete();
+
+        return back();
+    }
+
     public function clear(Request $request): RedirectResponse
     {
         $request->user()->notifications()->delete();
@@ -55,3 +73,4 @@ class NotificationController extends Controller
         return back();
     }
 }
+

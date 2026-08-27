@@ -284,6 +284,8 @@ class ResolutionTicketController extends Controller
                     ResolutionTicketNotification::REQUEST_APPROVED,
                 )
             );
+
+            app(\App\Services\Attendance\CheckHoursMilestones::class)->check($ticket->intern_user_id);
         }
 
         Inertia::flash('toast', [

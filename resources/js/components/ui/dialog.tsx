@@ -5,9 +5,43 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 function Dialog({
+  onOpenChange,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Root>) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />
+  // Radix can leave `pointer-events: none` stuck on <body> after a
+  // dialog closes — most commonly when it's dismissed via an outside
+  // click (rather than the Cancel/X button). Radix keeps the content
+  // mounted for the ~200ms exit animation and only tears down its own
+  // internal lock bookkeeping when that content actually unmounts.
+  // Clearing the style too early (e.g. via setTimeout(fn, 0)) races
+  // Radix's internal state and can leave it permanently desynced,
+  // which is worse than doing nothing. So: wait past the exit
+  // animation, and only touch <body> if nothing is genuinely open.
+  const handleOpenChange = (open: boolean) => {
+    onOpenChange?.(open);
+
+    if (!open) {
+      window.setTimeout(() => {
+        const stillOpenDialog = document.querySelector(
+          '[data-slot="dialog-content"][data-state="open"]',
+        );
+        if (
+          !stillOpenDialog &&
+          document.body.style.pointerEvents === "none"
+        ) {
+          document.body.style.removeProperty("pointer-events");
+        }
+      }, 300);
+    }
+  };
+
+  return (
+    <DialogPrimitive.Root
+      data-slot="dialog"
+      onOpenChange={handleOpenChange}
+      {...props}
+    />
+  )
 }
 
 function DialogTrigger({

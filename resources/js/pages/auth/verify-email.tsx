@@ -1,46 +1,38 @@
-// Components
-import { Form, Head } from '@inertiajs/react';
-import TextLink from '@/components/text-link';
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import { Head, router } from '@inertiajs/react';
+import { useState } from 'react';
+import VerifyEmailDialog from '@/components/verify-email-dialog';
 import { logout } from '@/routes';
-import { send } from '@/routes/verification';
 
-export default function VerifyEmail({ status }: { status?: string }) {
+interface Props {
+    status?: string;
+    email?: string;
+}
+
+export default function VerifyEmail({ status, email }: Props) {
+    const [open, setOpen] = useState(true);
+
+    const handleOpenChange = (isOpen: boolean) => {
+        setOpen(isOpen);
+        if (!isOpen) {
+            router.post(logout());
+        }
+    };
+
     return (
         <>
-            <Head title="Email verification" />
-
-            {status === 'verification-link-sent' && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    A new verification link has been sent to the email address
-                    you provided during registration.
-                </div>
-            )}
-
-            <Form {...send.form()} className="space-y-6 text-center">
-                {({ processing }) => (
-                    <>
-                        <Button disabled={processing} variant="secondary">
-                            {processing && <Spinner />}
-                            Resend verification email
-                        </Button>
-
-                        <TextLink
-                            href={logout()}
-                            className="mx-auto block text-sm"
-                        >
-                            Log out
-                        </TextLink>
-                    </>
-                )}
-            </Form>
+            <Head title="Email Verification" />
+            <VerifyEmailDialog
+                open={open}
+                onOpenChange={handleOpenChange}
+                email={email}
+                status={status}
+            />
         </>
     );
 }
 
 VerifyEmail.layout = {
-    title: 'Email verification',
-    description:
-        'Please verify your email address by clicking on the link we just emailed to you.',
+    title: 'Verify Your Email',
+    description: 'Please verify your email address to proceed',
 };
+

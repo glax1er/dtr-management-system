@@ -90,6 +90,9 @@ class CreateNewUser implements CreatesNewUsers
                 Notification::send($admins, new NewInternRegistrationNotification($internProfile));
             }
 
+            // Send 6-digit email verification code to the new intern
+            $user->sendEmailVerificationNotification();
+
             return $user;
         });
     }
