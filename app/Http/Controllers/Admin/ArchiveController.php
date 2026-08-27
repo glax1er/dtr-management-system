@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceLog;
 use App\Models\DocumentTemplate;
+use App\Models\EmailVerificationCode;
 use App\Models\Hte;
 use App\Models\InternDocument;
 use App\Models\InternProfile;
 use App\Models\Program;
+use App\Models\ResolutionTicket;
 use App\Models\SupervisorProfile;
 use App\Models\User;
 use Illuminate\Database\QueryException;
@@ -109,20 +111,46 @@ class ArchiveController extends Controller
                         Storage::disk('public')->delete($profile->profile_photo_path);
                     }
 
-                    // 2. Delete linked attendance logs to satisfy foreign key constraints
+                    // 2. Delete linked attendance logs to satisfy foreign key constraints.
+                    // Must run before step 2b: attendance_logs.resolved_ticket_id
+                    // restricts deleting a resolution ticket while a written-back
+                    // log still points to it.
                     AttendanceLog::where('intern_user_id', $profile->user_id)->delete();
+
+                    // 2b. Delete this intern's resolution tickets — also guarded by
+                    // a restrictOnDelete FK (resolution_tickets.intern_user_id),
+                    // otherwise the User delete below fails and the whole
+                    // transaction rolls back with no visible explanation.
+                    ResolutionTicket::where('intern_user_id', $profile->user_id)->delete();
 
                     // 3. Permanently remove profile and parent User account
                     $userId = $profile->user_id;
+                    $userEmail = $profile->user?->email;
                     $profile->forceDelete();
                     User::where('id', $userId)->delete();
+
+                    // 4. email_verification_codes has no FK to users (it's keyed
+                    // by email), so it never blocks the delete above — but it
+                    // was also never cleaned up, leaving orphaned rows behind.
+                    if ($userEmail) {
+                        EmailVerificationCode::where('email', strtolower(trim($userEmail)))->delete();
+                    }
 
                 } elseif ($type === 'supervisors') {
                     $profile = SupervisorProfile::onlyTrashed()->findOrFail($id);
                     $userId = $profile->user_id;
+                    $userEmail = $profile->user?->email;
 
+                    // Note: attendance_logs.supervisor_user_id is nullOnDelete
+                    // (see 2026_08_27_000001 migration), so those interns'
+                    // attendance history is preserved — it's just detached
+                    // from this supervisor rather than deleted.
                     $profile->forceDelete();
                     User::where('id', $userId)->delete();
+
+                    if ($userEmail) {
+                        EmailVerificationCode::where('email', strtolower(trim($userEmail)))->delete();
+                    }
 
                 } elseif ($type === 'templates') {
                     $template = DocumentTemplate::onlyTrashed()->findOrFail($id);

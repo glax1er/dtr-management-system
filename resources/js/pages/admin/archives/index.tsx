@@ -44,6 +44,10 @@ interface ArchivesIndexProps {
     records: Paginated<ArchivedRecord>;
     currentType: 'htes' | 'supervisors' | 'interns' | 'programs' | 'templates';
     filters?: Filters;
+    flash?: {
+        success?: string | null;
+        error?: string | null;
+    };
 }
 
 type ViewMode = 'table' | 'grid';
@@ -130,7 +134,16 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
         if (!forceDeleteTarget) return;
         router.delete(`/admin/archives/${currentType}/${forceDeleteTarget.id}`, {
             preserveScroll: true,
-            onSuccess: () => {
+            // Inertia's onSuccess fires for ANY completed visit (including a
+            // back()->with('error', ...) redirect when the delete was blocked
+            // by a foreign key constraint) — it does NOT mean the record was
+            // actually deleted. Check the fresh flash props before treating
+            // this as resolved, otherwise the dialog closes and the row looks
+            // "handled" even though it's still sitting in the database.
+            onSuccess: (page) => {
+                const flash = (page.props as { flash?: { error?: string | null } }).flash;
+                if (flash?.error) return;
+
                 setForceDeleteOpen(false);
                 setForceDeleteTarget(null);
             },
