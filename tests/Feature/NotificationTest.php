@@ -282,3 +282,63 @@ test('console command dtr:check-missed-timeouts detects and notifies interns wit
         }
     );
 });
+
+test('user can view notification preferences page', function () {
+    [$user] = createTestInternProfile();
+
+    $response = $this->actingAs($user)->get(route('notifications.edit'));
+
+    $response->assertOk();
+});
+
+test('user can update notification preferences', function () {
+    [$user] = createTestInternProfile();
+
+    $response = $this->actingAs($user)->patch(route('notifications.update'), [
+        'document_updates' => false,
+        'milestone_alerts' => false,
+        'attendance_alerts' => true,
+        'ticket_updates' => true,
+    ]);
+
+    $response->assertRedirect();
+    $response->assertSessionHasNoErrors();
+
+    expect($user->fresh()->wantsNotification('document_updates'))->toBeFalse();
+    expect($user->fresh()->wantsNotification('milestone_alerts'))->toBeFalse();
+    expect($user->fresh()->wantsNotification('attendance_alerts'))->toBeTrue();
+});
+
+test('opted out user does not receive disabled notifications', function () {
+    Notification::fake();
+
+    [$internUser, $internProfile, $hte, $program] = createTestInternProfile();
+    $program->update(['required_hours' => 10]);
+
+    // Opt out of milestone alerts
+    $internUser->update([
+        'notification_preferences' => [
+            'document_updates' => true,
+            'milestone_alerts' => false,
+            'attendance_alerts' => true,
+            'ticket_updates' => true,
+        ],
+    ]);
+
+    // Render 5 hours
+    \App\Models\AttendanceLog::create([
+        'intern_user_id' => $internUser->id,
+        'scan_timestamp' => \Carbon\Carbon::parse('2026-08-01 08:00:00', config('dtr.timezone')),
+    ]);
+    \App\Models\AttendanceLog::create([
+        'intern_user_id' => $internUser->id,
+        'scan_timestamp' => \Carbon\Carbon::parse('2026-08-01 14:00:00', config('dtr.timezone')),
+    ]);
+
+    app(\App\Services\Attendance\CheckHoursMilestones::class)->check($internProfile);
+
+    Notification::assertNotSentTo(
+        $internUser,
+        \App\Notifications\HoursMilestoneNotification::class
+    );
+});

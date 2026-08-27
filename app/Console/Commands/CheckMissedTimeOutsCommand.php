@@ -55,7 +55,7 @@ class CheckMissedTimeOutsCommand extends Command
             )->first();
 
             // Check if day has a time_in but missing time_out
-            if ($dayEntry && $dayEntry->isOpen()) {
+            if ($dayEntry && $dayEntry->isOpen() && $user->wantsNotification('attendance_alerts')) {
                 $alreadyNotified = $user->notifications()
                     ->where('data->type', 'missed_timeout')
                     ->where('data->date', $dateString)

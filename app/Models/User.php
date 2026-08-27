@@ -32,7 +32,7 @@ use App\Notifications\EmailVerificationCodeNotification;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['role', 'name', 'email', 'password'])]
+#[Fillable(['role', 'name', 'email', 'password', 'notification_preferences'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
@@ -46,6 +46,16 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public const ROLE_INTERN = 'intern';
 
     /**
+     * Default notification preferences.
+     */
+    public const DEFAULT_NOTIFICATION_PREFERENCES = [
+        'document_updates' => true,
+        'milestone_alerts' => true,
+        'attendance_alerts' => true,
+        'ticket_updates' => true,
+    ];
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -56,7 +66,31 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            'notification_preferences' => 'array',
         ];
+    }
+
+    /**
+     * Get user notification preferences merged with defaults.
+     *
+     * @return array<string, bool>
+     */
+    public function getNotificationPreferences(): array
+    {
+        return array_merge(
+            self::DEFAULT_NOTIFICATION_PREFERENCES,
+            $this->notification_preferences ?? []
+        );
+    }
+
+    /**
+     * Check if user has opted into a specific notification type.
+     */
+    public function wantsNotification(string $key): bool
+    {
+        $prefs = $this->getNotificationPreferences();
+
+        return (bool) ($prefs[$key] ?? true);
     }
 
     /**

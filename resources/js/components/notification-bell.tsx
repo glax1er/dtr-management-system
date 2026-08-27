@@ -1,6 +1,7 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { Bell, BellOff, CheckCheck, ChevronRight, Trash2 } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { toast as sonnerToast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,6 +22,11 @@ export function NotificationBell() {
     const count = notifications?.count ?? 0;
     const items = notifications?.items ?? [];
 
+    const seenIds = useRef<Set<string>>(
+        new Set(items.map((n: Notification) => n.id)),
+    );
+    const isInitialMount = useRef(true);
+
     useEffect(() => {
         const interval = window.setInterval(() => {
             router.reload({
@@ -32,6 +38,29 @@ export function NotificationBell() {
             window.clearInterval(interval);
         };
     }, []);
+
+    useEffect(() => {
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            return;
+        }
+
+        for (const item of items) {
+            if (!seenIds.current.has(item.id)) {
+                seenIds.current.add(item.id);
+
+                if (!item.read_at) {
+                    sonnerToast(item.title, {
+                        description: item.message,
+                        action: {
+                            label: 'View',
+                            onClick: () => markAsRead(item),
+                        },
+                    });
+                }
+            }
+        }
+    }, [items]);
 
     const markAsRead = (notification: Notification) => {
         router.post(

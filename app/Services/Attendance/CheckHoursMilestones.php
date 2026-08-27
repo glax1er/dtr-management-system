@@ -35,26 +35,27 @@ class CheckHoursMilestones
         $percent = ($totalHours / $requiredHours) * 100;
 
         $user = $profile->user;
+        $wantsMilestones = $user->wantsNotification('milestone_alerts');
 
         // Check 100% milestone
         if ($percent >= 100) {
-            if (! $this->hasReceivedMilestone($user, 'hours_milestone_100')) {
+            if ($wantsMilestones && ! $this->hasReceivedMilestone($user, 'hours_milestone_100')) {
                 $user->notify(new HoursMilestoneNotification(
                     milestone: HoursMilestoneNotification::MILESTONE_100,
                     totalHours: $totalHours,
                     requiredHours: $requiredHours,
                     internProfile: $profile,
                 ));
-
-                // Also notify assigned supervisors about 100% completion
-                $this->notifySupervisorsAboutCompletion($profile, $totalHours, $requiredHours);
             }
+
+            // Also notify assigned supervisors about 100% completion
+            $this->notifySupervisorsAboutCompletion($profile, $totalHours, $requiredHours);
             return;
         }
 
         // Check 80% milestone
         if ($percent >= 80) {
-            if (! $this->hasReceivedMilestone($user, 'hours_milestone_80')) {
+            if ($wantsMilestones && ! $this->hasReceivedMilestone($user, 'hours_milestone_80')) {
                 $user->notify(new HoursMilestoneNotification(
                     milestone: HoursMilestoneNotification::MILESTONE_80,
                     totalHours: $totalHours,
@@ -67,7 +68,7 @@ class CheckHoursMilestones
 
         // Check 50% milestone
         if ($percent >= 50) {
-            if (! $this->hasReceivedMilestone($user, 'hours_milestone_50')) {
+            if ($wantsMilestones && ! $this->hasReceivedMilestone($user, 'hours_milestone_50')) {
                 $user->notify(new HoursMilestoneNotification(
                     milestone: HoursMilestoneNotification::MILESTONE_50,
                     totalHours: $totalHours,

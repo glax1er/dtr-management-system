@@ -23,6 +23,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('throttle:6,1')
         ->name('user-password.update');
 
+    Route::get('settings/notifications', [\App\Http\Controllers\Settings\NotificationPreferencesController::class, 'edit'])
+        ->name('notifications.edit');
+    Route::patch('settings/notifications', [\App\Http\Controllers\Settings\NotificationPreferencesController::class, 'update'])
+        ->name('notifications.update');
+
     Route::inertia('settings/appearance', 'settings/appearance')->name('appearance.edit');
 });
 
