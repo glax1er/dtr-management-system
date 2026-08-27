@@ -98,9 +98,7 @@ export default function VerifyEmailDialog({
 
     const handleClose = () => {
         onOpenChange(false);
-        if (window.location.pathname.includes('/email/verify')) {
-            router.visit(login());
-        }
+        router.visit(login());
     };
 
     const activeStatus = resendStatus || status;

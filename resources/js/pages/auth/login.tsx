@@ -1,4 +1,6 @@
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, usePage } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
+import ForgotPasswordDialog from '@/components/forgot-password-dialog';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
@@ -7,20 +9,55 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import VerifyEmailDialog from '@/components/verify-email-dialog';
 import { register } from '@/routes';
 import { store } from '@/routes/login';
-import { request } from '@/routes/password';
 
 type Props = {
     status?: string;
     canResetPassword: boolean;
+    showVerification?: boolean;
+    verificationEmail?: string;
 };
 
-export default function Login({ status, canResetPassword }: Props) {
+export default function Login({
+    status,
+    canResetPassword,
+    showVerification = false,
+    verificationEmail = '',
+}: Props) {
+    const [showForgotPassword, setShowForgotPassword] = useState(false);
+    const [showVerifyModal, setShowVerifyModal] = useState(showVerification);
+    const [verifyEmail, setVerifyEmail] = useState(verificationEmail);
+
+    const page = usePage<{ errors?: Record<string, string> }>();
+
+    useEffect(() => {
+        if (showVerification) {
+            setShowVerifyModal(true);
+            if (verificationEmail) {
+                setVerifyEmail(verificationEmail);
+            }
+        }
+    }, [showVerification, verificationEmail]);
+
+    useEffect(() => {
+        if (page.props.errors?.unverified_email) {
+            setVerifyEmail(page.props.errors.unverified_email);
+            setShowVerifyModal(true);
+        }
+    }, [page.props.errors?.unverified_email]);
 
     return (
         <>
             <Head title="Log in" />
+
+            {status && (
+                <div className="mb-2 flex items-start gap-2.5 p-3.5 text-xs font-medium text-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50 rounded-lg animate-in fade-in-50 duration-300">
+                    <span className="shrink-0 mt-0.5 inline-block h-2 w-2 rounded-full bg-emerald-500" />
+                    <span className="leading-relaxed">{status}</span>
+                </div>
+            )}
 
             <Form
                 {...store.form()}
@@ -49,13 +86,14 @@ export default function Login({ status, canResetPassword }: Props) {
                                 <div className="flex items-center">
                                     <Label htmlFor="password">Password</Label>
                                     {canResetPassword && (
-                                        <TextLink
-                                            href={request()}
-                                            className="ml-auto text-sm"
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowForgotPassword(true)}
+                                            className="ml-auto text-sm text-muted-foreground hover:text-foreground underline underline-offset-4 cursor-pointer transition-colors"
                                             tabIndex={5}
                                         >
                                             Forgot your password?
-                                        </TextLink>
+                                        </button>
                                     )}
                                 </div>
                                 <PasswordInput
@@ -100,11 +138,16 @@ export default function Login({ status, canResetPassword }: Props) {
                 )}
             </Form>
 
-            {status && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {status}
-                </div>
-            )}
+            <ForgotPasswordDialog
+                open={showForgotPassword}
+                onOpenChange={setShowForgotPassword}
+            />
+
+            <VerifyEmailDialog
+                open={showVerifyModal}
+                onOpenChange={setShowVerifyModal}
+                email={verifyEmail}
+            />
         </>
     );
 }

@@ -5,9 +5,34 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 function Dialog({
+  onOpenChange,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Root>) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />
+  // Radix can leave `pointer-events: none` stuck on <body> after a
+  // dialog closes — most commonly when it's dismissed via an outside
+  // click (rather than the Cancel/X button) while another Dialog.Root
+  // is also mounted (even closed) elsewhere in the tree. That leaves
+  // the whole page unclickable until a manual refresh. Clearing the
+  // style just after the close transition is the standard workaround.
+  const handleOpenChange = (open: boolean) => {
+    onOpenChange?.(open);
+
+    if (!open) {
+      window.setTimeout(() => {
+        if (document.body.style.pointerEvents === "none") {
+          document.body.style.removeProperty("pointer-events");
+        }
+      }, 0);
+    }
+  };
+
+  return (
+    <DialogPrimitive.Root
+      data-slot="dialog"
+      onOpenChange={handleOpenChange}
+      {...props}
+    />
+  )
 }
 
 function DialogTrigger({

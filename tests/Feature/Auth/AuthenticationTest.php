@@ -81,3 +81,32 @@ test('users are rate limited', function () {
 
     $response->assertTooManyRequests();
 });
+
+test('logging in with an unverified intern account sends a fresh code and reports unverified_email instead of authenticating', function () {
+    \Illuminate\Support\Facades\Notification::fake();
+
+    $hte = Hte::create(['hte_name' => 'Test HTE']);
+    $program = Program::create(['program_name' => 'BSIT']);
+    $user = User::factory()->unverified()->create(['role' => User::ROLE_INTERN]);
+    InternProfile::create([
+        'user_id' => $user->id,
+        'id_number' => '2026-22222',
+        'sex' => 'male',
+        'hte_id' => $hte->hte_id,
+        'program_id' => $program->program_id,
+        'status' => 'approved',
+        'privacy_accepted_at' => now(),
+    ]);
+
+    $response = $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $this->assertGuest();
+    $response->assertSessionHasErrors('unverified_email');
+    \Illuminate\Support\Facades\Notification::assertSentTo(
+        $user,
+        \App\Notifications\EmailVerificationCodeNotification::class,
+    );
+});
