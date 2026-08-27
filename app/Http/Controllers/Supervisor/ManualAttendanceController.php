@@ -183,6 +183,8 @@ class ManualAttendanceController extends Controller
             }
         });
 
+        app(\App\Services\Attendance\CheckHoursMilestones::class)->check($validated['intern_user_id']);
+
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Attendance records saved.']);
         return back();
     }

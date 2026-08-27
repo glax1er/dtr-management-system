@@ -29,6 +29,8 @@ const CATEGORY_FILTERS: { value: CategoryFilter; label: string }[] = [
     { value: 'approved', label: NOTIFICATION_CATEGORY_LABELS.approved },
     { value: 'rejected', label: NOTIFICATION_CATEGORY_LABELS.rejected },
     { value: 'pending', label: NOTIFICATION_CATEGORY_LABELS.pending },
+    { value: 'milestone', label: NOTIFICATION_CATEGORY_LABELS.milestone },
+    { value: 'attendance', label: NOTIFICATION_CATEGORY_LABELS.attendance },
     { value: 'general', label: NOTIFICATION_CATEGORY_LABELS.general },
 ];
 

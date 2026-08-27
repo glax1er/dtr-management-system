@@ -222,3 +222,63 @@ test('supervisor approving or rejecting document notifies intern', function () {
         }
     );
 });
+
+test('check hours milestones dispatches notification when intern reaches milestones', function () {
+    Notification::fake();
+
+    [$internUser, $internProfile, $hte, $program] = createTestInternProfile();
+    $program->update(['required_hours' => 10]);
+
+    $supervisorUser = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
+    SupervisorProfile::create([
+        'user_id' => $supervisorUser->id,
+        'supervisor_type' => 'hte',
+        'hte_id' => $hte->hte_id,
+        'status' => 'active',
+    ]);
+
+    // Render 5 hours net (6 hrs minus 1 hr lunch deduction = 5 hrs = 50% of 10 hrs)
+    \App\Models\AttendanceLog::create([
+        'intern_user_id' => $internUser->id,
+        'scan_timestamp' => \Carbon\Carbon::parse('2026-08-01 08:00:00', config('dtr.timezone')),
+    ]);
+    \App\Models\AttendanceLog::create([
+        'intern_user_id' => $internUser->id,
+        'scan_timestamp' => \Carbon\Carbon::parse('2026-08-01 14:00:00', config('dtr.timezone')),
+    ]);
+
+    app(\App\Services\Attendance\CheckHoursMilestones::class)->check($internProfile);
+
+    Notification::assertSentTo(
+        $internUser,
+        \App\Notifications\HoursMilestoneNotification::class,
+        function (\App\Notifications\HoursMilestoneNotification $notification) {
+            return $notification->milestone === \App\Notifications\HoursMilestoneNotification::MILESTONE_50;
+        }
+    );
+});
+
+test('console command dtr:check-missed-timeouts detects and notifies interns with missing timeout', function () {
+    Notification::fake();
+
+    [$internUser, $internProfile, $hte, $program] = createTestInternProfile();
+
+    $targetDate = '2026-08-05';
+
+    // Only time-in recorded, no time-out
+    \App\Models\AttendanceLog::create([
+        'intern_user_id' => $internUser->id,
+        'scan_timestamp' => \Carbon\Carbon::parse("{$targetDate} 08:00:00", config('dtr.timezone')),
+    ]);
+
+    $this->artisan("dtr:check-missed-timeouts --date={$targetDate}")
+        ->assertSuccessful();
+
+    Notification::assertSentTo(
+        $internUser,
+        \App\Notifications\MissedTimeOutNotification::class,
+        function (\App\Notifications\MissedTimeOutNotification $notification) use ($targetDate) {
+            return $notification->date === $targetDate;
+        }
+    );
+});
