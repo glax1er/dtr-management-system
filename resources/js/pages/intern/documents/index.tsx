@@ -1,6 +1,7 @@
 import { Head, router } from '@inertiajs/react';
 import {
     AlertCircle,
+    ArrowLeft,
     CheckCircle2,
     Clock,
     Download,
@@ -8,13 +9,17 @@ import {
     FileCheck,
     FileText,
     FileUp,
+    Folder,
+    FolderOpen,
     Info,
     Loader2,
     RefreshCw,
+    Search,
     Trash2,
     Paperclip,
+    X,
 } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -92,7 +97,40 @@ export default function InternDocuments({
 }: InternDocumentsProps) {
     const [uploadingType, setUploadingType] = useState<string | null>(null);
     const [previewDoc, setPreviewDoc] = useState<DocumentItem | null>(null);
+    const [search, setSearch] = useState('');
+    const [activeFolder, setActiveFolder] = useState<string>('all'); // 'all' | category name
+    const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+    const getFolderColorClass = (catName: string) => {
+        const lower = catName.toLowerCase();
+        if (lower.includes('pre')) {
+            return {
+                border: 'hover:border-blue-500/50',
+                activeBorder: 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-300',
+                iconBg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+            };
+        }
+        if (lower.includes('during')) {
+            return {
+                border: 'hover:border-amber-500/50',
+                activeBorder: 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300',
+                iconBg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+            };
+        }
+        if (lower.includes('eval')) {
+            return {
+                border: 'hover:border-emerald-500/50',
+                activeBorder: 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300',
+                iconBg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+            };
+        }
+        return {
+            border: 'hover:border-purple-500/50',
+            activeBorder: 'border-purple-500 bg-purple-50/50 dark:bg-purple-950/20 text-purple-700 dark:text-purple-300',
+            iconBg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+        };
+    };
 
     const handleFileSelect = (
         typeKey: string,
@@ -175,6 +213,41 @@ export default function InternDocuments({
         new Set(checklist.map((item) => item.category)),
     );
 
+    // ── Folder Cards Meta (mirrors supervisor Document Templates layout) ────
+    const folders = useMemo(() => {
+        return categories.map((catName) => {
+            const items = checklist.filter((item) => item.category === catName);
+            const submittedCount = items.filter((item) => item.status !== 'missing').length;
+            return {
+                name: catName,
+                total_items: items.length,
+                submitted_count: submittedCount,
+            };
+        });
+    }, [categories, checklist]);
+
+    // ── Filtered Checklist (folder + search) ─────────────────────────────────
+    const filteredChecklist = useMemo(() => {
+        return checklist.filter((item) => {
+            if (activeFolder !== 'all' && item.category !== activeFolder) return false;
+
+            if (search.trim()) {
+                const query = search.toLowerCase();
+                const matchName = item.name.toLowerCase().includes(query);
+                const matchDesc = item.description?.toLowerCase().includes(query);
+                const matchCategory = item.category?.toLowerCase().includes(query);
+                const matchFile = item.original_filename?.toLowerCase().includes(query);
+                if (!matchName && !matchDesc && !matchCategory && !matchFile) return false;
+            }
+
+            return true;
+        });
+    }, [checklist, activeFolder, search]);
+
+    const filteredCategories = Array.from(
+        new Set(filteredChecklist.map((item) => item.category)),
+    );
+
     const getStatusBadge = (status: DocumentItem['status']) => {
         switch (status) {
             case 'approved':
@@ -193,10 +266,10 @@ export default function InternDocuments({
             <Head title="My Documents" />
 
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
-                {/* Header */}
+                {/* ── Top Header Toolbar ──────────────────────────────────────── */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
+                        <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-foreground">
                             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
                                 <Paperclip className="size-5" />
                             </span>
@@ -204,29 +277,184 @@ export default function InternDocuments({
                         </h1>
                     </div>
 
-                    {/* Progress indicator */}
-                    <div className="flex items-center gap-3 bg-card border border-border/70 rounded-lg px-3.5 py-2 shrink-0">
-                        <div className="text-right">
-                            <p className="text-xs font-semibold text-foreground">
-                                {stats.approved_required} of {stats.total_required} Approved
-                            </p>
-                            <p className="text-[11px] text-muted-foreground">
-                                {stats.progress_percentage}% completed
-                            </p>
-                        </div>
-                        <div className="w-16 h-2 bg-secondary rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-primary transition-all duration-300 rounded-full"
-                                style={{ width: `${stats.progress_percentage}%` }}
+                    {/* Header Controls */}
+                    <div className="flex flex-wrap items-center gap-2">
+                        {/* Search Input */}
+                        <div className="relative hidden sm:block">
+                            <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                            <input
+                                type="text"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder="Search documents…"
+                                className="h-9 w-48 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none lg:w-64"
                             />
+                            {search && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearch('')}
+                                    className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                >
+                                    <X className="size-3.5" />
+                                </button>
+                            )}
                         </div>
+
+                        {/* Mobile Search Toggle */}
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="sm:hidden"
+                            onClick={() => setMobileSearchOpen((prev) => !prev)}
+                            aria-label="Toggle search"
+                        >
+                            <Search className="size-4" />
+                        </Button>
+
+                        {/* Progress indicator */}
+                        <div className="flex items-center gap-3 bg-card border border-border/70 rounded-lg px-3.5 py-2 shrink-0">
+                            <div className="text-right">
+                                <p className="text-xs font-semibold text-foreground">
+                                    {stats.approved_required} of {stats.total_required} Approved
+                                </p>
+                                <p className="text-[11px] text-muted-foreground">
+                                    {stats.progress_percentage}% completed
+                                </p>
+                            </div>
+                            <div className="w-16 h-2 bg-secondary rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-primary transition-all duration-300 rounded-full"
+                                    style={{ width: `${stats.progress_percentage}%` }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Mobile Search Bar */}
+                {mobileSearchOpen && (
+                    <div className="relative block sm:hidden">
+                        <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <input
+                            type="text"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Search documents..."
+                            className="h-9 w-full rounded-md border border-input bg-background pl-8 pr-8 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                            autoFocus
+                        />
+                        {search && (
+                            <button
+                                type="button"
+                                onClick={() => setSearch('')}
+                                className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            >
+                                <X className="size-3.5" />
+                            </button>
+                        )}
+                    </div>
+                )}
+
+                {/* ── Categories / Folders Section ────────────────────────────── */}
+                <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Folder className="size-4 text-primary" />
+                            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                Categories & Folders
+                            </h2>
+                        </div>
+
+                        {activeFolder !== 'all' && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setActiveFolder('all')}
+                                className="h-7 text-xs gap-1 text-primary hover:text-primary"
+                            >
+                                <ArrowLeft className="size-3" />
+                                View All Categories
+                            </Button>
+                        )}
+                    </div>
+
+                    {/* Category Folder Cards Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                        {folders.map((f) => {
+                            const colors = getFolderColorClass(f.name);
+                            const isSelected = activeFolder === f.name;
+
+                            return (
+                                <button
+                                    key={f.name}
+                                    type="button"
+                                    onClick={() => setActiveFolder(isSelected ? 'all' : f.name)}
+                                    className={`flex items-start gap-3 p-3.5 rounded-xl border text-left transition-all duration-200 cursor-pointer ${
+                                        isSelected
+                                            ? colors.activeBorder + ' shadow-sm ring-1 ring-primary/30'
+                                            : 'bg-card border-border/70 hover:bg-accent/40 ' + colors.border
+                                    }`}
+                                >
+                                    <div className={`p-2.5 rounded-lg shrink-0 ${colors.iconBg}`}>
+                                        {isSelected ? (
+                                            <FolderOpen className="size-5" />
+                                        ) : (
+                                            <Folder className="size-5" />
+                                        )}
+                                    </div>
+                                    <div className="flex-1 min-w-0 space-y-1">
+                                        <div className="font-semibold text-sm truncate text-foreground">
+                                            {f.name}
+                                        </div>
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                            <span>{f.total_items} {f.total_items === 1 ? 'doc' : 'docs'}</span>
+                                            <span>•</span>
+                                            <span className={f.submitted_count === f.total_items ? 'text-emerald-600 font-medium' : ''}>
+                                                {f.submitted_count} submitted
+                                            </span>
+                                        </div>
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* ── Breadcrumb & Filter Status Header ───────────────────────── */}
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2 pt-2">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <button
+                            type="button"
+                            onClick={() => setActiveFolder('all')}
+                            className={`hover:text-foreground font-medium transition-colors ${
+                                activeFolder === 'all' ? 'text-foreground font-semibold' : ''
+                            }`}
+                        >
+                            All Documents
+                        </button>
+                        <span>/</span>
+                        <span className="font-semibold text-foreground">
+                            {activeFolder === 'all' ? 'All Categories' : activeFolder}
+                        </span>
+                        <Badge variant="outline" className="ml-1.5 text-[10px] px-1.5 py-0">
+                            {filteredChecklist.length} items
+                        </Badge>
                     </div>
                 </div>
 
                 {/* Categorized Document Checklist */}
                 <div className="space-y-6">
-                    {categories.map((category) => {
-                        const items = checklist.filter(
+                    {filteredChecklist.length === 0 ? (
+                        <Card className="border-dashed p-10 text-center text-muted-foreground">
+                            <FileText className="mx-auto size-10 text-muted-foreground/50 mb-3" />
+                            <h3 className="font-medium text-sm text-foreground">No documents found</h3>
+                            <p className="text-xs mt-1">
+                                Try a different search term or clear the category filter.
+                            </p>
+                        </Card>
+                    ) : (
+                    filteredCategories.map((category) => {
+                        const items = filteredChecklist.filter(
                             (item) => item.category === category,
                         );
 
@@ -433,7 +661,8 @@ export default function InternDocuments({
                                 </div>
                             </div>
                         );
-                    })}
+                    })
+                    )}
                 </div>
             </div>
 
