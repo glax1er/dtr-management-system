@@ -70,18 +70,29 @@ class DashboardController extends Controller
             ->paginate($perPage, ['*'], 'page', $validated['page'] ?? 1)
             ->withQueryString()
             ->through(function (AttendanceLog $log) {
-                $scansUpToThisOneToday = AttendanceLog::where('intern_user_id', $log->intern_user_id)
-                    ->whereDate('scan_timestamp', $log->scan_timestamp)
-                    ->where('scan_timestamp', '<=', $log->scan_timestamp)
-                    ->count();
+                $timezone = config('dtr.timezone');
+                $localTimestamp = $log->scan_timestamp->clone()->setTimezone($timezone);
+                $dayStart = $localTimestamp->clone()->startOfDay();
+                $dayEnd = $localTimestamp->clone()->endOfDay();
+                $cutoff = Carbon::parse($localTimestamp->toDateString() . ' ' . config('dtr.time_out_cutoff'), $timezone);
+
+                $earliestScanToday = AttendanceLog::where('intern_user_id', $log->intern_user_id)
+                    ->whereBetween('scan_timestamp', [$dayStart, $dayEnd])
+                    ->orderBy('scan_timestamp', 'asc')
+                    ->first();
+
+                $isEarliestScan = $earliestScanToday?->id === $log->id;
+                $earliestIsAfterCutoff = $earliestScanToday && $earliestScanToday->scan_timestamp->clone()->setTimezone($timezone)->gt($cutoff);
+
+                $label = ($isEarliestScan && ! $earliestIsAfterCutoff) ? 'time_in' : 'time_out';
 
                 return [
                     'id' => $log->id,
                     'intern_name' => $log->intern->name,
                     'id_number' => $log->intern->internProfile?->id_number,
-                    'label' => $scansUpToThisOneToday <= 1 ? 'time_in' : 'time_out',
+                    'label' => $label,
                     'scanned_at' => $log->scan_timestamp->diffForHumans(),
-                    'scanned_at_full' => $log->scan_timestamp->clone()->setTimezone(config('dtr.timezone'))->format('M j, Y g:i A'),
+                    'scanned_at_full' => $localTimestamp->format('M j, Y g:i A'),
                 ];
             });
 

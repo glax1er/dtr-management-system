@@ -32,11 +32,24 @@ use Illuminate\Support\Collection;
 class DailyAttendanceCalculator
 {
     /**
+     * @param int|object $intern
      * @return Collection<int, DailyAttendance> ordered oldest date first
      */
-    public function forIntern(int $internUserId, int $hteId, ?Carbon $from = null, ?Carbon $to = null, ?CarbonInterface $approvedAt = null): Collection
-    {
+    public function forIntern(
+        $intern,
+        int $hteId,
+        ?CarbonInterface $from = null,
+        ?CarbonInterface $to = null,
+        ?CarbonInterface $approvedAt = null
+    ): Collection {
         $timezone = config('dtr.timezone');
+
+        $internUserId = match (true) {
+            is_numeric($intern) => (int) $intern,
+            isset($intern->user_id) => (int) $intern->user_id,
+            isset($intern->id) => (int) $intern->id,
+            default => throw new \InvalidArgumentException('Unable to resolve intern user ID.'),
+        };
 
         $query = AttendanceLog::query()
             ->where('intern_user_id', $internUserId)
@@ -70,18 +83,17 @@ class DailyAttendanceCalculator
     }
 
     /**
-     * Diffs expected workdays (Mon-Fri, from approval up to yesterday —
-     * no holiday logic, deliberately deferred) against the dates that
-     * already have at least one scan, and returns a synthetic
-     * DailyAttendance for every gap: a day the intern should have
-     * scanned at all but has zero rows for. Never includes today or any
-     * future date — a day still in progress isn't "missed" yet.
-     *
      * @param  Collection<int, string>  $existingDates
      * @return Collection<string, DailyAttendance> keyed by date string
      */
-    private function missingWorkdays(Collection $existingDates, CarbonInterface $approvedAt, string $timezone, ?Carbon $from, ?Carbon $to, int $hteId): Collection
-    {
+    private function missingWorkdays(
+        Collection $existingDates,
+        CarbonInterface $approvedAt,
+        string $timezone,
+        ?CarbonInterface $from,
+        ?CarbonInterface $to,
+        int $hteId
+    ): Collection {
         $yesterday = Carbon::now($timezone)->subDay()->startOfDay();
 
         $rangeStart = $approvedAt->clone()->setTimezone($timezone)->startOfDay();
@@ -101,12 +113,6 @@ class DailyAttendanceCalculator
         }
 
         for ($cursor = $rangeStart->clone(); $cursor->lte($rangeEnd); $cursor = $cursor->addDay()) {
-            // A day only counts as "missed" if this HTE actually expected
-            // work that day (SchedulePeriod override, then global default).
-            // Replaces the old isWeekday() assumption, which had no idea
-            // about the real per-HTE schedule — e.g. it would still flag a
-            // Friday the HTE marked "no work" as a missed day, and could
-            // never flag a scheduled Saturday as missed either.
             $isScheduledWorkday = SchedulePeriod::expectedStartTimeFor($cursor, $hteId) !== null;
 
             if ($isScheduledWorkday && ! $existingDates->contains($cursor->toDateString())) {
@@ -129,7 +135,7 @@ class DailyAttendanceCalculator
      * from the daily breakdown rather than stored anywhere, so it's
      * always consistent with what the intern sees in their log table.
      */
-    public function totalHours(int $internUserId, int $hteId, ?Carbon $from = null, ?Carbon $to = null): float
+    public function totalHours(int $internUserId, int $hteId, ?CarbonInterface $from = null, ?CarbonInterface $to = null): float
     {
         return round(
             $this->forIntern($internUserId, $hteId, $from, $to)->sum('hoursRendered'),

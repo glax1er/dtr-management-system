@@ -59,7 +59,7 @@ class SchedulePeriodController extends Controller
             abort(403);
         }
 
-        if ($schedulePeriod->end_date->isPast()) {
+        if ($schedulePeriod->end_date->endOfDay()->isPast()) {
             abort(403, 'Cannot edit a schedule period that has already ended.');
         }
 
@@ -84,7 +84,7 @@ class SchedulePeriodController extends Controller
             abort(403);
         }
 
-        if ($schedulePeriod->end_date->isPast()) {
+        if ($schedulePeriod->end_date->endOfDay()->isPast()) {
             abort(403, 'Cannot delete a schedule period that has already ended.');
         }
 

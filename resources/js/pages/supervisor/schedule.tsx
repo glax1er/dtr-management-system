@@ -1,5 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import { Calendar, CalendarDays, Clock, Pencil, Plus, Sparkles, Trash2, X } from 'lucide-react';
+import { Calendar, CalendarClock, Clock, Pencil, Plus, Sparkles, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -80,26 +80,41 @@ const formFromPeriod = (p: SchedulePeriod): FormState => ({
     startDate: p.start_date,
     endDate: p.end_date,
     daySchedule: Object.fromEntries(
-        DAYS.map((d) => [d, p.day_schedule[d] ?? '']),
+        DAYS.map((d) => [d, p.day_schedule?.[d] ?? '']),
     ),
 });
 
 const buildPayload = (form: FormState) =>
     Object.fromEntries(DAYS.map((d) => [d, form.daySchedule[d] || null]));
 
-function formatTime12(time: string | null): string {
+function formatTime12(time: string | null | undefined): string {
     if (!time) {
         return '—';
     }
 
-    const [h, m] = time.split(':').map(Number);
-    const period = h >= 12 ? 'PM' : 'AM';
+    try {
+        const [hStr, mStr] = time.split(':');
+        const h = Number(hStr);
+        const m = Number(mStr);
+        if (isNaN(h) || isNaN(m)) return time;
+        const period = h >= 12 ? 'PM' : 'AM';
+        const displayH = h % 12 === 0 ? 12 : h % 12;
 
-    return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, '0')} ${period}`;
+        return `${displayH}:${String(m).padStart(2, '0')} ${period}`;
+    } catch {
+        return time;
+    }
 }
 
-const isPast = (dateStr: string) =>
-    new Date(dateStr) < new Date(new Date().toDateString());
+const isPast = (dateStr: string | null | undefined): boolean => {
+    if (!dateStr) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const [y, m, d] = dateStr.split('-').map(Number);
+    if (!y || !m || !d) return false;
+    const date = new Date(y, m - 1, d);
+    return date < today;
+};
 
 // ── Shared form fields ────────────────────────────────────────────────────────
 function PeriodForm({
@@ -320,7 +335,7 @@ function PeriodRow({
                 <div>
                     <div className="flex items-center gap-2">
                         <p className="font-medium">
-                            {period.name ?? 'Unnamed period'}
+                            {period.name || 'Unnamed period'}
                         </p>
                         {readOnly && (
                             <Badge variant="secondary" className="font-normal">
@@ -378,7 +393,7 @@ function PeriodRow({
                             {DAY_LABELS[day].slice(0, 3)}
                         </span>
                         <span className="font-medium tabular-nums">
-                            {formatTime12(period.day_schedule[day])}
+                            {formatTime12(period.day_schedule?.[day] ?? null)}
                         </span>
                     </div>
                 ))}
@@ -392,6 +407,7 @@ export default function SupervisorSchedule({
     periods,
     globalPeriods,
 }: ScheduleProps) {
+    const [processing, setProcessing] = useState(false);
     const [addOpen, setAddOpen] = useState(false);
     const [addForm, setAddForm] = useState<FormState>(emptyForm);
 
@@ -411,6 +427,7 @@ export default function SupervisorSchedule({
             return;
         }
 
+        setProcessing(true);
         router.post(
             '/supervisor/schedule',
             {
@@ -425,6 +442,10 @@ export default function SupervisorSchedule({
                     setAddOpen(false);
                     setAddForm(emptyForm());
                 },
+                onError: (errors) => {
+                    toast.error(Object.values(errors)[0] ?? 'Could not create override period.');
+                },
+                onFinish: () => setProcessing(false),
             },
         );
     };
@@ -442,6 +463,7 @@ export default function SupervisorSchedule({
             return;
         }
 
+        setProcessing(true);
         router.patch(
             `/supervisor/schedule/${editingId}`,
             {
@@ -456,13 +478,17 @@ export default function SupervisorSchedule({
                     setEditOpen(false);
                     setEditingId(null);
                 },
+                onError: (errors) => {
+                    toast.error(Object.values(errors)[0] ?? 'Could not update override period.');
+                },
+                onFinish: () => setProcessing(false),
             },
         );
     };
 
     const openDelete = (period: SchedulePeriod) => {
         setDeleteId(period.id);
-        setDeleteName(period.name ?? 'this override');
+        setDeleteName(period.name || 'this override');
         setDeleteOpen(true);
     };
 
@@ -471,12 +497,19 @@ export default function SupervisorSchedule({
             return;
         }
 
+        setProcessing(true);
         router.delete(`/supervisor/schedule/${deleteId}`, {
             preserveScroll: true,
+            onSuccess: () => {
+                setDeleteOpen(false);
+                setDeleteId(null);
+                setDeleteName('');
+            },
+            onError: (errors) => {
+                toast.error(Object.values(errors)[0] ?? 'Could not delete override period.');
+            },
+            onFinish: () => setProcessing(false),
         });
-        setDeleteOpen(false);
-        setDeleteId(null);
-        setDeleteName('');
     };
 
     // ── Render ─────────────────────────────────────────────────────────────
@@ -487,28 +520,28 @@ export default function SupervisorSchedule({
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
                 {/* Header */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
-                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-                            <CalendarDays className="size-5" />
-                        </span>
-                        HTE Schedule
-                    </h1>
+                    <div>
+                        <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
+                            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                                <CalendarClock className="size-5" />
+                            </span>
+                            HTE Schedule
+                        </h1>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            Global periods (set by admin) apply to your interns by default. Add an override if your HTE differs.
+                        </p>
+                    </div>
 
                     <Button onClick={() => setAddOpen(true)}>
                         <Plus className="size-4" />
-                        <span className="hidden sm:inline">Add Override</span>
+                        <span>Add Override</span>
                     </Button>
                 </div>
-                <p className="-mt-2 text-sm text-muted-foreground">
-                    Global periods (set by admin) apply to your interns by
-                    default. Add an override only if your HTE's actual schedule
-                    differs.
-                </p>
 
                 {/* Global schedule (reference) */}
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-base">
+                        <CardTitle className="text-base font-semibold">
                             Global Schedule (Reference)
                         </CardTitle>
                     </CardHeader>
@@ -534,7 +567,7 @@ export default function SupervisorSchedule({
                 {/* HTE overrides */}
                 <Card className="flex-1">
                     <CardHeader>
-                        <CardTitle className="text-base">
+                        <CardTitle className="text-base font-semibold">
                             Your HTE Overrides
                         </CardTitle>
                     </CardHeader>
@@ -567,7 +600,7 @@ export default function SupervisorSchedule({
                     <DialogHeader className="gap-1.5 pb-3 border-b">
                         <DialogTitle className="text-xl font-semibold flex items-center gap-2.5">
                             <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-xs">
-                                <CalendarDays className="size-5" />
+                                <Calendar className="size-5" />
                             </span>
                             Add Override Period
                         </DialogTitle>
@@ -585,10 +618,13 @@ export default function SupervisorSchedule({
                         <Button
                             variant="outline"
                             onClick={() => setAddOpen(false)}
+                            disabled={processing}
                         >
                             Cancel
                         </Button>
-                        <Button onClick={submitAdd}>Save Override</Button>
+                        <Button onClick={submitAdd} disabled={processing}>
+                            {processing ? 'Saving...' : 'Save Override'}
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -599,7 +635,7 @@ export default function SupervisorSchedule({
                     <DialogHeader className="gap-1.5 pb-3 border-b">
                         <DialogTitle className="text-xl font-semibold flex items-center gap-2.5">
                             <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-xs">
-                                <CalendarDays className="size-5" />
+                                <Calendar className="size-5" />
                             </span>
                             Edit Override Period
                         </DialogTitle>
@@ -617,10 +653,13 @@ export default function SupervisorSchedule({
                         <Button
                             variant="outline"
                             onClick={() => setEditOpen(false)}
+                            disabled={processing}
                         >
                             Cancel
                         </Button>
-                        <Button onClick={submitEdit}>Save Changes</Button>
+                        <Button onClick={submitEdit} disabled={processing}>
+                            {processing ? 'Saving...' : 'Save Changes'}
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -634,6 +673,7 @@ export default function SupervisorSchedule({
                 onConfirm={submitDelete}
                 confirmText="Delete"
                 isDestructive
+                isLoading={processing}
             />
         </>
     );

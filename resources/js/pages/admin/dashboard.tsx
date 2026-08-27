@@ -16,9 +16,10 @@ import {
     StatCard,
     TrendBarChart,
 } from '@/components/dashboard-analytics';
-import PaginationFooter from '@/components/pagination-footer';
+import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/badges/status-badge';
 import {
     Card,
     CardContent,
@@ -157,17 +158,6 @@ export default function AdminDashboard({
         },
     ];
 
-    const statusBadgeVariant = (status: string) => {
-        switch (status) {
-            case 'approved':
-                return 'default';
-            case 'rejected':
-                return 'destructive';
-            default:
-                return 'secondary';
-        }
-    };
-
     const visit = (params: Record<string, string | undefined>) => {
         router.get('/admin/dashboard', params, {
             preserveState: true,
@@ -277,7 +267,7 @@ export default function AdminDashboard({
                                     }
                                     checkedIn={todayAttendance.checked_in}
                                     total={todayAttendance.total}
-                                    subtitle="interns checked in"
+                                    subtitle="Interns checked in"
                                 />
                             )}
                         </CardContent>
@@ -379,14 +369,14 @@ export default function AdminDashboard({
 
                 {/* Recent Registrations Table with Shadcn UI Table */}
                 <Card className="shadow-xs">
-                    <CardHeader className="pb-3">
+                    <CardHeader>
                         <div className="flex items-center justify-between">
                             <div>
                                 <CardTitle className="text-base font-semibold">
                                     Recent Registrations
                                 </CardTitle>
                                 <CardDescription>
-                                    Latest student intern sign-ups awaiting verification
+                                    Latest student intern sign-ups awaiting approval
                                 </CardDescription>
                             </div>
                             <Badge variant="outline" className="text-xs font-normal">
@@ -405,11 +395,11 @@ export default function AdminDashboard({
                                     <TableHeader className="bg-muted/40">
                                         <TableRow>
                                             <TableHead className="font-semibold">Student Name</TableHead>
-                                            <TableHead className="font-semibold">ID Number</TableHead>
-                                            <TableHead className="font-semibold">Program</TableHead>
-                                            <TableHead className="font-semibold">HTE</TableHead>
-                                            <TableHead className="font-semibold">Registered</TableHead>
-                                            <TableHead className="font-semibold text-right">Status</TableHead>
+                                            <TableHead className="font-semibold text-center">ID Number</TableHead>
+                                            <TableHead className="font-semibold text-center">Program</TableHead>
+                                            <TableHead className="font-semibold text-center">HTE</TableHead>
+                                            <TableHead className="font-semibold text-center">Registered</TableHead>
+                                            <TableHead className="font-semibold text-center">Status</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -438,28 +428,23 @@ export default function AdminDashboard({
                                                         {intern.email}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="text-muted-foreground tabular-nums">
+                                                <TableCell className="text-muted-foreground tabular-nums text-center">
                                                     {intern.id_number}
                                                 </TableCell>
-                                                <TableCell className="max-w-[180px] truncate" title={intern.program_name}>
+                                                <TableCell className="max-w-[180px] truncate text-center" title={intern.program_name}>
                                                     {intern.program_name}
                                                 </TableCell>
-                                                <TableCell className="max-w-[180px] truncate" title={intern.hte_name}>
+                                                <TableCell className="max-w-[180px] truncate text-center" title={intern.hte_name}>
                                                     {intern.hte_name}
                                                 </TableCell>
                                                 <TableCell
-                                                    className="text-muted-foreground whitespace-nowrap text-xs"
+                                                    className="text-muted-foreground whitespace-nowrap text-xs text-center"
                                                     title={intern.registered_at_full}
                                                 >
                                                     {intern.registered_at}
                                                 </TableCell>
-                                                <TableCell className="text-right">
-                                                    <Badge
-                                                        variant={statusBadgeVariant(intern.status)}
-                                                        className="capitalize font-medium text-xs shadow-xs"
-                                                    >
-                                                        {intern.status}
-                                                    </Badge>
+                                                <TableCell className="text-center">
+                                                    <StatusBadge status={intern.status}/>
                                                 </TableCell>
                                             </TableRow>
                                         ))}
@@ -468,7 +453,7 @@ export default function AdminDashboard({
                             </div>
                         )}
 
-                        <PaginationFooter
+                        <NumberedPagination
                             meta={recentRegistrations}
                             itemLabel="registration"
                             onPageChange={goToPage}
