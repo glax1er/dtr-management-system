@@ -10,19 +10,28 @@ function Dialog({
 }: React.ComponentProps<typeof DialogPrimitive.Root>) {
   // Radix can leave `pointer-events: none` stuck on <body> after a
   // dialog closes — most commonly when it's dismissed via an outside
-  // click (rather than the Cancel/X button) while another Dialog.Root
-  // is also mounted (even closed) elsewhere in the tree. That leaves
-  // the whole page unclickable until a manual refresh. Clearing the
-  // style just after the close transition is the standard workaround.
+  // click (rather than the Cancel/X button). Radix keeps the content
+  // mounted for the ~200ms exit animation and only tears down its own
+  // internal lock bookkeeping when that content actually unmounts.
+  // Clearing the style too early (e.g. via setTimeout(fn, 0)) races
+  // Radix's internal state and can leave it permanently desynced,
+  // which is worse than doing nothing. So: wait past the exit
+  // animation, and only touch <body> if nothing is genuinely open.
   const handleOpenChange = (open: boolean) => {
     onOpenChange?.(open);
 
     if (!open) {
       window.setTimeout(() => {
-        if (document.body.style.pointerEvents === "none") {
+        const stillOpenDialog = document.querySelector(
+          '[data-slot="dialog-content"][data-state="open"]',
+        );
+        if (
+          !stillOpenDialog &&
+          document.body.style.pointerEvents === "none"
+        ) {
           document.body.style.removeProperty("pointer-events");
         }
-      }, 0);
+      }, 300);
     }
   };
 

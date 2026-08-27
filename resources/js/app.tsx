@@ -1,4 +1,4 @@
-import { createInertiaApp } from '@inertiajs/react';
+import { createInertiaApp, router } from '@inertiajs/react';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
@@ -41,3 +41,17 @@ createInertiaApp({
 
 // This will set light / dark mode on load...
 initializeTheme();
+
+// Safety net: a Radix Dialog light-dismiss can, in rare timing cases,
+// leave `pointer-events: none` stuck on <body> (see resources/js/components/ui/dialog.tsx
+// for the primary fix). Every page navigation is a natural point where no
+// dialog should legitimately still be open, so use it to guarantee the
+// page never stays frozen.
+router.on('navigate', () => {
+    if (
+        !document.querySelector('[data-slot="dialog-content"][data-state="open"]') &&
+        document.body.style.pointerEvents === 'none'
+    ) {
+        document.body.style.removeProperty('pointer-events');
+    }
+});
