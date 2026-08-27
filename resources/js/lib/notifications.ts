@@ -83,15 +83,23 @@ export function getNotificationCategory(
         return 'registration';
     }
 
-    if (title.includes('approved')) {
+    if (type.includes('approved') || title.includes('approved')) {
         return 'approved';
     }
 
-    if (title.includes('rejected')) {
+    if (
+        type.includes('rejected') ||
+        title.includes('rejected') ||
+        title.includes('needs revision')
+    ) {
         return 'rejected';
     }
 
-    if (title.includes('request') || title.includes('submitted')) {
+    if (
+        type.includes('submitted') ||
+        title.includes('request') ||
+        title.includes('submitted')
+    ) {
         return 'pending';
     }
 

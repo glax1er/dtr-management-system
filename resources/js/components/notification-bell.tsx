@@ -1,5 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { Bell, BellOff, ChevronRight } from 'lucide-react';
+import { Bell, BellOff, CheckCheck, ChevronRight, Trash2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -47,6 +47,25 @@ export function NotificationBell() {
         );
     };
 
+    const markAllAsRead = () => {
+        router.post(
+            '/notifications/mark-all-read',
+            {},
+            {
+                preserveScroll: true,
+                preserveState: true,
+            },
+        );
+    };
+
+    const deleteNotification = (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        router.delete(`/notifications/${id}`, {
+            preserveScroll: true,
+            preserveState: true,
+        });
+    };
+
     const clearNotifications = () => {
         router.delete('/notifications', {
             preserveScroll: true,
@@ -81,7 +100,7 @@ export function NotificationBell() {
                 sideOffset={8}
                 className="w-[calc(100vw-2rem)] max-w-sm overflow-hidden rounded-2xl border border-border bg-popover p-0 shadow-lg sm:w-96"
             >
-                <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+                <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
                     <div className="min-w-0">
                         <DropdownMenuLabel className="p-0 text-sm font-semibold text-foreground">
                             Notifications
@@ -94,17 +113,34 @@ export function NotificationBell() {
                         </p>
                     </div>
 
-                    {count > 0 && (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="shrink-0 text-muted-foreground hover:text-foreground"
-                            onClick={clearNotifications}
-                        >
-                            Clear all
-                        </Button>
-                    )}
+                    <div className="flex items-center gap-1">
+                        {count > 0 && (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                                onClick={markAllAsRead}
+                                title="Mark all as read"
+                            >
+                                <CheckCheck className="mr-1 size-3.5" />
+                                Mark read
+                            </Button>
+                        )}
+
+                        {items.length > 0 && (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                                onClick={clearNotifications}
+                                title="Clear all notifications"
+                            >
+                                Clear all
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
                 {items.length === 0 ? (
@@ -124,14 +160,13 @@ export function NotificationBell() {
                             return (
                                 <DropdownMenuItem
                                     key={notification.id}
-                                    className="p-0 focus:bg-transparent"
+                                    className="group relative p-0 focus:bg-transparent"
                                     asChild
                                 >
-                                    <button
-                                        type="button"
+                                    <div
                                         onClick={() => markAsRead(notification)}
                                         className={cn(
-                                            'flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-accent/10',
+                                            'flex w-full cursor-pointer items-start gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-accent/10',
                                             unread && 'bg-primary/5',
                                         )}
                                     >
@@ -144,7 +179,7 @@ export function NotificationBell() {
                                             <Icon className="size-4" />
                                         </span>
 
-                                        <span className="min-w-0 flex-1 space-y-0.5">
+                                        <span className="min-w-0 flex-1 space-y-0.5 pr-6">
                                             <span className="flex items-center gap-1.5">
                                                 <span className="truncate text-sm font-medium text-foreground">
                                                     {notification.title}
@@ -168,7 +203,16 @@ export function NotificationBell() {
                                                 )}
                                             </span>
                                         </span>
-                                    </button>
+
+                                        <button
+                                            type="button"
+                                            title="Delete notification"
+                                            onClick={(e) => deleteNotification(e, notification.id)}
+                                            className="absolute top-3 right-2.5 rounded-md p-1 text-muted-foreground/50 opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 focus:opacity-100"
+                                        >
+                                            <Trash2 className="size-3.5" />
+                                        </button>
+                                    </div>
                                 </DropdownMenuItem>
                             );
                         })}
