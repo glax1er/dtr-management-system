@@ -44,7 +44,8 @@ class ResolutionTicketController extends Controller
             ->whereIn('intern_user_id', $internUserIds)
             ->where('status', ResolutionTicket::STATUS_PENDING)
             ->with('intern')
-            ->orderBy('date')
+            ->orderByDesc('date')
+            ->orderByDesc('created_at')
             ->get()
             ->map(fn (ResolutionTicket $ticket) => [
                 'id' => $ticket->id,

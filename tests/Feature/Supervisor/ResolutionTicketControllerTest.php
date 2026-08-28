@@ -115,10 +115,64 @@ test('an HTE supervisor can view resolution tickets from their own HTE', functio
         );
 });
 
+test('resolution tickets are sorted with most recent date on top', function () {
+    [$supervisor, $hte] = makeHteSupervisor();
+    $program = Program::create(['program_name' => 'BSIT-'.uniqid()]);
+    $intern = User::factory()->create(['role' => User::ROLE_INTERN]);
+
+    InternProfile::create([
+        'user_id' => $intern->id,
+        'id_number' => '2026-'.$intern->id,
+        'sex' => 'male',
+        'hte_id' => $hte->hte_id,
+        'program_id' => $program->program_id,
+        'status' => 'approved',
+        'privacy_accepted_at' => now(),
+    ]);
+
+    ResolutionTicket::create([
+        'intern_user_id' => $intern->id,
+        'date' => Carbon::parse('2026-08-20'),
+        'proposed_time_in' => Carbon::parse('2026-08-20 08:00:00', 'Asia/Manila'),
+        'reason' => 'Forgot scan 1',
+        'status' => ResolutionTicket::STATUS_PENDING,
+    ]);
+
+    ResolutionTicket::create([
+        'intern_user_id' => $intern->id,
+        'date' => Carbon::parse('2026-08-27'),
+        'proposed_time_in' => Carbon::parse('2026-08-27 08:00:00', 'Asia/Manila'),
+        'reason' => 'Forgot scan 2',
+        'status' => ResolutionTicket::STATUS_PENDING,
+    ]);
+
+    ResolutionTicket::create([
+        'intern_user_id' => $intern->id,
+        'date' => Carbon::parse('2026-08-25'),
+        'proposed_time_in' => Carbon::parse('2026-08-25 08:00:00', 'Asia/Manila'),
+        'reason' => 'Forgot scan 3',
+        'status' => ResolutionTicket::STATUS_PENDING,
+    ]);
+
+    $this->actingAs($supervisor)
+        ->get(route('supervisor.resolution-tickets.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('supervisor/resolution-tickets')
+            ->has('tickets', 3)
+            ->where('tickets.0.date', '2026-08-27')
+            ->where('tickets.1.date', '2026-08-25')
+            ->where('tickets.2.date', '2026-08-20')
+        );
+});
+
+use App\Notifications\ResolutionTicketNotification;
+
 test('an HTE supervisor receives pending resolution tickets in global notifications', function () {
     [$supervisor, $hte] = makeHteSupervisor();
     $program = Program::create(['program_name' => 'BSIT-'.uniqid()]);
     [$intern, $ticket] = makeInternWithPendingTicket($hte, $program);
+    $supervisor->notify(new ResolutionTicketNotification($ticket, ResolutionTicketNotification::REQUEST_SUBMITTED));
 
     $this->actingAs($supervisor)
         ->get(route('supervisor.dashboard'))
@@ -134,6 +188,7 @@ test('an intern receives a notification when their resolution request is approve
     [$supervisor, $hte] = makeHteSupervisor();
     $program = Program::create(['program_name' => 'BSIT-'.uniqid()]);
     [$intern, $ticket, $resolver] = makeInternWithResolvedTicket($hte, $program, ResolutionTicket::STATUS_APPROVED);
+    $intern->notify(new ResolutionTicketNotification($ticket, ResolutionTicketNotification::REQUEST_APPROVED));
 
     $this->actingAs($intern)
         ->get(route('intern.dashboard'))
@@ -142,7 +197,7 @@ test('an intern receives a notification when their resolution request is approve
             ->where('notifications.count', 1)
             ->where(
                 'notifications.items.0.title',
-                "Your resolution request on {$ticket->date->toDateString()} was approved",
+                'Your resolution request was approved',
             )
             ->where('notifications.items.0.href', '/intern/dashboard')
         );
@@ -152,6 +207,7 @@ test('an intern receives a notification when their resolution request is rejecte
     [$supervisor, $hte] = makeHteSupervisor();
     $program = Program::create(['program_name' => 'BSIT-'.uniqid()]);
     [$intern, $ticket, $resolver] = makeInternWithResolvedTicket($hte, $program, ResolutionTicket::STATUS_REJECTED);
+    $intern->notify(new ResolutionTicketNotification($ticket, ResolutionTicketNotification::REQUEST_REJECTED));
 
     $this->actingAs($intern)
         ->get(route('intern.dashboard'))
@@ -160,7 +216,7 @@ test('an intern receives a notification when their resolution request is rejecte
             ->where('notifications.count', 1)
             ->where(
                 'notifications.items.0.title',
-                "Your resolution request on {$ticket->date->toDateString()} was rejected",
+                'Your resolution request was rejected',
             )
             ->where('notifications.items.0.href', '/intern/dashboard')
         );
@@ -170,9 +226,10 @@ test('notifications can be cleared and will not reappear until there is new acti
     [$supervisor, $hte] = makeHteSupervisor();
     $program = Program::create(['program_name' => 'BSIT-'.uniqid()]);
     [$intern, $ticket] = makeInternWithPendingTicket($hte, $program);
+    $supervisor->notify(new ResolutionTicketNotification($ticket, ResolutionTicketNotification::REQUEST_SUBMITTED));
 
     $this->actingAs($supervisor)
-        ->post(route('notifications.clear'))
+        ->delete(route('notifications.clear'))
         ->assertRedirect();
 
     $this->actingAs($supervisor->fresh())
@@ -187,6 +244,7 @@ test('notifications have a dedicated view page and show all notifications', func
     [$supervisor, $hte] = makeHteSupervisor();
     $program = Program::create(['program_name' => 'BSIT-'.uniqid()]);
     [$intern, $ticket] = makeInternWithPendingTicket($hte, $program);
+    $supervisor->notify(new ResolutionTicketNotification($ticket, ResolutionTicketNotification::REQUEST_SUBMITTED));
 
     $this->actingAs($supervisor)
         ->get(route('notifications.index'))
@@ -197,16 +255,18 @@ test('notifications have a dedicated view page and show all notifications', func
         );
 });
 
-test('notifications mark-read route updates supervisor cleared timestamp', function () {
+test('notifications mark-read route marks notification as read', function () {
     [$supervisor, $hte] = makeHteSupervisor();
     $program = Program::create(['program_name' => 'BSIT-'.uniqid()]);
     [$intern, $ticket] = makeInternWithPendingTicket($hte, $program);
+    $supervisor->notify(new ResolutionTicketNotification($ticket, ResolutionTicketNotification::REQUEST_SUBMITTED));
+    $notification = $supervisor->notifications()->first();
 
     $this->actingAs($supervisor)
-        ->post(route('notifications.markRead'))
-        ->assertNoContent();
+        ->post(route('notifications.markRead', $notification->id))
+        ->assertRedirect();
 
-    $this->assertNotNull($supervisor->fresh()->notifications_cleared_at);
+    $this->assertNotNull($notification->fresh()->read_at);
 });
 
 test('admin notification page shows no notifications and does not reference resolution requests', function () {
