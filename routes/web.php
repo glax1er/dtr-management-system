@@ -12,6 +12,7 @@ use App\Http\Controllers\Intern\QrCodeImageController;
 use App\Http\Controllers\Intern\DashboardController as InternDashboardController;
 use App\Http\Controllers\Intern\DtrReportController;
 use App\Http\Controllers\Intern\ProfilePhotoController;
+use App\Http\Controllers\Intern\ScheduleController as InternScheduleController;
 use App\Http\Controllers\Supervisor\DashboardController as SupervisorDashboardController;
 use App\Http\Controllers\Supervisor\HtesController as SupervisorHtesController;
 use App\Http\Controllers\Supervisor\InternsController;
@@ -148,6 +149,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware('role:' . User::ROLE_INTERN)->prefix('intern')->name('intern.')->group(function () {
         Route::get('dashboard', [InternDashboardController::class, 'index'])->name('dashboard');
+        Route::get('schedule', [InternScheduleController::class, 'index'])->name('schedule.index');
         Route::get('dtr-report', [DtrReportController::class, 'download'])->name('dtr-report.download');
         Route::get('qr-code', [QrCodeImageController::class, 'show'])->name('qr-code.show');
 

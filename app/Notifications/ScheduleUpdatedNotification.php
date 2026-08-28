@@ -49,7 +49,7 @@ class ScheduleUpdatedNotification extends Notification
                 default => 'HTE Schedule Override Updated',
             };
             $message = trim("The schedule override {$hteLabel} has been {$actionVerb} by your supervisor.");
-            $href = '/intern/attendance';
+            $href = '/intern/schedule';
         } else {
             $title = match ($this->action) {
                 self::ACTION_CREATED => 'New OJT Schedule Created',
@@ -59,7 +59,7 @@ class ScheduleUpdatedNotification extends Notification
             $message = "The official OJT schedule ({$name}) has been {$actionVerb} by the administrator.";
 
             $isSupervisor = $notifiable instanceof User && $notifiable->isSupervisor();
-            $href = $isSupervisor ? '/supervisor/schedule' : '/intern/attendance';
+            $href = $isSupervisor ? '/supervisor/schedule' : '/intern/schedule';
         }
 
         return [

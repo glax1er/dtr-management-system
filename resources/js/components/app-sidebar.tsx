@@ -62,6 +62,7 @@ const manualAttendanceNavItem: NavItem = {
 
 const internNavItems: NavItem[] = [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
+    { title: 'Work Schedule', href: '/intern/schedule', icon: CalendarClock },
     { title: 'My Documents', href: '/intern/documents', icon: Paperclip },
 ];
 
