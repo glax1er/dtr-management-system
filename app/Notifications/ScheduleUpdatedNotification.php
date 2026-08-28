@@ -54,7 +54,7 @@ class ScheduleUpdatedNotification extends Notification
             $message = trim("The schedule override {$hteLabel} has been {$actionVerb} by your supervisor.");
             $href = $isSupervisor
                 ? ('/supervisor/schedule' . ($this->schedulePeriodId && $this->action !== self::ACTION_DELETED ? '?highlight=' . $this->schedulePeriodId : ''))
-                : '/intern/schedule';
+                : ('/intern/schedule' . ($this->startDate && $this->action !== self::ACTION_DELETED ? '?month=' . substr($this->startDate, 0, 7) : ''));
         } else {
             $title = match ($this->action) {
                 self::ACTION_CREATED => 'New OJT Schedule Created',
@@ -65,7 +65,7 @@ class ScheduleUpdatedNotification extends Notification
 
             $href = $isSupervisor
                 ? ('/supervisor/schedule' . ($this->schedulePeriodId && $this->action !== self::ACTION_DELETED ? '?highlight=' . $this->schedulePeriodId : ''))
-                : '/intern/schedule';
+                : ('/intern/schedule' . ($this->startDate && $this->action !== self::ACTION_DELETED ? '?month=' . substr($this->startDate, 0, 7) : ''));
         }
 
         return [

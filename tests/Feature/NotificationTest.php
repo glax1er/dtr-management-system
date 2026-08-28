@@ -463,7 +463,7 @@ test('opted out ojt supervisor does not receive document submission notification
     );
 });
 
-test('admin creating, updating, or deleting global schedule notifies interns, ojt supervisors, and hte supervisors', function () {
+test('admin creating, updating, or deleting global schedule notifies interns and hte supervisors only', function () {
     Notification::fake();
 
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
@@ -503,13 +503,14 @@ test('admin creating, updating, or deleting global schedule notifies interns, oj
     $response->assertRedirect();
 
     Notification::assertSentTo(
-        [$internUser, $ojtSupervisor, $hteSupervisor],
+        [$internUser, $hteSupervisor],
         \App\Notifications\ScheduleUpdatedNotification::class,
         function (\App\Notifications\ScheduleUpdatedNotification $notification) {
             return $notification->action === \App\Notifications\ScheduleUpdatedNotification::ACTION_CREATED
                 && $notification->scope === \App\Notifications\ScheduleUpdatedNotification::SCOPE_GLOBAL;
         }
     );
+    Notification::assertNotSentTo($ojtSupervisor, \App\Notifications\ScheduleUpdatedNotification::class);
 
     $schedulePeriod = \App\Models\SchedulePeriod::whereNull('hte_id')->first();
 
@@ -531,26 +532,28 @@ test('admin creating, updating, or deleting global schedule notifies interns, oj
     $response->assertRedirect();
 
     Notification::assertSentTo(
-        [$internUser, $ojtSupervisor, $hteSupervisor],
+        [$internUser, $hteSupervisor],
         \App\Notifications\ScheduleUpdatedNotification::class,
         function (\App\Notifications\ScheduleUpdatedNotification $notification) {
             return $notification->action === \App\Notifications\ScheduleUpdatedNotification::ACTION_UPDATED
                 && $notification->scope === \App\Notifications\ScheduleUpdatedNotification::SCOPE_GLOBAL;
         }
     );
+    Notification::assertNotSentTo($ojtSupervisor, \App\Notifications\ScheduleUpdatedNotification::class);
 
     // 3. Delete schedule
     $response = $this->actingAs($admin)->delete(route('admin.schedule.destroy', $schedulePeriod->id));
     $response->assertRedirect();
 
     Notification::assertSentTo(
-        [$internUser, $ojtSupervisor, $hteSupervisor],
+        [$internUser, $hteSupervisor],
         \App\Notifications\ScheduleUpdatedNotification::class,
         function (\App\Notifications\ScheduleUpdatedNotification $notification) {
             return $notification->action === \App\Notifications\ScheduleUpdatedNotification::ACTION_DELETED
                 && $notification->scope === \App\Notifications\ScheduleUpdatedNotification::SCOPE_GLOBAL;
         }
     );
+    Notification::assertNotSentTo($ojtSupervisor, \App\Notifications\ScheduleUpdatedNotification::class);
 });
 
 test('hte supervisor creating, updating, or deleting schedule override notifies interns in their hte only', function () {

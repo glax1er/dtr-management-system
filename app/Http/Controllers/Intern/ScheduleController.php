@@ -200,6 +200,29 @@ class ScheduleController extends Controller
         $formattedGlobalPeriods = $globalPeriods->map(fn ($p) => $mapPeriod($p, 'global'))->values();
         $formattedHtePeriods = $htePeriods->map(fn ($p) => $mapPeriod($p, 'hte'))->values();
 
+        // Recent schedule notifications for this intern
+        $recentNotifications = $user->notifications()
+            ->where('data->type', 'schedule_updated')
+            ->latest()
+            ->take(15)
+            ->get()
+            ->map(function ($n) {
+                return [
+                    'id' => $n->id,
+                    'title' => $n->data['title'] ?? 'Schedule Update',
+                    'message' => $n->data['message'] ?? '',
+                    'action' => $n->data['action'] ?? 'updated',
+                    'scope' => $n->data['scope'] ?? 'global',
+                    'schedule_name' => $n->data['schedule_name'] ?? null,
+                    'hte_name' => $n->data['hte_name'] ?? null,
+                    'schedule_period_id' => $n->data['schedule_period_id'] ?? null,
+                    'created_at' => $n->created_at->toIso8601String(),
+                    'created_at_human' => $n->created_at->diffForHumans(),
+                    'read_at' => $n->read_at?->toIso8601String(),
+                ];
+            })
+            ->values();
+
         return Inertia::render('intern/schedule', [
             'month' => $month->format('Y-m'),
             'monthLabel' => $month->format('F Y'),
@@ -220,6 +243,7 @@ class ScheduleController extends Controller
             ] : null,
             'globalPeriods' => $formattedGlobalPeriods,
             'htePeriods' => $formattedHtePeriods,
+            'recentNotifications' => $recentNotifications,
             'defaultExpectedStartTime' => $defaultExpectedStartTime,
             'defaultExpectedStartTimeFormatted' => $formatTime12($defaultExpectedStartTime),
         ]);

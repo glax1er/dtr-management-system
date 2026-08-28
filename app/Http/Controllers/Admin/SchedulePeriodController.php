@@ -80,9 +80,15 @@ class SchedulePeriodController extends Controller
 
     private function notifyScheduleChange(SchedulePeriod $schedulePeriod, string $action, ?User $actor = null): void
     {
-        // Only notify HTE supervisors when admin updates global schedule
+        // Notify HTE supervisors and interns when admin updates global schedule (OJT supervisors are excluded)
         $recipients = User::query()
-            ->where('role', User::ROLE_SUPERVISOR)
+            ->where(function ($query) {
+                $query->where('role', User::ROLE_INTERN)
+                    ->orWhere(function ($q) {
+                        $q->where('role', User::ROLE_SUPERVISOR)
+                            ->whereHas('supervisorProfile', fn ($sp) => $sp->where('supervisor_type', 'hte'));
+                    });
+            })
             ->get()
             ->filter(fn (User $user) => $user->wantsNotification('schedule_alerts'));
 
@@ -101,9 +107,15 @@ class SchedulePeriodController extends Controller
 
     private function notifyScheduleChangeDeleted(string $scheduleName, int $periodId, ?User $actor = null): void
     {
-        // Only notify HTE supervisors when admin deletes a global schedule
+        // Notify HTE supervisors and interns when admin deletes a global schedule (OJT supervisors are excluded)
         $recipients = User::query()
-            ->where('role', User::ROLE_SUPERVISOR)
+            ->where(function ($query) {
+                $query->where('role', User::ROLE_INTERN)
+                    ->orWhere(function ($q) {
+                        $q->where('role', User::ROLE_SUPERVISOR)
+                            ->whereHas('supervisorProfile', fn ($sp) => $sp->where('supervisor_type', 'hte'));
+                    });
+            })
             ->get()
             ->filter(fn (User $user) => $user->wantsNotification('schedule_alerts'));
 

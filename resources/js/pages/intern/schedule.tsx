@@ -104,6 +104,19 @@ export interface InternScheduleProps {
     } | null;
     globalPeriods: SchedulePeriodItem[];
     htePeriods: SchedulePeriodItem[];
+    recentNotifications?: Array<{
+        id: string;
+        title: string;
+        message: string;
+        action: string;
+        scope: string;
+        schedule_name: string | null;
+        hte_name: string | null;
+        schedule_period_id: number | null;
+        created_at: string;
+        created_at_human: string;
+        read_at: string | null;
+    }>;
     defaultExpectedStartTime: string;
     defaultExpectedStartTimeFormatted: string | null;
 }

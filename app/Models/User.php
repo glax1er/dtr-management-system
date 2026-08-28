@@ -62,6 +62,12 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
                 'description' => 'Get notified when reaching 50%, 80%, and 100% of required training hours.',
                 'default' => true,
             ],
+            'schedule_alerts' => [
+                'key' => 'schedule_alerts',
+                'label' => 'Schedule & Shift Updates',
+                'description' => 'Receive alerts when global training schedules or HTE schedule overrides are updated.',
+                'default' => true,
+            ],
             'document_updates' => [
                 'key' => 'document_updates',
                 'label' => 'Document Review Updates',
@@ -80,12 +86,6 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
                 'key' => 'document_submissions',
                 'label' => 'Intern Document Submissions',
                 'description' => 'Receive alerts when interns in your program submit requirement documents for review.',
-                'default' => true,
-            ],
-            'schedule_alerts' => [
-                'key' => 'schedule_alerts',
-                'label' => 'Schedule Updates',
-                'description' => 'Receive alerts when administrators update official training schedules.',
                 'default' => true,
             ],
             'intern_completions' => [
@@ -152,6 +152,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         'document_updates' => true,
         'milestone_alerts' => true,
         'attendance_alerts' => true,
+        'schedule_alerts' => true,
         'ticket_updates' => true,
     ];
 
