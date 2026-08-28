@@ -153,6 +153,31 @@ test('schedule update notifications sent to intern are visible in recent updates
     );
 });
 
+test('intern is redirected to schedule calendar page when clicking schedule notification href', function () {
+    [$intern, $profile, $hte] = createScheduleTestIntern();
+
+    $notification = new ScheduleUpdatedNotification(
+        action: ScheduleUpdatedNotification::ACTION_CREATED,
+        scope: ScheduleUpdatedNotification::SCOPE_HTE,
+        scheduleName: 'Acme Summer Shift',
+        hteName: $hte->hte_name,
+        actor: null,
+        schedulePeriodId: 10,
+        startDate: '2026-09-01',
+    );
+
+    $data = $notification->toArray($intern);
+    expect($data['href'])->toBe('/intern/schedule?month=2026-09');
+
+    // Follow the href URL
+    $response = $this->actingAs($intern)->get($data['href']);
+    $response->assertOk();
+    $response->assertInertia(fn (Assert $page) => $page
+        ->component('intern/schedule')
+        ->where('month', '2026-09')
+    );
+});
+
 test('non-intern users cannot access intern schedule page', function () {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
 

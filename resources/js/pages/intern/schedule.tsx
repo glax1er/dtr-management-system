@@ -14,7 +14,7 @@ import {
     Table as TableIcon,
     X,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { PaginationMeta } from '@/components/pagination-footer';
 import { Badge } from '@/components/ui/badge';
@@ -132,6 +132,21 @@ export default function InternSchedule({
     const [showGlobalSchedule, setShowGlobalSchedule] = useState(true);
     const [showStandardSchedule, setShowStandardSchedule] = useState(true);
     const [showRestDays, setShowRestDays] = useState(true);
+
+    // ── Schedule auto-refresh ──────────────────────────────────────────────────
+    // Poll every 60 s to silently reload schedule props so the intern always
+    // sees the latest data after an admin or HTE supervisor updates a period.
+    useEffect(() => {
+        const interval = window.setInterval(() => {
+            router.reload({
+                only: ['days', 'paginatedDays', 'stats', 'globalPeriods', 'htePeriods'],
+                preserveScroll: true,
+                preserveState: true,
+            });
+        }, 60_000);
+
+        return () => window.clearInterval(interval);
+    }, []);
 
     // ── Month Navigation ───────────────────────────────────────────────────────
     const handleNavigateMonth = (direction: 'prev' | 'next' | 'current') => {

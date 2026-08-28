@@ -24,6 +24,7 @@ class ScheduleUpdatedNotification extends Notification
         public ?string $hteName = null,
         public ?User $actor = null,
         public ?int $schedulePeriodId = null,
+        public ?string $startDate = null,
     ) {}
 
     public function via(object $notifiable): array
@@ -41,6 +42,8 @@ class ScheduleUpdatedNotification extends Notification
             default => 'updated',
         };
 
+        $isSupervisor = $notifiable instanceof User && $notifiable->isSupervisor();
+
         if ($this->scope === self::SCOPE_HTE) {
             $hteLabel = $this->hteName ? "for {$this->hteName}" : '';
             $title = match ($this->action) {
@@ -49,7 +52,9 @@ class ScheduleUpdatedNotification extends Notification
                 default => 'HTE Schedule Override Updated',
             };
             $message = trim("The schedule override {$hteLabel} has been {$actionVerb} by your supervisor.");
-            $href = '/intern/schedule';
+            $href = $isSupervisor
+                ? ('/supervisor/schedule' . ($this->schedulePeriodId && $this->action !== self::ACTION_DELETED ? '?highlight=' . $this->schedulePeriodId : ''))
+                : '/intern/schedule';
         } else {
             $title = match ($this->action) {
                 self::ACTION_CREATED => 'New OJT Schedule Created',
@@ -58,8 +63,9 @@ class ScheduleUpdatedNotification extends Notification
             };
             $message = "The official OJT schedule ({$name}) has been {$actionVerb} by the administrator.";
 
-            $isSupervisor = $notifiable instanceof User && $notifiable->isSupervisor();
-            $href = $isSupervisor ? '/supervisor/schedule' : '/intern/schedule';
+            $href = $isSupervisor
+                ? ('/supervisor/schedule' . ($this->schedulePeriodId && $this->action !== self::ACTION_DELETED ? '?highlight=' . $this->schedulePeriodId : ''))
+                : '/intern/schedule';
         }
 
         return [
@@ -72,6 +78,7 @@ class ScheduleUpdatedNotification extends Notification
             'schedule_name' => $this->scheduleName,
             'hte_name' => $this->hteName,
             'schedule_period_id' => $this->schedulePeriodId,
+            'start_date' => $this->startDate,
         ];
     }
 }

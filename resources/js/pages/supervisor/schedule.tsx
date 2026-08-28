@@ -1,6 +1,6 @@
 import { Head, router } from '@inertiajs/react';
 import { Calendar, CalendarClock, Clock, Pencil, Plus, Sparkles, Trash2, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -58,6 +58,7 @@ interface SchedulePeriod {
 interface ScheduleProps {
     periods: SchedulePeriod[];
     globalPeriods: SchedulePeriod[];
+    highlightId?: number | null;
 }
 
 interface FormState {
@@ -320,23 +321,39 @@ function PeriodForm({
 function PeriodRow({
     period,
     readOnly,
+    isHighlighted,
     onEdit,
     onDelete,
 }: {
     period: SchedulePeriod;
     readOnly: boolean;
+    isHighlighted?: boolean;
     onEdit?: (period: SchedulePeriod) => void;
     onDelete?: (period: SchedulePeriod) => void;
 }) {
     return (
-        <div className="rounded-lg border p-4">
+        <div
+            id={`schedule-period-${period.id}`}
+            className={cn(
+                "rounded-lg border p-4 transition-all duration-300",
+                isHighlighted
+                    ? "ring-2 ring-primary border-primary bg-primary/5 dark:bg-primary/10 shadow-sm"
+                    : "bg-card"
+            )}
+        >
             {/* Period header */}
             <div className="mb-3 flex items-start justify-between gap-2">
                 <div>
-                    <div className="flex items-center gap-2">
-                        <p className="font-medium">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-semibold text-foreground">
                             {period.name || 'Unnamed period'}
                         </p>
+                        {isHighlighted && (
+                            <Badge className="bg-primary text-primary-foreground font-semibold text-[10px] uppercase gap-1 animate-pulse">
+                                <Sparkles className="size-3" />
+                                Updated / Focus
+                            </Badge>
+                        )}
                         {readOnly && (
                             <Badge variant="secondary" className="font-normal">
                                 Global (Admin)
@@ -406,6 +423,7 @@ function PeriodRow({
 export default function SupervisorSchedule({
     periods,
     globalPeriods,
+    highlightId,
 }: ScheduleProps) {
     const [processing, setProcessing] = useState(false);
     const [addOpen, setAddOpen] = useState(false);
@@ -418,6 +436,21 @@ export default function SupervisorSchedule({
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [deleteName, setDeleteName] = useState('');
+
+    // Scroll to and briefly highlight the period indicated by the notification
+    useEffect(() => {
+        if (!highlightId) return;
+
+        const el = document.getElementById(`schedule-period-${highlightId}`);
+        if (!el) return;
+
+        // Wait one tick so the DOM has finished rendering
+        const raf = requestAnimationFrame(() => {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+
+        return () => cancelAnimationFrame(raf);
+    }, [highlightId]);
 
     // ── Handlers ───────────────────────────────────────────────────────────
     const submitAdd = () => {
@@ -557,6 +590,7 @@ export default function SupervisorSchedule({
                                         key={period.id}
                                         period={period}
                                         readOnly
+                                        isHighlighted={highlightId === period.id}
                                     />
                                 ))}
                             </div>
@@ -584,6 +618,7 @@ export default function SupervisorSchedule({
                                         key={period.id}
                                         period={period}
                                         readOnly={false}
+                                        isHighlighted={highlightId === period.id}
                                         onEdit={openEdit}
                                         onDelete={openDelete}
                                     />
