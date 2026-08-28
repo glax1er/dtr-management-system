@@ -118,6 +118,8 @@ export function CompletionSummaryDialog({
     const [isOpen, setIsOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [summary, setSummary] = useState<CompletionSummaryData | null>(null);
+    const [dtrStartDate, setDtrStartDate] = useState('');
+    const [dtrEndDate, setDtrEndDate] = useState('');
 
     const fetchSummary = async () => {
         setIsLoading(true);
@@ -142,6 +144,9 @@ export function CompletionSummaryDialog({
         setIsOpen(open);
         if (open) {
             fetchSummary();
+        } else {
+            setDtrStartDate('');
+            setDtrEndDate('');
         }
     };
 
@@ -250,17 +255,19 @@ export function CompletionSummaryDialog({
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        asChild
                                         className="h-8 gap-1 text-xs"
+                                        onClick={() => {
+                                            let url = `/supervisor/interns/${summary.intern.user_id}/dtr-report`;
+                                            const params = new URLSearchParams();
+                                            if (dtrStartDate) params.append('start', dtrStartDate);
+                                            if (dtrEndDate) params.append('end', dtrEndDate);
+                                            const queryString = params.toString();
+                                            if (queryString) url += `?${queryString}`;
+                                            window.open(url, '_blank', 'noopener');
+                                        }}
                                     >
-                                        <a
-                                            href={`/supervisor/interns/${summary.intern.user_id}/dtr-report`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                        >
-                                            <Download className="size-3.5" />
-                                            DTR Report
-                                        </a>
+                                        <Download className="size-3.5" />
+                                        DTR Report
                                     </Button>
                                 </div>
                             </div>
@@ -586,23 +593,66 @@ export function CompletionSummaryDialog({
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-between rounded-lg border bg-muted/20 p-3.5">
-                                    <div className="space-y-0.5">
-                                        <h4 className="text-xs font-semibold">Official Daily Time Record (DTR)</h4>
-                                        <p className="text-[11px] text-muted-foreground">
-                                            Download complete formatted PDF report of all daily time-in/time-out logs.
-                                        </p>
-                                    </div>
-                                    <Button size="sm" variant="outline" asChild className="gap-1 text-xs">
-                                        <a
-                                            href={`/supervisor/interns/${summary.intern.user_id}/dtr-report`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
+                                <div className="rounded-lg border bg-muted/20 p-3.5 space-y-3">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                        <div className="space-y-0.5">
+                                            <h4 className="text-xs font-semibold">Official Daily Time Record (DTR)</h4>
+                                            <p className="text-[11px] text-muted-foreground">
+                                                Download complete formatted PDF report. By default, includes full logs up to the most recent log.
+                                            </p>
+                                        </div>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="gap-1 text-xs shrink-0"
+                                            onClick={() => {
+                                                let url = `/supervisor/interns/${summary.intern.user_id}/dtr-report`;
+                                                const params = new URLSearchParams();
+                                                if (dtrStartDate) params.append('start', dtrStartDate);
+                                                if (dtrEndDate) params.append('end', dtrEndDate);
+                                                const queryString = params.toString();
+                                                if (queryString) url += `?${queryString}`;
+                                                window.open(url, '_blank', 'noopener');
+                                            }}
                                         >
                                             <Download className="size-3.5" />
                                             Download PDF
-                                        </a>
-                                    </Button>
+                                        </Button>
+                                    </div>
+
+                                    <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/50">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-[11px] font-medium text-muted-foreground">From:</span>
+                                            <input
+                                                type="date"
+                                                value={dtrStartDate}
+                                                onChange={(e) => setDtrStartDate(e.target.value)}
+                                                className="h-7 rounded-md border border-input bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                                            />
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-[11px] font-medium text-muted-foreground">To:</span>
+                                            <input
+                                                type="date"
+                                                value={dtrEndDate}
+                                                onChange={(e) => setDtrEndDate(e.target.value)}
+                                                className="h-7 rounded-md border border-input bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                                            />
+                                        </div>
+                                        {(dtrStartDate || dtrEndDate) && (
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+                                                onClick={() => {
+                                                    setDtrStartDate('');
+                                                    setDtrEndDate('');
+                                                }}
+                                            >
+                                                Reset (Full DTR)
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
                             </TabsContent>
                         </Tabs>
