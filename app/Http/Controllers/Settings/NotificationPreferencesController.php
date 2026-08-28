@@ -13,11 +13,15 @@ class NotificationPreferencesController extends Controller
     public function edit(Request $request): Response
     {
         $user = $request->user();
+        $roleLabel = $user->role;
+        if ($user->isSupervisor() && $user->supervisorProfile) {
+            $roleLabel = $user->supervisorProfile->isOjtSupervisor() ? 'OJT Supervisor' : 'HTE Supervisor';
+        }
 
         return Inertia::render('settings/notifications', [
             'preferences' => $user->getNotificationPreferences(),
             'options' => array_values($user->getAvailableNotificationOptions()),
-            'role' => $user->role,
+            'role' => $roleLabel,
         ]);
     }
 

@@ -62,6 +62,12 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
                 'description' => 'Get notified when reaching 50%, 80%, and 100% of required training hours.',
                 'default' => true,
             ],
+            'schedule_alerts' => [
+                'key' => 'schedule_alerts',
+                'label' => 'Schedule & Shift Updates',
+                'description' => 'Receive alerts when global training schedules or HTE schedule overrides are updated.',
+                'default' => true,
+            ],
             'document_updates' => [
                 'key' => 'document_updates',
                 'label' => 'Document Review Updates',
@@ -75,6 +81,46 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
                 'default' => true,
             ],
         ],
+        'supervisor_ojt' => [
+            'document_submissions' => [
+                'key' => 'document_submissions',
+                'label' => 'Intern Document Submissions',
+                'description' => 'Receive alerts when interns in your program submit requirement documents for review.',
+                'default' => true,
+            ],
+            'schedule_alerts' => [
+                'key' => 'schedule_alerts',
+                'label' => 'Schedule Updates',
+                'description' => 'Receive alerts when administrators update official training schedules.',
+                'default' => true,
+            ],
+            'intern_completions' => [
+                'key' => 'intern_completions',
+                'label' => 'Intern Hours Completion Alerts',
+                'description' => 'Get notified when an assigned intern completes 100% of their required training hours.',
+                'default' => true,
+            ],
+        ],
+        'supervisor_hte' => [
+            'ticket_requests' => [
+                'key' => 'ticket_requests',
+                'label' => 'Resolution Ticket Requests',
+                'description' => 'Receive alerts when interns submit attendance resolution requests requiring your review.',
+                'default' => true,
+            ],
+            'schedule_alerts' => [
+                'key' => 'schedule_alerts',
+                'label' => 'Schedule Updates',
+                'description' => 'Receive alerts when administrators update official training schedules.',
+                'default' => true,
+            ],
+            'intern_completions' => [
+                'key' => 'intern_completions',
+                'label' => 'Intern Hours Completion Alerts',
+                'description' => 'Get notified when an assigned intern completes 100% of their required training hours.',
+                'default' => true,
+            ],
+        ],
         self::ROLE_SUPERVISOR => [
             'ticket_requests' => [
                 'key' => 'ticket_requests',
@@ -82,10 +128,10 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
                 'description' => 'Receive alerts when interns submit attendance resolution requests requiring your review.',
                 'default' => true,
             ],
-            'document_submissions' => [
-                'key' => 'document_submissions',
-                'label' => 'Intern Document Submissions',
-                'description' => 'Receive alerts when interns submit requirement documents for review.',
+            'schedule_alerts' => [
+                'key' => 'schedule_alerts',
+                'label' => 'Schedule Updates',
+                'description' => 'Receive alerts when administrators update official training schedules.',
                 'default' => true,
             ],
             'intern_completions' => [
@@ -102,12 +148,6 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
                 'description' => 'Receive alerts when new interns register and require account approval.',
                 'default' => true,
             ],
-            'document_submissions' => [
-                'key' => 'document_submissions',
-                'label' => 'Intern Document Submissions',
-                'description' => 'Receive alerts when interns submit requirement documents for review.',
-                'default' => true,
-            ],
         ],
     ];
 
@@ -118,6 +158,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         'document_updates' => true,
         'milestone_alerts' => true,
         'attendance_alerts' => true,
+        'schedule_alerts' => true,
         'ticket_updates' => true,
     ];
 
@@ -128,6 +169,17 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
      */
     public function getAvailableNotificationOptions(): array
     {
+        if ($this->role === self::ROLE_SUPERVISOR) {
+            if ($this->supervisorProfile?->isOjtSupervisor()) {
+                return self::ROLE_NOTIFICATION_PREFERENCES['supervisor_ojt'];
+            }
+            if ($this->supervisorProfile?->isHteSupervisor()) {
+                return self::ROLE_NOTIFICATION_PREFERENCES['supervisor_hte'];
+            }
+
+            return self::ROLE_NOTIFICATION_PREFERENCES[self::ROLE_SUPERVISOR];
+        }
+
         return self::ROLE_NOTIFICATION_PREFERENCES[$this->role] ?? self::ROLE_NOTIFICATION_PREFERENCES[self::ROLE_INTERN];
     }
 

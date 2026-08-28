@@ -1,4 +1,4 @@
-import { AlertTriangle, Award, Bell, CheckCircle2, Clock3, Trophy, UserPlus, XCircle } from 'lucide-react';
+import { AlertTriangle, Award, Bell, Calendar, CheckCircle2, Clock3, Trophy, UserPlus, XCircle } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Notification } from '@/types/auth';
 
@@ -53,6 +53,7 @@ export type NotificationCategory =
     | 'pending'
     | 'milestone'
     | 'attendance'
+    | 'schedule'
     | 'registration'
     | 'general';
 
@@ -65,6 +66,7 @@ export const NOTIFICATION_CATEGORY_LABELS: Record<
     pending: 'Pending',
     milestone: 'Milestones',
     attendance: 'Attendance',
+    schedule: 'Schedule',
     registration: 'Registration',
     general: 'General',
 };
@@ -96,6 +98,14 @@ export function getNotificationCategory(
         title.includes('time-out')
     ) {
         return 'attendance';
+    }
+
+    if (
+        type.includes('schedule') ||
+        title.includes('schedule') ||
+        title.includes('shift')
+    ) {
+        return 'schedule';
     }
 
     if (
@@ -153,6 +163,10 @@ const NOTIFICATION_CATEGORY_TONES: Record<
     attendance: {
         icon: AlertTriangle,
         badgeClassName: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
+    },
+    schedule: {
+        icon: Calendar,
+        badgeClassName: 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
     },
     registration: {
         icon: UserPlus,

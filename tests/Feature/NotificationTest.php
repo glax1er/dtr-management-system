@@ -141,18 +141,28 @@ test('user can clear all notifications', function () {
     expect($user->fresh()->notifications()->count())->toBe(0);
 });
 
-test('intern uploading document dispatches notification to assigned supervisor', function () {
+test('intern uploading document dispatches notification to assigned OJT supervisor only', function () {
     Notification::fake();
 
     [$internUser, $internProfile, $hte, $program] = createTestInternProfile();
 
-    $supervisorUser = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
+    $ojtSupervisor = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
     SupervisorProfile::create([
-        'user_id' => $supervisorUser->id,
+        'user_id' => $ojtSupervisor->id,
+        'supervisor_type' => 'ojt',
+        'program_id' => $program->program_id,
+        'status' => 'active',
+    ]);
+
+    $hteSupervisor = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
+    SupervisorProfile::create([
+        'user_id' => $hteSupervisor->id,
         'supervisor_type' => 'hte',
         'hte_id' => $hte->hte_id,
         'status' => 'active',
     ]);
+
+    $adminUser = User::factory()->create(['role' => User::ROLE_ADMIN]);
 
     $file = UploadedFile::fake()->create('parents_consent.pdf', 500, 'application/pdf');
 
@@ -164,12 +174,15 @@ test('intern uploading document dispatches notification to assigned supervisor',
     $response->assertRedirect();
 
     Notification::assertSentTo(
-        $supervisorUser,
+        $ojtSupervisor,
         InternDocumentNotification::class,
         function (InternDocumentNotification $notification) {
             return $notification->event === InternDocumentNotification::DOCUMENT_SUBMITTED;
         }
     );
+
+    Notification::assertNotSentTo($hteSupervisor, InternDocumentNotification::class);
+    Notification::assertNotSentTo($adminUser, InternDocumentNotification::class);
 });
 
 test('supervisor approving or rejecting document notifies intern', function () {
@@ -298,6 +311,7 @@ test('user can update notification preferences', function () {
         'document_updates' => false,
         'milestone_alerts' => false,
         'attendance_alerts' => true,
+        'schedule_alerts' => true,
         'ticket_updates' => true,
     ]);
 
@@ -307,6 +321,7 @@ test('user can update notification preferences', function () {
     expect($user->fresh()->wantsNotification('document_updates'))->toBeFalse();
     expect($user->fresh()->wantsNotification('milestone_alerts'))->toBeFalse();
     expect($user->fresh()->wantsNotification('attendance_alerts'))->toBeTrue();
+    expect($user->fresh()->wantsNotification('schedule_alerts'))->toBeTrue();
 });
 
 test('opted out user does not receive disabled notifications', function () {
@@ -343,15 +358,49 @@ test('opted out user does not receive disabled notifications', function () {
     );
 });
 
-test('supervisor can view and update role-specific notification preferences', function () {
+test('ojt supervisor can view and update role-specific notification preferences', function () {
     $supervisor = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
+    $program = Program::create(['program_name' => 'BS IT']);
+    SupervisorProfile::create([
+        'user_id' => $supervisor->id,
+        'supervisor_type' => 'ojt',
+        'program_id' => $program->program_id,
+        'status' => 'active',
+    ]);
+
+    $response = $this->actingAs($supervisor)->get(route('notifications.edit'));
+    $response->assertOk();
+
+    $response = $this->actingAs($supervisor)->patch(route('notifications.update'), [
+        'document_submissions' => false,
+        'schedule_alerts' => true,
+        'intern_completions' => false,
+    ]);
+
+    $response->assertRedirect();
+    $response->assertSessionHasNoErrors();
+
+    expect($supervisor->fresh()->wantsNotification('document_submissions'))->toBeFalse();
+    expect($supervisor->fresh()->wantsNotification('schedule_alerts'))->toBeTrue();
+    expect($supervisor->fresh()->wantsNotification('intern_completions'))->toBeFalse();
+});
+
+test('hte supervisor can view and update role-specific notification preferences', function () {
+    $supervisor = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
+    $hte = Hte::create(['hte_name' => 'Tech Corp', 'status' => 'active']);
+    SupervisorProfile::create([
+        'user_id' => $supervisor->id,
+        'supervisor_type' => 'hte',
+        'hte_id' => $hte->hte_id,
+        'status' => 'active',
+    ]);
 
     $response = $this->actingAs($supervisor)->get(route('notifications.edit'));
     $response->assertOk();
 
     $response = $this->actingAs($supervisor)->patch(route('notifications.update'), [
         'ticket_requests' => false,
-        'document_submissions' => true,
+        'schedule_alerts' => true,
         'intern_completions' => false,
     ]);
 
@@ -359,7 +408,7 @@ test('supervisor can view and update role-specific notification preferences', fu
     $response->assertSessionHasNoErrors();
 
     expect($supervisor->fresh()->wantsNotification('ticket_requests'))->toBeFalse();
-    expect($supervisor->fresh()->wantsNotification('document_submissions'))->toBeTrue();
+    expect($supervisor->fresh()->wantsNotification('schedule_alerts'))->toBeTrue();
     expect($supervisor->fresh()->wantsNotification('intern_completions'))->toBeFalse();
 });
 
@@ -371,33 +420,31 @@ test('admin can view and update role-specific notification preferences', functio
 
     $response = $this->actingAs($admin)->patch(route('notifications.update'), [
         'intern_registrations' => false,
-        'document_submissions' => true,
     ]);
 
     $response->assertRedirect();
     $response->assertSessionHasNoErrors();
 
     expect($admin->fresh()->wantsNotification('intern_registrations'))->toBeFalse();
-    expect($admin->fresh()->wantsNotification('document_submissions'))->toBeTrue();
 });
 
-test('opted out supervisor does not receive document submission notification', function () {
+test('opted out ojt supervisor does not receive document submission notification', function () {
     Notification::fake();
 
-    [$internUser, $internProfile, $hte] = createTestInternProfile();
+    [$internUser, $internProfile, $hte, $program] = createTestInternProfile();
 
     $supervisorUser = User::factory()->create([
         'role' => User::ROLE_SUPERVISOR,
         'notification_preferences' => [
             'document_submissions' => false,
-            'ticket_requests' => true,
+            'schedule_alerts' => true,
             'intern_completions' => true,
         ],
     ]);
     SupervisorProfile::create([
         'user_id' => $supervisorUser->id,
-        'supervisor_type' => 'hte',
-        'hte_id' => $hte->hte_id,
+        'supervisor_type' => 'ojt',
+        'program_id' => $program->program_id,
         'status' => 'active',
     ]);
 
@@ -413,5 +460,190 @@ test('opted out supervisor does not receive document submission notification', f
     Notification::assertNotSentTo(
         $supervisorUser,
         InternDocumentNotification::class
+    );
+});
+
+test('admin creating, updating, or deleting global schedule notifies interns, ojt supervisors, and hte supervisors', function () {
+    Notification::fake();
+
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    [$internUser, $internProfile, $hte, $program] = createTestInternProfile();
+
+    $ojtSupervisor = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
+    SupervisorProfile::create([
+        'user_id' => $ojtSupervisor->id,
+        'supervisor_type' => 'ojt',
+        'program_id' => $program->program_id,
+        'status' => 'active',
+    ]);
+
+    $hteSupervisor = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
+    SupervisorProfile::create([
+        'user_id' => $hteSupervisor->id,
+        'supervisor_type' => 'hte',
+        'hte_id' => $hte->hte_id,
+        'status' => 'active',
+    ]);
+
+    // 1. Create schedule
+    $response = $this->actingAs($admin)->post(route('admin.schedule.store'), [
+        'name' => 'Default Term Schedule',
+        'start_date' => '2026-09-01',
+        'end_date' => '2026-12-31',
+        'day_schedule' => [
+            'monday' => '08:00',
+            'tuesday' => '08:00',
+            'wednesday' => '08:00',
+            'thursday' => '08:00',
+            'friday' => '08:00',
+            'saturday' => null,
+            'sunday' => null,
+        ],
+    ]);
+    $response->assertRedirect();
+
+    Notification::assertSentTo(
+        [$internUser, $ojtSupervisor, $hteSupervisor],
+        \App\Notifications\ScheduleUpdatedNotification::class,
+        function (\App\Notifications\ScheduleUpdatedNotification $notification) {
+            return $notification->action === \App\Notifications\ScheduleUpdatedNotification::ACTION_CREATED
+                && $notification->scope === \App\Notifications\ScheduleUpdatedNotification::SCOPE_GLOBAL;
+        }
+    );
+
+    $schedulePeriod = \App\Models\SchedulePeriod::whereNull('hte_id')->first();
+
+    // 2. Update schedule
+    $response = $this->actingAs($admin)->patch(route('admin.schedule.update', $schedulePeriod->id), [
+        'name' => 'Revised Term Schedule',
+        'start_date' => '2026-09-01',
+        'end_date' => '2026-12-31',
+        'day_schedule' => [
+            'monday' => '09:00',
+            'tuesday' => '09:00',
+            'wednesday' => '09:00',
+            'thursday' => '09:00',
+            'friday' => '09:00',
+            'saturday' => null,
+            'sunday' => null,
+        ],
+    ]);
+    $response->assertRedirect();
+
+    Notification::assertSentTo(
+        [$internUser, $ojtSupervisor, $hteSupervisor],
+        \App\Notifications\ScheduleUpdatedNotification::class,
+        function (\App\Notifications\ScheduleUpdatedNotification $notification) {
+            return $notification->action === \App\Notifications\ScheduleUpdatedNotification::ACTION_UPDATED
+                && $notification->scope === \App\Notifications\ScheduleUpdatedNotification::SCOPE_GLOBAL;
+        }
+    );
+
+    // 3. Delete schedule
+    $response = $this->actingAs($admin)->delete(route('admin.schedule.destroy', $schedulePeriod->id));
+    $response->assertRedirect();
+
+    Notification::assertSentTo(
+        [$internUser, $ojtSupervisor, $hteSupervisor],
+        \App\Notifications\ScheduleUpdatedNotification::class,
+        function (\App\Notifications\ScheduleUpdatedNotification $notification) {
+            return $notification->action === \App\Notifications\ScheduleUpdatedNotification::ACTION_DELETED
+                && $notification->scope === \App\Notifications\ScheduleUpdatedNotification::SCOPE_GLOBAL;
+        }
+    );
+});
+
+test('hte supervisor creating, updating, or deleting schedule override notifies interns in their hte only', function () {
+    Notification::fake();
+
+    [$internUserInHte, $profile1, $hte, $program] = createTestInternProfile();
+
+    $otherHte = Hte::create(['hte_name' => 'Other Co', 'status' => 'active']);
+    $otherInternUser = User::factory()->create(['role' => User::ROLE_INTERN]);
+    InternProfile::create([
+        'user_id' => $otherInternUser->id,
+        'id_number' => 'IT-2026-998',
+        'sex' => 'female',
+        'hte_id' => $otherHte->hte_id,
+        'program_id' => $program->program_id,
+        'status' => 'approved',
+        'privacy_accepted_at' => now(),
+    ]);
+
+    $hteSupervisor = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
+    SupervisorProfile::create([
+        'user_id' => $hteSupervisor->id,
+        'supervisor_type' => 'hte',
+        'hte_id' => $hte->hte_id,
+        'status' => 'active',
+    ]);
+
+    // 1. Create HTE override
+    $response = $this->actingAs($hteSupervisor)->post(route('supervisor.schedule.store'), [
+        'name' => 'Tech Corp Special Hours',
+        'start_date' => '2026-09-01',
+        'end_date' => '2026-12-31',
+        'day_schedule' => [
+            'monday' => '07:30',
+            'tuesday' => '07:30',
+            'wednesday' => '07:30',
+            'thursday' => '07:30',
+            'friday' => '07:30',
+            'saturday' => null,
+            'sunday' => null,
+        ],
+    ]);
+    $response->assertRedirect();
+
+    Notification::assertSentTo(
+        $internUserInHte,
+        \App\Notifications\ScheduleUpdatedNotification::class,
+        function (\App\Notifications\ScheduleUpdatedNotification $notification) {
+            return $notification->action === \App\Notifications\ScheduleUpdatedNotification::ACTION_CREATED
+                && $notification->scope === \App\Notifications\ScheduleUpdatedNotification::SCOPE_HTE;
+        }
+    );
+
+    Notification::assertNotSentTo($otherInternUser, \App\Notifications\ScheduleUpdatedNotification::class);
+
+    $overridePeriod = \App\Models\SchedulePeriod::where('hte_id', $hte->hte_id)->first();
+
+    // 2. Update HTE override
+    $response = $this->actingAs($hteSupervisor)->patch(route('supervisor.schedule.update', $overridePeriod->id), [
+        'name' => 'Tech Corp Updated Hours',
+        'start_date' => '2026-09-01',
+        'end_date' => '2026-12-31',
+        'day_schedule' => [
+            'monday' => '08:30',
+            'tuesday' => '08:30',
+            'wednesday' => '08:30',
+            'thursday' => '08:30',
+            'friday' => '08:30',
+            'saturday' => null,
+            'sunday' => null,
+        ],
+    ]);
+    $response->assertRedirect();
+
+    Notification::assertSentTo(
+        $internUserInHte,
+        \App\Notifications\ScheduleUpdatedNotification::class,
+        function (\App\Notifications\ScheduleUpdatedNotification $notification) {
+            return $notification->action === \App\Notifications\ScheduleUpdatedNotification::ACTION_UPDATED
+                && $notification->scope === \App\Notifications\ScheduleUpdatedNotification::SCOPE_HTE;
+        }
+    );
+
+    // 3. Delete HTE override
+    $response = $this->actingAs($hteSupervisor)->delete(route('supervisor.schedule.destroy', $overridePeriod->id));
+    $response->assertRedirect();
+
+    Notification::assertSentTo(
+        $internUserInHte,
+        \App\Notifications\ScheduleUpdatedNotification::class,
+        function (\App\Notifications\ScheduleUpdatedNotification $notification) {
+            return $notification->action === \App\Notifications\ScheduleUpdatedNotification::ACTION_DELETED
+                && $notification->scope === \App\Notifications\ScheduleUpdatedNotification::SCOPE_HTE;
+        }
     );
 });

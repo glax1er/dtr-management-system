@@ -189,31 +189,28 @@ class DocumentController extends Controller
         $docConfig = InternDocument::getTypeConfig($documentType, $internProfile?->program_id);
         $docName = $docConfig['name'] ?? 'Document';
 
-        // Notify supervisors overseeing this intern (by HTE or Program)
-        User::query()
-            ->where('role', User::ROLE_SUPERVISOR)
-            ->whereHas('supervisorProfile', function ($query) use ($internProfile) {
-                $query->where(function ($q) use ($internProfile) {
-                    if ($internProfile?->hte_id) {
-                        $q->where('hte_id', $internProfile->hte_id);
-                    }
-                    if ($internProfile?->program_id) {
-                        $q->orWhere('program_id', $internProfile->program_id);
-                    }
+        // Notify OJT supervisors overseeing this intern's program
+        if ($internProfile?->program_id) {
+            User::query()
+                ->where('role', User::ROLE_SUPERVISOR)
+                ->whereHas('supervisorProfile', function ($query) use ($internProfile) {
+                    $query
+                        ->where('supervisor_type', 'ojt')
+                        ->where('program_id', $internProfile->program_id);
+                })
+                ->get()
+                ->filter(fn (User $supervisor) => $supervisor->wantsNotification('document_submissions'))
+                ->each(function (User $supervisor) use ($internDoc, $user, $docName) {
+                    $supervisor->notify(
+                        new InternDocumentNotification(
+                            internDocument: $internDoc,
+                            event: InternDocumentNotification::DOCUMENT_SUBMITTED,
+                            actor: $user,
+                            docName: $docName,
+                        )
+                    );
                 });
-            })
-            ->get()
-            ->filter(fn (User $supervisor) => $supervisor->wantsNotification('document_submissions'))
-            ->each(function (User $supervisor) use ($internDoc, $user, $docName) {
-                $supervisor->notify(
-                    new InternDocumentNotification(
-                        internDocument: $internDoc,
-                        event: InternDocumentNotification::DOCUMENT_SUBMITTED,
-                        actor: $user,
-                        docName: $docName,
-                    )
-                );
-            });
+        }
 
         return back()->with('success', "{$docName} uploaded successfully and submitted for review.");
     }
