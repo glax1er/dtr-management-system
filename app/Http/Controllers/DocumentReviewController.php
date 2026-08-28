@@ -158,14 +158,16 @@ class DocumentReviewController extends Controller
         $docName = $docConfig['name'] ?? 'Document';
 
         // Notify intern of approval
-        $internDocument->user?->notify(
-            new InternDocumentNotification(
-                internDocument: $internDocument,
-                event: InternDocumentNotification::DOCUMENT_APPROVED,
-                actor: $user,
-                docName: $docName,
-            )
-        );
+        if ($internDocument->user?->wantsNotification('document_updates')) {
+            $internDocument->user->notify(
+                new InternDocumentNotification(
+                    internDocument: $internDocument,
+                    event: InternDocumentNotification::DOCUMENT_APPROVED,
+                    actor: $user,
+                    docName: $docName,
+                )
+            );
+        }
 
         return back()->with('success', "{$docName} approved successfully.");
     }
@@ -199,15 +201,17 @@ class DocumentReviewController extends Controller
         $docName = $docConfig['name'] ?? 'Document';
 
         // Notify intern of rejection / revision needed
-        $internDocument->user?->notify(
-            new InternDocumentNotification(
-                internDocument: $internDocument,
-                event: InternDocumentNotification::DOCUMENT_REJECTED,
-                actor: $user,
-                docName: $docName,
-                reason: trim($validated['rejection_reason']),
-            )
-        );
+        if ($internDocument->user?->wantsNotification('document_updates')) {
+            $internDocument->user->notify(
+                new InternDocumentNotification(
+                    internDocument: $internDocument,
+                    event: InternDocumentNotification::DOCUMENT_REJECTED,
+                    actor: $user,
+                    docName: $docName,
+                    reason: trim($validated['rejection_reason']),
+                )
+            );
+        }
 
         return back()->with('success', "{$docName} marked as needs revision.");
     }

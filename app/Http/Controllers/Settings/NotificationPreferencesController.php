@@ -16,19 +16,24 @@ class NotificationPreferencesController extends Controller
 
         return Inertia::render('settings/notifications', [
             'preferences' => $user->getNotificationPreferences(),
+            'options' => array_values($user->getAvailableNotificationOptions()),
+            'role' => $user->role,
         ]);
     }
 
     public function update(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'document_updates' => ['required', 'boolean'],
-            'milestone_alerts' => ['required', 'boolean'],
-            'attendance_alerts' => ['required', 'boolean'],
-            'ticket_updates' => ['required', 'boolean'],
-        ]);
+        $user = $request->user();
+        $availableOptions = $user->getAvailableNotificationOptions();
 
-        $request->user()->update([
+        $rules = [];
+        foreach (array_keys($availableOptions) as $key) {
+            $rules[$key] = ['required', 'boolean'];
+        }
+
+        $validated = $request->validate($rules);
+
+        $user->update([
             'notification_preferences' => $validated,
         ]);
 

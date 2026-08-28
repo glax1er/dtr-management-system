@@ -46,7 +46,73 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public const ROLE_INTERN = 'intern';
 
     /**
-     * Default notification preferences.
+     * Notification preference definitions and defaults per role.
+     */
+    public const ROLE_NOTIFICATION_PREFERENCES = [
+        self::ROLE_INTERN => [
+            'attendance_alerts' => [
+                'key' => 'attendance_alerts',
+                'label' => 'Attendance & Missed Time-Out Alerts',
+                'description' => 'Receive reminders when a Time-In was logged without a corresponding Time-Out.',
+                'default' => true,
+            ],
+            'milestone_alerts' => [
+                'key' => 'milestone_alerts',
+                'label' => 'OJT Hours Milestone Alerts',
+                'description' => 'Get notified when reaching 50%, 80%, and 100% of required training hours.',
+                'default' => true,
+            ],
+            'document_updates' => [
+                'key' => 'document_updates',
+                'label' => 'Document Review Updates',
+                'description' => 'Receive alerts when your submitted requirement documents are approved or require revision.',
+                'default' => true,
+            ],
+            'ticket_updates' => [
+                'key' => 'ticket_updates',
+                'label' => 'Resolution Ticket Updates',
+                'description' => 'Get notified when your attendance resolution tickets are approved or rejected.',
+                'default' => true,
+            ],
+        ],
+        self::ROLE_SUPERVISOR => [
+            'ticket_requests' => [
+                'key' => 'ticket_requests',
+                'label' => 'Resolution Ticket Requests',
+                'description' => 'Receive alerts when interns submit attendance resolution requests requiring your review.',
+                'default' => true,
+            ],
+            'document_submissions' => [
+                'key' => 'document_submissions',
+                'label' => 'Intern Document Submissions',
+                'description' => 'Receive alerts when interns submit requirement documents for review.',
+                'default' => true,
+            ],
+            'intern_completions' => [
+                'key' => 'intern_completions',
+                'label' => 'Intern Hours Completion Alerts',
+                'description' => 'Get notified when an assigned intern completes 100% of their required training hours.',
+                'default' => true,
+            ],
+        ],
+        self::ROLE_ADMIN => [
+            'intern_registrations' => [
+                'key' => 'intern_registrations',
+                'label' => 'New Intern Registrations',
+                'description' => 'Receive alerts when new interns register and require account approval.',
+                'default' => true,
+            ],
+            'document_submissions' => [
+                'key' => 'document_submissions',
+                'label' => 'Intern Document Submissions',
+                'description' => 'Receive alerts when interns submit requirement documents for review.',
+                'default' => true,
+            ],
+        ],
+    ];
+
+    /**
+     * Default notification preferences (fallback for legacy or intern role).
      */
     public const DEFAULT_NOTIFICATION_PREFERENCES = [
         'document_updates' => true,
@@ -54,6 +120,33 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         'attendance_alerts' => true,
         'ticket_updates' => true,
     ];
+
+    /**
+     * Get available notification configuration options for this user's role.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public function getAvailableNotificationOptions(): array
+    {
+        return self::ROLE_NOTIFICATION_PREFERENCES[$this->role] ?? self::ROLE_NOTIFICATION_PREFERENCES[self::ROLE_INTERN];
+    }
+
+    /**
+     * Get default notification preferences for this user's role.
+     *
+     * @return array<string, bool>
+     */
+    public function getDefaultNotificationPreferences(): array
+    {
+        $options = $this->getAvailableNotificationOptions();
+        $defaults = [];
+
+        foreach ($options as $key => $option) {
+            $defaults[$key] = (bool) ($option['default'] ?? true);
+        }
+
+        return $defaults;
+    }
 
     /**
      * Get the attributes that should be cast.
@@ -78,7 +171,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function getNotificationPreferences(): array
     {
         return array_merge(
-            self::DEFAULT_NOTIFICATION_PREFERENCES,
+            $this->getDefaultNotificationPreferences(),
             $this->notification_preferences ?? []
         );
     }

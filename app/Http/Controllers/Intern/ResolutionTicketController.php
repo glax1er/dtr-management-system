@@ -135,6 +135,7 @@ class ResolutionTicketController extends Controller
                     ->where('hte_id', $profile->hte_id);
             })
             ->get()
+            ->filter(fn (User $supervisor) => $supervisor->wantsNotification('ticket_requests'))
             ->each(function (User $supervisor) use ($ticket) {
                 $supervisor->notify(
                     new ResolutionTicketNotification(

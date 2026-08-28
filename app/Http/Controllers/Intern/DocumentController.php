@@ -203,6 +203,7 @@ class DocumentController extends Controller
                 });
             })
             ->get()
+            ->filter(fn (User $supervisor) => $supervisor->wantsNotification('document_submissions'))
             ->each(function (User $supervisor) use ($internDoc, $user, $docName) {
                 $supervisor->notify(
                     new InternDocumentNotification(

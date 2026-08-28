@@ -277,14 +277,16 @@ class ResolutionTicketController extends Controller
          */
         $ticket = $resolutionTicket->fresh(['intern']);
 
-        if ($ticket?->intern) {
+        if ($ticket?->intern && $ticket->intern->wantsNotification('ticket_updates')) {
             $ticket->intern->notify(
                 new ResolutionTicketNotification(
                     $ticket,
                     ResolutionTicketNotification::REQUEST_APPROVED,
                 )
             );
+        }
 
+        if ($ticket?->intern) {
             app(\App\Services\Attendance\CheckHoursMilestones::class)->check($ticket->intern_user_id);
         }
 
@@ -335,7 +337,7 @@ class ResolutionTicketController extends Controller
          */
         $ticket = $resolutionTicket->fresh(['intern']);
 
-        if ($ticket?->intern) {
+        if ($ticket?->intern && $ticket->intern->wantsNotification('ticket_updates')) {
             $ticket->intern->notify(
                 new ResolutionTicketNotification(
                     $ticket,

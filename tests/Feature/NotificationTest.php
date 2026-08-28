@@ -342,3 +342,76 @@ test('opted out user does not receive disabled notifications', function () {
         \App\Notifications\HoursMilestoneNotification::class
     );
 });
+
+test('supervisor can view and update role-specific notification preferences', function () {
+    $supervisor = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
+
+    $response = $this->actingAs($supervisor)->get(route('notifications.edit'));
+    $response->assertOk();
+
+    $response = $this->actingAs($supervisor)->patch(route('notifications.update'), [
+        'ticket_requests' => false,
+        'document_submissions' => true,
+        'intern_completions' => false,
+    ]);
+
+    $response->assertRedirect();
+    $response->assertSessionHasNoErrors();
+
+    expect($supervisor->fresh()->wantsNotification('ticket_requests'))->toBeFalse();
+    expect($supervisor->fresh()->wantsNotification('document_submissions'))->toBeTrue();
+    expect($supervisor->fresh()->wantsNotification('intern_completions'))->toBeFalse();
+});
+
+test('admin can view and update role-specific notification preferences', function () {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+
+    $response = $this->actingAs($admin)->get(route('notifications.edit'));
+    $response->assertOk();
+
+    $response = $this->actingAs($admin)->patch(route('notifications.update'), [
+        'intern_registrations' => false,
+        'document_submissions' => true,
+    ]);
+
+    $response->assertRedirect();
+    $response->assertSessionHasNoErrors();
+
+    expect($admin->fresh()->wantsNotification('intern_registrations'))->toBeFalse();
+    expect($admin->fresh()->wantsNotification('document_submissions'))->toBeTrue();
+});
+
+test('opted out supervisor does not receive document submission notification', function () {
+    Notification::fake();
+
+    [$internUser, $internProfile, $hte] = createTestInternProfile();
+
+    $supervisorUser = User::factory()->create([
+        'role' => User::ROLE_SUPERVISOR,
+        'notification_preferences' => [
+            'document_submissions' => false,
+            'ticket_requests' => true,
+            'intern_completions' => true,
+        ],
+    ]);
+    SupervisorProfile::create([
+        'user_id' => $supervisorUser->id,
+        'supervisor_type' => 'hte',
+        'hte_id' => $hte->hte_id,
+        'status' => 'active',
+    ]);
+
+    $file = UploadedFile::fake()->create('parents_consent.pdf', 500, 'application/pdf');
+
+    $response = $this->actingAs($internUser)->post(route('intern.documents.store'), [
+        'document_type' => 'parents_consent',
+        'file' => $file,
+    ]);
+
+    $response->assertRedirect();
+
+    Notification::assertNotSentTo(
+        $supervisorUser,
+        InternDocumentNotification::class
+    );
+});

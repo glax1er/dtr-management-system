@@ -101,6 +101,7 @@ class CheckHoursMilestones
                 });
             })
             ->get()
+            ->filter(fn (User $supervisor) => $supervisor->wantsNotification('intern_completions'))
             ->each(function (User $supervisor) use ($profile, $totalHours, $requiredHours) {
                 // Check if supervisor was already notified for this intern
                 $alreadyNotified = $supervisor->notifications()

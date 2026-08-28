@@ -85,7 +85,9 @@ class CreateNewUser implements CreatesNewUsers
             ]);
 
             // Notify all admins that a new intern signed up and is pending approval
-            $admins = User::where('role', User::ROLE_ADMIN)->get();
+            $admins = User::where('role', User::ROLE_ADMIN)
+                ->get()
+                ->filter(fn (User $admin) => $admin->wantsNotification('intern_registrations'));
             if ($admins->isNotEmpty()) {
                 Notification::send($admins, new NewInternRegistrationNotification($internProfile));
             }
