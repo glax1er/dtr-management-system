@@ -71,7 +71,7 @@ function makeInternWithPendingTicket(Hte $hte, Program $program): array
     return [$intern, $ticket];
 }
 
-function makeInternWithResolvedTicket(Hte $hte, Program $program, string $status): array
+function makeInternWithResolvedTicket(Hte $hte, Program $program, string $status, ?string $rejectionReason = null): array
 {
     $intern = User::factory()->create(['role' => User::ROLE_INTERN]);
 
@@ -92,6 +92,7 @@ function makeInternWithResolvedTicket(Hte $hte, Program $program, string $status
         'date' => Carbon::parse('2026-07-20'),
         'proposed_time_in' => Carbon::parse('2026-07-20 07:45:00', 'Asia/Manila'),
         'reason' => 'Forgot to scan in.',
+        'rejection_reason' => $rejectionReason,
         'status' => $status,
         'resolved_by' => $resolver->id,
         'resolved_at' => now(),
@@ -206,7 +207,12 @@ test('an intern receives a notification when their resolution request is approve
 test('an intern receives a notification when their resolution request is rejected', function () {
     [$supervisor, $hte] = makeHteSupervisor();
     $program = Program::create(['program_name' => 'BSIT-'.uniqid()]);
-    [$intern, $ticket, $resolver] = makeInternWithResolvedTicket($hte, $program, ResolutionTicket::STATUS_REJECTED);
+    [$intern, $ticket, $resolver] = makeInternWithResolvedTicket(
+        $hte,
+        $program,
+        ResolutionTicket::STATUS_REJECTED,
+        'Attendance log was not found in punch book.',
+    );
     $intern->notify(new ResolutionTicketNotification($ticket, ResolutionTicketNotification::REQUEST_REJECTED));
 
     $this->actingAs($intern)
@@ -219,6 +225,17 @@ test('an intern receives a notification when their resolution request is rejecte
                 'Your resolution request was rejected',
             )
             ->where('notifications.items.0.href', '/intern/dashboard')
+            ->where('notifications.items.0.data.rejection_reason', 'Attendance log was not found in punch book.')
+            ->where('notifications.items.0.data.date', '2026-07-20')
+        );
+
+    $this->actingAs($intern)
+        ->get(route('notifications.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('notifications.count', 1)
+            ->where('notifications.items.0.data.rejection_reason', 'Attendance log was not found in punch book.')
+            ->where('notifications.items.0.data.date', '2026-07-20')
         );
 });
 
@@ -323,4 +340,47 @@ test('an HTE supervisor cannot act on a ticket from a different HTE', function (
     $this->actingAs($supervisor)
         ->patch(route('supervisor.resolution-tickets.approve', $ticket))
         ->assertForbidden();
+
+    $this->actingAs($supervisor)
+        ->patch(route('supervisor.resolution-tickets.reject', $ticket), [
+            'rejection_reason' => 'Invalid.',
+        ])
+        ->assertForbidden();
+});
+
+test('an HTE supervisor can reject a resolution ticket with a reason and notify the intern', function () {
+    [$supervisor, $hte] = makeHteSupervisor();
+    $program = Program::create(['program_name' => 'BSIT-'.uniqid()]);
+    [$intern, $ticket] = makeInternWithPendingTicket($hte, $program);
+
+    $this->actingAs($supervisor)
+        ->patch(route('supervisor.resolution-tickets.reject', $ticket), [
+            'rejection_reason' => 'No matching supervisor logbook record found.',
+        ])
+        ->assertRedirect();
+
+    $ticket->refresh();
+    expect($ticket->status)->toBe(ResolutionTicket::STATUS_REJECTED);
+    expect($ticket->rejection_reason)->toBe('No matching supervisor logbook record found.');
+    expect($ticket->resolved_by)->toBe($supervisor->id);
+    expect($ticket->resolved_at)->not->toBeNull();
+
+    $notification = $intern->notifications()->first();
+    expect($notification)->not->toBeNull();
+    expect($notification->data['rejection_reason'])->toBe('No matching supervisor logbook record found.');
+    expect($notification->data['message'])->toContain('No matching supervisor logbook record found.');
+});
+
+test('an HTE supervisor cannot reject a resolution ticket without a reason', function () {
+    [$supervisor, $hte] = makeHteSupervisor();
+    $program = Program::create(['program_name' => 'BSIT-'.uniqid()]);
+    [$intern, $ticket] = makeInternWithPendingTicket($hte, $program);
+
+    $this->actingAs($supervisor)
+        ->patch(route('supervisor.resolution-tickets.reject', $ticket), [
+            'rejection_reason' => '',
+        ])
+        ->assertSessionHasErrors('rejection_reason');
+
+    expect($ticket->fresh()->status)->toBe(ResolutionTicket::STATUS_PENDING);
 });
