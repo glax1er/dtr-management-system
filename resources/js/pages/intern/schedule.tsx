@@ -1,14 +1,11 @@
 import { Head, router } from '@inertiajs/react';
 import {
-    Building2,
     Calendar as CalendarIcon,
-    CalendarCheck,
     CalendarClock,
     ChevronLeft,
     ChevronRight,
     Clock,
     Coffee,
-    Globe,
     LayoutGrid,
     Search,
     Table as TableIcon,
@@ -153,8 +150,6 @@ export default function InternSchedule({
         const interval = window.setInterval(() => {
             router.reload({
                 only: ['days', 'paginatedDays', 'stats', 'globalPeriods', 'htePeriods'],
-                preserveScroll: true,
-                preserveState: true,
             });
         }, 60_000);
 
