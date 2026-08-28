@@ -38,16 +38,11 @@ class EmailVerificationCodeNotification extends Notification
 
         return (new MailMessage)
             ->subject("Your Verification Code - {$appName}")
-            ->greeting("Hello {$notifiable->name},")
-            ->line("Thank you for using {$appName}. Please use the following 6-digit code to verify your email address:")
-            ->line(new HtmlString(
-                '<div style="text-align: center; margin: 28px 0;">'
-                .'<span style="display: inline-block; background-color: #f1f5f9; border: 2px dashed #94a3b8; color: #0f172a; font-size: 32px; font-weight: 700; letter-spacing: 8px; padding: 14px 28px; border-radius: 8px; font-family: monospace;">'
-                .e($this->code)
-                .'</span>'
-                .'</div>'
-            ))
-            ->line("This verification code will expire in 15 minutes.")
-            ->line("If you did not request this verification code, please ignore this email or contact support if you suspect unauthorized activity.");
+            ->view('emails.verification-code', [
+                'user' => $notifiable,
+                'code' => $this->code,
+                'appName' => $appName,
+                'expiresInMinutes' => 15,
+            ]);
     }
 }

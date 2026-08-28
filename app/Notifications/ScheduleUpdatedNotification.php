@@ -52,11 +52,11 @@ class ScheduleUpdatedNotification extends Notification
             $href = '/intern/attendance';
         } else {
             $title = match ($this->action) {
-                self::ACTION_CREATED => 'New Training Schedule Created',
-                self::ACTION_DELETED => 'Training Schedule Removed',
-                default => 'Training Schedule Updated',
+                self::ACTION_CREATED => 'New OJT Schedule Created',
+                self::ACTION_DELETED => 'OJT Schedule Removed',
+                default => 'OJT Schedule Updated',
             };
-            $message = "The official training schedule ({$name}) has been {$actionVerb} by the administrator.";
+            $message = "The official OJT schedule ({$name}) has been {$actionVerb} by the administrator.";
 
             $isSupervisor = $notifiable instanceof User && $notifiable->isSupervisor();
             $href = $isSupervisor ? '/supervisor/schedule' : '/intern/attendance';

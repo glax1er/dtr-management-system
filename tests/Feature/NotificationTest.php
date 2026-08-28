@@ -647,3 +647,35 @@ test('hte supervisor creating, updating, or deleting schedule override notifies 
         }
     );
 });
+
+test('email verification notification renders custom HTML email correctly', function () {
+    $user = User::factory()->make(['name' => 'John Doe', 'email' => 'john@usep.edu.ph']);
+    $notification = new \App\Notifications\EmailVerificationCodeNotification('123456');
+
+    $mailMessage = $notification->toMail($user);
+
+    expect($mailMessage->view)->toBe('emails.verification-code');
+    expect($mailMessage->viewData['code'])->toBe('123456');
+    expect($mailMessage->viewData['user'])->toBe($user);
+
+    $html = view($mailMessage->view, $mailMessage->viewData)->render();
+    expect($html)->toContain('123456');
+    expect($html)->toContain('Verify Your Email Address');
+    expect($html)->toContain('John Doe');
+});
+
+test('reset password notification renders custom HTML email correctly', function () {
+    $user = User::factory()->make(['name' => 'Jane Doe', 'email' => 'jane@usep.edu.ph']);
+    $notification = new \App\Notifications\ResetPasswordNotification('test-token-123');
+
+    $mailMessage = $notification->toMail($user);
+
+    expect($mailMessage->view)->toBe('emails.reset-password');
+    expect($mailMessage->viewData['user'])->toBe($user);
+    expect($mailMessage->viewData['resetUrl'])->toContain('test-token-123');
+
+    $html = view($mailMessage->view, $mailMessage->viewData)->render();
+    expect($html)->toContain('Reset Your Password');
+    expect($html)->toContain('Jane Doe');
+    expect($html)->toContain('test-token-123');
+});
