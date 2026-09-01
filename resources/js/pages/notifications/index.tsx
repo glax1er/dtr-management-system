@@ -1,6 +1,7 @@
 import { router, usePage } from '@inertiajs/react';
 import { BellOff, Check, ChevronRight, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { RejectedResolutionDialog } from '@/components/rejected-resolution-dialog';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,10 +9,10 @@ import {
     NOTIFICATION_CATEGORY_LABELS,
     formatRelativeTime,
     getNotificationCategory,
-    getNotificationTone
-    
+    getNotificationTone,
+    isRejectedResolutionNotification,
 } from '@/lib/notifications';
-import type {NotificationCategory} from '@/lib/notifications';
+import type { NotificationCategory } from '@/lib/notifications';
 import { cn } from '@/lib/utils';
 import type { Notification, PageProps } from '@/types';
 
@@ -91,6 +92,8 @@ export default function NotificationsPage() {
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
     const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
     const [query, setQuery] = useState('');
+    const [selectedRejectedNotification, setSelectedRejectedNotification] =
+        useState<Notification | null>(null);
 
     const clearNotifications = () => {
         router.delete('/notifications', {
@@ -108,6 +111,18 @@ export default function NotificationsPage() {
                 preserveState: true,
             },
         );
+    };
+
+    const handleNotificationAction = (notification: Notification) => {
+        if (isRejectedResolutionNotification(notification)) {
+            if (!notification.read_at) {
+                markAsRead(notification);
+            }
+            setSelectedRejectedNotification(notification);
+            return;
+        }
+
+        openNotification(notification);
     };
 
     const openNotification = (notification: Notification) => {
@@ -339,8 +354,13 @@ export default function NotificationsPage() {
                                     return (
                                         <div
                                             key={notification.id}
+                                            onClick={() =>
+                                                handleNotificationAction(
+                                                    notification,
+                                                )
+                                            }
                                             className={cn(
-                                                'flex items-start gap-3 p-3.5 transition-colors sm:items-center',
+                                                'flex cursor-pointer items-start gap-3 p-3.5 transition-colors hover:bg-muted/40 sm:items-center',
                                                 unread && 'bg-primary/[0.03]',
                                             )}
                                         >
@@ -364,7 +384,7 @@ export default function NotificationsPage() {
                                                     )}
                                                 </div>
 
-                                                <p className="line-clamp-1 text-sm text-muted-foreground sm:line-clamp-none sm:truncate">
+                                                <p className="line-clamp-1 text-sm text-muted-foreground break-all sm:break-normal sm:truncate">
                                                     {notification.message}
                                                 </p>
 
@@ -381,7 +401,12 @@ export default function NotificationsPage() {
                                                 )}
                                             </span>
 
-                                            <div className="flex shrink-0 items-center gap-1.5">
+                                            <div
+                                                className="flex shrink-0 items-center gap-1.5"
+                                                onClick={(e) =>
+                                                    e.stopPropagation()
+                                                }
+                                            >
                                                 {unread && (
                                                     <Button
                                                         type="button"
@@ -404,7 +429,7 @@ export default function NotificationsPage() {
                                                     size="icon"
                                                     title="View"
                                                     onClick={() =>
-                                                        openNotification(
+                                                        handleNotificationAction(
                                                             notification,
                                                         )
                                                     }
@@ -420,6 +445,16 @@ export default function NotificationsPage() {
                     ))}
                 </div>
             )}
+
+            <RejectedResolutionDialog
+                open={selectedRejectedNotification !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setSelectedRejectedNotification(null);
+                    }
+                }}
+                notification={selectedRejectedNotification}
+            />
         </div>
     );
 }

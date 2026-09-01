@@ -253,7 +253,7 @@ export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
                                                                         {ticket.reason}
                                                                     </p>
                                                                 </TooltipTrigger>
-                                                                <TooltipContent className="max-w-sm">
+                                                                <TooltipContent className="max-w-sm break-words [overflow-wrap:anywhere] [word-break:break-word] whitespace-pre-wrap">
                                                                     {ticket.reason}
                                                                 </TooltipContent>
                                                             </Tooltip>
@@ -282,7 +282,7 @@ export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
                                     <Card key={ticket.id} className="flex flex-col justify-between">
                                         <CardHeader className="pb-3">
                                             <div className="flex items-start justify-between gap-2">
-                                                <div>
+                                                <div className="min-w-0 flex-1">
                                                     <CardTitle className="text-base font-semibold truncate">
                                                         {ticket.intern_name}
                                                     </CardTitle>
@@ -304,8 +304,8 @@ export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
                                             </div>
 
                                             {ticket.reason && (
-                                                <p className="text-muted-foreground bg-muted/20 p-2 rounded-md italic">
-                                                    "{ticket.reason}"
+                                                <p className="text-muted-foreground bg-muted/20 p-2 rounded-md italic break-words [overflow-wrap:anywhere] [word-break:break-word] line-clamp-3">
+                                                    &ldquo;{ticket.reason}&rdquo;
                                                 </p>
                                             )}
 
@@ -328,8 +328,8 @@ export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
                             {filteredTickets.map((ticket) => (
                                 <div key={ticket.id} className="flex flex-col gap-3 p-4">
                                     <div className="flex items-start justify-between gap-2">
-                                        <div>
-                                            <p className="font-semibold text-sm text-foreground">{ticket.intern_name}</p>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="font-semibold text-sm text-foreground truncate">{ticket.intern_name}</p>
                                             <p className="text-xs text-muted-foreground">{ticket.date}</p>
                                         </div>
                                         <AttendanceBadge status={ticket.type} />
@@ -347,8 +347,8 @@ export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
                                     </div>
 
                                     {ticket.reason && (
-                                        <p className="text-xs text-muted-foreground bg-muted/10 p-2 rounded-md italic">
-                                            "{ticket.reason}"
+                                        <p className="text-xs text-muted-foreground bg-muted/10 p-2 rounded-md italic break-words [overflow-wrap:anywhere] [word-break:break-word]">
+                                            &ldquo;{ticket.reason}&rdquo;
                                         </p>
                                     )}
 

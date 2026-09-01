@@ -11,7 +11,19 @@ test('login screen can be rendered', function () {
 });
 
 test('users can authenticate using the login screen', function () {
-    $user = User::factory()->create();
+    $hte = \App\Models\Hte::create(['hte_name' => 'Test HTE']);
+    $program = \App\Models\Program::create(['program_name' => 'BSIT-BTM']);
+    $user = User::factory()->create(['role' => User::ROLE_INTERN]);
+
+    \App\Models\InternProfile::create([
+        'user_id' => $user->id,
+        'id_number' => '2026-'.$user->id,
+        'sex' => 'male',
+        'hte_id' => $hte->hte_id,
+        'program_id' => $program->program_id,
+        'status' => 'approved',
+        'privacy_accepted_at' => now(),
+    ]);
 
     $response = $this->post(route('login.store'), [
         'email' => $user->email,
@@ -30,7 +42,7 @@ test('users with two factor enabled are redirected to two factor challenge', fun
         'confirmPassword' => true,
     ]);
 
-    $user = User::factory()->withTwoFactor()->create();
+    $user = User::factory()->withTwoFactor()->create(['role' => User::ROLE_ADMIN]);
 
     $response = $this->post(route('login'), [
         'email' => $user->email,

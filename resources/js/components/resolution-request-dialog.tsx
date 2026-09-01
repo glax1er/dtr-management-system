@@ -97,7 +97,7 @@ export function ResolutionRequestDialog({
                     Request Resolution
                 </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto w-[calc(100vw-2rem)] sm:w-full">
                 {step === 'form' ? (
                     <>
                         <DialogHeader>
@@ -151,6 +151,8 @@ export function ResolutionRequestDialog({
                                     value={form.data.reason}
                                     onChange={(e) => form.setData('reason', e.target.value)}
                                     placeholder="What happened on this day?"
+                                    maxLength={1000}
+                                    className="min-h-[80px] max-h-[180px] resize-y break-words [overflow-wrap:anywhere]"
                                 />
                                 <InputError message={form.errors.reason} />
                             </div>
@@ -202,8 +204,10 @@ export function ResolutionRequestDialog({
                                 </span>
                             </div>
                             <div className="min-w-0 border-t pt-2 space-y-1">
-                                <span className="text-muted-foreground block">Reason</span>
+                                <span className="text-muted-foreground block text-xs">Reason</span>
+                                <p className="break-words [overflow-wrap:anywhere] [word-break:break-word] text-foreground text-sm whitespace-pre-wrap">
                                     {form.data.reason}
+                                </p>
                             </div>
                         </div>
 

@@ -20,7 +20,7 @@ test('new interns can register and are sent to the pending-approval screen', fun
 
     $response = $this->post(route('register.store'), [
         'name' => 'Test User',
-        'email' => 'test@example.com',
+        'email' => 'test@usep.edu.ph',
         'id_number' => '2026-00001',
         'sex' => 'male',
         'hte_id' => $hte->hte_id,

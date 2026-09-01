@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\NotificationPresenter;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -41,21 +42,12 @@ class HandleInertiaRequests extends Middleware
             'count' => $user?->unreadNotifications()->count() ?? 0,
 
             'items' => $user
-                ? $user->unreadNotifications()
-                    ->latest()
-                    ->limit(5)
-                    ->get()
-                    ->map(fn ($notification) => [
-                        'id' => $notification->id,
-                        'type' => $notification->data['type'] ?? 'general',
-                        'title' => $notification->data['title'] ?? 'Notification',
-                        'message' => $notification->data['message'] ?? '',
-                        'href' => $notification->data['href'] ?? '/dashboard',
-                        'read_at' => $notification->read_at?->toISOString(),
-                        'created_at' => $notification->created_at?->toISOString(),
-                    ])
-                    ->values()
-                    ->all()
+                ? NotificationPresenter::formatCollection(
+                    $user->unreadNotifications()
+                        ->latest()
+                        ->limit(5)
+                        ->get()
+                )
                 : [],
         ];
 
