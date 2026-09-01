@@ -87,13 +87,13 @@ class DashboardController extends Controller
                     ->orderBy('scan_timestamp', 'asc')
                     ->first();
 
-                $isEarliestScan = $earliestScanToday?->id === $log->id;
+                $isEarliestScan = $earliestScanToday?->log_id === $log->log_id;
                 $earliestIsAfterCutoff = $earliestScanToday && $earliestScanToday->scan_timestamp->clone()->setTimezone($timezone)->gt($cutoff);
 
                 $label = ($isEarliestScan && ! $earliestIsAfterCutoff) ? 'time_in' : 'time_out';
 
-                return [
-                    'id' => $log->id,
+                return [    
+                    'id' => $log->log_id,
                     'intern_name' => $log->intern->name,
                     'id_number' => $log->intern->internProfile?->id_number,
                     'label' => $label,
