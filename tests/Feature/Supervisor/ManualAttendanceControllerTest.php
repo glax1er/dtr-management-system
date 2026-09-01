@@ -164,3 +164,48 @@ test('a time out at or before the time in is rejected when both are present', fu
 
     expect(AttendanceLog::where('intern_user_id', $intern->id)->count())->toBe(0);
 });
+
+test('checkConflicts and store correctly detect and replace early morning scans across timezone boundaries', function () {
+    [$supervisor, $hte] = makeHteSupervisorForManualAttendanceTest();
+    $intern = makeApprovedInternForManualAttendanceTest($hte);
+
+    $kiosk = \App\Models\Kiosk::create([
+        'name' => 'Main Gate',
+        'device_token' => 'test-token',
+        'is_active' => true,
+    ]);
+
+    // 07:30 AM Manila time on 2026-07-20 is 2026-07-19 23:30:00 UTC
+    AttendanceLog::create([
+        'intern_user_id' => $intern->id,
+        'kiosk_id' => $kiosk->id,
+        'scan_timestamp' => Carbon::parse('2026-07-20 07:30:00', config('dtr.timezone')),
+    ]);
+
+    // checkConflicts should detect it on 2026-07-20
+    $this->actingAs($supervisor)
+        ->postJson('/supervisor/manual-attendance/check', [
+            'intern_user_id' => $intern->id,
+            'dates' => ['2026-07-20'],
+        ])
+        ->assertOk()
+        ->assertJson([
+            'conflicts' => ['2026-07-20'],
+        ]);
+
+    // store should delete the existing early morning scan and create new entry
+    $this->actingAs($supervisor)
+        ->post('/supervisor/manual-attendance', [
+            'intern_user_id' => $intern->id,
+            'entries' => [
+                ['date' => '2026-07-20', 'time_in' => '08:00', 'time_out' => '17:00'],
+            ],
+        ])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+
+    $logs = AttendanceLog::where('intern_user_id', $intern->id)->get();
+    expect($logs)->toHaveCount(2);
+    expect($logs->pluck('kiosk_id')->filter()->count())->toBe(0);
+});
+

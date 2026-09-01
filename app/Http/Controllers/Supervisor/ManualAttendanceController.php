@@ -55,11 +55,18 @@ class ManualAttendanceController extends Controller
 
         $this->authorizeIntern($request, $validated['intern_user_id']);
 
+        $timezone = config('dtr.timezone');
+
         $conflicts = collect($validated['dates'])
-            ->filter(fn (string $date) => AttendanceLog::where('intern_user_id', $validated['intern_user_id'])
-                ->whereDate('scan_timestamp', $date)
-                ->whereNotNull('kiosk_id')
-                ->exists())
+            ->filter(function (string $date) use ($validated, $timezone) {
+                $start = Carbon::parse($date, $timezone)->startOfDay();
+                $end = Carbon::parse($date, $timezone)->endOfDay();
+
+                return AttendanceLog::where('intern_user_id', $validated['intern_user_id'])
+                    ->whereBetween('scan_timestamp', [$start, $end])
+                    ->whereNotNull('kiosk_id')
+                    ->exists();
+            })
             ->values();
 
         return response()->json(['conflicts' => $conflicts]);
@@ -157,8 +164,11 @@ class ManualAttendanceController extends Controller
 
         DB::transaction(function () use ($validated, $timezone) {
             foreach ($validated['entries'] as $entry) {
+                $start = Carbon::parse($entry['date'], $timezone)->startOfDay();
+                $end = Carbon::parse($entry['date'], $timezone)->endOfDay();
+
                 AttendanceLog::where('intern_user_id', $validated['intern_user_id'])
-                    ->whereDate('scan_timestamp', $entry['date'])
+                    ->whereBetween('scan_timestamp', [$start, $end])
                     ->delete();
 
                 if (! empty($entry['time_in'])) {

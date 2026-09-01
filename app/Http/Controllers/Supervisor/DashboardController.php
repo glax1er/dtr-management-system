@@ -56,12 +56,18 @@ class DashboardController extends Controller
         $baseQuery = fn () => AttendanceLog::query()
             ->whereIn('intern_user_id', $internUserIds);
 
+        $timezone = config('dtr.timezone');
+        $todayStart = Carbon::now($timezone)->startOfDay();
+        $todayEnd = Carbon::now($timezone)->endOfDay();
+        $weekStart = Carbon::now($timezone)->startOfWeek();
+        $now = Carbon::now($timezone);
+
         $scansToday = $baseQuery()
-            ->whereDate('scan_timestamp', Carbon::today())
+            ->whereBetween('scan_timestamp', [$todayStart, $todayEnd])
             ->count();
 
         $scansThisWeek = $baseQuery()
-            ->whereBetween('scan_timestamp', [Carbon::now()->startOfWeek(), Carbon::now()])
+            ->whereBetween('scan_timestamp', [$weekStart, $now])
             ->count();
 
         $recentScans = $baseQuery()
