@@ -131,16 +131,60 @@ class DailyAttendanceCalculator
     }
 
     /**
+     * Sum of hours_rendered across provided scans for an intern.
+     *
+     * @param  Collection<int, AttendanceLog>  $scans
+     */
+    public function totalHoursForScans(
+        Collection $scans,
+        int $hteId,
+        ?CarbonInterface $from = null,
+        ?CarbonInterface $to = null
+    ): float {
+        $timezone = config('dtr.timezone');
+
+        if ($from !== null) {
+            $fromLimit = $from->clone()->setTimezone($timezone)->startOfDay();
+            $scans = $scans->filter(fn (AttendanceLog $log) => $log->scan_timestamp->gte($fromLimit));
+        }
+
+        if ($to !== null) {
+            $toLimit = $to->clone()->setTimezone($timezone)->endOfDay();
+            $scans = $scans->filter(fn (AttendanceLog $log) => $log->scan_timestamp->lte($toLimit));
+        }
+
+        $scansByDate = $scans
+            ->groupBy(fn (AttendanceLog $log) => $log->scan_timestamp->clone()->setTimezone($timezone)->toDateString());
+
+        $total = $scansByDate
+            ->map(fn (Collection $dayScans, string $date) => $this->summarizeDay($date, $dayScans, $hteId)->hoursRendered)
+            ->sum();
+
+        return round($total, 2);
+    }
+
+    /**
      * Sum of hours_rendered across every day in range (FR-27). Recomputed
      * from the daily breakdown rather than stored anywhere, so it's
      * always consistent with what the intern sees in their log table.
      */
     public function totalHours(int $internUserId, int $hteId, ?CarbonInterface $from = null, ?CarbonInterface $to = null): float
     {
-        return round(
-            $this->forIntern($internUserId, $hteId, $from, $to)->sum('hoursRendered'),
-            2,
-        );
+        $timezone = config('dtr.timezone');
+
+        $query = AttendanceLog::query()
+            ->where('intern_user_id', $internUserId)
+            ->orderBy('scan_timestamp');
+
+        if ($from !== null) {
+            $query->where('scan_timestamp', '>=', $from->clone()->setTimezone($timezone)->startOfDay());
+        }
+
+        if ($to !== null) {
+            $query->where('scan_timestamp', '<=', $to->clone()->setTimezone($timezone)->endOfDay());
+        }
+
+        return $this->totalHoursForScans($query->get(), $hteId);
     }
 
     /**

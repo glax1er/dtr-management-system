@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Supervisor;
 
 use App\Http\Controllers\Controller;
+use App\Models\AttendanceLog;
 use App\Models\Hte;
 use App\Models\InternDocument;
 use App\Models\InternProfile;
@@ -84,10 +85,19 @@ class InternsController extends Controller
         $requiredDocKeys = array_keys(array_filter($programDocTypes, fn ($c) => $c['required'] ?? false));
         $totalRequiredDocsCount = count($requiredDocKeys);
 
-        $allStudents = $internsQuery->get()
-            ->map(function (InternProfile $intern) use ($requiredDocKeys, $totalRequiredDocsCount) {
+        $interns = $internsQuery->get();
+
+        $allScansByIntern = AttendanceLog::query()
+            ->whereIn('intern_user_id', $interns->pluck('user_id'))
+            ->orderBy('scan_timestamp')
+            ->get()
+            ->groupBy('intern_user_id');
+
+        $allStudents = $interns
+            ->map(function (InternProfile $intern) use ($requiredDocKeys, $totalRequiredDocsCount, $allScansByIntern) {
                 $requiredHours = $intern->program->required_hours ?? config('dtr.default_required_hours');
-                $totalHours = $this->calculator->totalHours($intern->user_id, $intern->hte_id);
+                $internScans = $allScansByIntern->get($intern->user_id, collect());
+                $totalHours = $this->calculator->totalHoursForScans($internScans, $intern->hte_id);
                 $hoursCompleted = $totalHours >= $requiredHours;
 
                 $approvedRequiredDocsCount = $intern->internDocuments
@@ -468,7 +478,7 @@ class InternsController extends Controller
             ->map(fn(InternProfile $intern) => [
                 'intern_user_id' => $intern->user_id,
                 'intern_name' => $intern->user->name,
-                'total_hours' => $this->calculator->totalHours($intern->user_id, $intern->hte_id, $rangeStart, $rangeEnd),
+                'total_hours' => round((float) $rows->where('intern_user_id', $intern->user_id)->sum('hoursRendered'), 2),
             ])
             ->sortBy('intern_name')
             ->values();

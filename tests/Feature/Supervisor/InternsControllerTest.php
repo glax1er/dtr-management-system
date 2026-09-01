@@ -418,3 +418,41 @@ test('an OJT supervisor can download the full DTR report for an intern in their 
         ->assertHeader('content-type', 'application/pdf');
 });
 
+test('the student roster batch queries attendance logs to prevent N+1 queries', function () {
+    $program = Program::create(['program_name' => 'BSIT-'.uniqid()]);
+    [$supervisor] = makeOjtSupervisorForProgram($program);
+    $hte = Hte::create(['hte_name' => 'HTE A']);
+
+    // Create 10 interns
+    $interns = [];
+    foreach (range(1, 10) as $i) {
+        $intern = makeApprovedInternForHteAndProgram($hte, $program);
+        AttendanceLog::create([
+            'intern_user_id' => $intern->id,
+            'scan_timestamp' => Carbon::parse('2026-07-20 08:00:00', 'Asia/Manila'),
+        ]);
+        AttendanceLog::create([
+            'intern_user_id' => $intern->id,
+            'scan_timestamp' => Carbon::parse('2026-07-20 17:00:00', 'Asia/Manila'),
+        ]);
+        $interns[] = $intern;
+    }
+
+    \Illuminate\Support\Facades\DB::enableQueryLog();
+
+    $this->actingAs($supervisor)
+        ->get(route('supervisor.interns.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('supervisor/students')
+            ->where('studentCount', 10)
+        );
+
+    $queries = collect(\Illuminate\Support\Facades\DB::getQueryLog());
+    $attendanceLogQueries = $queries->filter(fn ($q) => str_contains($q['query'], 'attendance_logs'));
+
+    // Should only be 1 attendance_logs batch query, not 10+
+    expect($attendanceLogQueries->count())->toBe(1);
+});
+
+
