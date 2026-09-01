@@ -31,9 +31,19 @@ use Inertia\Inertia;
 use App\Http\Controllers\Admin\ArchiveController;
 use App\Http\Controllers\Intern\DocumentController as InternDocumentController;
 use App\Http\Controllers\Supervisor\DocumentTemplateController as SupervisorDocumentTemplateController;
+use App\Http\Controllers\Auth\EmailVerificationCodeController;
 use App\Http\Controllers\DocumentReviewController;
 
 Route::redirect('/', '/login')->name('home');
+
+Route::post('email/verify/code', [EmailVerificationCodeController::class, 'verify'])
+    ->middleware('throttle:6,1')
+    ->name('verification.verify-code');
+
+Route::post('email/verification-notification', [EmailVerificationCodeController::class, 'resend'])
+    ->middleware('throttle:6,1')
+    ->name('verification.send');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('notifications', [NotificationController::class, 'index'])
         ->name('notifications.index');
