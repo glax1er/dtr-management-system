@@ -31,6 +31,7 @@ class DashboardController extends Controller
             'month' => ['nullable', 'date_format:Y-m'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:' . self::MAX_PER_PAGE],
+            'highlight_date' => ['nullable', 'date_format:Y-m-d'],
         ]);
 
         $page = (int) ($validated['page'] ?? 1);
@@ -66,6 +67,17 @@ class DashboardController extends Controller
             ...$day->toArray(),
             'pending_ticket_id' => $pendingTicketsByDate->get($day->date),
         ])->sortByDesc('date')->values();
+
+        // If highlight_date is requested and no explicit page was supplied,
+        // auto-jump to the page that actually contains that date so the
+        // frontend scroll always succeeds on the first load.
+        if (isset($validated['highlight_date']) && !isset($validated['page'])) {
+            $highlightDate = $validated['highlight_date'];
+            $dateIndex = $mappedLogs->search(fn ($log) => $log['date'] === $highlightDate);
+            if ($dateIndex !== false) {
+                $page = (int) ceil(($dateIndex + 1) / $perPage);
+            }
+        }
 
         $paginatedLogs = new LengthAwarePaginator(
             $mappedLogs->forPage($page, $perPage)->values(),

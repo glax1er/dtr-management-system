@@ -52,9 +52,11 @@ class ScheduleUpdatedNotification extends Notification
                 default => 'HTE Schedule Override Updated',
             };
             $message = trim("The schedule override {$hteLabel} has been {$actionVerb} by your supervisor.");
-            $href = $isSupervisor
-                ? ('/supervisor/schedule' . ($this->schedulePeriodId && $this->action !== self::ACTION_DELETED ? '?highlight=' . $this->schedulePeriodId : ''))
-                : ('/intern/schedule' . ($this->startDate && $this->action !== self::ACTION_DELETED ? '?month=' . substr($this->startDate, 0, 7) . '&highlight_date=' . $this->startDate : ''));
+            // HTE notifications are only ever sent to interns — supervisors do not
+            // notify themselves — so the href always points to the intern schedule.
+            $href = '/intern/schedule' . ($this->startDate && $this->action !== self::ACTION_DELETED
+                ? '?month=' . substr($this->startDate, 0, 7) . '&highlight_date=' . $this->startDate
+                : '');
         } else {
             $title = match ($this->action) {
                 self::ACTION_CREATED => 'New OJT Schedule Created',
