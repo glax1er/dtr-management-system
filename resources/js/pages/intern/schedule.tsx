@@ -16,6 +16,7 @@ import { useMemo, useEffect, useState } from 'react';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { PaginationMeta } from '@/components/pagination-footer';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -661,9 +662,11 @@ export default function InternSchedule({
                                                                     </Badge>
                                                                 )}
                                                                 {day.is_today && (
-                                                                    <Badge variant="outline" className="text-[10px] py-0 border-primary text-primary font-bold">
-                                                                        Today
-                                                                    </Badge>
+                                                                    <StatusBadge
+                                                                        status="today"
+                                                                        label="Today"
+                                                                        className="text-[10px] py-0 border-primary text-primary font-bold"
+                                                                    />
                                                                 )}
                                                             </div>
                                                         </TableCell>
@@ -682,18 +685,11 @@ export default function InternSchedule({
                                                         )}
                                                     </TableCell>
                                                     <TableCell className="text-center">
-                                                        <Badge
-                                                            variant="secondary"
-                                                            className={cn(
-                                                                "text-xs font-medium",
-                                                                day.source_type === 'hte_override' && "bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-300/40",
-                                                                day.source_type === 'global_schedule' && "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-300/40",
-                                                                day.source_type === 'default_schedule' && day.is_workday && "bg-muted text-foreground",
-                                                                !day.is_workday && "bg-muted/50 text-muted-foreground"
-                                                            )}
-                                                        >
-                                                            {day.is_workday ? day.source_label : 'Rest Days'}
-                                                        </Badge>
+                                                        <StatusBadge
+                                                            status={!day.is_workday ? 'rest_day' : day.source_type}
+                                                            label={day.is_workday ? day.source_label : 'Rest Days'}
+                                                            className="text-xs font-medium"
+                                                        />
                                                     </TableCell>
                                                     <TableCell className="pr-6 text-center">
                                                         <Button
@@ -733,34 +729,36 @@ export default function InternSchedule({
                 <DialogContent className="sm:max-w-md p-6 gap-4">
                     {selectedDay && (
                         <>
-                            <DialogHeader className="pb-2 border-b">
-                                <div className="flex items-center justify-between gap-2">
-                                    <Badge
-                                        variant={selectedDay.is_workday ? 'default' : 'secondary'}
-                                        className={cn(
-                                            "text-xs px-2.5 py-0.5",
+                            <DialogHeader className="pb-2 border-b pr-8 text-left">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <StatusBadge
+                                        status={
                                             selectedDay.source_type === 'hte_override'
-                                                ? "bg-purple-600 hover:bg-purple-600 text-white"
+                                                ? 'hte_override'
                                                 : selectedDay.source_type === 'global_schedule'
-                                                  ? "bg-blue-600 hover:bg-blue-600 text-white"
+                                                  ? 'global_schedule'
                                                   : selectedDay.is_workday
-                                                    ? "bg-primary text-primary-foreground"
-                                                    : "bg-muted text-muted-foreground"
-                                        )}
-                                    >
-                                        {selectedDay.source_type === 'hte_override'
-                                            ? 'HTE Time Schedule'
-                                            : selectedDay.source_type === 'global_schedule'
-                                              ? 'Global OJT Schedule'
-                                              : selectedDay.is_workday
-                                                ? 'Work Day'
-                                                : 'Rest Day'}
-                                    </Badge>
+                                                    ? 'work_day'
+                                                    : 'rest_day'
+                                        }
+                                        label={
+                                            selectedDay.source_type === 'hte_override'
+                                                ? 'HTE Time Schedule'
+                                                : selectedDay.source_type === 'global_schedule'
+                                                  ? 'Global OJT Schedule'
+                                                  : selectedDay.is_workday
+                                                    ? 'Work Day'
+                                                    : 'Rest Day'
+                                        }
+                                        className="text-xs px-2.5 py-0.5"
+                                    />
 
                                     {selectedDay.is_today && (
-                                        <Badge variant="outline" className="text-xs border-primary text-primary font-bold">
-                                            Today
-                                        </Badge>
+                                        <StatusBadge
+                                            status="today"
+                                            label="Today"
+                                            className="text-xs border-primary text-primary font-bold"
+                                        />
                                     )}
                                 </div>
 
