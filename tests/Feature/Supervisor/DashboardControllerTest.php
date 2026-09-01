@@ -32,7 +32,7 @@ test('an HTE supervisor sees their dashboard with paginated recent scans and sta
 
     AttendanceLog::create([
         'intern_user_id' => $intern->id,
-        'scan_timestamp' => Carbon::now('Asia/Manila')->subHours(2),
+        'scan_timestamp' => Carbon::now('Asia/Manila')->setTime(8, 0),
     ]);
 
     $this->actingAs($supervisor)

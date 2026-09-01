@@ -53,6 +53,10 @@ test('newly created hte and ojt supervisors can log in without an email verifica
 
     $supervisor = User::where('email', 'juan.delacruz@acmecorp.com')->first();
 
+    // Log out the admin before attempting the supervisor login so the
+    // previous actingAs() session does not bleed into this request.
+    $this->post(route('logout'));
+
     $response = $this->post(route('login'), [
         'email' => $supervisor->email,
         'password' => config('supervisor.default_supervisor_password'),

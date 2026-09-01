@@ -167,7 +167,7 @@ test('intern is redirected to schedule calendar page when clicking schedule noti
     );
 
     $data = $notification->toArray($intern);
-    expect($data['href'])->toBe('/intern/schedule?month=2026-09');
+    expect($data['href'])->toBe('/intern/schedule?month=2026-09&highlight_date=2026-09-01');
 
     // Follow the href URL
     $response = $this->actingAs($intern)->get($data['href']);
