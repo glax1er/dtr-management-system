@@ -8,6 +8,7 @@ import {
     Coffee,
     LayoutGrid,
     Search,
+    Sparkles,
     Table as TableIcon,
     X,
 } from 'lucide-react';
@@ -142,6 +143,34 @@ export default function InternSchedule({
     const [showGlobalSchedule, setShowGlobalSchedule] = useState(true);
     const [showStandardSchedule, setShowStandardSchedule] = useState(true);
     const [showRestDays, setShowRestDays] = useState(true);
+
+    const highlightDate = typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('highlight_date') || null
+        : null;
+    const highlightPeriod = typeof window !== 'undefined'
+        ? Number(new URLSearchParams(window.location.search).get('highlight_period')) || null
+        : null;
+
+    // Scroll to highlighted day or period
+    useEffect(() => {
+        if (!highlightDate && !highlightPeriod) return;
+
+        const targetDate =
+            highlightDate ||
+            (highlightPeriod ? days.find((d) => d.period_id === highlightPeriod)?.date : null);
+
+        if (targetDate) {
+            const el =
+                document.getElementById(`grid-day-${targetDate}`) ||
+                document.getElementById(`table-row-${targetDate}`);
+            if (el) {
+                const timer = setTimeout(() => {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 250);
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [highlightDate, highlightPeriod, days, paginatedDays.data, view]);
 
     // ── Schedule auto-refresh ──────────────────────────────────────────────────
     // Poll every 60 s to silently reload schedule props so the intern always
@@ -495,15 +524,21 @@ export default function InternSchedule({
                                             if (!showGlobalSchedule && day.source_type === 'global_schedule') isVisible = false;
                                             if (!showStandardSchedule && day.source_type === 'default_schedule' && day.is_workday) isVisible = false;
 
+                                            const isDayHighlighted =
+                                                highlightDate === day.date ||
+                                                (highlightPeriod !== null && day.period_id === highlightPeriod);
+
                                             return (
                                                 <button
                                                     key={`grid-day-${day.date}`}
+                                                    id={`grid-day-${day.date}`}
                                                     type="button"
                                                     onClick={() => handleOpenDay(day)}
                                                     className={cn(
                                                         "group relative flex flex-col justify-between min-h-[95px] sm:min-h-[115px] p-2 text-left transition-all cursor-pointer overflow-hidden hover:bg-muted/30",
                                                         !day.is_current_month && "bg-muted/15 opacity-40 hover:opacity-70",
-                                                        day.is_today && "bg-primary/5 ring-1 ring-inset ring-primary/40"
+                                                        day.is_today && "bg-primary/5 ring-1 ring-inset ring-primary/40",
+                                                        isDayHighlighted && "ring-2 ring-primary bg-primary/10 dark:bg-primary/20 shadow-md font-medium"
                                                     )}
                                                 >
                                                     {/* Day number */}
@@ -521,11 +556,18 @@ export default function InternSchedule({
                                                             {day.day_number}
                                                         </span>
 
-                                                        {day.is_today && (
-                                                            <span className="hidden sm:inline-block text-[9px] font-bold uppercase tracking-wider text-primary pr-1">
-                                                                Today
-                                                            </span>
-                                                        )}
+                                                        <div className="flex items-center gap-1">
+                                                            {isDayHighlighted && (
+                                                                <Badge className="bg-primary text-primary-foreground text-[8px] font-bold uppercase gap-0.5 px-1 py-0 animate-pulse">
+                                                                    <Sparkles className="size-2.5" /> Focus
+                                                                </Badge>
+                                                            )}
+                                                            {day.is_today && (
+                                                                <span className="hidden sm:inline-block text-[9px] font-bold uppercase tracking-wider text-primary pr-1">
+                                                                    Today
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
 
                                                     {/* Event Chip */}
@@ -596,18 +638,35 @@ export default function InternSchedule({
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {filteredTableDays.map((day) => (
-                                                <TableRow key={`table-row-${day.date}`} className="hover:bg-muted/40">
-                                                    <TableCell className="pl-6 font-medium">
-                                                        <div className="flex items-center gap-2">
-                                                            <span>{day.date}</span>
-                                                            {day.is_today && (
-                                                                <Badge variant="outline" className="text-[10px] py-0 border-primary text-primary font-bold">
-                                                                    Today
-                                                                </Badge>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
+                                            {filteredTableDays.map((day) => {
+                                                const isDayHighlighted =
+                                                    highlightDate === day.date ||
+                                                    (highlightPeriod !== null && day.period_id === highlightPeriod);
+
+                                                return (
+                                                    <TableRow
+                                                        key={`table-row-${day.date}`}
+                                                        id={`table-row-${day.date}`}
+                                                        className={cn(
+                                                            "hover:bg-muted/40 transition-colors",
+                                                            isDayHighlighted && "bg-primary/10 ring-2 ring-primary/40 dark:bg-primary/20 font-medium"
+                                                        )}
+                                                    >
+                                                        <TableCell className="pl-6 font-medium">
+                                                            <div className="flex items-center gap-2">
+                                                                <span>{day.date}</span>
+                                                                {isDayHighlighted && (
+                                                                    <Badge className="bg-primary text-primary-foreground text-[10px] uppercase font-semibold gap-1 animate-pulse">
+                                                                        <Sparkles className="size-3" /> Focus
+                                                                    </Badge>
+                                                                )}
+                                                                {day.is_today && (
+                                                                    <Badge variant="outline" className="text-[10px] py-0 border-primary text-primary font-bold">
+                                                                        Today
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
                                                     <TableCell className="text-center text-muted-foreground text-xs">
                                                         {day.day_name}
                                                     </TableCell>
@@ -647,8 +706,9 @@ export default function InternSchedule({
                                                         </Button>
                                                     </TableCell>
                                                 </TableRow>
-                                            ))}
-                                        </TableBody>
+                                            );
+                                        })}
+                                    </TableBody>
                                     </Table>
 
                                     {/* Numbered Pagination */}

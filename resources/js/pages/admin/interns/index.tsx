@@ -3,15 +3,17 @@ import {
     GraduationCap,
     LayoutGrid,
     Search,
+    Sparkles,
     Table as TableIcon,
     X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { InternActions } from '@/components/intern-actions';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
@@ -24,6 +26,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 
 interface Intern {
@@ -66,6 +69,25 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
 
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<Intern | null>(null);
+
+    const highlightId = typeof window !== 'undefined'
+        ? Number(new URLSearchParams(window.location.search).get('highlight')) || null
+        : null;
+
+    useEffect(() => {
+        if (!highlightId) return;
+
+        const el =
+            document.getElementById(`intern-row-${highlightId}`) ||
+            document.getElementById(`intern-card-${highlightId}`);
+        if (!el) return;
+
+        const timer = setTimeout(() => {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 200);
+
+        return () => clearTimeout(timer);
+    }, [highlightId, interns.data]);
 
     const baseParams = () => ({
         status: currentStatus,
@@ -260,49 +282,68 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {interns.data.map((intern) => (
-                                                    <TableRow key={intern.user_id}>
-                                                        <TableCell className="px-6">
-                                                            <p className="font-medium whitespace-nowrap">{intern.name}</p>
-                                                            <p
-                                                                className="max-w-[180px] truncate text-xs text-muted-foreground"
-                                                                title={intern.email}
+                                                {interns.data.map((intern) => {
+                                                    const isHighlighted = highlightId === intern.user_id;
+
+                                                    return (
+                                                        <TableRow
+                                                            key={intern.user_id}
+                                                            id={`intern-row-${intern.user_id}`}
+                                                            className={cn(
+                                                                "transition-all duration-300",
+                                                                isHighlighted && "bg-primary/10 ring-2 ring-primary/40 dark:bg-primary/20"
+                                                            )}
+                                                        >
+                                                            <TableCell className="px-6">
+                                                                <div className="flex items-center gap-2">
+                                                                    <p className="font-medium whitespace-nowrap">{intern.name}</p>
+                                                                    {isHighlighted && (
+                                                                        <Badge className="bg-primary text-primary-foreground font-semibold text-[10px] uppercase gap-1 animate-pulse">
+                                                                            <Sparkles className="size-3" />
+                                                                            Focus
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+                                                                <p
+                                                                    className="max-w-[180px] truncate text-xs text-muted-foreground"
+                                                                    title={intern.email}
+                                                                >
+                                                                    {intern.email}
+                                                                </p>
+                                                            </TableCell>
+                                                            <TableCell className="px-6 text-center whitespace-nowrap">
+                                                                {intern.id_number}
+                                                            </TableCell>
+                                                            <TableCell
+                                                                className="max-w-[160px] truncate px-6 text-center"
+                                                                title={intern.program_name}
                                                             >
-                                                                {intern.email}
-                                                            </p>
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-center whitespace-nowrap">
-                                                            {intern.id_number}
-                                                        </TableCell>
-                                                        <TableCell
-                                                            className="max-w-[160px] truncate px-6 text-center"
-                                                            title={intern.program_name}
-                                                        >
-                                                            {intern.program_name}
-                                                        </TableCell>
-                                                        <TableCell
-                                                            className="max-w-[160px] truncate px-6 text-center"
-                                                            title={intern.hte_name}
-                                                        >
-                                                            {intern.hte_name}
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-center">
-                                                            <StatusBadge status={intern.status} />
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-center whitespace-nowrap text-muted-foreground">
-                                                            {intern.registered_at}
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-center">
-                                                            <InternActions
-                                                                intern={intern}
-                                                                onApprove={approve}
-                                                                onReject={reject}
-                                                                onUndo={openUndoDialog}
-                                                                onDelete={openDeleteDialog}
-                                                            />
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
+                                                                {intern.program_name}
+                                                            </TableCell>
+                                                            <TableCell
+                                                                className="max-w-[160px] truncate px-6 text-center"
+                                                                title={intern.hte_name}
+                                                            >
+                                                                {intern.hte_name}
+                                                            </TableCell>
+                                                            <TableCell className="px-6 text-center">
+                                                                <StatusBadge status={intern.status} />
+                                                            </TableCell>
+                                                            <TableCell className="px-6 text-center whitespace-nowrap text-muted-foreground">
+                                                                {intern.registered_at}
+                                                            </TableCell>
+                                                            <TableCell className="px-6 text-center">
+                                                                <InternActions
+                                                                    intern={intern}
+                                                                    onApprove={approve}
+                                                                    onReject={reject}
+                                                                    onUndo={openUndoDialog}
+                                                                    onDelete={openDeleteDialog}
+                                                                />
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })}
                                             </TableBody>
                                         </Table>
                                         <NumberedPagination
@@ -318,53 +359,72 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                         )}
 
                         <div className={view === 'table' ? 'sm:hidden' : ''}>
-                                                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                {interns.data.map((intern) => (
-                                    <Card key={intern.user_id}>
-                                        <CardHeader>
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div className="min-w-0">
-                                                    <CardTitle className="truncate text-base">
-                                                        {intern.name}
-                                                    </CardTitle>
-                                                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                                                        {intern.email}
-                                                    </p>
-                                                    <div className="mt-2">
-                                                        <StatusBadge status={intern.status} />
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                {interns.data.map((intern) => {
+                                    const isHighlighted = highlightId === intern.user_id;
+
+                                    return (
+                                        <Card
+                                            key={intern.user_id}
+                                            id={`intern-card-${intern.user_id}`}
+                                            className={cn(
+                                                "transition-all duration-300",
+                                                isHighlighted && "ring-2 ring-primary border-primary bg-primary/5 dark:bg-primary/10 shadow-sm"
+                                            )}
+                                        >
+                                            <CardHeader>
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="min-w-0">
+                                                        <div className="flex items-center gap-2">
+                                                            <CardTitle className="truncate text-base">
+                                                                {intern.name}
+                                                            </CardTitle>
+                                                            {isHighlighted && (
+                                                                <Badge className="bg-primary text-primary-foreground font-semibold text-[10px] uppercase gap-1 animate-pulse">
+                                                                    <Sparkles className="size-3" />
+                                                                    Focus
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                                                            {intern.email}
+                                                        </p>
+                                                        <div className="mt-2">
+                                                            <StatusBadge status={intern.status} />
+                                                        </div>
+                                                    </div>
+                                                    <div className="shrink-0">
+                                                        <InternActions
+                                                            intern={intern}
+                                                            onApprove={approve}
+                                                            onReject={reject}
+                                                            onUndo={openUndoDialog}
+                                                            onDelete={openDeleteDialog}
+                                                        />
                                                     </div>
                                                 </div>
-                                                <div className="shrink-0">
-                                                    <InternActions
-                                                        intern={intern}
-                                                        onApprove={approve}
-                                                        onReject={reject}
-                                                        onUndo={openUndoDialog}
-                                                        onDelete={openDeleteDialog}
-                                                    />
+                                            </CardHeader>
+                                            <CardContent className="space-y-2 text-sm">
+                                                <div className="flex justify-between gap-2">
+                                                    <span className="text-muted-foreground">ID Number</span>
+                                                    <span>{intern.id_number}</span>
                                                 </div>
-                                            </div>
-                                        </CardHeader>
-                                        <CardContent className="space-y-2 text-sm">
-                                            <div className="flex justify-between gap-2">
-                                                <span className="text-muted-foreground">ID Number</span>
-                                                <span>{intern.id_number}</span>
-                                            </div>
-                                            <div className="flex justify-between gap-2">
-                                                <span className="shrink-0 text-muted-foreground">Program</span>
-                                                <span className="truncate text-right">{intern.program_name}</span>
-                                            </div>
-                                            <div className="flex justify-between gap-2">
-                                                <span className="shrink-0 text-muted-foreground">HTE</span>
-                                                <span className="truncate text-right">{intern.hte_name}</span>
-                                            </div>
-                                            <div className="flex justify-between gap-2">
-                                                <span className="text-muted-foreground">Registered</span>
-                                                <span>{intern.registered_at}</span>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                ))}
+                                                <div className="flex justify-between gap-2">
+                                                    <span className="shrink-0 text-muted-foreground">Program</span>
+                                                    <span className="truncate text-right">{intern.program_name}</span>
+                                                </div>
+                                                <div className="flex justify-between gap-2">
+                                                    <span className="shrink-0 text-muted-foreground">HTE</span>
+                                                    <span className="truncate text-right">{intern.hte_name}</span>
+                                                </div>
+                                                <div className="flex justify-between gap-2">
+                                                    <span className="text-muted-foreground">Registered</span>
+                                                    <span>{intern.registered_at}</span>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                })}
                             </div>
                             <div className="mt-4">
                                 <NumberedPagination

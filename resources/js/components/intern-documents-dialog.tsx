@@ -9,9 +9,10 @@ import {
     FileCheck2,
     FileText,
     Loader2,
+    Sparkles,
     X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +28,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 import type { DocumentItem } from '@/pages/intern/documents';
 
 interface InternInfo {
@@ -41,18 +43,47 @@ interface InternDocumentsDialogProps {
     internUserId: number;
     internName: string;
     trigger?: React.ReactNode;
+    defaultOpen?: boolean;
+    highlightDoc?: string | null;
 }
 
 export function InternDocumentsDialog({
     internUserId,
     internName,
     trigger,
+    defaultOpen = false,
+    highlightDoc = null,
 }: InternDocumentsDialogProps) {
-    const [isOpen, setIsOpen] = useState(false);
+    const [isOpen, setIsOpen] = useState(defaultOpen);
     const [isLoading, setIsLoading] = useState(false);
     const [intern, setIntern] = useState<InternInfo | null>(null);
     const [checklist, setChecklist] = useState<DocumentItem[]>([]);
     const [previewDoc, setPreviewDoc] = useState<DocumentItem | null>(null);
+
+    // Auto-fetch if defaultOpen
+    useEffect(() => {
+        if (defaultOpen) {
+            fetchDocuments();
+        }
+    }, [defaultOpen]);
+
+    // Scroll to highlighted doc when checklist loads
+    useEffect(() => {
+        if (!isOpen || !highlightDoc || checklist.length === 0) return;
+
+        const targetDoc = checklist.find(
+            (d) => d.document_type === highlightDoc || String(d.id) === highlightDoc
+        );
+        const typeKey = targetDoc ? targetDoc.document_type : highlightDoc;
+
+        const el = document.getElementById(`dialog-doc-${typeKey}`);
+        if (el) {
+            const timer = setTimeout(() => {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 250);
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen, highlightDoc, checklist]);
 
     // Rejecting state
     const [rejectingDocId, setRejectingDocId] = useState<number | null>(null);
@@ -222,11 +253,18 @@ export function InternDocumentsDialog({
                                                     doc.status !== 'missing';
                                                 const isRejecting =
                                                     rejectingDocId === doc.id;
+                                                const isHighlighted =
+                                                    highlightDoc === doc.document_type ||
+                                                    (doc.id !== null && highlightDoc === String(doc.id));
 
                                                 return (
                                                     <div
                                                         key={doc.document_type}
-                                                        className="rounded-lg border border-border bg-card p-4 text-card-foreground shadow-sm transition-all"
+                                                        id={`dialog-doc-${doc.document_type}`}
+                                                        className={cn(
+                                                            "rounded-lg border border-border bg-card p-4 text-card-foreground shadow-sm transition-all duration-300",
+                                                            isHighlighted && "ring-2 ring-primary border-primary bg-primary/5 dark:bg-primary/10 shadow-md"
+                                                        )}
                                                     >
                                                         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                                                             <div className="space-y-1 flex-1">
@@ -234,6 +272,12 @@ export function InternDocumentsDialog({
                                                                     <span className="font-semibold text-sm text-foreground">
                                                                         {doc.name}
                                                                     </span>
+                                                                    {isHighlighted && (
+                                                                        <Badge className="bg-primary text-primary-foreground font-semibold text-[10px] uppercase gap-1 animate-pulse">
+                                                                            <Sparkles className="size-3" />
+                                                                            Focus
+                                                                        </Badge>
+                                                                    )}
                                                                     {doc.required && (
                                                                         <Badge
                                                                             variant="secondary"

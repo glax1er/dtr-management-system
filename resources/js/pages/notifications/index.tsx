@@ -372,8 +372,9 @@ export default function NotificationsPage() {
                                     return (
                                         <div
                                             key={notification.id}
+                                            onClick={() => openNotification(notification)}
                                             className={cn(
-                                                'flex items-start gap-3 p-3.5 transition-colors sm:items-center',
+                                                'group flex cursor-pointer items-start gap-3 p-3.5 transition-colors hover:bg-accent/10 sm:items-center',
                                                 unread && 'bg-primary/[0.03]',
                                             )}
                                         >
@@ -414,7 +415,7 @@ export default function NotificationsPage() {
                                                 )}
                                             </span>
 
-                                            <div className="flex shrink-0 items-center gap-1.5">
+                                            <div className="flex shrink-0 items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                                                 {unread && (
                                                     <Button
                                                         type="button"

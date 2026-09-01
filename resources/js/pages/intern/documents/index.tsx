@@ -16,18 +16,20 @@ import {
     Loader2,
     RefreshCw,
     Search,
+    Sparkles,
     Table as TableIcon,
     Trash2,
     X,
     Paperclip,
 } from 'lucide-react';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import {
     Dialog,
     DialogContent,
@@ -148,6 +150,42 @@ export default function InternDocuments({
     const [uploadingType, setUploadingType] = useState<string | null>(null);
     const [previewDoc, setPreviewDoc] = useState<DocumentItem | null>(null);
     const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+    const highlightType = typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('highlight') || null
+        : null;
+
+    // Auto-switch to folder containing the highlighted document
+    useEffect(() => {
+        if (!highlightType) return;
+        const targetDoc = checklist.find(
+            (d) => d.document_type === highlightType || String(d.id) === highlightType
+        );
+        if (targetDoc && activeFolder !== 'all' && activeFolder !== targetDoc.category) {
+            setActiveFolder(targetDoc.category);
+        }
+    }, [highlightType, checklist]);
+
+    // Scroll to highlighted document card or row
+    useEffect(() => {
+        if (!highlightType) return;
+
+        const targetDoc = checklist.find(
+            (d) => d.document_type === highlightType || String(d.id) === highlightType
+        );
+        const typeKey = targetDoc ? targetDoc.document_type : highlightType;
+
+        const el =
+            document.getElementById(`doc-row-${typeKey}`) ||
+            document.getElementById(`doc-card-${typeKey}`);
+        if (!el) return;
+
+        const timer = setTimeout(() => {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 250);
+
+        return () => clearTimeout(timer);
+    }, [highlightType, activeFolder, view, checklist]);
 
     // ── Build folder metadata from checklist ─────────────────────────────────
     const folders = useMemo<FolderMeta[]>(() => {
@@ -458,19 +496,26 @@ export default function InternDocuments({
                         {filteredChecklist.map((doc) => {
                             const isUploading = uploadingType === doc.document_type;
                             const hasUploaded = doc.status !== 'missing';
+                            const isHighlighted =
+                                highlightType === doc.document_type ||
+                                (doc.id !== null && highlightType === String(doc.id));
 
                             return (
                                 <Card
                                     key={doc.document_type}
-                                    className={`transition-all duration-200 border-border/70 flex flex-col justify-between ${
-                                        doc.status === 'approved'
-                                            ? 'bg-card border-emerald-500/30 hover:border-emerald-500/50 shadow-sm'
-                                            : doc.status === 'rejected'
-                                              ? 'bg-card border-destructive/30 hover:border-destructive/50'
-                                              : hasUploaded
-                                                ? 'bg-card hover:border-primary/50 shadow-sm'
-                                                : 'bg-card/60 hover:bg-card border-dashed'
-                                    }`}
+                                    id={`doc-card-${doc.document_type}`}
+                                    className={cn(
+                                        "transition-all duration-300 border-border/70 flex flex-col justify-between",
+                                        isHighlighted
+                                            ? "ring-2 ring-primary border-primary bg-primary/5 dark:bg-primary/10 shadow-md"
+                                            : doc.status === 'approved'
+                                              ? 'bg-card border-emerald-500/30 hover:border-emerald-500/50 shadow-sm'
+                                              : doc.status === 'rejected'
+                                                ? 'bg-card border-destructive/30 hover:border-destructive/50'
+                                                : hasUploaded
+                                                  ? 'bg-card hover:border-primary/50 shadow-sm'
+                                                  : 'bg-card/60 hover:bg-card border-dashed'
+                                    )}
                                 >
                                     <CardContent className="p-4 space-y-3">
                                         {/* Card Header */}
@@ -495,6 +540,12 @@ export default function InternDocuments({
                                                             {doc.category}
                                                         </Badge>
                                                         <StatusBadge status={doc.required ? 'required' : 'optional'} className="text-[9px] px-1.5 py-0" />
+                                                        {isHighlighted && (
+                                                            <Badge className="bg-primary text-primary-foreground font-semibold text-[10px] uppercase gap-1 animate-pulse">
+                                                                <Sparkles className="size-3" />
+                                                                Focus
+                                                            </Badge>
+                                                        )}
                                                     </div>
                                                     <h3 className="font-semibold text-sm text-foreground leading-snug">
                                                         {doc.name}
@@ -682,22 +733,37 @@ export default function InternDocuments({
                                     {filteredChecklist.map((doc) => {
                                         const isUploading = uploadingType === doc.document_type;
                                         const hasUploaded = doc.status !== 'missing';
+                                        const isHighlighted =
+                                            highlightType === doc.document_type ||
+                                            (doc.id !== null && highlightType === String(doc.id));
 
                                         return (
                                             <TableRow
                                                 key={doc.document_type}
-                                                className={`hover:bg-muted/30 ${
-                                                    doc.status === 'approved'
-                                                        ? 'border-l-2 border-l-emerald-500'
-                                                        : doc.status === 'rejected'
-                                                          ? 'border-l-2 border-l-destructive'
-                                                          : ''
-                                                }`}
+                                                id={`doc-row-${doc.document_type}`}
+                                                className={cn(
+                                                    "transition-all duration-300 hover:bg-muted/30",
+                                                    isHighlighted
+                                                        ? "bg-primary/10 ring-2 ring-primary/40 dark:bg-primary/20"
+                                                        : doc.status === 'approved'
+                                                          ? 'border-l-2 border-l-emerald-500'
+                                                          : doc.status === 'rejected'
+                                                            ? 'border-l-2 border-l-destructive'
+                                                            : ''
+                                                )}
                                             >
                                                 {/* Document Name */}
                                                 <TableCell className="px-6 font-medium text-foreground">
                                                     <div className="space-y-0.5">
-                                                        <div className="font-semibold">{doc.name}</div>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="font-semibold">{doc.name}</div>
+                                                            {isHighlighted && (
+                                                                <Badge className="bg-primary text-primary-foreground font-semibold text-[10px] uppercase gap-1 animate-pulse">
+                                                                    <Sparkles className="size-3" />
+                                                                    Focus
+                                                                </Badge>
+                                                            )}
+                                                        </div>
                                                         <div className="text-xs text-muted-foreground font-normal line-clamp-1">
                                                             {doc.description || 'No description provided.'}
                                                         </div>

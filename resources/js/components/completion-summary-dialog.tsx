@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     AlertCircle,
     Award,
@@ -107,6 +107,7 @@ interface CompletionSummaryDialogProps {
     internName: string;
     isCompleted?: boolean;
     trigger?: React.ReactNode;
+    defaultOpen?: boolean;
 }
 
 export function CompletionSummaryDialog({
@@ -114,10 +115,17 @@ export function CompletionSummaryDialog({
     internName,
     isCompleted = false,
     trigger,
+    defaultOpen = false,
 }: CompletionSummaryDialogProps) {
-    const [isOpen, setIsOpen] = useState(false);
+    const [isOpen, setIsOpen] = useState(defaultOpen);
     const [isLoading, setIsLoading] = useState(false);
     const [summary, setSummary] = useState<CompletionSummaryData | null>(null);
+
+    useEffect(() => {
+        if (defaultOpen) {
+            fetchSummary();
+        }
+    }, [defaultOpen]);
 
     const fetchSummary = async () => {
         setIsLoading(true);

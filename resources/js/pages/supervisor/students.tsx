@@ -10,6 +10,7 @@ import {
     Phone,
     Search,
     SlidersHorizontal,
+    Sparkles,
     Table as TableIcon,
     X,
 } from 'lucide-react';
@@ -102,6 +103,32 @@ export default function MyStudents({
     const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters.search || '');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
+    const docInternId = typeof window !== 'undefined'
+        ? Number(new URLSearchParams(window.location.search).get('doc_intern')) || null
+        : null;
+    const highlightDoc = typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('highlight_doc') || null
+        : null;
+    const openSummary = typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('open_summary') === '1'
+        : false;
+
+    useEffect(() => {
+        if (!docInternId) return;
+
+        const el =
+            document.getElementById(`student-row-${docInternId}`) ||
+            document.getElementById(`student-card-${docInternId}`) ||
+            document.getElementById(`student-mobile-${docInternId}`);
+        if (!el) return;
+
+        const timer = setTimeout(() => {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 200);
+
+        return () => clearTimeout(timer);
+    }, [docInternId, students.data]);
 
     useEffect(() => {
         setSearch(filters.search || '');
@@ -312,81 +339,102 @@ export default function MyStudents({
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {students.data.map((student) => (
-                                            <TableRow key={student.intern_user_id} className="border-b last:border-0 hover:bg-muted/40">
-                                                <TableCell className="py-3 pr-4">
-                                                    <p className="font-medium whitespace-nowrap">{student.name}</p>
-                                                    <p className="max-w-[160px] truncate text-xs text-muted-foreground" title={student.email}>
-                                                        {student.email}
-                                                    </p>
-                                                </TableCell>
-                                                <TableCell className="py-3 pr-4 whitespace-nowrap">
-                                                    {student.id_number ?? '—'}
-                                                </TableCell>
-                                                <TableCell className="max-w-[140px] truncate py-3 pr-4" title={student.hte_name}>
-                                                    {student.hte_name}
-                                                </TableCell>
-                                                <TableCell className="py-3 pr-4 whitespace-nowrap">
-                                                    <div className="flex flex-col gap-1 min-w-[110px]">
-                                                        <div className="flex justify-between text-xs">
-                                                            <span className="font-medium">{formatHours(student.total_hours)}</span>
-                                                            <span className="text-muted-foreground">/ {student.required_hours}h</span>
+                                        {students.data.map((student) => {
+                                            const isHighlighted = docInternId === student.intern_user_id;
+
+                                            return (
+                                                <TableRow
+                                                    key={student.intern_user_id}
+                                                    id={`student-row-${student.intern_user_id}`}
+                                                    className={cn(
+                                                        "border-b last:border-0 hover:bg-muted/40 transition-all duration-300",
+                                                        isHighlighted && "bg-primary/10 ring-2 ring-primary/40 dark:bg-primary/20"
+                                                    )}
+                                                >
+                                                    <TableCell className="py-3 pr-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="font-medium whitespace-nowrap">{student.name}</p>
+                                                            {isHighlighted && (
+                                                                <Badge className="bg-primary text-primary-foreground text-[10px] uppercase font-semibold gap-1 animate-pulse">
+                                                                    <Sparkles className="size-3" /> Focus
+                                                                </Badge>
+                                                            )}
                                                         </div>
-                                                        <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
-                                                            <div
-                                                                className={`h-full rounded-full ${
-                                                                    student.hours_completed ? 'bg-emerald-500' : 'bg-primary'
-                                                                }`}
-                                                                style={{ width: `${Math.min(100, student.progress_percent)}%` }}
+                                                        <p className="max-w-[160px] truncate text-xs text-muted-foreground" title={student.email}>
+                                                            {student.email}
+                                                        </p>
+                                                    </TableCell>
+                                                    <TableCell className="py-3 pr-4 whitespace-nowrap">
+                                                        {student.id_number ?? '—'}
+                                                    </TableCell>
+                                                    <TableCell className="max-w-[140px] truncate py-3 pr-4" title={student.hte_name}>
+                                                        {student.hte_name}
+                                                    </TableCell>
+                                                    <TableCell className="py-3 pr-4 whitespace-nowrap">
+                                                        <div className="flex flex-col gap-1 min-w-[110px]">
+                                                            <div className="flex justify-between text-xs">
+                                                                <span className="font-medium">{formatHours(student.total_hours)}</span>
+                                                                <span className="text-muted-foreground">/ {student.required_hours}h</span>
+                                                            </div>
+                                                            <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                                                                <div
+                                                                    className={`h-full rounded-full ${
+                                                                        student.hours_completed ? 'bg-emerald-500' : 'bg-primary'
+                                                                    }`}
+                                                                    style={{ width: `${Math.min(100, student.progress_percent)}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="py-3 pr-4 whitespace-nowrap">
+                                                        <Badge
+                                                            variant="outline"
+                                                            className={`text-xs gap-1 ${
+                                                                student.docs_completed
+                                                                    ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-300'
+                                                                    : 'bg-muted text-muted-foreground'
+                                                            }`}
+                                                        >
+                                                            <FileCheck2 className="size-3" />
+                                                            {student.approved_docs_count} / {student.total_required_docs_count} Approved
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="py-3 pr-4 whitespace-nowrap">
+                                                        {student.is_completed ? (
+                                                            <Badge className="bg-emerald-600 text-white hover:bg-emerald-600 text-xs gap-1">
+                                                                <CheckCircle2 className="size-3.5" />
+                                                                Completed
+                                                            </Badge>
+                                                        ) : (
+                                                            <Badge
+                                                                variant="secondary"
+                                                                className="text-xs text-muted-foreground font-normal"
+                                                            >
+                                                                {student.hours_completed
+                                                                    ? 'Hours Met • Docs Pending'
+                                                                    : `${Math.round(student.progress_percent)}% Rendered`}
+                                                            </Badge>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell className="py-3 whitespace-nowrap text-right">
+                                                        <div className="flex items-center justify-end gap-1.5">
+                                                            <CompletionSummaryDialog
+                                                                internUserId={student.intern_user_id}
+                                                                internName={student.name}
+                                                                isCompleted={student.is_completed}
+                                                                defaultOpen={docInternId === student.intern_user_id && openSummary}
+                                                            />
+                                                            <InternDocumentsDialog
+                                                                internUserId={student.intern_user_id}
+                                                                internName={student.name}
+                                                                defaultOpen={docInternId === student.intern_user_id && !openSummary}
+                                                                highlightDoc={docInternId === student.intern_user_id ? highlightDoc : null}
                                                             />
                                                         </div>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="py-3 pr-4 whitespace-nowrap">
-                                                    <Badge
-                                                        variant="outline"
-                                                        className={`text-xs gap-1 ${
-                                                            student.docs_completed
-                                                                ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-300'
-                                                                : 'bg-muted text-muted-foreground'
-                                                        }`}
-                                                    >
-                                                        <FileCheck2 className="size-3" />
-                                                        {student.approved_docs_count} / {student.total_required_docs_count} Approved
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell className="py-3 pr-4 whitespace-nowrap">
-                                                    {student.is_completed ? (
-                                                        <Badge className="bg-emerald-600 text-white hover:bg-emerald-600 text-xs gap-1">
-                                                            <CheckCircle2 className="size-3.5" />
-                                                            Completed
-                                                        </Badge>
-                                                    ) : (
-                                                        <Badge
-                                                            variant="secondary"
-                                                            className="text-xs text-muted-foreground font-normal"
-                                                        >
-                                                            {student.hours_completed
-                                                                ? 'Hours Met • Docs Pending'
-                                                                : `${Math.round(student.progress_percent)}% Rendered`}
-                                                        </Badge>
-                                                    )}
-                                                </TableCell>
-                                                <TableCell className="py-3 whitespace-nowrap text-right">
-                                                    <div className="flex items-center justify-end gap-1.5">
-                                                        <CompletionSummaryDialog
-                                                            internUserId={student.intern_user_id}
-                                                            internName={student.name}
-                                                            isCompleted={student.is_completed}
-                                                        />
-                                                        <InternDocumentsDialog
-                                                            internUserId={student.intern_user_id}
-                                                            internName={student.name}
-                                                        />
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
                                     </TableBody>
                                 </Table>
                             </div>
@@ -395,69 +443,133 @@ export default function MyStudents({
                         {/* Grid view */}
                         {view === 'grid' && (
                             <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {students.data.map((student) => (
-                                    <Card key={student.intern_user_id} className="flex flex-col justify-between">
-                                        <CardHeader className="pb-3">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div className="min-w-0">
-                                                    <CardTitle className="text-base font-semibold truncate">
-                                                        {student.name}
-                                                    </CardTitle>
-                                                    <p className="text-xs text-muted-foreground truncate mt-0.5" title={student.email}>
-                                                        {student.email}
-                                                    </p>
-                                                </div>
-                                                <Badge variant="outline" className="shrink-0 text-xs font-mono">
-                                                    {student.id_number ?? 'No ID'}
-                                                </Badge>
-                                            </div>
-                                        </CardHeader>
-                                        <CardContent className="flex flex-col gap-2.5 text-xs text-muted-foreground pt-0">
-                                            {student.contact_number && (
-                                                <div className="flex items-center gap-2">
-                                                    <Phone className="size-3.5 shrink-0" />
-                                                    <span>{student.contact_number}</span>
-                                                </div>
+                                {students.data.map((student) => {
+                                    const isHighlighted = docInternId === student.intern_user_id;
+
+                                    return (
+                                        <Card
+                                            key={student.intern_user_id}
+                                            id={`student-card-${student.intern_user_id}`}
+                                            className={cn(
+                                                "flex flex-col justify-between transition-all duration-300",
+                                                isHighlighted && "ring-2 ring-primary border-primary bg-primary/5 dark:bg-primary/10 shadow-md"
                                             )}
-                                            <div className="flex items-center gap-2">
-                                                <Building2 className="size-3.5 shrink-0" />
-                                                <span className="truncate font-medium text-foreground">{student.hte_name}</span>
-                                            </div>
-                                            <div className="mt-2 flex items-center justify-between border-t pt-2">
-                                                <span className="flex items-center gap-1.5 text-muted-foreground">
-                                                    <Clock className="size-3.5" /> Rendered:
-                                                </span>
-                                                <span className="font-semibold text-foreground text-xs">
-                                                    {formatHours(student.total_hours)}
-                                                </span>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                ))}
+                                        >
+                                            <CardHeader className="pb-3">
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="min-w-0">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <CardTitle className="text-base font-semibold truncate">
+                                                                {student.name}
+                                                            </CardTitle>
+                                                            {isHighlighted && (
+                                                                <Badge className="bg-primary text-primary-foreground text-[10px] uppercase font-semibold gap-1 animate-pulse">
+                                                                    <Sparkles className="size-2.5" /> Focus
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-xs text-muted-foreground truncate mt-0.5" title={student.email}>
+                                                            {student.email}
+                                                        </p>
+                                                    </div>
+                                                    <Badge variant="outline" className="shrink-0 text-xs font-mono">
+                                                        {student.id_number ?? 'No ID'}
+                                                    </Badge>
+                                                </div>
+                                            </CardHeader>
+                                            <CardContent className="flex flex-col gap-2.5 text-xs text-muted-foreground pt-0">
+                                                {student.contact_number && (
+                                                    <div className="flex items-center gap-2">
+                                                        <Phone className="size-3.5 shrink-0" />
+                                                        <span>{student.contact_number}</span>
+                                                    </div>
+                                                )}
+                                                <div className="flex items-center gap-2">
+                                                    <Building2 className="size-3.5 shrink-0" />
+                                                    <span className="truncate font-medium text-foreground">{student.hte_name}</span>
+                                                </div>
+                                                <div className="mt-2 flex items-center justify-between border-t pt-2">
+                                                    <span className="flex items-center gap-1.5 text-muted-foreground">
+                                                        <Clock className="size-3.5" /> Rendered:
+                                                    </span>
+                                                    <span className="font-semibold text-foreground text-xs">
+                                                        {formatHours(student.total_hours)}
+                                                    </span>
+                                                </div>
+                                                <div className="mt-2 flex items-center justify-end gap-1.5 border-t pt-2">
+                                                    <CompletionSummaryDialog
+                                                        internUserId={student.intern_user_id}
+                                                        internName={student.name}
+                                                        isCompleted={student.is_completed}
+                                                        defaultOpen={docInternId === student.intern_user_id && openSummary}
+                                                    />
+                                                    <InternDocumentsDialog
+                                                        internUserId={student.intern_user_id}
+                                                        internName={student.name}
+                                                        defaultOpen={docInternId === student.intern_user_id && !openSummary}
+                                                        highlightDoc={docInternId === student.intern_user_id ? highlightDoc : null}
+                                                    />
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                })}
                             </div>
                         )}
 
                         {/* Mobile list view */}
                         <div className="sm:hidden flex flex-col gap-3">
-                            {students.data.map((student) => (
-                                <Card key={student.intern_user_id}>
-                                    <CardContent className="p-4 flex flex-col gap-2">
-                                        <div className="flex items-start justify-between gap-2">
-                                            <div className="min-w-0">
-                                                <p className="font-semibold text-sm text-foreground truncate">{student.name}</p>
-                                                <p className="text-xs text-muted-foreground truncate">{student.email}</p>
+                            {students.data.map((student) => {
+                                const isHighlighted = docInternId === student.intern_user_id;
+
+                                return (
+                                    <Card
+                                        key={student.intern_user_id}
+                                        id={`student-mobile-${student.intern_user_id}`}
+                                        className={cn(
+                                            "transition-all duration-300",
+                                            isHighlighted && "ring-2 ring-primary border-primary bg-primary/5 dark:bg-primary/10 shadow-md"
+                                        )}
+                                    >
+                                        <CardContent className="p-4 flex flex-col gap-2">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <p className="font-semibold text-sm text-foreground truncate">{student.name}</p>
+                                                        {isHighlighted && (
+                                                            <Badge className="bg-primary text-primary-foreground text-[10px] uppercase font-semibold gap-1 animate-pulse">
+                                                                <Sparkles className="size-2.5" /> Focus
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground truncate">{student.email}</p>
+                                                </div>
+                                                <Badge variant="outline" className="text-xs shrink-0 font-mono">
+                                                    {student.id_number ?? 'No ID'}
+                                                </Badge>
                                             </div>
-                                            <Badge variant="outline" className="text-xs shrink-0 font-mono">
-                                                {student.id_number ?? 'No ID'}
-                                            </Badge>
-                                        </div>
-                                        <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t">
-                                            <span className="truncate max-w-[160px] font-medium text-foreground">{student.hte_name}</span>
-                                            <span className="font-semibold text-foreground">{formatHours(student.total_hours)}</span>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
+                                            <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t">
+                                                <span className="truncate max-w-[160px] font-medium text-foreground">{student.hte_name}</span>
+                                                <span className="font-semibold text-foreground">{formatHours(student.total_hours)}</span>
+                                            </div>
+                                            <div className="flex items-center justify-end gap-1.5 pt-2 border-t">
+                                                <CompletionSummaryDialog
+                                                    internUserId={student.intern_user_id}
+                                                    internName={student.name}
+                                                    isCompleted={student.is_completed}
+                                                    defaultOpen={docInternId === student.intern_user_id && openSummary}
+                                                />
+                                                <InternDocumentsDialog
+                                                    internUserId={student.intern_user_id}
+                                                    internName={student.name}
+                                                    defaultOpen={docInternId === student.intern_user_id && !openSummary}
+                                                    highlightDoc={docInternId === student.intern_user_id ? highlightDoc : null}
+                                                />
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                );
+                            })}
                         </div>
 
                         <NumberedPagination

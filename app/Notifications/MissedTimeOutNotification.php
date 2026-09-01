@@ -23,11 +23,13 @@ class MissedTimeOutNotification extends Notification
     {
         $timeInStr = $this->timeIn ? " ({$this->timeIn})" : '';
 
+        $monthStr = substr($this->date, 0, 7);
+
         return [
             'type' => 'missed_timeout',
             'title' => "Missing Time-Out for {$this->date}",
             'message' => "You clocked in on {$this->date}{$timeInStr} but did not record a Time-Out. Please submit a Resolution Ticket if needed.",
-            'href' => '/intern/dashboard',
+            'href' => "/intern/dashboard?month={$monthStr}&highlight_date={$this->date}",
             'date' => $this->date,
         ];
     }

@@ -11,11 +11,12 @@ import {
     Clock,
     Download,
     QrCode,
+    Sparkles,
     TrendingUp,
     User as UserIcon,
     X,
 } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StatCard } from '@/components/dashboard-analytics';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
@@ -93,6 +94,52 @@ export default function InternDashboard({
     const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
     const [cancelTarget, setCancelTarget] = useState<{ ticketId: number; date: string } | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
+
+    const highlightDate = typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('highlight_date') || null
+        : null;
+    const highlightTicket = typeof window !== 'undefined'
+        ? Number(new URLSearchParams(window.location.search).get('highlight_ticket')) || null
+        : null;
+    const highlightHours = typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('highlight_hours') === '1'
+        : false;
+
+    useEffect(() => {
+        if (highlightHours) {
+            const el = document.getElementById('hours-progress-card');
+            if (el) {
+                const timer = setTimeout(() => {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 250);
+                return () => clearTimeout(timer);
+            }
+        }
+
+        if (!highlightDate && !highlightTicket) return;
+
+        let el: HTMLElement | null = null;
+        if (highlightDate) {
+            el =
+                document.getElementById(`attendance-row-${highlightDate}`) ||
+                document.getElementById(`attendance-card-${highlightDate}`);
+        }
+        if (!el && highlightTicket) {
+            const targetLog = logs.data.find((l) => l.pending_ticket_id === highlightTicket);
+            if (targetLog) {
+                el =
+                    document.getElementById(`attendance-row-${targetLog.date}`) ||
+                    document.getElementById(`attendance-card-${targetLog.date}`);
+            }
+        }
+
+        if (el) {
+            const timer = setTimeout(() => {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 250);
+            return () => clearTimeout(timer);
+        }
+    }, [highlightDate, highlightTicket, highlightHours, logs.data]);
 
     const goToMonth = (targetMonth: string) => {
         router.get(
@@ -338,11 +385,24 @@ export default function InternDashboard({
 
                 {/* Progress & QR */}
                 <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-                    <Card className="flex flex-col justify-between shadow-xs lg:col-span-2">
+                    <Card
+                        id="hours-progress-card"
+                        className={cn(
+                            "flex flex-col justify-between shadow-xs lg:col-span-2 transition-all duration-300",
+                            highlightHours && "ring-2 ring-primary border-primary bg-primary/5 dark:bg-primary/10 shadow-md"
+                        )}
+                    >
                         <CardHeader className="border-b border-border/60 pb-3">
-                            <CardTitle className="text-base font-semibold">
-                                OJT Hours Progress & Milestones
-                            </CardTitle>
+                            <div className="flex items-center gap-2">
+                                <CardTitle className="text-base font-semibold">
+                                    OJT Hours Progress & Milestones
+                                </CardTitle>
+                                {highlightHours && (
+                                    <Badge className="bg-primary text-primary-foreground font-semibold text-[10px] uppercase gap-1 animate-pulse">
+                                        <Sparkles className="size-3" /> Focus
+                                    </Badge>
+                                )}
+                            </div>
                             <CardDescription>
                                 Track your overall completion towards the required {hours.required} total hours
                             </CardDescription>
@@ -594,15 +654,27 @@ export default function InternDashboard({
                                         </TableHeader>
                                         <TableBody>
                                             {logs.data.map((log) => {
+                                                const isHighlighted =
+                                                    (highlightDate !== null && log.date === highlightDate) ||
+                                                    (highlightTicket !== null && log.pending_ticket_id === highlightTicket);
 
                                                 return (
                                                     <TableRow
                                                         key={log.date}
-                                                        className="hover:bg-muted/50"
+                                                        id={`attendance-row-${log.date}`}
+                                                        className={cn(
+                                                            "hover:bg-muted/50 transition-all duration-300",
+                                                            isHighlighted && "bg-primary/10 ring-2 ring-primary/40 dark:bg-primary/20"
+                                                        )}
                                                     >
                                                         <TableCell className="pl-6 font-medium">
                                                             <div className="flex items-center gap-1.5">
                                                                 <span>{log.date}</span>
+                                                                {isHighlighted && (
+                                                                    <Badge className="bg-primary text-primary-foreground text-[10px] uppercase font-semibold gap-1 animate-pulse">
+                                                                        <Sparkles className="size-2.5" /> Focus
+                                                                    </Badge>
+                                                                )}
                                                                 <span className="text-xs text-muted-foreground">
                                                                     ({log.day.slice(0, 3)})
                                                                 </span>
@@ -665,17 +737,31 @@ export default function InternDashboard({
                                 {/* Mobile Cards View */}
                                 <div className="divide-y divide-border overflow-hidden rounded-lg border sm:hidden">
                                     {logs.data.map((log) => {
+                                        const isHighlighted =
+                                            (highlightDate !== null && log.date === highlightDate) ||
+                                            (highlightTicket !== null && log.pending_ticket_id === highlightTicket);
 
                                         return (
                                             <div
                                                 key={log.date}
-                                                className="space-y-3 bg-card p-4"
+                                                id={`attendance-card-${log.date}`}
+                                                className={cn(
+                                                    "space-y-3 bg-card p-4 transition-all duration-300",
+                                                    isHighlighted && "bg-primary/10 ring-2 ring-primary/40"
+                                                )}
                                             >
                                                 <div className="flex items-center justify-between">
                                                     <div>
-                                                        <p className="text-sm font-semibold text-foreground">
-                                                            {log.date}
-                                                        </p>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <p className="text-sm font-semibold text-foreground">
+                                                                {log.date}
+                                                            </p>
+                                                            {isHighlighted && (
+                                                                <Badge className="bg-primary text-primary-foreground text-[10px] uppercase font-semibold gap-1 animate-pulse">
+                                                                    <Sparkles className="size-2.5" /> Focus
+                                                                </Badge>
+                                                            )}
+                                                        </div>
                                                         <p className="text-xs text-muted-foreground">
                                                             {log.day}
                                                         </p>

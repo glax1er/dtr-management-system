@@ -38,7 +38,7 @@ class InternDocumentNotification extends Notification
                 'type' => 'document_submitted',
                 'title' => "Document submitted: {$docName}",
                 'message' => "{$actorName} submitted {$docName} for review.",
-                'href' => "/documents/intern/{$this->internDocument->user_id}",
+                'href' => "/supervisor/interns?doc_intern={$this->internDocument->user_id}&highlight_doc={$this->internDocument->document_type}",
                 'intern_document_id' => $this->internDocument->id,
                 'intern_user_id' => $this->internDocument->user_id,
             ],
@@ -46,7 +46,7 @@ class InternDocumentNotification extends Notification
                 'type' => 'document_approved',
                 'title' => "Document approved: {$docName}",
                 'message' => "Your {$docName} has been approved.",
-                'href' => '/intern/documents',
+                'href' => "/intern/documents?highlight={$this->internDocument->document_type}",
                 'intern_document_id' => $this->internDocument->id,
                 'intern_user_id' => $this->internDocument->user_id,
             ],
@@ -56,7 +56,7 @@ class InternDocumentNotification extends Notification
                 'message' => ! empty($this->reason)
                     ? "Your {$docName} needs revision: {$this->reason}"
                     : "Your {$docName} was rejected and needs revision.",
-                'href' => '/intern/documents',
+                'href' => "/intern/documents?highlight={$this->internDocument->document_type}",
                 'intern_document_id' => $this->internDocument->id,
                 'intern_user_id' => $this->internDocument->user_id,
                 'rejection_reason' => $this->reason,
@@ -65,7 +65,7 @@ class InternDocumentNotification extends Notification
                 'type' => 'document_update',
                 'title' => "Document update: {$docName}",
                 'message' => "Your {$docName} status was updated.",
-                'href' => '/intern/documents',
+                'href' => "/intern/documents?highlight={$this->internDocument->document_type}",
                 'intern_document_id' => $this->internDocument->id,
             ],
         };

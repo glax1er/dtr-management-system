@@ -1,7 +1,8 @@
 import { Head, router } from '@inertiajs/react';
 import { Calendar, CalendarDays, CalendarClock, Clock, Pencil, Plus, Sparkles, Trash2, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -281,6 +282,25 @@ export default function AdminSchedule({ periods }: { periods: SchedulePeriod[] }
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [deleteName, setDeleteName] = useState('');
 
+    const highlightId = typeof window !== 'undefined'
+        ? Number(new URLSearchParams(window.location.search).get('highlight')) || null
+        : null;
+
+    // Scroll to and briefly highlight the period indicated by the notification
+    useEffect(() => {
+        if (!highlightId) return;
+
+        const el = document.getElementById(`schedule-period-${highlightId}`);
+        if (!el) return;
+
+        // Wait one tick so the DOM has finished rendering
+        const raf = requestAnimationFrame(() => {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+
+        return () => cancelAnimationFrame(raf);
+    }, [highlightId, periods]);
+
     // ── Handlers ───────────────────────────────────────────────────────────
     const submitAdd = () => {
         if (!addForm.startDate || !addForm.endDate) {
@@ -381,23 +401,43 @@ export default function AdminSchedule({ periods }: { periods: SchedulePeriod[] }
                             </p>
                         ) : (
                             <div className="flex flex-col gap-3">
-                                {periods.map((period) => (
-                                    <div key={period.id} className="rounded-lg border p-4">
-                                        {/* Period header */}
-                                        <div className="mb-3 flex items-start justify-between gap-2">
-                                            <div>
-                                                <p className="font-medium">
-                                                    {period.name ?? 'Unnamed period'}
-                                                </p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    {period.start_date} – {period.end_date}
-                                                    {isPast(period.end_date) && (
-                                                        <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide">
-                                                            Past
-                                                        </span>
-                                                    )}
-                                                </p>
-                                            </div>
+                                {periods.map((period) => {
+                                    const isHighlighted = highlightId === period.id;
+
+                                    return (
+                                        <div
+                                            key={period.id}
+                                            id={`schedule-period-${period.id}`}
+                                            className={cn(
+                                                "rounded-lg border p-4 transition-all duration-300",
+                                                isHighlighted
+                                                    ? "ring-2 ring-primary border-primary bg-primary/5 dark:bg-primary/10 shadow-sm"
+                                                    : "bg-card"
+                                            )}
+                                        >
+                                            {/* Period header */}
+                                            <div className="mb-3 flex items-start justify-between gap-2">
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="font-medium">
+                                                            {period.name ?? 'Unnamed period'}
+                                                        </p>
+                                                        {isHighlighted && (
+                                                            <Badge className="bg-primary text-primary-foreground font-semibold text-[10px] uppercase gap-1 animate-pulse">
+                                                                <Sparkles className="size-3" />
+                                                                Updated / Focus
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {period.start_date} – {period.end_date}
+                                                        {isPast(period.end_date) && (
+                                                            <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide">
+                                                                Past
+                                                            </span>
+                                                        )}
+                                                    </p>
+                                                </div>
                                             {!isPast(period.end_date) && (
                                                 <div className="flex shrink-0 gap-1">
                                                     <Tooltip>
@@ -445,8 +485,9 @@ export default function AdminSchedule({ periods }: { periods: SchedulePeriod[] }
                                             ))}
                                         </div>
                                     </div>
-                                ))}
-                            </div>
+                                );
+                            })}
+                        </div>
                         )}
                     </CardContent>
                 </Card>
