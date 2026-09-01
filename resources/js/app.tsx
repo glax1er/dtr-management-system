@@ -49,6 +49,8 @@ initializeTheme();
 // page never stays frozen.
 router.on('navigate', () => {
     if (
+        typeof document !== 'undefined' &&
+        document.body &&
         !document.querySelector('[data-slot="dialog-content"][data-state="open"]') &&
         document.body.style.pointerEvents === 'none'
     ) {
