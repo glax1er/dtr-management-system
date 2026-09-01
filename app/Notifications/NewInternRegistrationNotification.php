@@ -33,7 +33,7 @@ class NewInternRegistrationNotification extends Notification
             'type' => 'intern_registration',
             'title' => "New intern sign-up: {$name}",
             'message' => "{$name}{$metaString} registered and is pending approval.",
-            'href' => "/admin/interns?status=pending&highlight={$this->internProfile->user_id}",
+            'href' => "/admin/interns?highlight={$this->internProfile->user_id}",
             'intern_user_id' => $this->internProfile->user_id,
             'id_number' => $idNumber,
         ];

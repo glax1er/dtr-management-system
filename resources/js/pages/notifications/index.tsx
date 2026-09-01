@@ -131,6 +131,15 @@ export default function NotificationsPage() {
     };
 
     const openNotification = (notification: Notification) => {
+        const href = notification.href;
+        const hasMeaningfulHref = href && href !== '/dashboard' && href !== '/intern/dashboard';
+
+        if (!hasMeaningfulHref) {
+            // No specific destination — just mark as read in place
+            markAsRead(notification);
+            return;
+        }
+
         router.post(
             `/notifications/${notification.id}/read`,
             {},
@@ -138,7 +147,7 @@ export default function NotificationsPage() {
                 preserveScroll: true,
                 preserveState: true,
                 onSuccess: () => {
-                    router.visit(notification.href);
+                    router.visit(href);
                 },
             },
         );
