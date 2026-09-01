@@ -40,6 +40,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 
 interface StudentRow {
