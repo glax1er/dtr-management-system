@@ -48,7 +48,7 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
     const [flash, setFlash] = useState<ScanFlash | null>(null);
     const [lastIntern, setLastIntern] = useState<ScannedIntern | null>(null);
     const [cameraError, setCameraError] = useState<string | null>(null);
-    const scannerRef = useRef<Html5Qrcode | null>(null);
+    const scannerRef = useRef<Html5Qrcode | null>(null);    
     const inFlightRef = useRef(false);
     const lastProcessedRef = useRef<{ value: string; at: number } | null>(null);
     // ADDED — monotonically increasing ID; only the response matching the
@@ -215,45 +215,38 @@ inFlightRef.current = true;
         <>
             <Head title={kioskName} />
             <div
-                className="fixed inset-0 flex flex-col items-center justify-center gap-6 overflow-y-auto bg-black p-4"
+                className="fixed inset-0 flex flex-col items-center justify-center overflow-y-auto bg-black p-4"
                 style={{
-                    backgroundImage: `url('/images/cic-bg.jpg')`,
+                    backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)), url('/images/cic-bg.jpg')`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
+                    backgroundAttachment: 'fixed',
                 }}
             >
-                {/* Background image overlay with opacity */}
-                <div className="absolute inset-0 bg-black/90" />
-
                 {/* Content wrapper */}
-                <div className="relative flex w-full flex-col items-center gap-6">
+                <div className="relative my-auto flex w-full flex-col items-center">
                     {/* Logo Section */}
-                    <div className="flex items-end justify-center">
+                    <div className="flex items-center justify-center">
                                 <img
                                     src="/images/usep-logo.png"
                                     alt="USEP logo"
-                                    className="h-12 w-auto object-contain mb-2"
+                                    className="h-12 w-auto object-contain"
                                 />
                                 <img
                                     src="/images/cims-logo-light.png"
-                                    alt="CIC logo"
-                                    className="h-27 w-auto object-contain dark:hidden"
-                                />
-                                <img
-                                    src="/images/cims-logo-dark.png"
-                                    className="hidden h-27 w-auto object-contain dark:block"
-                                    alt="CIC logo dark"
+                                    alt="TIMS logo"
+                                    className="h-25 mx-2 w-auto object-contain"
                                 />
                                 <img
                                     src="/images/cic-logo.png"
-                                    alt="App logo"
-                                    className="h-12 w-auto rounded-full object-contain mb-2"
+                                    alt="CIC logo"
+                                    className="h-12 w-auto rounded-full object-contain"
                                 />
                             </div>
 
                     <h1 className="text-lg font-medium text-white">{kioskName}</h1>
 
-                    <div className="flex w-full max-w-4xl flex-col gap-6 md:flex-row">
+                    <div className="flex w-full max-w-4xl flex-col gap-6 mt-3 md:flex-row">
                     {/* Camera */}
                     <div
                         className={`relative mx-auto aspect-square w-full max-w-md overflow-hidden rounded-lg border-2 bg-black transition-colors duration-300 ${
