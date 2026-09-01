@@ -455,6 +455,18 @@ class InternsController extends Controller
                 ));
             });
 
+        // Compute accumulated hours from the FULL range, before the remarks
+        // filter narrows $rows — the summary card should always reflect the
+        // whole date range, independent of which remarks the table is filtered to.
+        $accumulatedHours = $interns
+            ->map(fn(InternProfile $intern) => [
+                'intern_user_id' => $intern->user_id,
+                'intern_name' => $intern->user->name,
+                'total_hours' => round((float) $rows->where('intern_user_id', $intern->user_id)->sum('hours_rendered'), 2),
+            ])
+            ->sortBy('intern_name')
+            ->values();
+
         if ($remarks !== null) {
             // 'open' ("No time-out yet") is a status flag that can
             // co-occur with either punctuality badge, so it's matched
