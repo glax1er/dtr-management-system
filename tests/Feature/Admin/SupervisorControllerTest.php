@@ -61,3 +61,39 @@ test('newly created hte and ojt supervisors can log in without an email verifica
     $response->assertSessionDoesntHaveErrors('unverified_email');
     $this->assertAuthenticatedAs($supervisor);
 });
+
+test('reassigning an HTE supervisor refreshes contact person on both old and new HTEs', function () {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $oldHte = Hte::create(['hte_name' => 'Old HTE', 'status' => 'active']);
+    $newHte = Hte::create(['hte_name' => 'New HTE', 'status' => 'active']);
+
+    $user = User::factory()->create([
+        'name' => 'Jane Supervisor',
+        'email' => 'jane@example.com',
+        'role' => User::ROLE_SUPERVISOR,
+    ]);
+    $profile = SupervisorProfile::create([
+        'user_id' => $user->id,
+        'hte_id' => $oldHte->hte_id,
+        'supervisor_type' => 'hte',
+        'status' => 'active',
+    ]);
+
+    $oldHte->refreshContactPerson();
+    expect($oldHte->fresh()->contact_person)->toBe('Jane Supervisor');
+    expect($newHte->fresh()->contact_person)->toBeNull();
+
+    // Reassign supervisor to New HTE
+    $response = $this->actingAs($admin)->patch(route('admin.supervisors.update', $profile), [
+        'name' => 'Jane Supervisor',
+        'email' => 'jane@example.com',
+        'hte_id' => $newHte->hte_id,
+    ]);
+
+    $response->assertRedirect();
+
+    // Old HTE should have its contact_person cleared/refreshed, New HTE should have Jane Supervisor
+    expect($oldHte->fresh()->contact_person)->toBeNull();
+    expect($newHte->fresh()->contact_person)->toBe('Jane Supervisor');
+});
+

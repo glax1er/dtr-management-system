@@ -155,8 +155,10 @@ class SupervisorController extends Controller
             ]);
 
             if ($supervisorProfile->supervisor_type === 'hte') {
+                $oldHte = $supervisorProfile->hte;
                 $supervisorProfile->update(['hte_id' => $request->validated('hte_id')]);
-                $supervisorProfile->hte?->refreshContactPerson();
+                $oldHte?->refreshContactPerson();
+                $supervisorProfile->fresh()->hte?->refreshContactPerson();
             } else {
                 $supervisorProfile->update(['program_id' => $request->validated('program_id')]);
             }
