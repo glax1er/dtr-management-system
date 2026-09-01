@@ -68,6 +68,10 @@ class SchedulePeriod extends Model
             return $global->day_schedule[$dayName] ?? null;
         }
 
+        if ($date->isWeekend()) {
+            return null;
+        }
+
         return config('dtr.expected_start_time', '08:00');
     }
 }
