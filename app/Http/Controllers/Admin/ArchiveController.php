@@ -111,6 +111,9 @@ class ArchiveController extends Controller
                         Storage::disk('public')->delete($profile->profile_photo_path);
                     }
 
+                    // 1b. Delete uploaded requirement documents from storage
+                    Storage::disk('local')->deleteDirectory("intern-documents/{$profile->user_id}");
+
                     // 2. Delete linked attendance logs to satisfy foreign key constraints.
                     // Must run before step 2b: attendance_logs.resolved_ticket_id
                     // restricts deleting a resolution ticket while a written-back
