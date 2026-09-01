@@ -30,17 +30,17 @@
             }
         </style>
 
-        <link rel="icon" href="/favicon.ico" sizes="any">
+        <link rel="icon" href="/favicon.ico?v=4" sizes="any">
         <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+        <link rel="icon" type="image/png" sizes="32x32" href="/tab-logo.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="/tab-logo2.png">
 
         @fonts
 
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
         <x-inertia::head>
-            <title>{{ config('app.name', 'CIMS') }}</title>
+            <title>{{ config('app.name', 'TIMS') }}</title>
         </x-inertia::head>
     </head>
     <body class="font-sans antialiased">
