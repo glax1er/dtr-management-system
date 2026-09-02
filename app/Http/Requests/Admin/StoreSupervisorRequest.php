@@ -2,14 +2,12 @@
 
 namespace App\Http\Requests\Admin;
 
-use App\Concerns\ProfileValidationRules;
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class StoreSupervisorRequest extends FormRequest
 {
-    use ProfileValidationRules;
-
     public function authorize(): bool
     {
         return true;
@@ -18,7 +16,8 @@ class StoreSupervisorRequest extends FormRequest
     public function rules(): array
     {
         return [
-            ...$this->profileRules(),
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique(User::class, 'email')],
             'hte_id' => ['required', 'integer', Rule::exists('htes', 'hte_id')],
         ];
     }
