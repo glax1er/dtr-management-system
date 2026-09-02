@@ -505,6 +505,7 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                                     type="email"
                                     value={addForm.data.email}
                                     onChange={(e) => addForm.setData('email', e.target.value)}
+                                    placeholder="supervisor@example.com"
                                     required
                                 />
                                 <InputError message={addForm.errors.email} />
@@ -587,6 +588,7 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                                     type="email"
                                     value={editForm.data.email}
                                     onChange={(e) => editForm.setData('email', e.target.value)}
+                                    placeholder="supervisor@example.com"
                                     required
                                 />
                                 <InputError message={editForm.errors.email} />
