@@ -36,7 +36,7 @@ test('new interns can register and are sent a verification code to their email',
     ]);
 
     $response->assertRedirect(route('verification.notice'));
-    
+
     $user = User::where('email', 'test.intern@usep.edu.ph')->first();
     expect($user)->not->toBeNull();
     expect($user->hasVerifiedEmail())->toBeFalse();

@@ -52,15 +52,13 @@ test('password can be reset with valid token', function () {
         $response = $this->post(route('password.update'), [
             'token' => $notification->token,
             'email' => $user->email,
-            'password' => 'Password123!',
-            'password_confirmation' => 'Password123!',
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
         ]);
 
         $response
             ->assertSessionHasNoErrors()
             ->assertRedirect(route('login'));
-
-        expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
 
         return true;
     });

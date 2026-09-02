@@ -19,6 +19,7 @@ class ResolutionTicket extends Model
         'proposed_time_in',
         'proposed_time_out',
         'reason',
+        'rejection_reason',
         'status',
         'final_time_in',
         'final_time_out',

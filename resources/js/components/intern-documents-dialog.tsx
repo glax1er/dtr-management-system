@@ -90,6 +90,10 @@ export function InternDocumentsDialog({
     const [rejectionReason, setRejectionReason] = useState('');
     const [isSubmittingAction, setIsSubmittingAction] = useState(false);
 
+    // DTR Report date filter state
+    const [dtrStartDate, setDtrStartDate] = useState('');
+    const [dtrEndDate, setDtrEndDate] = useState('');
+
     const fetchDocuments = async () => {
         setIsLoading(true);
         try {
@@ -117,6 +121,8 @@ export function InternDocumentsDialog({
         } else {
             setRejectingDocId(null);
             setRejectionReason('');
+            setDtrStartDate('');
+            setDtrEndDate('');
         }
     };
 
@@ -452,6 +458,73 @@ export function InternDocumentsDialog({
                                                                         ) : null}
                                                                         Submit Rejection
                                                                     </Button>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Official System DTR Report Generator */}
+                                                        {doc.document_type === 'dtr' && (
+                                                            <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-3.5 space-y-2.5">
+                                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                                    <div className="space-y-0.5">
+                                                                        <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                                                                            <FileCheck2 className="h-4 w-4 text-primary" />
+                                                                            Generate & Download Official DTR Report
+                                                                        </span>
+                                                                        <p className="text-[11px] text-muted-foreground">
+                                                                            Filter by date range, or leave blank to download the full DTR report up to the most recent log.
+                                                                        </p>
+                                                                    </div>
+                                                                    <Button
+                                                                        size="sm"
+                                                                        className="h-8 gap-1.5 text-xs shrink-0 shadow-sm"
+                                                                        onClick={() => {
+                                                                            let url = `/supervisor/interns/${internUserId}/dtr-report`;
+                                                                            const params = new URLSearchParams();
+                                                                            if (dtrStartDate) params.append('start', dtrStartDate);
+                                                                            if (dtrEndDate) params.append('end', dtrEndDate);
+                                                                            const queryString = params.toString();
+                                                                            if (queryString) url += `?${queryString}`;
+                                                                            window.open(url, '_blank', 'noopener');
+                                                                        }}
+                                                                    >
+                                                                        <Download className="h-3.5 w-3.5" />
+                                                                        Download DTR
+                                                                    </Button>
+                                                                </div>
+
+                                                                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-primary/15">
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <span className="text-[11px] font-medium text-muted-foreground">From:</span>
+                                                                        <input
+                                                                            type="date"
+                                                                            value={dtrStartDate}
+                                                                            onChange={(e) => setDtrStartDate(e.target.value)}
+                                                                            className="h-7 rounded-md border border-input bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                                                                        />
+                                                                    </div>
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <span className="text-[11px] font-medium text-muted-foreground">To:</span>
+                                                                        <input
+                                                                            type="date"
+                                                                            value={dtrEndDate}
+                                                                            onChange={(e) => setDtrEndDate(e.target.value)}
+                                                                            className="h-7 rounded-md border border-input bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                                                                        />
+                                                                    </div>
+                                                                    {(dtrStartDate || dtrEndDate) && (
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant="ghost"
+                                                                            className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+                                                                            onClick={() => {
+                                                                                setDtrStartDate('');
+                                                                                setDtrEndDate('');
+                                                                            }}
+                                                                        >
+                                                                            Reset (Full DTR)
+                                                                        </Button>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         )}

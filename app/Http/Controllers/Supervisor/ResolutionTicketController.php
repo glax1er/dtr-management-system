@@ -44,7 +44,8 @@ class ResolutionTicketController extends Controller
             ->whereIn('intern_user_id', $internUserIds)
             ->where('status', ResolutionTicket::STATUS_PENDING)
             ->with('intern')
-            ->orderBy('date')
+            ->orderByDesc('date')
+            ->orderByDesc('created_at')
             ->get()
             ->map(fn (ResolutionTicket $ticket) => [
                 'id' => $ticket->id,
@@ -304,9 +305,17 @@ class ResolutionTicketController extends Controller
     ): RedirectResponse {
         $this->authorizeAccess($request, $resolutionTicket);
 
+        $validated = $request->validate([
+            'rejection_reason' => ['required', 'string', 'max:1000'],
+        ], [
+            'rejection_reason.required' => 'Please provide a reason for rejecting this resolution request.',
+            'rejection_reason.max' => 'The rejection reason may not exceed 1000 characters.',
+        ]);
+
         DB::transaction(function () use (
             $request,
-            $resolutionTicket
+            $resolutionTicket,
+            $validated
         ) {
             // Lock the row to prevent concurrent actions.
             $ticket = ResolutionTicket::query()
@@ -327,6 +336,7 @@ class ResolutionTicketController extends Controller
              */
             $ticket->update([
                 'status' => ResolutionTicket::STATUS_REJECTED,
+                'rejection_reason' => $validated['rejection_reason'],
                 'resolved_by' => $request->user()->id,
                 'resolved_at' => Carbon::now(),
             ]);

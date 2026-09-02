@@ -415,7 +415,26 @@ test('an OJT supervisor can download the full DTR report for an intern in their 
         ->get(route('supervisor.interns.dtr-report', ['internUserId' => $intern->id]));
 
     $response->assertOk()
-        ->assertHeader('content-type', 'application/pdf');
+        ->assertHeader('content-type', 'application/pdf')
+        ->assertHeader('content-disposition', 'attachment; filename="DTR_'.$intern->internProfile->id_number.'_Full.pdf"');
+});
+
+test('an OJT supervisor can download DTR report filtered by date range', function () {
+    $program = Program::create(['program_name' => 'BSIT-'.uniqid()]);
+    [$supervisor] = makeOjtSupervisorForProgram($program);
+    $hte = Hte::create(['hte_name' => 'HTE A']);
+    $intern = makeApprovedInternForHteAndProgram($hte, $program);
+
+    $response = $this->actingAs($supervisor)
+        ->get(route('supervisor.interns.dtr-report', [
+            'internUserId' => $intern->id,
+            'start' => '2026-08-01',
+            'end' => '2026-08-15',
+        ]));
+
+    $response->assertOk()
+        ->assertHeader('content-type', 'application/pdf')
+        ->assertHeader('content-disposition', 'attachment; filename="DTR_'.$intern->internProfile->id_number.'_20260801-20260815.pdf"');
 });
 
 test('the student roster batch queries attendance logs to prevent N+1 queries', function () {

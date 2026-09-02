@@ -20,7 +20,11 @@ import { useEffect, useRef, useState } from 'react';
 import { StatCard } from '@/components/dashboard-analytics';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
-import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { HoursProgressRing } from '@/components/hours-progress-ring';
 import { ResolutionRequestDialog } from '@/components/resolution-request-dialog';
 import { Badge } from '@/components/ui/badge';
@@ -91,9 +95,6 @@ export default function InternDashboard({
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [startDate, setStartDate] = useState<string>('');
     const [endDate, setEndDate] = useState<string>('');
-    const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-    const [cancelTarget, setCancelTarget] = useState<{ ticketId: number; date: string } | null>(null);
-    const [isCancelling, setIsCancelling] = useState(false);
 
     const highlightDate = typeof window !== 'undefined'
         ? new URLSearchParams(window.location.search).get('highlight_date') || null
@@ -184,34 +185,6 @@ export default function InternDashboard({
                     Object.values(errors)[0] ?? 'Could not upload photo.',
                 ),
         });
-    };
-
-    const handleOpenCancelDialog = (ticketId: number, date: string) => {
-        setCancelTarget({ ticketId, date });
-        setCancelDialogOpen(true);
-    };
-
-    const handleConfirmCancel = () => {
-        if (!cancelTarget) {
-            return;
-        }
-
-        setIsCancelling(true);
-        router.patch(
-            `/intern/resolution-tickets/${cancelTarget.ticketId}/cancel`,
-            {},
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    toast.success('Resolution request cancelled.');
-                    setCancelDialogOpen(false);
-                    setCancelTarget(null);
-                },
-                onError: () =>
-                    toast.error('Could not cancel resolution request.'),
-                onFinish: () => setIsCancelling(false),
-            },
-        );
     };
 
     const remainingHours = Math.max(0, hours.required - hours.total_rendered);
@@ -701,19 +674,21 @@ export default function InternDashboard({
                                                                 <span className="text-xs text-muted-foreground/50">—</span>
                                                             ) : log.pending_ticket_id !== null ? (
                                                                 <div className="flex items-center justify-center">
-                                                                    <Button
-                                                                        size="sm"
-                                                                        variant="outline"
-                                                                        className="h-7 gap-1 border-destructive/30 px-2.5 text-xs font-medium text-destructive hover:border-destructive hover:bg-destructive hover:text-white"
-                                                                        onClick={() =>
-                                                                            handleOpenCancelDialog(
-                                                                                log.pending_ticket_id!,
-                                                                                log.date,
-                                                                            )
-                                                                        }
-                                                                    >
-                                                                        Cancel
-                                                                    </Button>
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger asChild>
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                className="size-8 text-amber-600 hover:bg-amber-500/10 hover:text-amber-600 dark:text-amber-400 dark:hover:bg-amber-500/20 cursor-default"
+                                                                                aria-label="Request submitted"
+                                                                            >
+                                                                                <Clock className="size-4" />
+                                                                            </Button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                            Request submitted
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
                                                                 </div>
                                                             ) : (
                                                                 <div className="flex justify-center">
@@ -802,19 +777,21 @@ export default function InternDashboard({
                                                             Complete
                                                         </span>
                                                     ) : log.pending_ticket_id !== null ? (
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline"
-                                                            className="h-7 gap-1 border-destructive/30 px-2.5 text-xs font-medium text-destructive hover:border-destructive hover:bg-destructive hover:text-white"
-                                                            onClick={() =>
-                                                                handleOpenCancelDialog(
-                                                                    log.pending_ticket_id!,
-                                                                    log.date,
-                                                                )
-                                                            }
-                                                        >
-                                                            Cancel
-                                                        </Button>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="size-8 text-amber-600 hover:bg-amber-500/10 hover:text-amber-600 dark:text-amber-400 dark:hover:bg-amber-500/20 cursor-default"
+                                                                    aria-label="Request submitted"
+                                                                >
+                                                                    <Clock className="size-4" />
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                Request submitted
+                                                            </TooltipContent>
+                                                        </Tooltip>
                                                     ) : (
                                                         <ResolutionRequestDialog
                                                             date={log.date}
@@ -843,21 +820,6 @@ export default function InternDashboard({
                     </CardContent>
                 </Card>
             </div>
-
-            <ConfirmationDialog
-                open={cancelDialogOpen}
-                onOpenChange={setCancelDialogOpen}
-                title="Cancel Resolution Request"
-                description={
-                    cancelTarget?.date
-                        ? `Are you sure you want to cancel the resolution request for ${cancelTarget.date}?`
-                        : 'Are you sure you want to cancel this resolution request?'
-                }
-                onConfirm={handleConfirmCancel}
-                confirmText="Cancel Request"
-                isDestructive
-                isLoading={isCancelling}
-            />
         </>
     );
 }

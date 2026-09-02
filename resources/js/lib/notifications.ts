@@ -188,3 +188,26 @@ export function getNotificationTone(
 ): NotificationTone {
     return NOTIFICATION_CATEGORY_TONES[getNotificationCategory(notification)];
 }
+
+/**
+ * Determines whether a notification represents a rejected resolution ticket.
+ */
+export function isRejectedResolutionNotification(
+    notification: Notification,
+): boolean {
+    const title = notification.title.toLowerCase();
+    const type = (notification.type || notification.data?.type || '').toLowerCase();
+    const event = (String(notification.data?.event || '')).toLowerCase();
+    const hasRejectionReason = Boolean(notification.data?.rejection_reason);
+    const isResolution =
+        type === 'resolution_ticket' ||
+        Boolean(notification.data?.resolution_ticket_id);
+
+    return (
+        (isResolution &&
+            (title.includes('reject') ||
+                event === 'request_rejected' ||
+                hasRejectionReason)) ||
+        (hasRejectionReason && isResolution)
+    );
+}

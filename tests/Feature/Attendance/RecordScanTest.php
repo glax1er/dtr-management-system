@@ -42,10 +42,10 @@ function makeIntern(Hte $hte, string $status = 'approved', ?string $qrCodeValue 
     return $user;
 }
 
-function makeKiosk(string $name = 'Main Gate'): Kiosk
+function makeKiosk(): Kiosk
 {
     return Kiosk::create([
-        'name' => $name,
+        'name' => 'Main Kiosk',
         'device_token' => Kiosk::generateToken(),
         'is_active' => true,
     ]);

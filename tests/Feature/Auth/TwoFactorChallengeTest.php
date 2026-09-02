@@ -20,9 +20,7 @@ test('two factor challenge can be rendered', function () {
         'confirmPassword' => true,
     ]);
 
-    $user = User::factory()->withTwoFactor()->create([
-        'role' => User::ROLE_ADMIN,
-    ]);
+    $user = User::factory()->withTwoFactor()->create(['role' => User::ROLE_ADMIN]);
 
     $this->post(route('login'), [
         'email' => $user->email,
