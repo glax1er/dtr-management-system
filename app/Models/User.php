@@ -32,12 +32,26 @@ use App\Notifications\EmailVerificationCodeNotification;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['role', 'name', 'email', 'password', 'notification_preferences'])]
+#[Fillable(['role', 'name', 'email', 'password', 'notification_preferences', 'notifications_cleared_at'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
+    protected $fillable = [
+        'role',
+        'name',
+        'email',
+        'password',
+        'notification_preferences',
+        'notifications_cleared_at',
+    ];
 
     // Role constants so the rest of the app never has to type the
     // raw strings 'admin' / 'supervisor' / 'intern' directly.
@@ -206,6 +220,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
             'notification_preferences' => 'array',
+            'notifications_cleared_at' => 'datetime',
         ];
     }
 

@@ -51,13 +51,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('notifications/mark-all-read', [NotificationController::class, 'markAllRead'])
         ->name('notifications.markAllRead');
 
-    Route::post('notifications/{notification}/read', [NotificationController::class, 'markRead'])
+    // Batch "mark-read": sets notifications_cleared_at on the user (used for
+    // resolution-ticket-based notifications). Returns 204 No Content.
+    Route::post('notifications/mark-read', [NotificationController::class, 'markBulkRead'])
         ->name('notifications.markRead');
+
+    // Single DB-notification read: marks a specific notification row as read.
+    Route::post('notifications/{notification}/read', [NotificationController::class, 'markSingleRead'])
+        ->name('notifications.markSingleRead');
 
     Route::delete('notifications/{notification}', [NotificationController::class, 'destroy'])
         ->name('notifications.destroy');
 
-    Route::delete('notifications', [NotificationController::class, 'clear'])
+    // Clear: POST updates notifications_cleared_at (resolution-ticket notification system);
+    // DELETE removes all DB notifications. Both use the same URL for symmetry.
+    Route::match(['DELETE', 'POST'], 'notifications', [NotificationController::class, 'clear'])
         ->name('notifications.clear');
  
     Route::get('dashboard', function () {

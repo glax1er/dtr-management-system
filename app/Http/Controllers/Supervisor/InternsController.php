@@ -486,15 +486,6 @@ class InternsController extends Controller
 
         $pagedRows = $rows->forPage($page, $perPage)->values();
 
-        $accumulatedHours = $interns
-            ->map(fn(InternProfile $intern) => [
-                'intern_user_id' => $intern->user_id,
-                'intern_name' => $intern->user->name,
-                'total_hours' => round((float) $rows->where('intern_user_id', $intern->user_id)->sum('hoursRendered'), 2),
-            ])
-            ->sortBy('intern_name')
-            ->values();
-
         return Inertia::render('supervisor/interns', [
             'logs' => [
                 'data' => $pagedRows,

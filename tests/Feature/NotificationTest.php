@@ -64,7 +64,7 @@ test('user can mark a single notification as read', function () {
     $notification = $user->unreadNotifications()->first();
     expect($notification)->not->toBeNull();
 
-    $response = $this->actingAs($user)->post(route('notifications.markRead', $notification->id));
+    $response = $this->actingAs($user)->post(route('notifications.markSingleRead', $notification->id));
     $response->assertRedirect();
 
     expect($user->fresh()->unreadNotifications()->count())->toBe(0);
