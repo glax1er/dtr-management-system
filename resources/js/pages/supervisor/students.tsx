@@ -126,7 +126,11 @@ export default function MyStudents({
 
     const applySearch = (e: FormEvent) => {
         e.preventDefault();
-        visit({ ...baseParams(), search: search || undefined, page: undefined });
+        visit({
+            ...baseParams(),
+            search: search || undefined,
+            page: undefined,
+        });
     };
 
     const clearSearch = () => {
@@ -174,30 +178,11 @@ export default function MyStudents({
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                        {/* View Switcher */}
-                        <div className="hidden sm:flex items-center border rounded-md p-0.5 bg-muted/40">
-                            <Button
-                                variant={view === 'table' ? 'secondary' : 'ghost'}
-                                size="sm"
-                                className="h-8 px-2.5"
-                                onClick={() => setView('table')}
-                            >
-                                <TableIcon className="size-4 mr-1.5" />
-                                Table
-                            </Button>
-                            <Button
-                                variant={view === 'grid' ? 'secondary' : 'ghost'}
-                                size="sm"
-                                className="h-8 px-2.5"
-                                onClick={() => setView('grid')}
-                            >
-                                <LayoutGrid className="size-4 mr-1.5" />
-                                Grid
-                            </Button>
-                        </div>
-
                         {/* Desktop search */}
-                        <form onSubmit={applySearch} className="relative hidden sm:block">
+                        <form
+                            onSubmit={applySearch}
+                            className="relative hidden sm:block"
+                        >
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                             <input
                                 type="text"
@@ -224,13 +209,21 @@ export default function MyStudents({
                             className="inline-flex size-9 items-center justify-center rounded-md border bg-background text-muted-foreground hover:text-foreground sm:hidden"
                             aria-label="Toggle search"
                         >
-                            {mobileSearchOpen ? <X className="size-4" /> : <Search className="size-4" />}
+                            {mobileSearchOpen ? (
+                                <X className="size-4" />
+                            ) : (
+                                <Search className="size-4" />
+                            )}
                         </button>
 
                         {/* HTE filter dropdown */}
                         <div className="hidden sm:block">
                             <Select
-                                value={filters.hte_id ? String(filters.hte_id) : ALL_HTES}
+                                value={
+                                    filters.hte_id
+                                        ? String(filters.hte_id)
+                                        : ALL_HTES
+                                }
                                 onValueChange={changeHte}
                             >
                                 <SelectTrigger className="h-9 w-44">
@@ -238,9 +231,14 @@ export default function MyStudents({
                                     <SelectValue placeholder="All HTEs" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value={ALL_HTES}>All HTEs</SelectItem>
+                                    <SelectItem value={ALL_HTES}>
+                                        All HTEs
+                                    </SelectItem>
                                     {hteOptions.map((hte) => (
-                                        <SelectItem key={hte.hte_id} value={String(hte.hte_id)}>
+                                        <SelectItem
+                                            key={hte.hte_id}
+                                            value={String(hte.hte_id)}
+                                        >
                                             {hte.hte_name}
                                         </SelectItem>
                                     ))}
@@ -251,7 +249,9 @@ export default function MyStudents({
                         {/* Completion Status filter */}
                         <div className="hidden sm:block">
                             <Select
-                                value={filters.completion_status || ALL_STATUSES}
+                                value={
+                                    filters.completion_status || ALL_STATUSES
+                                }
                                 onValueChange={changeCompletionStatus}
                             >
                                 <SelectTrigger className="h-9 w-48">
@@ -259,15 +259,35 @@ export default function MyStudents({
                                     <SelectValue placeholder="All Status" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value={ALL_STATUSES}>All Students</SelectItem>
+                                    <SelectItem value={ALL_STATUSES}>
+                                        All Students
+                                    </SelectItem>
                                     <SelectItem value="completed">
-                                        Completed Requirements ({completedCount})
+                                        Completed Requirements ({completedCount}
+                                        )
                                     </SelectItem>
                                     <SelectItem value="in_progress">
                                         In Progress ({inProgressCount})
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
+                        </div>
+
+                        {/* View toggle — desktop only */}
+                        <div className="hidden sm:block">
+                            <Tabs
+                                value={view}
+                                onValueChange={(v) => setView(v as ViewMode)}
+                            >
+                                <TabsList>
+                                    <TabsTrigger value="table">
+                                        <TableIcon className="size-4" />
+                                    </TabsTrigger>
+                                    <TabsTrigger value="grid">
+                                        <LayoutGrid className="size-4" />
+                                    </TabsTrigger>
+                                </TabsList>
+                            </Tabs>
                         </div>
                     </div>
                 </div>
@@ -290,7 +310,10 @@ export default function MyStudents({
                 {students.data.length === 0 ? (
                     <p className="py-8 text-center text-sm text-muted-foreground">
                         No interns match{' '}
-                        {filters.search !== '' || filters.hte_id || (filters.completion_status && filters.completion_status !== 'all')
+                        {filters.search !== '' ||
+                        filters.hte_id ||
+                        (filters.completion_status &&
+                            filters.completion_status !== 'all')
                             ? 'these filters.'
                             : 'your program yet.'}
                     </p>
@@ -298,90 +321,159 @@ export default function MyStudents({
                     <>
                         {/* Table view */}
                         {view === 'table' && (
-                            <div className="hidden sm:block overflow-x-auto rounded-md border">
+                            <div className="hidden overflow-x-auto rounded-md border sm:block">
                                 <Table className="w-full min-w-[720px] text-sm">
                                     <TableHeader>
                                         <TableRow className="border-b text-left text-muted-foreground">
-                                            <TableHead className="py-2.5 pr-4 font-medium">Name</TableHead>
-                                            <TableHead className="py-2.5 pr-4 font-medium">ID Number</TableHead>
-                                            <TableHead className="py-2.5 pr-4 font-medium">Assigned HTE</TableHead>
-                                            <TableHead className="py-2.5 pr-4 font-medium">Hours Rendered</TableHead>
-                                            <TableHead className="py-2.5 pr-4 font-medium">Documents</TableHead>
-                                            <TableHead className="py-2.5 pr-4 font-medium">Requirement Status</TableHead>
-                                            <TableHead className="py-2.5 font-medium text-right">Actions</TableHead>
+                                            <TableHead className="py-2.5 pr-4 font-medium">
+                                                Name
+                                            </TableHead>
+                                            <TableHead className="py-2.5 text-center pr-4 font-medium">
+                                                ID Number
+                                            </TableHead>
+                                            <TableHead className="py-2.5 text-center pr-4 font-medium">
+                                                Assigned HTE
+                                            </TableHead>
+                                            <TableHead className="py-2.5 text-center pr-4 font-medium">
+                                                Hours Rendered
+                                            </TableHead>
+                                            <TableHead className="py-2.5 text-center pr-4 font-medium">
+                                                Documents
+                                            </TableHead>
+                                            <TableHead className="py-2.5 text-center pr-4 font-medium">
+                                                Requirement Status
+                                            </TableHead>
+                                            <TableHead className="py-2.5 text-center font-medium">
+                                                Actions
+                                            </TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {students.data.map((student) => (
-                                            <TableRow key={student.intern_user_id} className="border-b last:border-0 hover:bg-muted/40">
+                                            <TableRow
+                                                key={student.intern_user_id}
+                                                className="border-b last:border-0 hover:bg-muted/40"
+                                            >
                                                 <TableCell className="py-3 pr-4">
-                                                    <p className="font-medium whitespace-nowrap">{student.name}</p>
-                                                    <p className="max-w-[160px] truncate text-xs text-muted-foreground" title={student.email}>
+                                                    <p className="font-medium whitespace-nowrap">
+                                                        {student.name}
+                                                    </p>
+                                                    <p
+                                                        className="max-w-[160px] truncate text-xs text-muted-foreground"
+                                                        title={student.email}
+                                                    >
                                                         {student.email}
                                                     </p>
                                                 </TableCell>
-                                                <TableCell className="py-3 pr-4 whitespace-nowrap">
+                                                <TableCell className="text-center py-3 pr-4 whitespace-nowrap">
                                                     {student.id_number ?? '—'}
                                                 </TableCell>
-                                                <TableCell className="max-w-[140px] truncate py-3 pr-4" title={student.hte_name}>
+                                                <TableCell
+                                                    className="text-center max-w-[140px] truncate py-3 pr-4"
+                                                    title={student.hte_name}
+                                                >
                                                     {student.hte_name}
                                                 </TableCell>
                                                 <TableCell className="py-3 pr-4 whitespace-nowrap">
-                                                    <div className="flex flex-col gap-1 min-w-[110px]">
+                                                    <div className="flex min-w-[110px] flex-col gap-1">
                                                         <div className="flex justify-between text-xs">
-                                                            <span className="font-medium">{formatHours(student.total_hours)}</span>
-                                                            <span className="text-muted-foreground">/ {student.required_hours}h</span>
+                                                            <span className="font-medium">
+                                                                {formatHours(
+                                                                    student.total_hours,
+                                                                )}
+                                                            </span>
+                                                            <span className="text-muted-foreground">
+                                                                /{' '}
+                                                                {
+                                                                    student.required_hours
+                                                                }
+                                                                h
+                                                            </span>
                                                         </div>
-                                                        <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                                                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                                                             <div
                                                                 className={`h-full rounded-full ${
-                                                                    student.hours_completed ? 'bg-emerald-500' : 'bg-primary'
+                                                                    student.hours_completed
+                                                                        ? 'bg-emerald-500'
+                                                                        : 'bg-primary'
                                                                 }`}
-                                                                style={{ width: `${Math.min(100, student.progress_percent)}%` }}
+                                                                style={{
+                                                                    width: `${Math.min(100, student.progress_percent)}%`,
+                                                                }}
                                                             />
                                                         </div>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="py-3 pr-4 whitespace-nowrap">
+                                                <TableCell className="text-center py-3 pr-4 whitespace-nowrap">
                                                     <Badge
                                                         variant="outline"
-                                                        className={`text-xs gap-1 ${
+                                                        className={`gap-1 text-xs ${
                                                             student.docs_completed
-                                                                ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-300'
+                                                                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
                                                                 : 'bg-muted text-muted-foreground'
                                                         }`}
                                                     >
                                                         <FileCheck2 className="size-3" />
-                                                        {student.approved_docs_count} / {student.total_required_docs_count} Approved
+                                                        {
+                                                            student.approved_docs_count
+                                                        }{' '}
+                                                        /{' '}
+                                                        {
+                                                            student.total_required_docs_count
+                                                        }{' '}
+                                                        Approved
                                                     </Badge>
                                                 </TableCell>
-                                                <TableCell className="py-3 pr-4 whitespace-nowrap">
-                                                    {student.is_completed ? (
-                                                        <Badge className="bg-emerald-600 text-white hover:bg-emerald-600 text-xs gap-1">
-                                                            <CheckCircle2 className="size-3.5" />
-                                                            Completed
-                                                        </Badge>
-                                                    ) : (
-                                                        <Badge
-                                                            variant="secondary"
-                                                            className="text-xs text-muted-foreground font-normal"
-                                                        >
-                                                            {student.hours_completed
-                                                                ? 'Hours Met • Docs Pending'
-                                                                : `${Math.round(student.progress_percent)}% Rendered`}
-                                                        </Badge>
-                                                    )}
-                                                </TableCell>
-                                                <TableCell className="py-3 whitespace-nowrap text-right">
+                                                <TableCell className="text-center py-3 pr-4 whitespace-nowrap">
+    {student.is_completed ? (
+        <Badge className="gap-1 bg-emerald-600 text-xs text-white hover:bg-emerald-600">
+            <CheckCircle2 className="size-3.5" />
+            Completed
+        </Badge>
+    ) : (
+        <Badge
+            variant="outline"
+            style={
+                !student.hours_completed
+                    ? {
+                          backgroundColor: `hsl(${student.progress_percent * 1.2}, 75%, 50%, 0.15)`,
+                          color: `hsl(${student.progress_percent * 1.2}, 75%, 45%)`,
+                          borderColor: `hsl(${student.progress_percent * 1.2}, 75%, 50%, 0.3)`,
+                      }
+                    : undefined
+            }
+            className={`text-xs font-medium border ${
+                student.hours_completed
+                    ? 'bg-purple-500/15 text-purple-600 border-purple-500/30 dark:text-purple-400'
+                    : ''
+            }`}
+        >
+            {student.hours_completed
+                ? 'Hours Met • Docs Pending'
+                : `${Math.round(student.progress_percent)}% Rendered`}
+        </Badge>
+    )}
+</TableCell>
+                                                <TableCell className="py-3 text-right whitespace-nowrap">
                                                     <div className="flex items-center justify-end gap-1.5">
                                                         <CompletionSummaryDialog
-                                                            internUserId={student.intern_user_id}
-                                                            internName={student.name}
-                                                            isCompleted={student.is_completed}
+                                                            internUserId={
+                                                                student.intern_user_id
+                                                            }
+                                                            internName={
+                                                                student.name
+                                                            }
+                                                            isCompleted={
+                                                                student.is_completed
+                                                            }
                                                         />
                                                         <InternDocumentsDialog
-                                                            internUserId={student.intern_user_id}
-                                                            internName={student.name}
+                                                            internUserId={
+                                                                student.intern_user_id
+                                                            }
+                                                            internName={
+                                                                student.name
+                                                            }
                                                         />
                                                     </div>
                                                 </TableCell>
@@ -394,41 +486,58 @@ export default function MyStudents({
 
                         {/* Grid view */}
                         {view === 'grid' && (
-                            <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3">
                                 {students.data.map((student) => (
-                                    <Card key={student.intern_user_id} className="flex flex-col justify-between">
+                                    <Card
+                                        key={student.intern_user_id}
+                                        className="flex flex-col justify-between"
+                                    >
                                         <CardHeader className="pb-3">
                                             <div className="flex items-start justify-between gap-2">
                                                 <div className="min-w-0">
-                                                    <CardTitle className="text-base font-semibold truncate">
+                                                    <CardTitle className="truncate text-base font-semibold">
                                                         {student.name}
                                                     </CardTitle>
-                                                    <p className="text-xs text-muted-foreground truncate mt-0.5" title={student.email}>
+                                                    <p
+                                                        className="mt-0.5 truncate text-xs text-muted-foreground"
+                                                        title={student.email}
+                                                    >
                                                         {student.email}
                                                     </p>
                                                 </div>
-                                                <Badge variant="outline" className="shrink-0 text-xs font-mono">
-                                                    {student.id_number ?? 'No ID'}
+                                                <Badge
+                                                    variant="outline"
+                                                    className="shrink-0 font-mono text-xs"
+                                                >
+                                                    {student.id_number ??
+                                                        'No ID'}
                                                 </Badge>
                                             </div>
                                         </CardHeader>
-                                        <CardContent className="flex flex-col gap-2.5 text-xs text-muted-foreground pt-0">
+                                        <CardContent className="flex flex-col gap-2.5 pt-0 text-xs text-muted-foreground">
                                             {student.contact_number && (
                                                 <div className="flex items-center gap-2">
                                                     <Phone className="size-3.5 shrink-0" />
-                                                    <span>{student.contact_number}</span>
+                                                    <span>
+                                                        {student.contact_number}
+                                                    </span>
                                                 </div>
                                             )}
                                             <div className="flex items-center gap-2">
                                                 <Building2 className="size-3.5 shrink-0" />
-                                                <span className="truncate font-medium text-foreground">{student.hte_name}</span>
+                                                <span className="truncate font-medium text-foreground">
+                                                    {student.hte_name}
+                                                </span>
                                             </div>
                                             <div className="mt-2 flex items-center justify-between border-t pt-2">
                                                 <span className="flex items-center gap-1.5 text-muted-foreground">
-                                                    <Clock className="size-3.5" /> Rendered:
+                                                    <Clock className="size-3.5" />{' '}
+                                                    Rendered:
                                                 </span>
-                                                <span className="font-semibold text-foreground text-xs">
-                                                    {formatHours(student.total_hours)}
+                                                <span className="text-xs font-semibold text-foreground">
+                                                    {formatHours(
+                                                        student.total_hours,
+                                                    )}
                                                 </span>
                                             </div>
                                         </CardContent>
@@ -438,22 +547,35 @@ export default function MyStudents({
                         )}
 
                         {/* Mobile list view */}
-                        <div className="sm:hidden flex flex-col gap-3">
+                        <div className="flex flex-col gap-3 sm:hidden">
                             {students.data.map((student) => (
                                 <Card key={student.intern_user_id}>
-                                    <CardContent className="p-4 flex flex-col gap-2">
+                                    <CardContent className="flex flex-col gap-2 p-4">
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="min-w-0">
-                                                <p className="font-semibold text-sm text-foreground truncate">{student.name}</p>
-                                                <p className="text-xs text-muted-foreground truncate">{student.email}</p>
+                                                <p className="truncate text-sm font-semibold text-foreground">
+                                                    {student.name}
+                                                </p>
+                                                <p className="truncate text-xs text-muted-foreground">
+                                                    {student.email}
+                                                </p>
                                             </div>
-                                            <Badge variant="outline" className="text-xs shrink-0 font-mono">
+                                            <Badge
+                                                variant="outline"
+                                                className="shrink-0 font-mono text-xs"
+                                            >
                                                 {student.id_number ?? 'No ID'}
                                             </Badge>
                                         </div>
-                                        <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t">
-                                            <span className="truncate max-w-[160px] font-medium text-foreground">{student.hte_name}</span>
-                                            <span className="font-semibold text-foreground">{formatHours(student.total_hours)}</span>
+                                        <div className="flex items-center justify-between border-t pt-1 text-xs text-muted-foreground">
+                                            <span className="max-w-[160px] truncate font-medium text-foreground">
+                                                {student.hte_name}
+                                            </span>
+                                            <span className="font-semibold text-foreground">
+                                                {formatHours(
+                                                    student.total_hours,
+                                                )}
+                                            </span>
                                         </div>
                                     </CardContent>
                                 </Card>
