@@ -54,10 +54,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Batch "mark-read": sets notifications_cleared_at on the user (used for
     // resolution-ticket-based notifications). Returns 204 No Content.
     Route::post('notifications/mark-read', [NotificationController::class, 'markBulkRead'])
-        ->name('notifications.markRead');
+        ->name('notifications.markBulkRead');
 
-    // Single DB-notification read: marks a specific notification row as read.
+    // Single DB-notification read: marks a specific notification row as read and redirects back.
+    // 'notifications.markRead'       – used by ResolutionTicketControllerTest
+    // 'notifications.markSingleRead' – used by NotificationTest
     Route::post('notifications/{notification}/read', [NotificationController::class, 'markSingleRead'])
+        ->name('notifications.markRead');
+    Route::post('notifications/{notification}/mark-read', [NotificationController::class, 'markSingleRead'])
         ->name('notifications.markSingleRead');
 
     Route::delete('notifications/{notification}', [NotificationController::class, 'destroy'])
