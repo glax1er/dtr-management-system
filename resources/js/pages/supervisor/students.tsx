@@ -21,8 +21,15 @@ import { InternDocumentsDialog } from '@/components/intern-documents-dialog';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import {
     Select,
     SelectContent,
@@ -63,21 +70,17 @@ interface HteOption {
     hte_name: string;
 }
 
-interface Filters {
-    search: string;
-    hte_id: number | null;
-    completion_status?: 'all' | 'completed' | 'in_progress';
-    per_page: number;
-}
-
-interface MyStudentsProps {
+interface StudentsProps {
     students: Paginated<StudentRow>;
-    studentCount: number;
-    completedCount?: number;
-    inProgressCount?: number;
-    scopeName?: string;
     hteOptions: HteOption[];
-    filters: Filters;
+    filters: {
+        search: string;
+        hte_id?: number | null;
+        completion_status?: string;
+        per_page?: number;
+    };
+    completedCount: number;
+    inProgressCount: number;
 }
 
 type ViewMode = 'table' | 'grid';
@@ -86,26 +89,36 @@ const ALL_HTES = 'all';
 const ALL_STATUSES = 'all';
 
 function formatHours(hours: number): string {
-    if (hours <= 0) return '0 hrs';
-    return `${hours.toFixed(1)} hrs`;
+    const whole = Math.floor(hours);
+    const frac = Math.round((hours - whole) * 60);
+
+    if (frac === 0) {
+        return `${whole}h`;
+    }
+
+    return `${whole}h ${frac}m`;
 }
 
 export default function MyStudents({
     students,
-    studentCount,
-    completedCount = 0,
-    inProgressCount = 0,
-    scopeName,
     hteOptions,
     filters,
-}: MyStudentsProps) {
-    const [view, setView] = useState<ViewMode>('table');
-    const [search, setSearch] = useState(filters.search || '');
+    completedCount,
+    inProgressCount,
+}: StudentsProps) {
+    const [search, setSearch] = useState(filters.search ?? '');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+    const [view, setView] = useState<ViewMode>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('supervisor_students_view');
+            if (saved === 'table' || saved === 'grid') return saved;
+        }
+        return 'table';
+    });
 
     useEffect(() => {
-        setSearch(filters.search || '');
-    }, [filters.search]);
+        localStorage.setItem('supervisor_students_view', view);
+    }, [view]);
 
     const baseParams = () => ({
         search: filters.search || undefined,
@@ -114,7 +127,7 @@ export default function MyStudents({
             filters.completion_status && filters.completion_status !== 'all'
                 ? filters.completion_status
                 : undefined,
-        per_page: String(filters.per_page),
+        per_page: filters.per_page ? String(filters.per_page) : undefined,
     });
 
     const visit = (params: Record<string, string | undefined>) => {
@@ -174,28 +187,6 @@ export default function MyStudents({
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                        {/* View Switcher */}
-                        <div className="hidden sm:flex items-center border rounded-md p-0.5 bg-muted/40">
-                            <Button
-                                variant={view === 'table' ? 'secondary' : 'ghost'}
-                                size="sm"
-                                className="h-8 px-2.5"
-                                onClick={() => setView('table')}
-                            >
-                                <TableIcon className="size-4 mr-1.5" />
-                                Table
-                            </Button>
-                            <Button
-                                variant={view === 'grid' ? 'secondary' : 'ghost'}
-                                size="sm"
-                                className="h-8 px-2.5"
-                                onClick={() => setView('grid')}
-                            >
-                                <LayoutGrid className="size-4 mr-1.5" />
-                                Grid
-                            </Button>
-                        </div>
-
                         {/* Desktop search */}
                         <form onSubmit={applySearch} className="relative hidden sm:block">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -269,6 +260,20 @@ export default function MyStudents({
                                 </SelectContent>
                             </Select>
                         </div>
+
+                        {/* View Switcher (At the very edge on the right side) */}
+                        <div className="hidden sm:block">
+                            <Tabs value={view} onValueChange={(v) => setView(v as ViewMode)}>
+                                <TabsList>
+                                    <TabsTrigger value="table">
+                                        <TableIcon className="size-4" />
+                                    </TabsTrigger>
+                                    <TabsTrigger value="grid">
+                                        <LayoutGrid className="size-4" />
+                                    </TabsTrigger>
+                                </TabsList>
+                            </Tabs>
+                        </div>
                     </div>
                 </div>
 
@@ -288,107 +293,99 @@ export default function MyStudents({
 
                 {/* Content Section */}
                 {students.data.length === 0 ? (
-                    <p className="py-8 text-center text-sm text-muted-foreground">
-                        No interns match{' '}
-                        {filters.search !== '' || filters.hte_id || (filters.completion_status && filters.completion_status !== 'all')
-                            ? 'these filters.'
-                            : 'your program yet.'}
-                    </p>
+                    <Card>
+                        <CardContent className="py-12 text-center text-sm text-muted-foreground">
+                            No interns match{' '}
+                            {filters.search !== '' || filters.hte_id || (filters.completion_status && filters.completion_status !== 'all')
+                                ? 'these filters.'
+                                : 'your program yet.'}
+                        </CardContent>
+                    </Card>
                 ) : (
                     <>
                         {/* Table view */}
                         {view === 'table' && (
-                            <div className="hidden sm:block overflow-x-auto rounded-md border">
-                                <Table className="w-full min-w-[720px] text-sm">
-                                    <TableHeader>
-                                        <TableRow className="border-b text-left text-muted-foreground">
-                                            <TableHead className="py-2.5 pr-4 font-medium">Name</TableHead>
-                                            <TableHead className="py-2.5 pr-4 font-medium">ID Number</TableHead>
-                                            <TableHead className="py-2.5 pr-4 font-medium">Assigned HTE</TableHead>
-                                            <TableHead className="py-2.5 pr-4 font-medium">Hours Rendered</TableHead>
-                                            <TableHead className="py-2.5 pr-4 font-medium">Documents</TableHead>
-                                            <TableHead className="py-2.5 pr-4 font-medium">Requirement Status</TableHead>
-                                            <TableHead className="py-2.5 font-medium text-right">Actions</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {students.data.map((student) => (
-                                            <TableRow key={student.intern_user_id} className="border-b last:border-0 hover:bg-muted/40">
-                                                <TableCell className="py-3 pr-4">
-                                                    <p className="font-medium whitespace-nowrap">{student.name}</p>
-                                                    <p className="max-w-[160px] truncate text-xs text-muted-foreground" title={student.email}>
-                                                        {student.email}
-                                                    </p>
-                                                </TableCell>
-                                                <TableCell className="py-3 pr-4 whitespace-nowrap">
-                                                    {student.id_number ?? '—'}
-                                                </TableCell>
-                                                <TableCell className="max-w-[140px] truncate py-3 pr-4" title={student.hte_name}>
-                                                    {student.hte_name}
-                                                </TableCell>
-                                                <TableCell className="py-3 pr-4 whitespace-nowrap">
-                                                    <div className="flex flex-col gap-1 min-w-[110px]">
-                                                        <div className="flex justify-between text-xs">
-                                                            <span className="font-medium">{formatHours(student.total_hours)}</span>
-                                                            <span className="text-muted-foreground">/ {student.required_hours}h</span>
-                                                        </div>
-                                                        <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
-                                                            <div
-                                                                className={`h-full rounded-full ${
-                                                                    student.hours_completed ? 'bg-emerald-500' : 'bg-primary'
-                                                                }`}
-                                                                style={{ width: `${Math.min(100, student.progress_percent)}%` }}
+                            <div className="hidden sm:block">
+                                <Card>
+                                    <CardContent className="p-0">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="px-6">Name</TableHead>
+                                                    <TableHead className="px-4 text-center">ID Number</TableHead>
+                                                    <TableHead className="px-4">Assigned HTE</TableHead>
+                                                    <TableHead className="px-4">Hours Rendered</TableHead>
+                                                    <TableHead className="px-4 text-center">Documents</TableHead>
+                                                    <TableHead className="px-4 text-center">Requirement Status</TableHead>
+                                                    <TableHead className="px-6 text-right">Actions</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {students.data.map((student) => (
+                                                    <TableRow key={student.intern_user_id} className="hover:bg-muted/40 transition-colors">
+                                                        <TableCell className="px-6 py-3">
+                                                            <p className="font-medium whitespace-nowrap text-foreground">{student.name}</p>
+                                                            <p className="max-w-[180px] truncate text-xs text-muted-foreground" title={student.email}>
+                                                                {student.email}
+                                                            </p>
+                                                        </TableCell>
+                                                        <TableCell className="px-4 py-3 whitespace-nowrap text-center">
+                                                            <Badge variant="outline" className="font-mono text-xs">
+                                                                {student.id_number ?? '—'}
+                                                            </Badge>
+                                                        </TableCell>
+                                                        <TableCell className="max-w-[160px] truncate px-4 py-3" title={student.hte_name}>
+                                                            <span className="font-medium text-foreground">{student.hte_name}</span>
+                                                        </TableCell>
+                                                        <TableCell className="px-4 py-3 whitespace-nowrap">
+                                                            <div className="flex flex-col gap-1 min-w-[110px]">
+                                                                <div className="flex justify-between text-xs">
+                                                                    <span className="font-medium text-foreground">{formatHours(student.total_hours)}</span>
+                                                                    <span className="text-muted-foreground">/ {student.required_hours}h</span>
+                                                                </div>
+                                                                <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                                                                    <div
+                                                                        className={`h-full rounded-full transition-all duration-300 ${
+                                                                            student.hours_completed ? 'bg-emerald-500' : 'bg-primary'
+                                                                        }`}
+                                                                        style={{ width: `${Math.min(100, student.progress_percent)}%` }}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="px-4 py-3 whitespace-nowrap text-center">
+                                                            <StatusBadge
+                                                                status={student.docs_completed ? 'approved' : student.approved_docs_count > 0 ? 'pending_review' : 'not_submitted'}
+                                                                label={`${student.approved_docs_count}/${student.total_required_docs_count} Cleared`}
+                                                                className="text-xs"
                                                             />
-                                                        </div>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="py-3 pr-4 whitespace-nowrap">
-                                                    <Badge
-                                                        variant="outline"
-                                                        className={`text-xs gap-1 ${
-                                                            student.docs_completed
-                                                                ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-300'
-                                                                : 'bg-muted text-muted-foreground'
-                                                        }`}
-                                                    >
-                                                        <FileCheck2 className="size-3" />
-                                                        {student.approved_docs_count} / {student.total_required_docs_count} Approved
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell className="py-3 pr-4 whitespace-nowrap">
-                                                    {student.is_completed ? (
-                                                        <Badge className="bg-emerald-600 text-white hover:bg-emerald-600 text-xs gap-1">
-                                                            <CheckCircle2 className="size-3.5" />
-                                                            Completed
-                                                        </Badge>
-                                                    ) : (
-                                                        <Badge
-                                                            variant="secondary"
-                                                            className="text-xs text-muted-foreground font-normal"
-                                                        >
-                                                            {student.hours_completed
-                                                                ? 'Hours Met • Docs Pending'
-                                                                : `${Math.round(student.progress_percent)}% Rendered`}
-                                                        </Badge>
-                                                    )}
-                                                </TableCell>
-                                                <TableCell className="py-3 whitespace-nowrap text-right">
-                                                    <div className="flex items-center justify-end gap-1.5">
-                                                        <CompletionSummaryDialog
-                                                            internUserId={student.intern_user_id}
-                                                            internName={student.name}
-                                                            isCompleted={student.is_completed}
-                                                        />
-                                                        <InternDocumentsDialog
-                                                            internUserId={student.intern_user_id}
-                                                            internName={student.name}
-                                                        />
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                                                        </TableCell>
+                                                        <TableCell className="px-4 py-3 whitespace-nowrap text-center">
+                                                            <StatusBadge
+                                                                status={student.is_completed ? 'approved' : student.hours_completed ? 'pending_review' : 'active'}
+                                                                label={student.is_completed ? 'Completed' : student.hours_completed ? 'Docs Pending' : `${Math.round(student.progress_percent)}% Rendered`}
+                                                                className="text-xs"
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell className="px-6 py-3 whitespace-nowrap text-right">
+                                                            <div className="flex items-center justify-end gap-1.5">
+                                                                <CompletionSummaryDialog
+                                                                    internUserId={student.intern_user_id}
+                                                                    internName={student.name}
+                                                                    isCompleted={student.is_completed}
+                                                                />
+                                                                <InternDocumentsDialog
+                                                                    internUserId={student.intern_user_id}
+                                                                    internName={student.name}
+                                                                />
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </CardContent>
+                                </Card>
                             </div>
                         )}
 
@@ -396,11 +393,11 @@ export default function MyStudents({
                         {view === 'grid' && (
                             <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {students.data.map((student) => (
-                                    <Card key={student.intern_user_id} className="flex flex-col justify-between">
+                                    <Card key={student.intern_user_id} className="flex flex-col justify-between hover:border-primary/30 transition-all duration-200 shadow-2xs">
                                         <CardHeader className="pb-3">
                                             <div className="flex items-start justify-between gap-2">
                                                 <div className="min-w-0">
-                                                    <CardTitle className="text-base font-semibold truncate">
+                                                    <CardTitle className="text-base font-semibold truncate text-foreground">
                                                         {student.name}
                                                     </CardTitle>
                                                     <p className="text-xs text-muted-foreground truncate mt-0.5" title={student.email}>
@@ -415,23 +412,54 @@ export default function MyStudents({
                                         <CardContent className="flex flex-col gap-2.5 text-xs text-muted-foreground pt-0">
                                             {student.contact_number && (
                                                 <div className="flex items-center gap-2">
-                                                    <Phone className="size-3.5 shrink-0" />
+                                                    <Phone className="size-3.5 shrink-0 text-muted-foreground/70" />
                                                     <span>{student.contact_number}</span>
                                                 </div>
                                             )}
                                             <div className="flex items-center gap-2">
-                                                <Building2 className="size-3.5 shrink-0" />
+                                                <Building2 className="size-3.5 shrink-0 text-muted-foreground/70" />
                                                 <span className="truncate font-medium text-foreground">{student.hte_name}</span>
                                             </div>
-                                            <div className="mt-2 flex items-center justify-between border-t pt-2">
+                                            <div className="mt-1 flex items-center justify-between border-t pt-2.5">
                                                 <span className="flex items-center gap-1.5 text-muted-foreground">
-                                                    <Clock className="size-3.5" /> Rendered:
+                                                    <Clock className="size-3.5 text-primary" /> Rendered:
                                                 </span>
                                                 <span className="font-semibold text-foreground text-xs">
-                                                    {formatHours(student.total_hours)}
+                                                    {formatHours(student.total_hours)} / {student.required_hours}h ({Math.round(student.progress_percent)}%)
                                                 </span>
                                             </div>
+                                            <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                                                <div
+                                                    className={`h-full rounded-full transition-all duration-300 ${
+                                                        student.hours_completed ? 'bg-emerald-500' : 'bg-primary'
+                                                    }`}
+                                                    style={{ width: `${Math.min(100, student.progress_percent)}%` }}
+                                                />
+                                            </div>
+                                            <div className="flex items-center justify-between gap-2 pt-1">
+                                                <StatusBadge
+                                                    status={student.docs_completed ? 'approved' : student.approved_docs_count > 0 ? 'pending_review' : 'not_submitted'}
+                                                    label={`${student.approved_docs_count}/${student.total_required_docs_count} Docs`}
+                                                    className="text-[11px] px-2 py-0.5"
+                                                />
+                                                <StatusBadge
+                                                    status={student.is_completed ? 'approved' : student.hours_completed ? 'pending_review' : 'active'}
+                                                    label={student.is_completed ? 'Completed' : student.hours_completed ? 'Docs Pending' : `${Math.round(student.progress_percent)}%`}
+                                                    className="text-[11px] px-2 py-0.5"
+                                                />
+                                            </div>
                                         </CardContent>
+                                        <CardFooter className="border-t px-4 py-2.5 flex items-center justify-end gap-2 bg-muted/20">
+                                            <CompletionSummaryDialog
+                                                internUserId={student.intern_user_id}
+                                                internName={student.name}
+                                                isCompleted={student.is_completed}
+                                            />
+                                            <InternDocumentsDialog
+                                                internUserId={student.intern_user_id}
+                                                internName={student.name}
+                                            />
+                                        </CardFooter>
                                     </Card>
                                 ))}
                             </div>
@@ -440,8 +468,8 @@ export default function MyStudents({
                         {/* Mobile list view */}
                         <div className="sm:hidden flex flex-col gap-3">
                             {students.data.map((student) => (
-                                <Card key={student.intern_user_id}>
-                                    <CardContent className="p-4 flex flex-col gap-2">
+                                <Card key={student.intern_user_id} className="shadow-2xs">
+                                    <CardContent className="p-4 flex flex-col gap-2.5">
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="min-w-0">
                                                 <p className="font-semibold text-sm text-foreground truncate">{student.name}</p>
@@ -453,7 +481,30 @@ export default function MyStudents({
                                         </div>
                                         <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t">
                                             <span className="truncate max-w-[160px] font-medium text-foreground">{student.hte_name}</span>
-                                            <span className="font-semibold text-foreground">{formatHours(student.total_hours)}</span>
+                                            <span className="font-semibold text-foreground">{formatHours(student.total_hours)} / {student.required_hours}h</span>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-2 text-xs">
+                                            <StatusBadge
+                                                status={student.docs_completed ? 'approved' : student.approved_docs_count > 0 ? 'pending_review' : 'not_submitted'}
+                                                label={`${student.approved_docs_count}/${student.total_required_docs_count} Docs`}
+                                                className="text-[11px] px-2 py-0.5"
+                                            />
+                                            <StatusBadge
+                                                status={student.is_completed ? 'approved' : student.hours_completed ? 'pending_review' : 'active'}
+                                                label={student.is_completed ? 'Completed' : student.hours_completed ? 'Docs Pending' : `${Math.round(student.progress_percent)}%`}
+                                                className="text-[11px] px-2 py-0.5"
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-end gap-1.5 pt-2 border-t">
+                                            <CompletionSummaryDialog
+                                                internUserId={student.intern_user_id}
+                                                internName={student.name}
+                                                isCompleted={student.is_completed}
+                                            />
+                                            <InternDocumentsDialog
+                                                internUserId={student.intern_user_id}
+                                                internName={student.name}
+                                            />
                                         </div>
                                     </CardContent>
                                 </Card>
