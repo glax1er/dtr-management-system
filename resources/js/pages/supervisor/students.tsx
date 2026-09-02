@@ -13,8 +13,9 @@ import {
     Table as TableIcon,
     X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
+import { useDebounce } from '@/hooks/use-debounce';
 
 import { CompletionSummaryDialog } from '@/components/completion-summary-dialog';
 import { InternDocumentsDialog } from '@/components/intern-documents-dialog';
@@ -102,13 +103,15 @@ export default function MyStudents({
     const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters.search || '');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+    const debouncedSearch = useDebounce(search, 300);
+    const isFirstRender = useRef(true);
 
     useEffect(() => {
         setSearch(filters.search || '');
     }, [filters.search]);
 
     const baseParams = () => ({
-        search: filters.search || undefined,
+        search: search || undefined,
         hte_id: filters.hte_id ? String(filters.hte_id) : undefined,
         completion_status:
             filters.completion_status && filters.completion_status !== 'all'
@@ -117,12 +120,29 @@ export default function MyStudents({
         per_page: String(filters.per_page),
     });
 
-    const visit = (params: Record<string, string | undefined>) => {
+    const visit = (params: Record<string, string | undefined>, replace = true) => {
         router.get('/supervisor/interns', params, {
             preserveState: true,
             preserveScroll: true,
+            replace,
         });
     };
+
+    // Automatically trigger search as user types
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        if (debouncedSearch !== (filters.search || '')) {
+            visit({
+                ...baseParams(),
+                search: debouncedSearch || undefined,
+                page: undefined,
+            });
+        }
+    }, [debouncedSearch]);
 
     const applySearch = (e: FormEvent) => {
         e.preventDefault();
@@ -155,7 +175,7 @@ export default function MyStudents({
     };
 
     const goToPage = (page: number) => {
-        visit({ ...baseParams(), page: String(page) });
+        visit({ ...baseParams(), page: String(page) }, false);
     };
 
     const changePerPage = (perPage: number) => {

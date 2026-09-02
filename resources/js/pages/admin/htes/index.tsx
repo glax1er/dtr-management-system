@@ -1,6 +1,7 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
+import { useDebounce } from '@/hooks/use-debounce';
 import {
     Archive,
     Building2,
@@ -145,6 +146,8 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
     const [search, setSearch] = useState(filters.search || '');
     const [status, setStatus] = useState(filters.status || '');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+    const debouncedSearch = useDebounce(search, 300);
+    const isFirstRender = useRef(true);
 
     const [addOpen, setAddOpen] = useState(false);
     const [editingHte, setEditingHte] = useState<Hte | null>(null);
@@ -175,8 +178,8 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
     }, [filters.status]);
 
     // ── Navigation helpers ──────────────────────────────────────────
-    const visit = (params: Record<string, string | undefined>) => {
-        router.get('/admin/htes', params, { preserveState: true, preserveScroll: true });
+    const visit = (params: Record<string, string | undefined>, replace = true) => {
+        router.get('/admin/htes', params, { preserveState: true, preserveScroll: true, replace });
     };
 
     const baseParams = () => ({
@@ -185,9 +188,25 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
         per_page: String(filters.per_page),
     });
 
+    // Automatically trigger search as user types
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        if (debouncedSearch !== (filters.search || '')) {
+            visit({
+                ...baseParams(),
+                search: debouncedSearch || undefined,
+                page: undefined,
+            });
+        }
+    }, [debouncedSearch]);
+
     const applySearch = (event: FormEvent) => {
         event.preventDefault();
-        visit({ ...baseParams(), page: undefined });
+        visit({ ...baseParams(), search: search || undefined, page: undefined });
     };
 
     const clearSearch = () => {
@@ -211,7 +230,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
     };
 
     const goToPage = (page: number) => {
-        visit({ ...baseParams(), page: String(page) });
+        visit({ ...baseParams(), page: String(page) }, false);
     };
 
     const changePerPage = (perPage: number) => {

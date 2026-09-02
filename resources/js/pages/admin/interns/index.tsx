@@ -6,7 +6,7 @@ import {
     Table as TableIcon,
     X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { InternActions } from '@/components/intern-actions';
 import { NumberedPagination } from '@/components/numbered-pagination';
@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useDebounce } from '@/hooks/use-debounce';
 import {
     Table,
     TableBody,
@@ -58,8 +59,10 @@ const TABS: { label: string; value: string }[] = [
 
 export default function InternsIndex({ interns, currentStatus, filters }: InternsIndexProps) {
     const [view, setView] = useState<ViewMode>('table');
-    const [search, setSearch] = useState(filters.search);
+    const [search, setSearch] = useState(filters.search || '');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+    const debouncedSearch = useDebounce(search, 300);
+    const isFirstRender = useRef(true);
 
     const [undoOpen, setUndoOpen] = useState(false);
     const [undoTarget, setUndoTarget] = useState<Intern | null>(null);
@@ -67,15 +70,35 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<Intern | null>(null);
 
+    useEffect(() => {
+        setSearch(filters.search || '');
+    }, [filters.search]);
+
     const baseParams = () => ({
         status: currentStatus,
-        search: filters.search || undefined,
+        search: search || undefined,
         per_page: String(filters.per_page),
     });
 
-    const visit = (params: Record<string, string | undefined>) => {
-        router.get('/admin/interns', params, { preserveState: true, preserveScroll: true });
+    const visit = (params: Record<string, string | undefined>, replace = true) => {
+        router.get('/admin/interns', params, { preserveState: true, preserveScroll: true, replace });
     };
+
+    // Automatically trigger search as user types
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        if (debouncedSearch !== (filters.search || '')) {
+            visit({
+                ...baseParams(),
+                search: debouncedSearch || undefined,
+                page: undefined,
+            });
+        }
+    }, [debouncedSearch]);
 
     const switchTab = (status: string) => {
         setSearch('');
@@ -92,7 +115,7 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
         visit({ ...baseParams(), search: undefined, page: undefined });
     };
 
-    const goToPage = (page: number) => visit({ ...baseParams(), page: String(page) });
+    const goToPage = (page: number) => visit({ ...baseParams(), page: String(page) }, false);
     const changePerPage = (perPage: number) =>
         visit({ ...baseParams(), per_page: String(perPage), page: undefined });
 
