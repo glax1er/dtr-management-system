@@ -36,7 +36,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { InternDocumentsDialog } from '@/components/intern-documents-dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Table,
@@ -48,6 +47,9 @@ import {
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
 
 interface AttendanceLogRow {
     date: string;

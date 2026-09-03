@@ -299,7 +299,9 @@ class InternsController extends Controller
     }
 
     /**
-     * Allows a supervisor to download an intern's full official DTR report.
+     * Allows a supervisor to download an intern's official DTR report.
+     * Defaults to the full DTR report up to the current date / most recent log,
+     * or filtered by the specified start/end date range.
      */
     public function downloadInternDtr(Request $request, int $internUserId): \Symfony\Component\HttpFoundation\Response
     {
@@ -325,10 +327,43 @@ class InternsController extends Controller
             }
         }
 
+        $validated = $request->validate([
+            'start' => ['nullable', 'date_format:Y-m-d'],
+            'end' => ['nullable', 'date_format:Y-m-d'],
+            'month' => ['nullable', 'date_format:Y-m'],
+            'date' => ['nullable', 'date_format:Y-m-d'],
+        ]);
+
         $timezone = config('dtr.timezone');
-        $approvedAt = $internProfile->approved_at ?? Carbon::now($timezone)->startOfYear();
-        $from = $approvedAt->clone()->setTimezone($timezone)->startOfDay();
-        $to = Carbon::now($timezone)->endOfDay();
+
+        if (! empty($validated['start']) && ! empty($validated['end'])) {
+            $from = Carbon::createFromFormat('Y-m-d', $validated['start'], $timezone)->startOfDay();
+            $to = Carbon::createFromFormat('Y-m-d', $validated['end'], $timezone)->endOfDay();
+            if ($from->gt($to)) {
+                [$from, $to] = [$to, $from];
+            }
+            $filenameSuffix = sprintf('%s-%s', $from->format('Ymd'), $to->format('Ymd'));
+        } elseif (! empty($validated['start'])) {
+            $from = Carbon::createFromFormat('Y-m-d', $validated['start'], $timezone)->startOfDay();
+            $to = Carbon::now($timezone)->endOfDay();
+            $filenameSuffix = sprintf('%s-to-current', $from->format('Ymd'));
+        } elseif (! empty($validated['month'])) {
+            $month = Carbon::createFromFormat('Y-m-d', $validated['month'].'-01', $timezone)->startOfMonth();
+            $from = $month->copy()->startOfMonth();
+            $to = $month->copy()->endOfMonth();
+            $filenameSuffix = $month->format('Ym');
+        } elseif (! empty($validated['date'])) {
+            $d = Carbon::createFromFormat('Y-m-d', $validated['date'], $timezone);
+            $from = $d->copy()->startOfWeek();
+            $to = $d->copy()->endOfWeek();
+            $filenameSuffix = sprintf('%s-%s', $from->format('Ymd'), $to->format('Ymd'));
+        } else {
+            // Default: full DTR report of that student from approval/start up to current date (most recent log)
+            $approvedAt = $internProfile->approved_at ?? Carbon::now($timezone)->startOfYear();
+            $from = $approvedAt->clone()->setTimezone($timezone)->startOfDay();
+            $to = Carbon::now($timezone)->endOfDay();
+            $filenameSuffix = 'Full';
+        }
 
         $days = $this->calculator->forIntern(
             $internProfile->user_id,
@@ -357,8 +392,9 @@ class InternsController extends Controller
         $mpdf->WriteHTML($html);
 
         $filename = sprintf(
-            'DTR_%s_Full.pdf',
+            'DTR_%s_%s.pdf',
             str_replace(' ', '_', $internProfile->id_number ?: (string) $internProfile->user_id),
+            $filenameSuffix,
         );
 
         return response(

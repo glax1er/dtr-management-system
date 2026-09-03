@@ -1,6 +1,7 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { Bell, BellOff, ChevronRight } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { RejectedResolutionDialog } from '@/components/rejected-resolution-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,12 +12,18 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { formatRelativeTime, getNotificationTone } from '@/lib/notifications';
+import {
+    formatRelativeTime,
+    getNotificationTone,
+    isRejectedResolutionNotification,
+} from '@/lib/notifications';
 import { cn } from '@/lib/utils';
 import type { Notification, PageProps } from '@/types';
 
 export function NotificationBell() {
     const { notifications } = usePage<PageProps>().props;
+    const [selectedRejectedNotification, setSelectedRejectedNotification] =
+        useState<Notification | null>(null);
 
     const count = notifications?.count ?? 0;
     const items = notifications?.items ?? [];
@@ -32,6 +39,25 @@ export function NotificationBell() {
             window.clearInterval(interval);
         };
     }, []);
+
+    const handleNotificationClick = (notification: Notification) => {
+        if (isRejectedResolutionNotification(notification)) {
+            if (!notification.read_at) {
+                router.post(
+                    `/notifications/${notification.id}/read`,
+                    {},
+                    {
+                        preserveScroll: true,
+                        preserveState: true,
+                    },
+                );
+            }
+            setSelectedRejectedNotification(notification);
+            return;
+        }
+
+        markAsRead(notification);
+    };
 
     const markAsRead = (notification: Notification) => {
         router.post(
@@ -55,7 +81,8 @@ export function NotificationBell() {
     };
 
     return (
-        <DropdownMenu>
+        <>
+            <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button
                     variant="ghost"
@@ -129,7 +156,7 @@ export function NotificationBell() {
                                 >
                                     <button
                                         type="button"
-                                        onClick={() => markAsRead(notification)}
+                                        onClick={() => handleNotificationClick(notification)}
                                         className={cn(
                                             'flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-accent/10',
                                             unread && 'bg-primary/5',
@@ -188,5 +215,16 @@ export function NotificationBell() {
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
+
+        <RejectedResolutionDialog
+            open={selectedRejectedNotification !== null}
+            onOpenChange={(open) => {
+                if (!open) {
+                    setSelectedRejectedNotification(null);
+                }
+            }}
+            notification={selectedRejectedNotification}
+        />
+        </>
     );
 }

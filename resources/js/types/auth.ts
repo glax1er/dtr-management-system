@@ -12,6 +12,20 @@ export type User = {
     [key: string]: unknown;
 };
 
+export type ResolutionRejectionData = {
+    resolution_ticket_id?: number | string;
+    event?: string;
+    date?: string;
+    proposed_time_in?: string | null;
+    proposed_time_out?: string | null;
+    reason?: string;
+    rejection_reason?: string;
+    rejected_by?: string;
+    resolved_at?: string | null;
+    status?: string;
+    [key: string]: unknown;
+};
+
 export type Notification = {
     id: string;
     type: 'resolution_ticket' | string;
@@ -20,6 +34,7 @@ export type Notification = {
     href: string;
     read_at?: string | null;
     created_at?: string | null;
+    data?: ResolutionRejectionData;
 };
 
 export type Auth = {

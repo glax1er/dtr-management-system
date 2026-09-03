@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\NotificationPresenter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -13,20 +14,9 @@ class NotificationController extends Controller
     {
         $user = $request->user();
 
-        $notifications = $user->notifications()
-            ->latest()
-            ->get()
-            ->map(fn ($notification) => [
-                'id' => $notification->id,
-                'type' => $notification->data['type'] ?? 'general',
-                'title' => $notification->data['title'] ?? 'Notification',
-                'message' => $notification->data['message'] ?? '',
-                'href' => $notification->data['href'] ?? '/dashboard',
-                'read_at' => $notification->read_at?->toISOString(),
-                'created_at' => $notification->created_at?->toISOString(),
-            ])
-            ->values()
-            ->all();
+        $notifications = NotificationPresenter::formatCollection(
+            $user->notifications()->latest()->get()
+        );
 
         return Inertia::render('notifications/index', [
             'notifications' => [
