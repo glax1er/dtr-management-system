@@ -1,4 +1,3 @@
-import { useCallback, useEffect, useState } from 'react';
 import {
     AlertCircle,
     Award,
@@ -15,6 +14,7 @@ import {
     ShieldCheck,
     UserCheck,
 } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
@@ -126,6 +126,7 @@ export function CompletionSummaryDialog({
 
     const fetchSummary = useCallback(async () => {
         setIsLoading(true);
+
         try {
             const res = await fetch(
                 `/supervisor/interns/${internUserId}/completion-summary`,
@@ -136,7 +137,11 @@ export function CompletionSummaryDialog({
                     },
                 },
             );
-            if (!res.ok) throw new Error('Failed to load completion summary');
+
+            if (!res.ok) {
+throw new Error('Failed to load completion summary');
+}
+
             const data = await res.json();
             setSummary(data);
         } catch {
@@ -154,6 +159,7 @@ export function CompletionSummaryDialog({
 
     const handleOpenChange = (open: boolean) => {
         setIsOpen(open);
+
         if (open) {
             fetchSummary();
         } else {
@@ -286,20 +292,28 @@ export function CompletionSummaryDialog({
                                             let url = `/supervisor/interns/${summary.intern.user_id}/dtr-report`;
                                             const params =
                                                 new URLSearchParams();
-                                            if (dtrStartDate)
-                                                params.append(
+
+                                            if (dtrStartDate) {
+params.append(
                                                     'start',
                                                     dtrStartDate,
                                                 );
-                                            if (dtrEndDate)
-                                                params.append(
+}
+
+                                            if (dtrEndDate) {
+params.append(
                                                     'end',
                                                     dtrEndDate,
                                                 );
+}
+
                                             const queryString =
                                                 params.toString();
-                                            if (queryString)
-                                                url += `?${queryString}`;
+
+                                            if (queryString) {
+url += `?${queryString}`;
+}
+
                                             window.open(
                                                 url,
                                                 '_blank',
@@ -832,20 +846,28 @@ export function CompletionSummaryDialog({
                                                 let url = `/supervisor/interns/${summary.intern.user_id}/dtr-report`;
                                                 const params =
                                                     new URLSearchParams();
-                                                if (dtrStartDate)
-                                                    params.append(
+
+                                                if (dtrStartDate) {
+params.append(
                                                         'start',
                                                         dtrStartDate,
                                                     );
-                                                if (dtrEndDate)
-                                                    params.append(
+}
+
+                                                if (dtrEndDate) {
+params.append(
                                                         'end',
                                                         dtrEndDate,
                                                     );
+}
+
                                                 const queryString =
                                                     params.toString();
-                                                if (queryString)
-                                                    url += `?${queryString}`;
+
+                                                if (queryString) {
+url += `?${queryString}`;
+}
+
                                                 window.open(
                                                     url,
                                                     '_blank',

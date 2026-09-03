@@ -12,12 +12,11 @@ import type { FormEvent } from 'react';
 import { InternActions } from '@/components/intern-actions';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
-import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Table,
     TableBody,
@@ -26,6 +25,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 
@@ -82,12 +82,17 @@ export default function InternsIndex({
             : null;
 
     useEffect(() => {
-        if (!highlightId) return;
+        if (!highlightId) {
+return;
+}
 
         const el =
             document.getElementById(`intern-row-${highlightId}`) ||
             document.getElementById(`intern-card-${highlightId}`);
-        if (!el) return;
+
+        if (!el) {
+return;
+}
 
         const timer = setTimeout(() => {
             el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -155,7 +160,10 @@ export default function InternsIndex({
     };
 
     const submitUndo = () => {
-        if (!undoTarget) return;
+        if (!undoTarget) {
+return;
+}
+
         router.post(
             `/admin/interns/${undoTarget.user_id}/undo`,
             {},
@@ -171,7 +179,10 @@ export default function InternsIndex({
     };
 
     const submitDelete = () => {
-        if (!deleteTarget) return;
+        if (!deleteTarget) {
+return;
+}
+
         router.delete(`/admin/interns/${deleteTarget.user_id}`, {
             preserveScroll: true,
         });

@@ -12,12 +12,12 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { toast } from 'sonner';
 import { NumberedPagination } from '@/components/numbered-pagination';
+import type { Paginated } from '@/components/pagination-footer';
 import { ProgramActions } from '@/components/program-actions';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
-import type { Paginated } from '@/components/pagination-footer';
 import {
     Dialog,
     DialogContent,
@@ -28,7 +28,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import {
     Table,
     TableBody,
@@ -37,13 +43,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { dashboard } from '@/routes';
 
 interface Program {
@@ -146,6 +146,7 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
     const submitAdd = () => {
         if (!addName.trim() || !addHours) {
             toast.error('Program name and required hours are required.');
+
             return;
         }
 
@@ -176,6 +177,7 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
     const submitEdit = () => {
         if (!editingId || !editName.trim() || !editHours) {
             toast.error('Program name and required hours are required.');
+
             return;
         }
 
@@ -210,7 +212,9 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
     };
 
     const submitArchive = () => {
-        if (archiveId === null) return;
+        if (archiveId === null) {
+return;
+}
 
         router.delete(`/admin/programs/${archiveId}`, {
             preserveScroll: true,

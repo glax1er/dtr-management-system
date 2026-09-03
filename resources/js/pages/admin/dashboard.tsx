@@ -34,8 +34,8 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import type { PageProps } from '@/types';
 import { dashboard } from '@/routes';
+import type { PageProps } from '@/types';
 
 interface RecentRegistration {
     user_id: number;

@@ -15,7 +15,6 @@ import type { Paginated } from '@/components/pagination-footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Table,
     TableBody,
@@ -24,6 +23,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Tooltip,
     TooltipContent,
@@ -137,7 +137,10 @@ export default function ArchivesIndex({
     };
 
     const submitRestore = () => {
-        if (!restoreTarget) return;
+        if (!restoreTarget) {
+return;
+}
+
         router.post(
             `/admin/archives/${currentType}/${restoreTarget.id}/restore`,
             {},
@@ -157,7 +160,10 @@ export default function ArchivesIndex({
     };
 
     const submitForceDelete = () => {
-        if (!forceDeleteTarget) return;
+        if (!forceDeleteTarget) {
+return;
+}
+
         router.delete(
             `/admin/archives/${currentType}/${forceDeleteTarget.id}`,
             {
@@ -172,7 +178,10 @@ export default function ArchivesIndex({
                     const flash = (
                         page.props as { flash?: { error?: string | null } }
                     ).flash;
-                    if (flash?.error) return;
+
+                    if (flash?.error) {
+return;
+}
 
                     setForceDeleteOpen(false);
                     setForceDeleteTarget(null);

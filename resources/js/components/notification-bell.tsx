@@ -83,6 +83,7 @@ export function NotificationBell() {
     useEffect(() => {
         if (isInitialMount.current) {
             isInitialMount.current = false;
+
             return;
         }
 

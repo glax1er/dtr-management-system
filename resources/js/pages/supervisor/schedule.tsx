@@ -106,7 +106,11 @@ function formatTime12(time: string | null | undefined): string {
         const [hStr, mStr] = time.split(':');
         const h = Number(hStr);
         const m = Number(mStr);
-        if (isNaN(h) || isNaN(m)) return time;
+
+        if (isNaN(h) || isNaN(m)) {
+return time;
+}
+
         const period = h >= 12 ? 'PM' : 'AM';
         const displayH = h % 12 === 0 ? 12 : h % 12;
 
@@ -117,12 +121,20 @@ function formatTime12(time: string | null | undefined): string {
 }
 
 const isPast = (dateStr: string | null | undefined): boolean => {
-    if (!dateStr) return false;
+    if (!dateStr) {
+return false;
+}
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const [y, m, d] = dateStr.split('-').map(Number);
-    if (!y || !m || !d) return false;
+
+    if (!y || !m || !d) {
+return false;
+}
+
     const date = new Date(y, m - 1, d);
+
     return date < today;
 };
 
@@ -460,10 +472,15 @@ export default function SupervisorSchedule({
 
     // Scroll to and briefly highlight the period indicated by the notification
     useEffect(() => {
-        if (!highlightId) return;
+        if (!highlightId) {
+return;
+}
 
         const el = document.getElementById(`schedule-period-${highlightId}`);
-        if (!el) return;
+
+        if (!el) {
+return;
+}
 
         // Wait one tick so the DOM has finished rendering
         const raf = requestAnimationFrame(() => {

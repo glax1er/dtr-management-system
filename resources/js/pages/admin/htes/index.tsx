@@ -1,6 +1,4 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
-import type { FormEvent } from 'react';
 import {
     Archive,
     Building2,
@@ -14,6 +12,8 @@ import {
     Table as TableIcon,
     X,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
 import InputError from '@/components/input-error';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
@@ -38,7 +38,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Table,
     TableBody,
@@ -47,6 +46,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Tooltip,
     TooltipContent,
@@ -284,7 +284,11 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
 
     const handleEditSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!editingHte) return;
+
+        if (!editingHte) {
+return;
+}
+
         editForm.patch(`/admin/htes/${editingHte.hte_id}`, {
             preserveScroll: true,
             onSuccess: () => closeEditDialog(),

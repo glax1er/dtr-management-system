@@ -39,7 +39,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Table,
     TableBody,
@@ -48,6 +47,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Tooltip,
     TooltipContent,
@@ -195,7 +195,11 @@ export default function SupervisorsIndex({
 
     const handleEditSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!editingSupervisor) return;
+
+        if (!editingSupervisor) {
+return;
+}
+
         editForm.patch(`/admin/supervisors/${editingSupervisor.user_id}`, {
             preserveScroll: true,
             onSuccess: () => setEditingSupervisor(null),
@@ -218,7 +222,10 @@ export default function SupervisorsIndex({
     };
 
     const submitArchive = () => {
-        if (archiveId === null) return;
+        if (archiveId === null) {
+return;
+}
+
         router.delete(`/admin/supervisors/${archiveId}`, {
             preserveScroll: true,
         });

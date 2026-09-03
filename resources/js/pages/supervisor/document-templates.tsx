@@ -24,7 +24,6 @@ import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { AddDocumentRequirementDialog } from '@/components/add-document-requirement-dialog';
 import { EditDocumentRequirementDialog } from '@/components/edit-document-requirement-dialog';
-import { ViewGuidanceDialog } from '@/components/view-guidance-dialog';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
@@ -51,6 +50,7 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { ViewGuidanceDialog } from '@/components/view-guidance-dialog';
 import documentTemplates from '@/routes/supervisor/document-templates';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -142,8 +142,11 @@ export default function DocumentTemplates({
     const availableCategories = useMemo(() => {
         const set = new Set<string>([...DEFAULT_CATEGORIES, ...categories]);
         checklist.forEach((item) => {
-            if (item.category) set.add(item.category);
+            if (item.category) {
+set.add(item.category);
+}
         });
+
         return Array.from(set);
     }, [categories, checklist]);
 
@@ -169,7 +172,9 @@ export default function DocumentTemplates({
 
     // ── Unified Confirm Execution Handler ────────────────────────────────────
     const handleConfirm = () => {
-        if (!confirmAction) return;
+        if (!confirmAction) {
+return;
+}
 
         if (confirmAction.type === 'archive') {
             const { target } = confirmAction;
@@ -222,7 +227,10 @@ export default function DocumentTemplates({
 
     // ── Confirmation Modal Configuration ─────────────────────────────────────
     const confirmConfig = useMemo(() => {
-        if (!confirmAction) return null;
+        if (!confirmAction) {
+return null;
+}
+
         switch (confirmAction.type) {
             case 'archive':
                 return {
@@ -253,15 +261,27 @@ export default function DocumentTemplates({
         return checklist.filter((item) => {
             // Folder category filter
             if (activeFolder !== 'all' && activeFolder !== 'trash') {
-                if (item.category !== activeFolder) return false;
+                if (item.category !== activeFolder) {
+return false;
+}
             }
 
             // Status filter
-            if (statusFilter === 'configured' && !item.has_template)
-                return false;
-            if (statusFilter === 'missing' && item.has_template) return false;
-            if (statusFilter === 'required' && !item.required) return false;
-            if (statusFilter === 'optional' && item.required) return false;
+            if (statusFilter === 'configured' && !item.has_template) {
+return false;
+}
+
+            if (statusFilter === 'missing' && item.has_template) {
+return false;
+}
+
+            if (statusFilter === 'required' && !item.required) {
+return false;
+}
+
+            if (statusFilter === 'optional' && item.required) {
+return false;
+}
 
             // Search filter
             if (search.trim()) {
@@ -276,8 +296,10 @@ export default function DocumentTemplates({
                 const matchFile = item.original_filename
                     ?.toLowerCase()
                     .includes(query);
-                if (!matchName && !matchDesc && !matchCategory && !matchFile)
-                    return false;
+
+                if (!matchName && !matchDesc && !matchCategory && !matchFile) {
+return false;
+}
             }
 
             return true;
@@ -285,8 +307,12 @@ export default function DocumentTemplates({
     }, [checklist, activeFolder, statusFilter, search]);
 
     const filteredArchived = useMemo(() => {
-        if (!search.trim()) return archived;
+        if (!search.trim()) {
+return archived;
+}
+
         const query = search.toLowerCase();
+
         return archived.filter(
             (item) =>
                 item.name.toLowerCase().includes(query) ||
@@ -300,6 +326,7 @@ export default function DocumentTemplates({
 
     const getFolderColorClass = (catName: string) => {
         const lower = catName.toLowerCase();
+
         if (lower.includes('pre')) {
             return {
                 border: 'hover:border-blue-500/50',
@@ -308,6 +335,7 @@ export default function DocumentTemplates({
                 iconBg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
             };
         }
+
         if (lower.includes('during')) {
             return {
                 border: 'hover:border-amber-500/50',
@@ -316,6 +344,7 @@ export default function DocumentTemplates({
                 iconBg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
             };
         }
+
         if (lower.includes('eval')) {
             return {
                 border: 'hover:border-emerald-500/50',
@@ -324,6 +353,7 @@ export default function DocumentTemplates({
                 iconBg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
             };
         }
+
         return {
             border: 'hover:border-purple-500/50',
             activeBorder:
@@ -1419,8 +1449,9 @@ export default function DocumentTemplates({
                 item={instructionsModalItem}
                 programName={program.program_name}
                 onEditClick={() => {
-                    if (instructionsModalItem)
-                        openEditModal(instructionsModalItem);
+                    if (instructionsModalItem) {
+openEditModal(instructionsModalItem);
+}
                 }}
             />
 

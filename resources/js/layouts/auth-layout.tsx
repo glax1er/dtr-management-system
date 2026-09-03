@@ -1,5 +1,5 @@
-import AuthLayoutTemplate from '@/layouts/auth/auth-card-layout';
 import { FlashToaster } from '@/components/flash-toaster';
+import AuthLayoutTemplate from '@/layouts/auth/auth-card-layout';
 
 export default function AuthLayout({
     title = '',

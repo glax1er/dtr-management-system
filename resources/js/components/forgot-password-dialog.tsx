@@ -1,6 +1,7 @@
 import { useForm, usePage } from '@inertiajs/react';
 import { CheckCircle2, KeyRound } from 'lucide-react';
-import { FormEventHandler, useEffect, useRef, useState } from 'react';
+import type { FormEventHandler} from 'react';
+import { useEffect, useRef, useState } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import {
@@ -67,11 +68,13 @@ export default function ForgotPasswordDialog({
                 const responseStatus = (
                     pageResponse.props as { status?: string }
                 ).status;
+
                 if (responseStatus) {
                     setSentStatus(responseStatus);
                 } else {
                     setSentStatus('We have emailed your password reset link.');
                 }
+
                 reset('email');
             },
         });

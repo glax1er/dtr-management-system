@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Input } from '@/components/ui/input';
 import type { PaginationMeta } from '@/components/pagination-footer';
+import { Input } from '@/components/ui/input';
 import {
     Pagination,
     PaginationContent,
@@ -55,13 +55,16 @@ export function NumberedPagination({
 
         if (!Number.isInteger(nextPerPage) || nextPerPage < 1) {
             setPerPageInput(String(perPage));
+
             return;
         }
 
         onPerPageChange(nextPerPage);
     };
 
-    if (total === 0) return null;
+    if (total === 0) {
+return null;
+}
 
     const pages: (number | 'ellipsis')[] = [];
 

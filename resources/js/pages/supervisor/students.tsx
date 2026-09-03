@@ -86,7 +86,10 @@ const ALL_HTES = 'all';
 const ALL_STATUSES = 'all';
 
 function formatHours(hours: number): string {
-    if (hours <= 0) return '0 hrs';
+    if (hours <= 0) {
+return '0 hrs';
+}
+
     return `${hours.toFixed(1)} hrs`;
 }
 
@@ -123,13 +126,18 @@ export default function MyStudents({
             : false;
 
     useEffect(() => {
-        if (!docInternId) return;
+        if (!docInternId) {
+return;
+}
 
         const el =
             document.getElementById(`student-row-${docInternId}`) ||
             document.getElementById(`student-card-${docInternId}`) ||
             document.getElementById(`student-mobile-${docInternId}`);
-        if (!el) return;
+
+        if (!el) {
+return;
+}
 
         const timer = setTimeout(() => {
             el.scrollIntoView({ behavior: 'smooth', block: 'center' });

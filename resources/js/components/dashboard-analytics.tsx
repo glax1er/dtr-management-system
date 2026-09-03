@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 

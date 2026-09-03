@@ -31,7 +31,10 @@ function speakAnnouncement(intern: ScannedIntern) {
     if ('speechSynthesis' in window) {
         window.speechSynthesis.getVoices();
     }
-    if (intern.isDuplicate) return;
+
+    if (intern.isDuplicate) {
+return;
+}
 
     const statusText = intern.label === 'time_in' ? 'Timed In' : 'Timed Out';
     const utterance = new SpeechSynthesisUtterance(
@@ -69,10 +72,13 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
 
     const playSound = useCallback((src: string) => {
         const audio = audioRef.current[src];
+
         if (!audio) {
             console.warn(`Audio not found: ${src}`);
+
             return;
         }
+
         audio.currentTime = 0;
         audio.play().catch((err) => {
             console.warn(`Could not play sound ${src}:`, err);
@@ -83,7 +89,9 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
         (qrCodeValue: string) => {
             const now = Date.now();
 
-            if (inFlightRef.current) return;
+            if (inFlightRef.current) {
+return;
+}
 
             if (
                 lastProcessedRef.current &&
@@ -113,7 +121,9 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
 
                     // a newer scan has already started since this one was
                     // sent; this response is stale, ignore it entirely
-                    if (mySeq !== requestSeqRef.current) return;
+                    if (mySeq !== requestSeqRef.current) {
+return;
+}
 
                     if (!response.ok) {
                         setFlash({
@@ -121,6 +131,7 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                             message: data.message ?? 'Scan rejected.',
                         });
                         playSound('/sounds/scan-error.mp3');
+
                         return;
                     }
 
@@ -147,11 +158,14 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                                 : '/sounds/time-out.mp3',
                         );
                     }
+
                     speakAnnouncement(internData);
                 })
                 .catch(() => {
                     // same staleness check for the error path
-                    if (mySeq !== requestSeqRef.current) return;
+                    if (mySeq !== requestSeqRef.current) {
+return;
+}
 
                     setFlash({
                         kind: 'error',
@@ -164,10 +178,14 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
 
                     // only this (still-latest) request gets to manage the
                     // auto-clear timer; a stale one shouldn't reset it
-                    if (mySeq !== requestSeqRef.current) return;
+                    if (mySeq !== requestSeqRef.current) {
+return;
+}
 
-                    if (flashTimerRef.current)
-                        clearTimeout(flashTimerRef.current);
+                    if (flashTimerRef.current) {
+clearTimeout(flashTimerRef.current);
+}
+
                     flashTimerRef.current = setTimeout(() => {
                         setFlash(null);
                         setLastIntern(null);
@@ -207,12 +225,15 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                         const edge = Math.floor(
                             Math.min(viewfinderWidth, viewfinderHeight) * 0.7,
                         );
+
                         return { width: edge, height: edge };
                     },
                     aspectRatio: 1,
                 },
                 (decodedText) => {
-                    if (!cancelled) submitScan(decodedText);
+                    if (!cancelled) {
+submitScan(decodedText);
+}
                 },
                 () => {},
             )
@@ -227,7 +248,11 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
 
         return () => {
             cancelled = true;
-            if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+
+            if (flashTimerRef.current) {
+clearTimeout(flashTimerRef.current);
+}
+
             startPromise.finally(() => {
                 scanner.stop().catch(() => {});
             });

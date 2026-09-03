@@ -76,6 +76,7 @@ export function EditDocumentRequirementDialog({
     useEffect(() => {
         if (item && open) {
             setName(item.name);
+
             if (availableCategories.includes(item.category)) {
                 setCategory(item.category);
                 setIsCustomCategory(false);
@@ -85,6 +86,7 @@ export function EditDocumentRequirementDialog({
                 setIsCustomCategory(true);
                 setCustomCategory(item.category);
             }
+
             setDescription(item.description || '');
             setRequired(item.required);
             setInstructions(item.instructions || '');
@@ -99,20 +101,24 @@ export function EditDocumentRequirementDialog({
             setFile(null);
             setRemoveTemplate(false);
         }
+
         onOpenChange(newOpen);
     };
 
     const validateFile = (selectedFile: File): boolean => {
         const ext = selectedFile.name.split('.').pop()?.toLowerCase();
+
         if (!['pdf', 'docx', 'doc'].includes(ext || '')) {
             toast.error(
                 'Invalid format. Templates must be PDF or Microsoft Word (.pdf, .docx, .doc).',
             );
+
             return false;
         }
 
         if (selectedFile.size > MAX_TEMPLATE_SIZE) {
             toast.error('The selected template file is too large (max 15 MB).');
+
             return false;
         }
 
@@ -121,35 +127,47 @@ export function EditDocumentRequirementDialog({
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        if (!item) return;
+
+        if (!item) {
+return;
+}
 
         const trimmedName = name.trim();
+
         if (!trimmedName) {
             toast.error('Please enter a document title.');
+
             return;
         }
 
         const categoryVal = isCustomCategory
             ? customCategory.trim()
             : category.trim();
+
         if (!categoryVal) {
             toast.error('Please specify a category for this document.');
+
             return;
         }
 
         const formData = new FormData();
         formData.append('name', trimmedName);
         formData.append('category', categoryVal);
+
         if (description.trim()) {
             formData.append('description', description.trim());
         }
+
         formData.append('required', required ? '1' : '0');
+
         if (instructions.trim()) {
             formData.append('instructions', instructions.trim());
         }
+
         if (file) {
             formData.append('file', file);
         }
+
         if (removeTemplate) {
             formData.append('remove_template', '1');
         }
@@ -416,6 +434,7 @@ export function EditDocumentRequirementDialog({
                                 e.preventDefault();
                                 setIsDragOver(false);
                                 const droppedFile = e.dataTransfer.files?.[0];
+
                                 if (droppedFile && validateFile(droppedFile)) {
                                     setFile(droppedFile);
                                     setRemoveTemplate(false);
@@ -436,6 +455,7 @@ export function EditDocumentRequirementDialog({
                                 accept=".pdf,.docx,.doc,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
                                 onChange={(e) => {
                                     const selectedFile = e.target.files?.[0];
+
                                     if (
                                         selectedFile &&
                                         validateFile(selectedFile)

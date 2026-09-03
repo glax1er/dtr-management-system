@@ -35,6 +35,7 @@ export default function Login({
     useEffect(() => {
         if (showVerification) {
             setShowVerifyModal(true);
+
             if (verificationEmail) {
                 setVerifyEmail(verificationEmail);
             }

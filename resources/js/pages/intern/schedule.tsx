@@ -162,7 +162,9 @@ export default function InternSchedule({
 
     // Scroll to highlighted day or period
     useEffect(() => {
-        if (!highlightDate && !highlightPeriod) return;
+        if (!highlightDate && !highlightPeriod) {
+return;
+}
 
         const targetDate =
             highlightDate ||
@@ -174,10 +176,12 @@ export default function InternSchedule({
             const el =
                 document.getElementById(`grid-day-${targetDate}`) ||
                 document.getElementById(`table-row-${targetDate}`);
+
             if (el) {
                 const timer = setTimeout(() => {
                     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }, 250);
+
                 return () => clearTimeout(timer);
             }
         }
@@ -210,6 +214,7 @@ export default function InternSchedule({
                 { month: currentMonth, page: 1 },
                 { preserveScroll: true, preserveState: true },
             );
+
             return;
         }
 
@@ -219,12 +224,14 @@ export default function InternSchedule({
 
         if (direction === 'prev') {
             m -= 1;
+
             if (m < 1) {
                 m = 12;
                 year -= 1;
             }
         } else {
             m += 1;
+
             if (m > 12) {
                 m = 1;
                 year += 1;
@@ -263,20 +270,29 @@ export default function InternSchedule({
     // Filter table rows if searching or using filters
     const filteredTableDays = useMemo(() => {
         return paginatedDays.data.filter((day) => {
-            if (!showHteSchedule && day.source_type === 'hte_override')
-                return false;
-            if (!showGlobalSchedule && day.source_type === 'global_schedule')
-                return false;
+            if (!showHteSchedule && day.source_type === 'hte_override') {
+return false;
+}
+
+            if (!showGlobalSchedule && day.source_type === 'global_schedule') {
+return false;
+}
+
             if (
                 !showStandardSchedule &&
                 day.source_type === 'default_schedule' &&
                 day.is_workday
-            )
-                return false;
-            if (!showRestDays && !day.is_workday) return false;
+            ) {
+return false;
+}
+
+            if (!showRestDays && !day.is_workday) {
+return false;
+}
 
             if (search.trim()) {
                 const q = search.toLowerCase();
+
                 if (
                     !day.date.toLowerCase().includes(q) &&
                     !day.day_name.toLowerCase().includes(q) &&
@@ -288,6 +304,7 @@ export default function InternSchedule({
                     return false;
                 }
             }
+
             return true;
         });
     }, [
@@ -587,30 +604,38 @@ export default function InternSchedule({
                                         {days.map((day) => {
                                             // Check visibility based on filters
                                             let isVisible = true;
+
                                             if (
                                                 !showRestDays &&
                                                 !day.is_workday
-                                            )
-                                                isVisible = false;
+                                            ) {
+isVisible = false;
+}
+
                                             if (
                                                 !showHteSchedule &&
                                                 day.source_type ===
                                                     'hte_override'
-                                            )
-                                                isVisible = false;
+                                            ) {
+isVisible = false;
+}
+
                                             if (
                                                 !showGlobalSchedule &&
                                                 day.source_type ===
                                                     'global_schedule'
-                                            )
-                                                isVisible = false;
+                                            ) {
+isVisible = false;
+}
+
                                             if (
                                                 !showStandardSchedule &&
                                                 day.source_type ===
                                                     'default_schedule' &&
                                                 day.is_workday
-                                            )
-                                                isVisible = false;
+                                            ) {
+isVisible = false;
+}
 
                                             const isDayHighlighted =
                                                 highlightDate === day.date ||

@@ -13,9 +13,9 @@ import {
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
-import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { DatePicker } from '@/components/ui/date-picker';
 import {
     Dialog,
@@ -92,9 +92,13 @@ const buildPayload = (form: FormState) =>
     Object.fromEntries(DAYS.map((d) => [d, form.daySchedule[d] || null]));
 
 function formatTime12(time: string | null): string {
-    if (!time) return '—';
+    if (!time) {
+return '—';
+}
+
     const [h, m] = time.split(':').map(Number);
     const period = h >= 12 ? 'PM' : 'AM';
+
     return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, '0')} ${period}`;
 }
 
@@ -339,10 +343,15 @@ export default function AdminSchedule({
 
     // Scroll to and briefly highlight the period indicated by the notification
     useEffect(() => {
-        if (!highlightId) return;
+        if (!highlightId) {
+return;
+}
 
         const el = document.getElementById(`schedule-period-${highlightId}`);
-        if (!el) return;
+
+        if (!el) {
+return;
+}
 
         // Wait one tick so the DOM has finished rendering
         const raf = requestAnimationFrame(() => {
@@ -356,8 +365,10 @@ export default function AdminSchedule({
     const submitAdd = () => {
         if (!addForm.startDate || !addForm.endDate) {
             toast.error('Start date and end date are required.');
+
             return;
         }
+
         router.post(
             '/admin/schedule',
             {
@@ -385,8 +396,10 @@ export default function AdminSchedule({
     const submitEdit = () => {
         if (!editingId || !editForm.startDate || !editForm.endDate) {
             toast.error('Start date and end date are required.');
+
             return;
         }
+
         router.patch(
             `/admin/schedule/${editingId}`,
             {
@@ -412,7 +425,10 @@ export default function AdminSchedule({
     };
 
     const submitDelete = () => {
-        if (deleteId === null) return;
+        if (deleteId === null) {
+return;
+}
+
         router.delete(`/admin/schedule/${deleteId}`, { preserveScroll: true });
         setDeleteOpen(false);
         setDeleteId(null);

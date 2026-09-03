@@ -1,6 +1,7 @@
 import { router, useForm } from '@inertiajs/react';
 import { CheckCircle2, RefreshCw, ShieldCheck } from 'lucide-react';
-import { FormEventHandler, useEffect, useRef, useState } from 'react';
+import type { FormEventHandler} from 'react';
+import { useEffect, useRef, useState } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import {
@@ -73,13 +74,17 @@ export default function VerifyEmailDialog({
                 () => setCooldown((prev) => prev - 1),
                 1000,
             );
+
             return () => clearTimeout(timer);
         }
     }, [cooldown]);
 
     const handleSubmit: FormEventHandler = (e) => {
         e.preventDefault();
-        if (data.code.length !== 6) return;
+
+        if (data.code.length !== 6) {
+return;
+}
 
         post('/email/verify/code', {
             preserveScroll: true,
@@ -90,7 +95,9 @@ export default function VerifyEmailDialog({
     };
 
     const handleResend = () => {
-        if (cooldown > 0 || isResending) return;
+        if (cooldown > 0 || isResending) {
+return;
+}
 
         setIsResending(true);
         setResendStatus(null);

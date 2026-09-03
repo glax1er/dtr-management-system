@@ -9,8 +9,8 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { TicketActions } from '@/components/approve-ticket-dialog';
-import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
 import { Badge } from '@/components/ui/badge';
+import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Select,
@@ -19,7 +19,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Table,
     TableBody,
@@ -28,6 +27,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Tooltip,
     TooltipContent,
@@ -63,6 +63,7 @@ export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
             if (typeFilter !== 'all' && ticket.type !== typeFilter) {
                 return false;
             }
+
             if (search.trim() !== '') {
                 const query = search.toLowerCase();
                 const nameMatch = ticket.intern_name
@@ -70,10 +71,12 @@ export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
                     .includes(query);
                 const reasonMatch = ticket.reason.toLowerCase().includes(query);
                 const dateMatch = ticket.date.toLowerCase().includes(query);
+
                 if (!nameMatch && !reasonMatch && !dateMatch) {
                     return false;
                 }
             }
+
             return true;
         });
     }, [tickets, search, typeFilter]);

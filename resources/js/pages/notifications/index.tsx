@@ -144,6 +144,7 @@ export default function NotificationsPage() {
         if (!hasMeaningfulHref) {
             // No specific destination — just mark as read in place
             markAsRead(notification);
+
             return;
         }
 

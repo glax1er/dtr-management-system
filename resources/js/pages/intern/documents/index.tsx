@@ -26,7 +26,6 @@ import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
 import {
     Dialog,
     DialogContent,
@@ -48,6 +47,7 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 export interface DocumentItem {
@@ -111,6 +111,7 @@ const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 
 const getFolderColorClass = (catName: string) => {
     const lower = catName.toLowerCase();
+
     if (lower.includes('pre')) {
         return {
             border: 'hover:border-blue-500/50',
@@ -119,6 +120,7 @@ const getFolderColorClass = (catName: string) => {
             iconBg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
         };
     }
+
     if (lower.includes('during')) {
         return {
             border: 'hover:border-amber-500/50',
@@ -127,6 +129,7 @@ const getFolderColorClass = (catName: string) => {
             iconBg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
         };
     }
+
     if (lower.includes('eval')) {
         return {
             border: 'hover:border-emerald-500/50',
@@ -135,6 +138,7 @@ const getFolderColorClass = (catName: string) => {
             iconBg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
         };
     }
+
     return {
         border: 'hover:border-purple-500/50',
         activeBorder:
@@ -163,12 +167,16 @@ export default function InternDocuments({
 
     // Auto-switch to folder containing the highlighted document
     useEffect(() => {
-        if (!highlightType) return;
+        if (!highlightType) {
+return;
+}
+
         const targetDoc = checklist.find(
             (d) =>
                 d.document_type === highlightType ||
                 String(d.id) === highlightType,
         );
+
         if (
             targetDoc &&
             activeFolder !== 'all' &&
@@ -180,7 +188,9 @@ export default function InternDocuments({
 
     // Scroll to highlighted document card or row
     useEffect(() => {
-        if (!highlightType) return;
+        if (!highlightType) {
+return;
+}
 
         const targetDoc = checklist.find(
             (d) =>
@@ -192,7 +202,10 @@ export default function InternDocuments({
         const el =
             document.getElementById(`doc-row-${typeKey}`) ||
             document.getElementById(`doc-card-${typeKey}`);
-        if (!el) return;
+
+        if (!el) {
+return;
+}
 
         const timer = setTimeout(() => {
             el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -213,28 +226,41 @@ export default function InternDocuments({
                     approved_count: 0,
                 });
             }
+
             const f = map.get(item.category)!;
             f.total_items += 1;
-            if (item.status !== 'missing') f.submitted_count += 1;
-            if (item.status === 'approved') f.approved_count += 1;
+
+            if (item.status !== 'missing') {
+f.submitted_count += 1;
+}
+
+            if (item.status === 'approved') {
+f.approved_count += 1;
+}
         });
+
         return Array.from(map.values());
     }, [checklist]);
 
     // ── Filtered Items ───────────────────────────────────────────────────────
     const filteredChecklist = useMemo(() => {
         return checklist.filter((item) => {
-            if (activeFolder !== 'all' && item.category !== activeFolder)
-                return false;
+            if (activeFolder !== 'all' && item.category !== activeFolder) {
+return false;
+}
+
             if (search.trim()) {
                 const q = search.toLowerCase();
+
                 if (
                     !item.name.toLowerCase().includes(q) &&
                     !item.description?.toLowerCase().includes(q) &&
                     !item.category?.toLowerCase().includes(q)
-                )
-                    return false;
+                ) {
+return false;
+}
             }
+
             return true;
         });
     }, [checklist, activeFolder, search]);
@@ -245,7 +271,10 @@ export default function InternDocuments({
         e: React.ChangeEvent<HTMLInputElement>,
     ) => {
         const file = e.target.files?.[0];
-        if (!file) return;
+
+        if (!file) {
+return;
+}
 
         if (
             file.type !== 'application/pdf' &&
@@ -253,12 +282,14 @@ export default function InternDocuments({
         ) {
             toast.error('Only PDF documents (.pdf) are allowed.');
             e.target.value = '';
+
             return;
         }
 
         if (file.size > MAX_FILE_SIZE_BYTES) {
             toast.error('Selected file is too large (max 10 MB).');
             e.target.value = '';
+
             return;
         }
 
@@ -281,6 +312,7 @@ export default function InternDocuments({
             },
             onFinish: () => {
                 setUploadingType(null);
+
                 if (fileInputRefs.current[typeKey]) {
                     fileInputRefs.current[typeKey]!.value = '';
                 }
@@ -300,7 +332,10 @@ export default function InternDocuments({
     };
 
     const handleDelete = (doc: DocumentItem) => {
-        if (!doc.id) return;
+        if (!doc.id) {
+return;
+}
+
         if (confirm(`Remove your upload for "${doc.name}"?`)) {
             router.delete(`/intern/documents/${doc.id}`, {
                 preserveScroll: true,
@@ -1288,7 +1323,9 @@ export default function InternDocuments({
             <Dialog
                 open={previewDoc !== null}
                 onOpenChange={(open) => {
-                    if (!open) setPreviewDoc(null);
+                    if (!open) {
+setPreviewDoc(null);
+}
                 }}
             >
                 <DialogContent className="flex h-[85vh] w-[95vw] max-w-4xl flex-col gap-0 overflow-hidden p-0">

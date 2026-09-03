@@ -59,6 +59,7 @@ export function InternDocumentsDialog({
 
     const fetchDocuments = useCallback(async () => {
         setIsLoading(true);
+
         try {
             const res = await fetch(`/documents/intern/${internUserId}`, {
                 headers: {
@@ -66,7 +67,11 @@ export function InternDocumentsDialog({
                     'X-Requested-With': 'XMLHttpRequest',
                 },
             });
-            if (!res.ok) throw new Error('Failed to load documents');
+
+            if (!res.ok) {
+throw new Error('Failed to load documents');
+}
+
             const data = await res.json();
             setIntern(data.intern);
             setChecklist(data.checklist);
@@ -86,7 +91,9 @@ export function InternDocumentsDialog({
 
     // Scroll to highlighted doc when checklist loads
     useEffect(() => {
-        if (!isOpen || !highlightDoc || checklist.length === 0) return;
+        if (!isOpen || !highlightDoc || checklist.length === 0) {
+return;
+}
 
         const targetDoc = checklist.find(
             (d) =>
@@ -96,10 +103,12 @@ export function InternDocumentsDialog({
         const typeKey = targetDoc ? targetDoc.document_type : highlightDoc;
 
         const el = document.getElementById(`dialog-doc-${typeKey}`);
+
         if (el) {
             const timer = setTimeout(() => {
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }, 250);
+
             return () => clearTimeout(timer);
         }
     }, [isOpen, highlightDoc, checklist]);
@@ -115,6 +124,7 @@ export function InternDocumentsDialog({
 
     const handleOpenChange = (open: boolean) => {
         setIsOpen(open);
+
         if (open) {
             fetchDocuments();
         } else {
@@ -126,7 +136,10 @@ export function InternDocumentsDialog({
     };
 
     const handleApprove = (doc: DocumentItem) => {
-        if (!doc.id) return;
+        if (!doc.id) {
+return;
+}
+
         setIsSubmittingAction(true);
 
         router.post(
@@ -151,6 +164,7 @@ export function InternDocumentsDialog({
     const handleRejectSubmit = (docId: number) => {
         if (!rejectionReason.trim()) {
             toast.error('Please specify why this document needs revision.');
+
             return;
         }
 
@@ -252,6 +266,7 @@ export function InternDocumentsDialog({
                                 const catItems = checklist.filter(
                                     (i) => i.category === cat,
                                 );
+
                                 return (
                                     <div key={cat} className="space-y-3">
                                         <h4 className="border-b border-border/60 pb-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
@@ -550,26 +565,34 @@ export function InternDocumentsDialog({
                                                                             let url = `/supervisor/interns/${internUserId}/dtr-report`;
                                                                             const params =
                                                                                 new URLSearchParams();
+
                                                                             if (
                                                                                 dtrStartDate
-                                                                            )
-                                                                                params.append(
+                                                                            ) {
+params.append(
                                                                                     'start',
                                                                                     dtrStartDate,
                                                                                 );
+}
+
                                                                             if (
                                                                                 dtrEndDate
-                                                                            )
-                                                                                params.append(
+                                                                            ) {
+params.append(
                                                                                     'end',
                                                                                     dtrEndDate,
                                                                                 );
+}
+
                                                                             const queryString =
                                                                                 params.toString();
+
                                                                             if (
                                                                                 queryString
-                                                                            )
-                                                                                url += `?${queryString}`;
+                                                                            ) {
+url += `?${queryString}`;
+}
+
                                                                             window.open(
                                                                                 url,
                                                                                 '_blank',
@@ -665,7 +688,9 @@ export function InternDocumentsDialog({
             <Dialog
                 open={previewDoc !== null}
                 onOpenChange={(open) => {
-                    if (!open) setPreviewDoc(null);
+                    if (!open) {
+setPreviewDoc(null);
+}
                 }}
             >
                 <DialogContent className="z-50 flex h-[85vh] w-[95vw] max-w-4xl flex-col gap-0 overflow-hidden p-0">

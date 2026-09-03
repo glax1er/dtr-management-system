@@ -19,14 +19,17 @@ interface FlashPageProps {
 
 function showFlash(props: FlashPageProps) {
     const flashToast = props.toast ?? props.flash?.toast;
+
     if (flashToast?.message) {
         const fn = sonnerToast[flashToast.type] ?? sonnerToast.success;
         fn(flashToast.message);
+
         return;
     }
 
     if (props.flash?.success) {
         sonnerToast.success(props.flash.success);
+
         return;
     }
 

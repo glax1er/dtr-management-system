@@ -78,6 +78,7 @@ export default function Register({
         const el = e.currentTarget;
         const reachedBottom =
             el.scrollHeight - el.scrollTop - el.clientHeight < 16;
+
         if (reachedBottom) {
             setHasReadPolicy(true);
         }
@@ -85,6 +86,7 @@ export default function Register({
 
     const getCsrfToken = () => {
         const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/);
+
         return match ? decodeURIComponent(match[1]) : '';
     };
 
@@ -123,6 +125,7 @@ export default function Register({
             if (response.status === 422) {
                 const data = await response.json();
                 const fieldErrors: Record<string, string> = {};
+
                 if (data.errors) {
                     Object.keys(data.errors).forEach((key) => {
                         fieldErrors[key] = Array.isArray(data.errors[key])
@@ -130,6 +133,7 @@ export default function Register({
                             : data.errors[key];
                     });
                 }
+
                 setFormErrors(fieldErrors);
             } else if (response.ok) {
                 setVerificationEmail(String(payload.email || ''));
@@ -426,6 +430,7 @@ export default function Register({
                 open={showApprovalDialog}
                 onOpenChange={(open) => {
                     setShowApprovalDialog(open);
+
                     if (!open) {
                         goToLogin();
                     }

@@ -13,6 +13,7 @@ export default function VerifyEmail({ status, email }: Props) {
 
     const handleOpenChange = (isOpen: boolean) => {
         setOpen(isOpen);
+
         if (!isOpen) {
             router.post(logout());
         }

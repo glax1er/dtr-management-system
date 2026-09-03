@@ -1,5 +1,4 @@
 import { Head, router } from '@inertiajs/react';
-import { toast } from 'sonner';
 import {
     CalendarCheck2,
     Camera,
@@ -16,17 +15,13 @@ import {
     User as UserIcon,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { StatCard } from '@/components/dashboard-analytics';
-import { NumberedPagination } from '@/components/numbered-pagination';
-import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { HoursProgressRing } from '@/components/hours-progress-ring';
+import { NumberedPagination } from '@/components/numbered-pagination';
 import { ResolutionRequestDialog } from '@/components/resolution-request-dialog';
 import { Badge } from '@/components/ui/badge';
+import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -45,6 +40,11 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import type { InternDashboardProps } from '@/types/intern';
 
@@ -93,26 +93,33 @@ export default function InternDashboard({
     useEffect(() => {
         if (highlightHours) {
             const el = document.getElementById('hours-progress-card');
+
             if (el) {
                 const timer = setTimeout(() => {
                     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }, 250);
+
                 return () => clearTimeout(timer);
             }
         }
 
-        if (!highlightDate && !highlightTicket) return;
+        if (!highlightDate && !highlightTicket) {
+return;
+}
 
         let el: HTMLElement | null = null;
+
         if (highlightDate) {
             el =
                 document.getElementById(`attendance-row-${highlightDate}`) ||
                 document.getElementById(`attendance-card-${highlightDate}`);
         }
+
         if (!el && highlightTicket) {
             const targetLog = logs.data.find(
                 (l) => l.pending_ticket_id === highlightTicket,
             );
+
             if (targetLog) {
                 el =
                     document.getElementById(
@@ -128,6 +135,7 @@ export default function InternDashboard({
             const timer = setTimeout(() => {
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }, 250);
+
             return () => clearTimeout(timer);
         }
     }, [highlightDate, highlightTicket, highlightHours, logs.data]);
