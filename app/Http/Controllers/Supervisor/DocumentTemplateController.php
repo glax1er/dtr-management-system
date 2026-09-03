@@ -185,11 +185,22 @@ class DocumentTemplateController extends Controller
             if ($request->hasFile('file')) {
                 $file = $request->file('file');
 
+                // Store the new file and confirm it actually saved before
+                // touching the old one — store() returns false on failure
+                // rather than throwing, and doing this the other way
+                // around (delete-old-then-store-new) would leave the
+                // template with no file at all if the new upload failed.
+                $path = $file->store("document-templates/{$programId}", 'local');
+
+                if ($path === false) {
+                    return back()->withErrors([
+                        'file' => 'The file could not be saved. Please try again.',
+                    ]);
+                }
+
                 if ($existing && $existing->file_path && Storage::disk('local')->exists($existing->file_path)) {
                     Storage::disk('local')->delete($existing->file_path);
                 }
-
-                $path = $file->store("document-templates/{$programId}", 'local');
 
                 if ($existing) {
                     $existing->original_filename = $file->getClientOriginalName();
@@ -302,6 +313,13 @@ class DocumentTemplateController extends Controller
         if ($request->hasFile('file')) {
             $file = $request->file('file');
             $filePath = $file->store("document-templates/{$programId}", 'local');
+
+            if ($filePath === false) {
+                return back()->withErrors([
+                    'file' => 'The file could not be saved. Please try again.',
+                ]);
+            }
+
             $originalFilename = $file->getClientOriginalName();
             $fileSizeBytes = $file->getSize();
             $mimeType = $file->getMimeType();
@@ -379,10 +397,19 @@ class DocumentTemplateController extends Controller
 
         if ($request->hasFile('file')) {
             $file = $request->file('file');
+
+            $path = $file->store("document-templates/{$programId}", 'local');
+
+            if ($path === false) {
+                return back()->withErrors([
+                    'file' => 'The file could not be saved. Please try again.',
+                ]);
+            }
+
             if ($template->file_path && Storage::disk('local')->exists($template->file_path)) {
                 Storage::disk('local')->delete($template->file_path);
             }
-            $template->file_path = $file->store("document-templates/{$programId}", 'local');
+            $template->file_path = $path;
             $template->original_filename = $file->getClientOriginalName();
             $template->file_size_bytes = $file->getSize();
             $template->mime_type = $file->getMimeType();

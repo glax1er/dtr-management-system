@@ -72,6 +72,12 @@ class ArchiveController extends Controller
                     'detail' => $program->required_hours ? "{$program->required_hours} hrs" : 'No hours set',
                     'deleted_at' => $program->deleted_at->format('M d, Y h:i A'),
                 ]),
+            // Unreachable today — the validation above already restricts
+            // $type to these 4 values — but kept as a safety net so a
+            // future change to the validation rule (e.g. adding a type
+            // here without a matching arm) fails loudly with a clear 404
+            // instead of a raw UnhandledMatchError.
+            default => abort(404, "Unknown archive type: {$type}"),
         };
 
         return Inertia::render('admin/archives/index', [
