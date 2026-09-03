@@ -151,11 +151,15 @@ throw new Error('Failed to load completion summary');
         }
     }, [internUserId]);
 
+    /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => {
         if (defaultOpen) {
+            // The dialog can be mounted already-open from a deep link, so the
+            // fetch is intentionally triggered here instead of a click handler.
             fetchSummary();
         }
     }, [defaultOpen, fetchSummary]);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     const handleOpenChange = (open: boolean) => {
         setIsOpen(open);

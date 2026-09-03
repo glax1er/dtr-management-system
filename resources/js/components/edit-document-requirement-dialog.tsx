@@ -78,8 +78,11 @@ export function EditDocumentRequirementDialog({
     // the open=true transition happens via the parent setting `open`
     // directly, not through this component's onOpenChange — there's no
     // handler in this component to move the logic into.
+    /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => {
         if (item && open) {
+            // The dialog receives item/category data from a parent as it opens, so
+            // syncing them into form state here is intentional and not a render loop.
             setName(item.name);
 
             if (availableCategories.includes(item.category)) {
@@ -100,6 +103,7 @@ export function EditDocumentRequirementDialog({
             setIsDragOver(false);
         }
     }, [item, open, availableCategories]);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     const handleOpenChange = (newOpen: boolean) => {
         if (!newOpen) {

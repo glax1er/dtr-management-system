@@ -165,26 +165,29 @@ export default function InternDocuments({
               null
             : null;
 
-    // Auto-switch to folder containing the highlighted document
-    useEffect(() => {
-        if (!highlightType) {
-return;
+/* eslint-disable react-hooks/set-state-in-effect */
+useEffect(() => {
+if (!highlightType) {
+    return;
 }
 
-        const targetDoc = checklist.find(
-            (d) =>
-                d.document_type === highlightType ||
-                String(d.id) === highlightType,
-        );
+const targetDoc = checklist.find(
+    (d) =>
+        d.document_type === highlightType ||
+        String(d.id) === highlightType,
+);
 
-        if (
-            targetDoc &&
-            activeFolder !== 'all' &&
-            activeFolder !== targetDoc.category
-        ) {
-            setActiveFolder(targetDoc.category);
-        }
-    }, [highlightType, checklist]);
+if (
+    targetDoc &&
+    activeFolder !== 'all' &&
+    activeFolder !== targetDoc.category
+) {
+    // Auto-switch to the folder containing the highlighted document; the
+    // state is intentionally synced from the URL-driven highlight filter.
+    setActiveFolder(targetDoc.category);
+}
+}, [highlightType, checklist, activeFolder]);
+/* eslint-enable react-hooks/set-state-in-effect */
 
     // Scroll to highlighted document card or row
     useEffect(() => {
@@ -312,17 +315,13 @@ return;
             },
             onFinish: () => {
                 setUploadingType(null);
-
-                if (fileInputRefs.current[typeKey]) {
-                    fileInputRefs.current[typeKey]!.value = '';
-                }
             },
         });
     };
 
     const handleDownloadTemplate = (doc: DocumentItem) => {
         if (doc.has_template && doc.template_download_url) {
-            window.location.href = doc.template_download_url;
+            window.location.assign(doc.template_download_url);
         } else {
             toast.warning(`No blank format available yet for "${doc.name}".`, {
                 description:

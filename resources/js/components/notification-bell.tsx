@@ -19,8 +19,11 @@ import type { Notification, PageProps } from '@/types';
 export function NotificationBell() {
     const { notifications } = usePage<PageProps>().props;
 
-    const count = notifications?.count ?? 0;
-    const items = notifications?.items ?? [];
+    const count = useMemo(() => notifications?.count ?? 0, [notifications?.count]);
+    const items = useMemo(
+        () => notifications?.items ?? [],
+        [notifications?.items],
+    );
 
     const seenIds = useRef<Set<string>>(
         new Set(items.map((n: Notification) => n.id)),
@@ -44,7 +47,7 @@ export function NotificationBell() {
     const itemsRef = useRef(items);
     useEffect(() => {
         itemsRef.current = items;
-    });
+    }, [items]);
 
     useEffect(() => {
         const interval = window.setInterval(() => {

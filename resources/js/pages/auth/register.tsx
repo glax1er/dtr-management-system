@@ -66,11 +66,15 @@ export default function Register({
     const [selectedProgram, setSelectedProgram] = useState<string>('');
     const [selectedHte, setSelectedHte] = useState<string>('');
 
+    /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => {
         if (registered) {
+            // Rendered after a successful registration redirect, so the approval
+            // dialog is intentionally opened from the prop-driven flag.
             setShowApprovalDialog(true);
         }
     }, [registered]);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     const goToLogin = () => router.visit(login());
 

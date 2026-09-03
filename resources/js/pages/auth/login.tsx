@@ -37,8 +37,11 @@ export default function Login({
     // redirects back to /login with new errors/flags) — the component
     // instance isn't remounted, so these can't be replaced by an
     // initializer or a local event handler.
+    /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => {
         if (showVerification) {
+            // These flags arrive from server-side redirects/props and are
+            // intentionally mirrored into the dialog state when the page is re-rendered.
             setShowVerifyModal(true);
 
             if (verificationEmail) {
@@ -46,13 +49,17 @@ export default function Login({
             }
         }
     }, [showVerification, verificationEmail]);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
+    /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => {
         if (page.props.errors?.unverified_email) {
+            // Page errors trigger the verification modal after a login attempt.
             setVerifyEmail(page.props.errors.unverified_email);
             setShowVerifyModal(true);
         }
     }, [page.props.errors?.unverified_email]);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     return (
         <>

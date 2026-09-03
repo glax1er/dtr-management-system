@@ -87,11 +87,16 @@ throw new Error('Failed to load documents');
     // links from notifications). defaultOpen only matters at mount —
     // it's read once into isOpen's initial state above — so this isn't
     // copying a prop into state on every render.
+    // Deep links can open the dialog immediately after mount, so the fetch is
+    // intentionally triggered from the mounted-open state.
+     
+    /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => {
         if (defaultOpen) {
             fetchDocuments();
         }
     }, [defaultOpen, fetchDocuments]);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     // Scroll to highlighted doc when checklist loads
     useEffect(() => {

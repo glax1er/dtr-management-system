@@ -43,20 +43,26 @@ export default function ForgotPasswordDialog({
         formActionsRef.current = { reset, clearErrors };
     });
 
+    /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => {
         if (!open) {
             formActionsRef.current.reset();
             formActionsRef.current.clearErrors();
+            // Reset the form when the dialog closes; this catches parent-driven
+            // close events that do not flow through a clicked submit action.
             setSentStatus(null);
         }
     }, [open]);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
-    // Track status from session or direct response
+    /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => {
         if (page.props.status && open) {
+            // Track status from session or direct response.
             setSentStatus(page.props.status);
         }
     }, [page.props.status, open]);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     const handleSubmit: FormEventHandler = (e) => {
         e.preventDefault();
