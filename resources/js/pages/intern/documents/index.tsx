@@ -1,9 +1,6 @@
 import { Head, router } from '@inertiajs/react';
 import {
-    AlertCircle,
     ArrowLeft,
-    CheckCircle2,
-    Clock,
     Download,
     Eye,
     FileCheck,
@@ -141,7 +138,6 @@ const getFolderColorClass = (catName: string) => {
 export default function InternDocuments({
     checklist,
     stats,
-    profile,
 }: InternDocumentsProps) {
     const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState('');

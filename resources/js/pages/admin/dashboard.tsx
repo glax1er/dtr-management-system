@@ -2,7 +2,6 @@ import { Head, router, usePage } from '@inertiajs/react';
 import {
     Building2,
     CalendarCheck2,
-    CheckCircle2,
     ClipboardCheck,
     GraduationCap,
     TrendingUp,

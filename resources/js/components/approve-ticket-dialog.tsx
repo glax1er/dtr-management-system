@@ -1,7 +1,6 @@
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Badge } from '@/components/ui/badge';
 import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,12 +29,6 @@ export const badgeStyles: Record<TicketActionsProps['type'], string> = {
     no_record: 'bg-red-100 text-red-800 border-red-300 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800',
 };
 
-const typeLabel: Record<TicketActionsProps['type'], string> = {
-    missing_time_in: 'Missing Time In',
-    open: 'No Time Out',
-    no_record: 'No Record',
-};
-
 export function formatTo12Hour(timeStr: string | null): string {
     if (!timeStr) return '—';
     
@@ -50,7 +43,7 @@ export function formatTo12Hour(timeStr: string | null): string {
             minute: '2-digit',
             hour12: true
         });
-    } catch (e) {
+    } catch {
         return timeStr;
     }
 }

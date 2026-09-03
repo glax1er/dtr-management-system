@@ -1,4 +1,4 @@
-import { AlertTriangle, Award, Bell, Calendar, CheckCircle2, Clock3, Trophy, UserPlus, XCircle } from 'lucide-react';
+import { AlertTriangle, Bell, Calendar, CheckCircle2, Clock3, Trophy, UserPlus, XCircle } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Notification } from '@/types/auth';
 

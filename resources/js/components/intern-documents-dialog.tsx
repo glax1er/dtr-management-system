@@ -1,9 +1,6 @@
 import { router } from '@inertiajs/react';
 import {
-    AlertCircle,
     Check,
-    CheckCircle2,
-    Clock,
     Download,
     Eye,
     FileCheck2,
@@ -14,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';

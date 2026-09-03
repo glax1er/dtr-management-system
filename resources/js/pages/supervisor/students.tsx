@@ -1,6 +1,5 @@
 import { Head, router } from '@inertiajs/react';
 import {
-    Award,
     Building2,
     CheckCircle2,
     Clock,
@@ -39,7 +38,6 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 
@@ -199,6 +197,10 @@ export default function MyStudents({
                             </span>
                             Program Interns
                         </h1>
+                        <p className="mt-1 ml-[3.25rem] text-sm text-muted-foreground">
+                            {studentCount} {studentCount === 1 ? 'intern' : 'interns'}
+                            {scopeName ? ` • ${scopeName}` : ''}
+                        </p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">

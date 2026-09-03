@@ -44,10 +44,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
 
 interface AttendanceLogRow {
@@ -84,51 +81,6 @@ const REMARKS_OPTIONS: { value: RemarksFilter; label: string }[] = [
     { value: 'no_record', label: 'No Record' },
     { value: 'open', label: 'No time-out yet' },
 ];
-
-function PunctualityBadges({
-    punctuality,
-    status,
-    align = 'center',
-}: {
-    punctuality: AttendanceLogRow['punctuality'];
-    status: AttendanceLogRow['status'];
-    align?: 'center' | 'start';
-}) {
-    return (
-        <div className={cn("flex flex-wrap gap-1", align === 'center' ? 'justify-center' : 'justify-start')}>
-            {punctuality === 'on_time' && (
-                <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800">
-                    On Time
-                </Badge>
-            )}
-            {punctuality === 'unscheduled' && (
-                <Badge className="bg-teal-100 text-teal-800 border-teal-300 dark:bg-teal-950/50 dark:text-teal-300 dark:border-teal-800">
-                    Unscheduled
-                </Badge>
-            )}
-            {punctuality === 'missing_time_in' && (
-                <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-950/50 dark:text-yellow-300 dark:border-yellow-800">
-                    Missing Time In
-                </Badge>
-            )}
-            {punctuality === 'no_record' && (
-                <Badge className="bg-red-100 text-red-800 border-red-300 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800">
-                    No Record
-                </Badge>
-            )}
-            {punctuality === 'late' && (
-                <Badge className="bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-950/50 dark:text-orange-300 dark:border-orange-800">
-                    Late
-                </Badge>
-            )}
-            {status === 'open' && (
-                <Badge variant="outline" className="text-muted-foreground border-dashed">
-                    No time-out yet
-                </Badge>
-            )}
-        </div>
-    );
-}
 
 interface Filters {
     from: string;
@@ -357,6 +309,10 @@ export default function MyInterns({
                             </span>
                             My Interns
                         </h1>
+                        <p className="mt-1 ml-[3.25rem] text-sm text-muted-foreground">
+                            {internCount} {internCount === 1 ? 'intern' : 'interns'}
+                            {scopeName ? ` • ${scopeName}` : ''}
+                        </p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">

@@ -441,7 +441,7 @@ export default function InternSchedule({
                                             onCheckedChange={(checked) => setShowHteSchedule(Boolean(checked))}
                                         />
                                         <span className="font-medium text-foreground group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-                                            HTE Time Schedule
+                                            HTE Time Schedule{hte ? ` (${hte.name})` : ''}
                                         </span>
                                     </div>
                                     <span className="size-2.5 rounded-full bg-purple-600 shrink-0" />

@@ -31,6 +31,7 @@ createInertiaApp({
             <TooltipProvider delayDuration={0}>
                 {app}
                 <Toaster />
+                <FlashToaster />
             </TooltipProvider>
         );
     },

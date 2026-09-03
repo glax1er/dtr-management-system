@@ -14,7 +14,6 @@ import {
     Sparkles,
     TrendingUp,
     User as UserIcon,
-    X,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { StatCard } from '@/components/dashboard-analytics';
@@ -47,33 +46,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import type { AttendanceDay, InternDashboardProps } from '@/types/intern';
-
-const STATUS_META: Record<
-    AttendanceDay['status'],
-    { label: string; className: string }
-> = {
-    complete: {
-        label: 'Complete',
-        className:
-            'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium',
-    },
-    missing_time_in: {
-        label: 'Missing time in',
-        className:
-            'border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium',
-    },
-    no_record: {
-        label: 'No record',
-        className:
-            'border-destructive/20 bg-destructive/10 text-destructive font-medium',
-    },
-    open: {
-        label: 'In progress',
-        className:
-            'border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-medium',
-    },
-};
+import type { InternDashboardProps } from '@/types/intern';
 
 function shiftMonth(month: string, delta: number): string {
     const [year, m] = month.split('-').map(Number);

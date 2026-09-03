@@ -139,7 +139,7 @@ export default function Register({
                     email: data.message || 'Registration could not be completed. Please try again.',
                 });
             }
-        } catch (err) {
+        } catch {
             setFormErrors({
                 email: 'Network connection error. Please try again.',
             });

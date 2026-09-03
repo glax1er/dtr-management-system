@@ -2,9 +2,7 @@ import { Head, router } from '@inertiajs/react';
 import {
     Building2,
     ChevronDown,
-    Clock,
     LayoutGrid,
-    Mail,
     MapPin,
     Phone,
     Search,
