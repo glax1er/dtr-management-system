@@ -19,7 +19,8 @@ class UpdateSupervisorRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => [
                 'required',
-                'email',
+                'string',
+                'email:rfc,filter',
                 'max:255',
                 Rule::unique('users', 'email')->ignore($supervisorProfile->user_id, 'id'),
             ],
@@ -33,6 +34,15 @@ class UpdateSupervisorRequest extends FormRequest
                 'nullable',
                 'exists:programs,program_id',
             ],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'email.required' => 'The email address is required.',
+            'email.email' => 'The email must be a valid email address.',
+            'email.unique' => 'This email is already registered.',
         ];
     }
 }

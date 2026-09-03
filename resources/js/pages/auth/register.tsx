@@ -55,9 +55,18 @@ export default function Register({
 
     const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
     const [privacyAccepted, setPrivacyAccepted] = useState(false);
-    // ADDED — tracks whether the person has scrolled to the bottom of the
-    // policy text. Stays true once reached, even if they scroll back up.
     const [hasReadPolicy, setHasReadPolicy] = useState(false);
+
+    // Track password value for live checklist
+    const [passwordInput, setPasswordInput] = useState('');
+
+    const passwordChecks = [
+        { label: 'At least 8 characters', met: passwordInput.length >= 8 },
+        { label: 'At least 1 uppercase letter (A-Z)', met: /[A-Z]/.test(passwordInput) },
+        { label: 'At least 1 lowercase letter (a-z)', met: /[a-z]/.test(passwordInput) },
+        { label: 'At least 1 number (0-9)', met: /\d/.test(passwordInput) },
+        { label: 'At least 1 symbol (@$!%*#?&)', met: /[^A-Za-z0-9]/.test(passwordInput) },
+    ];
 
     useEffect(() => {
         if (registered) {
@@ -67,12 +76,10 @@ export default function Register({
 
     const goToLogin = () => router.visit(login());
 
-    // ADDED — fires on every scroll inside the policy text box.
-    // Marks the policy as "read" once the user reaches (near) the bottom.
     const handlePolicyScroll = (e: React.UIEvent<HTMLDivElement>) => {
         const el = e.currentTarget;
         const reachedBottom =
-            el.scrollHeight - el.scrollTop - el.clientHeight < 16; // small buffer
+            el.scrollHeight - el.scrollTop - el.clientHeight < 16;
         if (reachedBottom) {
             setHasReadPolicy(true);
         }
@@ -103,7 +110,7 @@ export default function Register({
                                         required
                                         autoFocus
                                         tabIndex={1}
-                                        autoComplete="name"
+                                        autoComplete="off"
                                         name="name"
                                         placeholder="Full name"
                                     />
@@ -120,7 +127,7 @@ export default function Register({
                                         type="email"
                                         required
                                         tabIndex={2}
-                                        autoComplete="email"
+                                        autoComplete="off"
                                         name="email"
                                         placeholder="email@usep.edu.ph"
                                     />
@@ -155,7 +162,7 @@ export default function Register({
                                         id="contact_number"
                                         type="text"
                                         tabIndex={4}
-                                        autoComplete="tel"
+                                        autoComplete="off"
                                         name="contact_number"
                                         placeholder="09XXXXXXXXX"
                                     />
@@ -261,11 +268,36 @@ export default function Register({
                                         id="password"
                                         required
                                         tabIndex={8}
-                                        autoComplete="new-password"
+                                        autoComplete="off"
                                         name="password"
                                         placeholder="Password"
+                                        value={passwordInput}
+                                        onChange={(e) => setPasswordInput(e.target.value)}
                                         passwordrules={passwordRules}
                                     />
+
+                                    {/* Real-time Checklist */}
+                                    {passwordInput.length > 0 && (
+                                        <div className="rounded-lg border bg-muted/40 p-2.5 space-y-1 text-xs transition-all duration-200">
+                                            <span className="font-medium text-foreground/80 text-[11px] uppercase tracking-wider block mb-1">
+                                                Password requirements:
+                                            </span>
+                                            {passwordChecks.map((rule, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className={`flex items-center gap-1.5 transition-colors duration-150 ${
+                                                        rule.met
+                                                            ? 'text-emerald-600 dark:text-emerald-400 font-medium'
+                                                            : 'text-muted-foreground'
+                                                    }`}
+                                                >
+                                                    <span className="text-xs">{rule.met ? '✓' : '•'}</span>
+                                                    <span>{rule.label}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
                                     <InputError message={errors.password} />
                                 </div>
 
@@ -278,7 +310,7 @@ export default function Register({
                                         id="password_confirmation"
                                         required
                                         tabIndex={9}
-                                        autoComplete="new-password"
+                                        autoComplete="off"
                                         name="password_confirmation"
                                         placeholder="Confirm password"
                                         passwordrules={passwordRules}
@@ -289,7 +321,7 @@ export default function Register({
                                 </div>
                             </div>
 
-                            {/* ADDED — privacy policy consent checkbox */}
+                            {/* Privacy Policy Checkbox */}
                             <div className="flex items-start gap-2">
                                 <Checkbox
                                     id="privacy_accepted"
@@ -321,14 +353,13 @@ export default function Register({
                                 </div>
                             </div>
 
-                            {/* ADDED — shows backend validation error if privacy_accepted fails server-side */}
                             <InputError message={errors.privacy_accepted} />
 
                             <Button
                                 type="submit"
                                 className="w-full"
-                                tabIndex={11} // CHANGED — was 10, shifted by 1 for the new checkbox
-                                disabled={!privacyAccepted} // ADDED — blocks submit until accepted
+                                tabIndex={11}
+                                disabled={!privacyAccepted}
                                 data-test="register-user-button"
                             >
                                 {processing && <Spinner />}
@@ -346,6 +377,7 @@ export default function Register({
                 )}
             </Form>
 
+            {/* Registration Submitted Dialog */}
             <Dialog
                 open={showApprovalDialog}
                 onOpenChange={(open) => {
@@ -370,7 +402,7 @@ export default function Register({
                 </DialogContent>
             </Dialog>
 
-            {/* ADDED — the Privacy Policy dialog itself, opened by the link above */}
+            {/* Privacy Policy Dialog */}
             <Dialog
                 open={showPrivacyDialog}
                 onOpenChange={setShowPrivacyDialog}
@@ -383,7 +415,6 @@ export default function Register({
                         </DialogDescription>
                     </DialogHeader>
 
-                    {/* scrollable policy text so long content doesn't blow up the dialog height */}
                     <div
                         onScroll={handlePolicyScroll}
                         className="max-h-[30vh] overflow-y-auto pr-2 text-sm text-muted-foreground"
@@ -419,10 +450,8 @@ export default function Register({
 
                     <DialogFooter>
                         <Button
-                            // ADDED — Accept button also blocked until scrolled to bottom
                             disabled={!hasReadPolicy}
                             onClick={() => {
-                                // clicking Accept both closes the dialog and checks the box
                                 setPrivacyAccepted(true);
                                 setShowPrivacyDialog(false);
                             }}

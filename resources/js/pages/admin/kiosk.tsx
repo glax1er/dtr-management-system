@@ -3,7 +3,13 @@ import { MonitorSmartphone } from 'lucide-react';
 import { useState } from 'react';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { dashboard } from '@/routes';
 
@@ -27,13 +33,25 @@ export default function AdminKiosk({ kiosk }: KioskProps) {
     };
 
     const regenerate = () => {
-        if (confirm('Regenerate the kiosk link? The old link will stop working immediately.')) {
-            router.post(`/admin/kiosk/${kiosk.id}/regenerate`, {}, { preserveScroll: true });
+        if (
+            confirm(
+                'Regenerate the kiosk link? The old link will stop working immediately.',
+            )
+        ) {
+            router.post(
+                `/admin/kiosk/${kiosk.id}/regenerate`,
+                {},
+                { preserveScroll: true },
+            );
         }
     };
 
     const toggle = () => {
-        router.post(`/admin/kiosk/${kiosk.id}/toggle`, {}, { preserveScroll: true });
+        router.post(
+            `/admin/kiosk/${kiosk.id}/toggle`,
+            {},
+            { preserveScroll: true },
+        );
     };
 
     return (
@@ -51,17 +69,25 @@ export default function AdminKiosk({ kiosk }: KioskProps) {
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <div>
-                                <CardTitle className="mb-2">{kiosk.name}</CardTitle>
+                                <CardTitle className="mb-2">
+                                    {kiosk.name}
+                                </CardTitle>
                                 <CardDescription>
                                     Open this link on the shared tablet/device.
                                 </CardDescription>
                             </div>
-                            <StatusBadge status={kiosk.is_active ? 'active' : 'inactive'} />
+                            <StatusBadge
+                                status={kiosk.is_active ? 'active' : 'inactive'}
+                            />
                         </div>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-4">
                         <div className="flex gap-2">
-                            <Input readOnly value={kiosk.scan_url} className="font-mono text-sm" />
+                            <Input
+                                readOnly
+                                value={kiosk.scan_url}
+                                className="font-mono text-sm"
+                            />
                             <Button variant="outline" onClick={copyLink}>
                                 {copied ? 'Copied!' : 'Copy'}
                             </Button>
@@ -72,7 +98,9 @@ export default function AdminKiosk({ kiosk }: KioskProps) {
                                 Regenerate Link
                             </Button>
                             <Button onClick={toggle}>
-                                {kiosk.is_active ? 'Disable Kiosk' : 'Enable Kiosk'}
+                                {kiosk.is_active
+                                    ? 'Disable Kiosk'
+                                    : 'Enable Kiosk'}
                             </Button>
                         </div>
                     </CardContent>

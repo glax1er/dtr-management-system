@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -78,6 +78,16 @@ class User extends Authenticatable implements PasskeyUser
         return $this->hasOne(SupervisorProfile::class, 'user_id', 'id');
     }
 
+    /**
+     * Uploaded requirement documents for this user (if role = intern).
+     *
+     * @return HasMany<InternDocument, $this>
+     */
+    public function internDocuments(): HasMany
+    {
+        return $this->hasMany(InternDocument::class, 'user_id', 'id');
+    }
+
     public function isAdmin(): bool
     {
         return $this->role === self::ROLE_ADMIN;
@@ -92,7 +102,6 @@ class User extends Authenticatable implements PasskeyUser
     {
         return $this->role === self::ROLE_INTERN;
     }
-
     /**
      * The named route this user should land on after login, or when
      * hitting the generic /dashboard redirect.

@@ -2,12 +2,12 @@ import { Head, router } from '@inertiajs/react';
 import { toast } from 'sonner';
 import {
     AlertTriangle,
-    CalendarDays,
     Check,
     ChevronsUpDown,
     History,
     Info,
     LoaderCircle,
+    PenLine,
     Plus,
     Search,
     Trash2,
@@ -385,26 +385,20 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
         <>
             <Head title="Manual Attendance" />
 
-            {/*
-              Mobile: the overall page scrolls.
-              Desktop: the page stays fixed and only the records list scrolls.
-            */}
-            <div className="flex w-full flex-1 flex-col gap-4 p-4 sm:gap-5 sm:p-5 lg:h-[calc(100dvh-4rem)] lg:overflow-hidden lg:p-6">
-                <section className="flex shrink-0 items-center gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-                        <CalendarDays className="size-5" />
-                    </div>
-
+            <div className="flex w-full flex-1 flex-col gap-4 p-4 ">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-                            Manual attendance
+                        <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
+                            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                                <PenLine className="size-5" />
+                            </span>
+                            Manual Attendance
                         </h1>
-                        <p className="mt-0.5 text-sm text-muted-foreground">
-                            Add verified attendance from paper records or missed
-                            kiosk scans.
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            Add verified attendance from paper records or missed kiosk scans.
                         </p>
                     </div>
-                </section>
+                </div>
 
                 <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(260px,0.85fr)_minmax(0,1.7fr)] lg:overflow-hidden">
                     <Card className="h-fit border-border/70 shadow-sm">

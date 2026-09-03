@@ -88,4 +88,12 @@ class InternProfile extends Model
     {
         return $this->hasMany(AttendanceLog::class, 'intern_user_id', 'user_id');
     }
+
+    /**
+     * @return HasMany<InternDocument, $this>
+     */
+    public function internDocuments(): HasMany
+    {
+        return $this->hasMany(InternDocument::class, 'user_id', 'user_id');
+    }
 }

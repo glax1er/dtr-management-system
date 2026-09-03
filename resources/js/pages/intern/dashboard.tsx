@@ -13,11 +13,17 @@ import {
     QrCode,
     TrendingUp,
     User as UserIcon,
+    X,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { StatCard } from '@/components/dashboard-analytics';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { HoursProgressRing } from '@/components/hours-progress-ring';
 import { ResolutionRequestDialog } from '@/components/resolution-request-dialog';
 import { Badge } from '@/components/ui/badge';
@@ -132,23 +138,6 @@ export default function InternDashboard({
                     Object.values(errors)[0] ?? 'Could not upload photo.',
                 ),
         });
-    };
-
-    const cancelRequest = (ticketId: number) => {
-        if (!confirm('Cancel this resolution request?')) {
-            return;
-        }
-
-        router.patch(
-            `/intern/resolution-tickets/${ticketId}/cancel`,
-            {},
-            {
-                preserveScroll: true,
-                onSuccess: () => toast.success('Resolution request cancelled.'),
-                onError: () =>
-                    toast.error('Could not cancel resolution request.'),
-            },
-        );
     };
 
     const remainingHours = Math.max(0, hours.required - hours.total_rendered);
@@ -449,13 +438,13 @@ export default function InternDashboard({
                                 </CardDescription>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 w-full lg:w-auto">
                                 {/* Month Selector */}
-                                <div className="flex items-center gap-1.5 rounded-xl border border-border bg-muted/40 p-1">
+                                <div className="flex items-center justify-between sm:justify-start gap-1.5 rounded-xl border border-border bg-muted/40 p-1 w-full sm:w-auto">
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="size-7 rounded-lg"
+                                        className="size-7 rounded-lg shrink-0"
                                         onClick={() =>
                                             goToMonth(shiftMonth(month, -1))
                                         }
@@ -463,7 +452,7 @@ export default function InternDashboard({
                                     >
                                         <ChevronLeft className="size-4" />
                                     </Button>
-                                    <div className="px-2 text-center">
+                                    <div className="px-2 text-center flex-1 sm:flex-initial">
                                         <span className="text-xs font-semibold whitespace-nowrap text-foreground">
                                             {monthLabel}
                                         </span>
@@ -474,7 +463,7 @@ export default function InternDashboard({
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="size-7 rounded-lg"
+                                        className="size-7 rounded-lg shrink-0"
                                         disabled={!canGoNextMonth}
                                         onClick={() =>
                                             goToMonth(shiftMonth(month, 1))
@@ -485,52 +474,55 @@ export default function InternDashboard({
                                     </Button>
                                 </div>
 
-                                {/* Date Range Picker */}
-                                <div className="flex items-center gap-1.5">
-                                    <div className="w-32 sm:w-36">
-                                        <DatePicker
-                                            date={startDate}
-                                            onDateChange={(d) => setStartDate(d)}
-                                            placeholder="Start date"
-                                            maxDate={endDate || undefined}
-                                            className="h-8 text-xs"
-                                            clearable
+                                {/* Date Range Picker + DTR Report */}
+                                <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                                <div className="flex items-center gap-1.5 flex-1 min-w-0 w-full sm:w-auto sm:flex-initial">
+                                        <div className="flex-1 min-w-0 sm:w-43 sm:flex-initial">
+                                            <DatePicker
+                                                date={startDate}
+                                                onDateChange={(d) => setStartDate(d)}
+                                                placeholder="Start date"
+                                                maxDate={endDate || undefined}
+                                                className="h-8 text-xs"
+                                                clearable
+                                            />
+                                        </div>
+                                        <span className="text-xs text-muted-foreground shrink-0">to</span>
+                                        <div className="flex-1 min-w-0 sm:w-43 sm:flex-initial">
+                                            <DatePicker
+                                                date={endDate}
+                                                onDateChange={(d) => setEndDate(d)}
+                                                placeholder="End date"
+                                                minDate={startDate || undefined}
+                                                className="h-8 text-xs"
+                                                clearable
+                                                align="end"
                                         />
+                                        </div>
                                     </div>
-                                    <span className="text-xs text-muted-foreground">to</span>
-                                    <div className="w-32 sm:w-36">
-                                        <DatePicker
-                                            date={endDate}
-                                            onDateChange={(d) => setEndDate(d)}
-                                            placeholder="End date"
-                                            minDate={startDate || undefined}
-                                            className="h-8 text-xs"
-                                            clearable
-                                        />
-                                    </div>
-                                </div>
 
-                                {/* DTR Report Button */}
-                                <Button
-                                    size="sm"
-                                    variant="default"
-                                    className="h-8 gap-1.5 text-xs font-medium"
-                                    onClick={() => {
-                                        const base = '/intern/dtr-report';
-                                        let url = base + '?';
+                                    {/* DTR Report Button */}
+                                    <Button
+                                        size="sm"
+                                        variant="default"
+                                        className="h-8 gap-1.5 text-xs font-medium w-full sm:w-auto shrink-0"
+                                        onClick={() => {
+                                            const base = '/intern/dtr-report';
+                                            let url = base + '?';
 
-                                        if (startDate && endDate) {
-                                            url += `start=${startDate}&end=${endDate}`;
-                                        } else {
-                                            url += `month=${month}`;
-                                        }
+                                            if (startDate && endDate) {
+                                                url += `start=${startDate}&end=${endDate}`;
+                                            } else {
+                                                url += `month=${month}`;
+                                            }
 
-                                        window.open(url, '_blank', 'noopener');
-                                    }}
-                                >
-                                    <Download className="size-3.5" />
-                                    <span>DTR Report</span>
-                                </Button>
+                                            window.open(url, '_blank', 'noopener');
+                                        }}
+                                    >
+                                        <Download className="size-3.5" />
+                                        <span>DTR Report</span>
+                                    </Button>
+                            </div>
                             </div>
                         </div>
                     </CardHeader>
@@ -603,24 +595,28 @@ export default function InternDashboard({
                                                             )}
                                                         </TableCell>
                                                         <TableCell className="text-center">
-    <AttendanceBadge status={log.status} />
+    <AttendanceBadge status={log.pending_ticket_id !== null ? 'pending_review' : log.status} />
 </TableCell>
                                                         <TableCell className="pr-6 text-center">
                                                             {log.status === 'complete' ? (
                                                                 <span className="text-xs text-muted-foreground/50">—</span>
                                                             ) : log.pending_ticket_id !== null ? (
-                                                                <div className="flex items-center justify-center gap-2">
-                                                                    <AttendanceBadge status="pending_review" />
-                                                                    <Button
-                                                                        size="sm"
-                                                                        variant="ghost"
-                                                                        className="h-7 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                                                        onClick={() =>
-                                                                            cancelRequest(log.pending_ticket_id!)
-                                                                        }
-                                                                    >
-                                                                        Cancel
-                                                                    </Button>
+                                                                <div className="flex items-center justify-center">
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger asChild>
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                className="size-8 text-amber-600 hover:bg-amber-500/10 hover:text-amber-600 dark:text-amber-400 dark:hover:bg-amber-500/20 cursor-default"
+                                                                                aria-label="Request submitted"
+                                                                            >
+                                                                                <Clock className="size-4" />
+                                                                            </Button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                            Request submitted
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
                                                                 </div>
                                                             ) : (
                                                                 <div className="flex justify-center">
@@ -659,7 +655,7 @@ export default function InternDashboard({
                                                             {log.day}
                                                         </p>
                                                     </div>
-                                                    <AttendanceBadge status={log.status} />
+                                                    <AttendanceBadge status={log.pending_ticket_id !== null ? 'pending_review' : log.status} />
                                                 </div>
 
                                                 <div className="grid grid-cols-3 gap-2 text-center">
@@ -695,19 +691,21 @@ export default function InternDashboard({
                                                             Complete
                                                         </span>
                                                     ) : log.pending_ticket_id !== null ? (
-                                                        <div className="flex items-center gap-2">
-                                                            <AttendanceBadge status="pending_review" />
-                                                            <Button
-                                                                size="sm"
-                                                                variant="ghost"
-                                                                className="h-7 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                                                onClick={() =>
-                                                                    cancelRequest(log.pending_ticket_id!)
-                                                                }
-                                                            >
-                                                                Cancel
-                                                            </Button>
-                                                        </div>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="size-8 text-amber-600 hover:bg-amber-500/10 hover:text-amber-600 dark:text-amber-400 dark:hover:bg-amber-500/20 cursor-default"
+                                                                    aria-label="Request submitted"
+                                                                >
+                                                                    <Clock className="size-4" />
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                Request submitted
+                                                            </TooltipContent>
+                                                        </Tooltip>
                                                     ) : (
                                                         <ResolutionRequestDialog
                                                             date={log.date}

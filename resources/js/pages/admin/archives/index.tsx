@@ -8,7 +8,7 @@ import {
     Trash2,
     X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useDebounce } from '@/hooks/use-debounce';
 import {
     Table,
     TableBody,
@@ -42,23 +43,26 @@ interface Filters {
 
 interface ArchivesIndexProps {
     records: Paginated<ArchivedRecord>;
-    currentType: 'htes' | 'supervisors' | 'interns' | 'programs';
+    currentType: 'htes' | 'supervisors' | 'interns' | 'programs' | 'templates';
     filters?: Filters;
 }
 
 type ViewMode = 'table' | 'grid';
 
-const TABS: { label: string; value: 'htes' | 'supervisors' | 'interns' | 'programs'; detailLabel: string }[] = [
+const TABS: { label: string; value: 'htes' | 'supervisors' | 'interns' | 'programs' | 'templates'; detailLabel: string }[] = [
     { label: 'Interns', value: 'interns', detailLabel: 'ID Number' },
     { label: 'Supervisors', value: 'supervisors', detailLabel: 'Email' },
     { label: 'HTEs', value: 'htes', detailLabel: 'Address' },
     { label: 'Programs', value: 'programs', detailLabel: 'Required Hours' },
+    { label: 'Templates', value: 'templates', detailLabel: 'Program / File' },
 ];
 
 export default function ArchivesIndex({ records, currentType, filters }: ArchivesIndexProps) {
     const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters?.search ?? '');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+    const debouncedSearch = useDebounce(search, 300);
+    const isFirstRender = useRef(true);
 
     // Confirmation dialog state
     const [restoreOpen, setRestoreOpen] = useState(false);
@@ -69,6 +73,10 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
 
     const activeTab = TABS.find((t) => t.value === currentType) ?? TABS[0];
 
+    useEffect(() => {
+        setSearch(filters?.search ?? '');
+    }, [filters?.search]);
+
     // ── Navigation & Query Handling ──────────────────────────────────────────
     const baseParams = () => ({
         type: currentType,
@@ -76,9 +84,25 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
         per_page: filters?.per_page ? String(filters.per_page) : undefined,
     });
 
-    const visit = (params: Record<string, string | undefined>) => {
-        router.get('/admin/archives', params, { preserveState: true, preserveScroll: true });
+    const visit = (params: Record<string, string | undefined>, replace = true) => {
+        router.get('/admin/archives', params, { preserveState: true, preserveScroll: true, replace });
     };
+
+    // Automatically trigger search as user types
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        if (debouncedSearch !== (filters?.search ?? '')) {
+            visit({
+                ...baseParams(),
+                search: debouncedSearch || undefined,
+                page: undefined,
+            });
+        }
+    }, [debouncedSearch]);
 
     const switchTab = (type: string) => {
         setSearch('');
@@ -95,7 +119,7 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
         visit({ ...baseParams(), search: undefined, page: undefined });
     };
 
-    const goToPage = (page: number) => visit({ ...baseParams(), page: String(page) });
+    const goToPage = (page: number) => visit({ ...baseParams(), page: String(page) }, false);
     const changePerPage = (perPage: number) =>
         visit({ ...baseParams(), per_page: String(perPage), page: undefined });
 
@@ -173,7 +197,7 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
                         Archives
                     </h1>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
                         {/* Desktop Search */}
                         <form onSubmit={applySearch} className="relative hidden sm:block">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -199,22 +223,24 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
                         <button
                             type="button"
                             onClick={() => setMobileSearchOpen((o) => !o)}
-                            className="inline-flex size-9 items-center justify-center rounded-md border bg-background text-muted-foreground hover:text-foreground sm:hidden"
+                            className="inline-flex size-9 shrink-0 items-center justify-center rounded-md border bg-background text-muted-foreground hover:text-foreground sm:hidden"
                             aria-label="Toggle search"
                         >
                             {mobileSearchOpen ? <X className="size-4" /> : <Search className="size-4" />}
                         </button>
 
                         {/* Tabs Filter */}
-                        <Tabs value={currentType} onValueChange={switchTab}>
-                            <TabsList>
-                                {TABS.map((tab) => (
-                                    <TabsTrigger key={tab.value} value={tab.value}>
-                                        {tab.label}
-                                    </TabsTrigger>
-                                ))}
-                            </TabsList>
-                        </Tabs>
+                        <div className="overflow-x-auto max-w-[calc(100%-3rem)] sm:max-w-none scrollbar-none">
+                            <Tabs value={currentType} onValueChange={switchTab}>
+                                <TabsList className="w-auto">
+                                    {TABS.map((tab) => (
+                                        <TabsTrigger key={tab.value} value={tab.value} className="text-xs sm:text-sm px-2 sm:px-3">
+                                            {tab.label}
+                                        </TabsTrigger>
+                                    ))}
+                                </TabsList>
+                            </Tabs>
+                        </div>
 
                         {/* View Switcher — Desktop Only */}
                         <div className="hidden sm:block">
@@ -247,7 +273,7 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
                             applySearch(e);
                             setMobileSearchOpen(false);
                         }}
-                        className="flex items-center gap-2 sm:hidden"
+                        className="flex items-center gap-2 sm:hidden w-full"
                     >
                         <div className="relative flex-1">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />

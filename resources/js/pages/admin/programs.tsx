@@ -8,7 +8,7 @@ import {
     Table as TableIcon,
     X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { toast } from 'sonner';
 import { NumberedPagination } from '@/components/numbered-pagination';
@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import type { Paginated } from '@/components/pagination-footer';
+import { useDebounce } from '@/hooks/use-debounce';
 import {
     Dialog,
     DialogContent,
@@ -70,9 +71,11 @@ type ViewMode = 'table' | 'grid';
 
 export default function AdminPrograms({ programs, filters }: ProgramsProps) {
     const [view, setView] = useState<ViewMode>('table');
-    const [search, setSearch] = useState(filters.search);
-    const [status, setStatus] = useState(filters.status);
+    const [search, setSearch] = useState(filters.search || '');
+    const [status, setStatus] = useState(filters.status || '');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+    const debouncedSearch = useDebounce(search, 300);
+    const isFirstRender = useRef(true);
 
     const [addOpen, setAddOpen] = useState(false);
     const [addName, setAddName] = useState('');
@@ -87,10 +90,19 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
     const [archiveId, setArchiveId] = useState<number | null>(null);
     const [archiveName, setArchiveName] = useState('');
 
-    const visit = (params: Record<string, string | undefined>) => {
+    useEffect(() => {
+        setSearch(filters.search || '');
+    }, [filters.search]);
+
+    useEffect(() => {
+        setStatus(filters.status || '');
+    }, [filters.status]);
+
+    const visit = (params: Record<string, string | undefined>, replace = true) => {
         router.get('/admin/programs', params, {
             preserveState: true,
             preserveScroll: true,
+            replace,
         });
     };
 
@@ -100,9 +112,25 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
         per_page: String(filters.per_page),
     });
 
+    // Automatically trigger search as user types
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        if (debouncedSearch !== (filters.search || '')) {
+            visit({
+                ...baseParams(),
+                search: debouncedSearch || undefined,
+                page: undefined,
+            });
+        }
+    }, [debouncedSearch]);
+
     const applySearch = (event: FormEvent) => {
         event.preventDefault();
-        visit({ ...baseParams(), page: undefined });
+        visit({ ...baseParams(), search: search || undefined, page: undefined });
     };
 
     const clearSearch = () => {
@@ -131,7 +159,7 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
         visit({
             ...baseParams(),
             page: String(page),
-        });
+        }, false);
     };
 
     const changePerPage = (perPage: number) => {
@@ -237,7 +265,7 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
                         Programs
                     </h1>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         <form
                             onSubmit={applySearch}
                             className="relative hidden sm:block"
@@ -356,7 +384,7 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
                             applySearch(event);
                             setMobileSearchOpen(false);
                         }}
-                        className="flex items-center gap-2 sm:hidden"
+                        className="flex items-center gap-2 sm:hidden w-full"
                     >
                         <div className="relative flex-1">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />

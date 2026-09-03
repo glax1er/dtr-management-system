@@ -1,18 +1,24 @@
 import { Head, router } from '@inertiajs/react';
 import {
+    Award,
     Building2,
+    CheckCircle2,
     Clock,
+    FileCheck2,
     GraduationCap,
     LayoutGrid,
-    Mail,
     Phone,
     Search,
     SlidersHorizontal,
     Table as TableIcon,
     X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
+import { useDebounce } from '@/hooks/use-debounce';
+
+import { CompletionSummaryDialog } from '@/components/completion-summary-dialog';
+import { InternDocumentsDialog } from '@/components/intern-documents-dialog';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
 import { Badge } from '@/components/ui/badge';
@@ -25,7 +31,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Table,
     TableBody,
@@ -34,6 +39,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { dashboard } from '@/routes';
 
 interface StudentRow {
@@ -44,6 +50,13 @@ interface StudentRow {
     contact_number: string | null;
     hte_name: string;
     total_hours: number;
+    required_hours: number;
+    progress_percent: number;
+    hours_completed: boolean;
+    approved_docs_count: number;
+    total_required_docs_count: number;
+    docs_completed: boolean;
+    is_completed: boolean;
 }
 
 interface HteOption {
@@ -54,12 +67,15 @@ interface HteOption {
 interface Filters {
     search: string;
     hte_id: number | null;
+    completion_status?: 'all' | 'completed' | 'in_progress';
     per_page: number;
 }
 
 interface MyStudentsProps {
     students: Paginated<StudentRow>;
     studentCount: number;
+    completedCount?: number;
+    inProgressCount?: number;
     scopeName?: string;
     hteOptions: HteOption[];
     filters: Filters;
@@ -68,56 +84,73 @@ interface MyStudentsProps {
 type ViewMode = 'table' | 'grid';
 
 const ALL_HTES = 'all';
+const ALL_STATUSES = 'all';
 
-function formatLongDuration(hours: number): string {
-    if (hours <= 0) {
-        return '—';
-    }
-
-    const totalMinutes = Math.round(hours * 60);
-    const wholeHours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-
-    const parts: string[] = [];
-
-    if (wholeHours > 0) {
-        parts.push(`${wholeHours} ${wholeHours === 1 ? 'hour' : 'hours'}`);
-    }
-
-    if (minutes > 0) {
-        parts.push(`${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`);
-    }
-
-    return parts.length > 0 ? parts.join(' ') : '0 minutes';
+function formatHours(hours: number): string {
+    if (hours <= 0) return '0 hrs';
+    return `${hours.toFixed(1)} hrs`;
 }
 
 export default function MyStudents({
     students,
     studentCount,
+    completedCount = 0,
+    inProgressCount = 0,
     scopeName,
     hteOptions,
     filters,
 }: MyStudentsProps) {
     const [view, setView] = useState<ViewMode>('table');
-    const [search, setSearch] = useState(filters.search);
+    const [search, setSearch] = useState(filters.search || '');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+    const debouncedSearch = useDebounce(search, 300);
+    const isFirstRender = useRef(true);
+
+    useEffect(() => {
+        setSearch(filters.search || '');
+    }, [filters.search]);
 
     const baseParams = () => ({
-        search: filters.search || undefined,
+        search: search || undefined,
         hte_id: filters.hte_id ? String(filters.hte_id) : undefined,
+        completion_status:
+            filters.completion_status && filters.completion_status !== 'all'
+                ? filters.completion_status
+                : undefined,
         per_page: String(filters.per_page),
     });
 
-    const visit = (params: Record<string, string | undefined>) => {
+    const visit = (params: Record<string, string | undefined>, replace = true) => {
         router.get('/supervisor/interns', params, {
             preserveState: true,
             preserveScroll: true,
+            replace,
         });
     };
 
+    // Automatically trigger search as user types
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        if (debouncedSearch !== (filters.search || '')) {
+            visit({
+                ...baseParams(),
+                search: debouncedSearch || undefined,
+                page: undefined,
+            });
+        }
+    }, [debouncedSearch]);
+
     const applySearch = (e: FormEvent) => {
         e.preventDefault();
-        visit({ ...baseParams(), search: search || undefined, page: undefined });
+        visit({
+            ...baseParams(),
+            search: search || undefined,
+            page: undefined,
+        });
     };
 
     const clearSearch = () => {
@@ -133,8 +166,16 @@ export default function MyStudents({
         });
     };
 
+    const changeCompletionStatus = (value: string) => {
+        visit({
+            ...baseParams(),
+            completion_status: value === ALL_STATUSES ? undefined : value,
+            page: undefined,
+        });
+    };
+
     const goToPage = (page: number) => {
-        visit({ ...baseParams(), page: String(page) });
+        visit({ ...baseParams(), page: String(page) }, false);
     };
 
     const changePerPage = (perPage: number) => {
@@ -148,20 +189,20 @@ export default function MyStudents({
                 {/* Header toolbar */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h1 className="flex items-center gap-3 text-xl font-semibold tracking-tight sm:text-2xl text-black dark:text-white">
+                        <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-foreground">
                             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
                                 <GraduationCap className="size-5" />
                             </span>
-                            My Students
+                            Program Interns
                         </h1>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            {studentCount} intern{studentCount === 1 ? '' : 's'} in {scopeName ?? 'your program'}, across every HTE.
-                        </p>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         {/* Desktop search */}
-                        <form onSubmit={applySearch} className="relative hidden sm:block">
+                        <form
+                            onSubmit={applySearch}
+                            className="relative hidden sm:block"
+                        >
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                             <input
                                 type="text"
@@ -188,13 +229,21 @@ export default function MyStudents({
                             className="inline-flex size-9 items-center justify-center rounded-md border bg-background text-muted-foreground hover:text-foreground sm:hidden"
                             aria-label="Toggle search"
                         >
-                            {mobileSearchOpen ? <X className="size-4" /> : <Search className="size-4" />}
+                            {mobileSearchOpen ? (
+                                <X className="size-4" />
+                            ) : (
+                                <Search className="size-4" />
+                            )}
                         </button>
 
                         {/* HTE filter dropdown */}
                         <div className="hidden sm:block">
                             <Select
-                                value={filters.hte_id ? String(filters.hte_id) : ALL_HTES}
+                                value={
+                                    filters.hte_id
+                                        ? String(filters.hte_id)
+                                        : ALL_HTES
+                                }
                                 onValueChange={changeHte}
                             >
                                 <SelectTrigger className="h-9 w-44">
@@ -202,169 +251,313 @@ export default function MyStudents({
                                     <SelectValue placeholder="All HTEs" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value={ALL_HTES}>All HTEs</SelectItem>
+                                    <SelectItem value={ALL_HTES}>
+                                        All HTEs
+                                    </SelectItem>
                                     {hteOptions.map((hte) => (
-                                        <SelectItem key={hte.hte_id} value={String(hte.hte_id)}>
+                                        <SelectItem
+                                            key={hte.hte_id}
+                                            value={String(hte.hte_id)}
+                                        >
                                             {hte.hte_name}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div className="sm:hidden">
+
+                        {/* Completion Status filter */}
+                        <div className="hidden sm:block">
                             <Select
-                                value={filters.hte_id ? String(filters.hte_id) : ALL_HTES}
-                                onValueChange={changeHte}
+                                value={
+                                    filters.completion_status || ALL_STATUSES
+                                }
+                                onValueChange={changeCompletionStatus}
                             >
-                                <SelectTrigger className="inline-flex size-9 items-center justify-center p-0 [&>span]:hidden [&>svg:last-child]:hidden">
-                                    <SlidersHorizontal className="size-4 text-muted-foreground" />
+                                <SelectTrigger className="h-9 w-48">
+                                    <SlidersHorizontal className="mr-1.5 size-3.5 text-muted-foreground" />
+                                    <SelectValue placeholder="All Status" />
                                 </SelectTrigger>
-                                <SelectContent align="end">
-                                    <SelectItem value={ALL_HTES}>All HTEs</SelectItem>
-                                    {hteOptions.map((hte) => (
-                                        <SelectItem key={hte.hte_id} value={String(hte.hte_id)}>
-                                            {hte.hte_name}
-                                        </SelectItem>
-                                    ))}
+                                <SelectContent>
+                                    <SelectItem value={ALL_STATUSES}>
+                                        All Students
+                                    </SelectItem>
+                                    <SelectItem value="completed">
+                                        Completed Requirements ({completedCount}
+                                        )
+                                    </SelectItem>
+                                    <SelectItem value="in_progress">
+                                        In Progress ({inProgressCount})
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
 
                         {/* View toggle — desktop only */}
                         <div className="hidden sm:block">
-                            <Tabs value={view} onValueChange={(v) => setView(v as ViewMode)}>
+                            <Tabs
+                                value={view}
+                                onValueChange={(v) => setView(v as ViewMode)}
+                            >
                                 <TabsList>
-                                    <TabsTrigger value="table"><TableIcon className="size-4" /></TabsTrigger>
-                                    <TabsTrigger value="grid"><LayoutGrid className="size-4" /></TabsTrigger>
+                                    <TabsTrigger value="table">
+                                        <TableIcon className="size-4" />
+                                    </TabsTrigger>
+                                    <TabsTrigger value="grid">
+                                        <LayoutGrid className="size-4" />
+                                    </TabsTrigger>
                                 </TabsList>
                             </Tabs>
                         </div>
                     </div>
                 </div>
 
-                {/* Mobile inline search */}
+                {/* Mobile search input */}
                 {mobileSearchOpen && (
-                    <form
-                        onSubmit={(e) => { applySearch(e); setMobileSearchOpen(false); }}
-                        className="flex items-center gap-2 sm:hidden"
-                    >
-                        <div className="relative flex-1">
-                            <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-                            <input
-                                autoFocus
-                                type="text"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search students…"
-                                className="h-9 w-full rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
-                            />
-                            {search && (
-                                <button
-                                    type="button"
-                                    onClick={() => { clearSearch(); setMobileSearchOpen(false); }}
-                                    className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                                >
-                                    <X className="size-3.5" />
-                                </button>
-                            )}
-                        </div>
-                        <Button type="submit" size="sm">Search</Button>
+                    <form onSubmit={applySearch} className="relative sm:hidden">
+                        <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <input
+                            type="text"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Search students…"
+                            className="h-9 w-full rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
+                        />
                     </form>
                 )}
 
-                {/* Content */}
+                {/* Content Section */}
                 {students.data.length === 0 ? (
-                    <Card>
-                        <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                            No students {filters.search || filters.hte_id ? 'match this filter.' : 'assigned yet.'}
-                        </CardContent>
-                    </Card>
+                    <p className="py-8 text-center text-sm text-muted-foreground">
+                        No interns match{' '}
+                        {filters.search !== '' ||
+                        filters.hte_id ||
+                        (filters.completion_status &&
+                            filters.completion_status !== 'all')
+                            ? 'these filters.'
+                            : 'your program yet.'}
+                    </p>
                 ) : (
                     <>
-                        {/* Table view — desktop */}
+                        {/* Table view */}
                         {view === 'table' && (
-                            <div className="hidden sm:block">
-                                <Card>
-                                    <CardContent className="p-0">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead className="px-6">Name</TableHead>
-                                                    <TableHead className="px-6">Email</TableHead>
-                                                    <TableHead className="px-6">ID Number</TableHead>
-                                                    <TableHead className="px-6">Contact Number</TableHead>
-                                                    <TableHead className="px-6">Assigned HTE</TableHead>
-                                                    <TableHead className="px-6 text-right">Hours Rendered</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {students.data.map((student) => (
-                                                    <TableRow key={student.intern_user_id}>
-                                                        <TableCell className="px-6 font-medium whitespace-nowrap">
-                                                            {student.name}
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-muted-foreground whitespace-nowrap">
-                                                            {student.email}
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-muted-foreground whitespace-nowrap">
-                                                            {student.id_number ?? '—'}
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-muted-foreground whitespace-nowrap">
-                                                            {student.contact_number ?? '—'}
-                                                        </TableCell>
-                                                        <TableCell className="px-6 whitespace-nowrap">
-                                                            <Badge variant="outline" className="font-normal">
-                                                                {student.hte_name}
-                                                            </Badge>
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-right font-medium whitespace-nowrap">
-                                                            {formatLongDuration(student.total_hours)}
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </CardContent>
-                                </Card>
+                            <div className="hidden overflow-x-auto rounded-md border sm:block">
+                                <Table className="w-full min-w-[720px] text-sm">
+                                    <TableHeader>
+                                        <TableRow className="border-b text-left text-muted-foreground">
+                                            <TableHead className="py-2.5 pr-4 font-medium">
+                                                Name
+                                            </TableHead>
+                                            <TableHead className="py-2.5 text-center pr-4 font-medium">
+                                                ID Number
+                                            </TableHead>
+                                            <TableHead className="py-2.5 text-center pr-4 font-medium">
+                                                Assigned HTE
+                                            </TableHead>
+                                            <TableHead className="py-2.5 text-center pr-4 font-medium">
+                                                Hours Rendered
+                                            </TableHead>
+                                            <TableHead className="py-2.5 text-center pr-4 font-medium">
+                                                Documents
+                                            </TableHead>
+                                            <TableHead className="py-2.5 text-center pr-4 font-medium">
+                                                Requirement Status
+                                            </TableHead>
+                                            <TableHead className="py-2.5 text-center font-medium">
+                                                Actions
+                                            </TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {students.data.map((student) => (
+                                            <TableRow
+                                                key={student.intern_user_id}
+                                                className="border-b last:border-0 hover:bg-muted/40"
+                                            >
+                                                <TableCell className="py-3 pr-4">
+                                                    <p className="font-medium whitespace-nowrap">
+                                                        {student.name}
+                                                    </p>
+                                                    <p
+                                                        className="max-w-[160px] truncate text-xs text-muted-foreground"
+                                                        title={student.email}
+                                                    >
+                                                        {student.email}
+                                                    </p>
+                                                </TableCell>
+                                                <TableCell className="text-center py-3 pr-4 whitespace-nowrap">
+                                                    {student.id_number ?? '—'}
+                                                </TableCell>
+                                                <TableCell
+                                                    className="text-center max-w-[140px] truncate py-3 pr-4"
+                                                    title={student.hte_name}
+                                                >
+                                                    {student.hte_name}
+                                                </TableCell>
+                                                <TableCell className="py-3 pr-4 whitespace-nowrap">
+                                                    <div className="flex min-w-[110px] flex-col gap-1">
+                                                        <div className="flex justify-between text-xs">
+                                                            <span className="font-medium">
+                                                                {formatHours(
+                                                                    student.total_hours,
+                                                                )}
+                                                            </span>
+                                                            <span className="text-muted-foreground">
+                                                                /{' '}
+                                                                {
+                                                                    student.required_hours
+                                                                }
+                                                                h
+                                                            </span>
+                                                        </div>
+                                                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                                                            <div
+                                                                className={`h-full rounded-full ${
+                                                                    student.hours_completed
+                                                                        ? 'bg-emerald-500'
+                                                                        : 'bg-primary'
+                                                                }`}
+                                                                style={{
+                                                                    width: `${Math.min(100, student.progress_percent)}%`,
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="text-center py-3 pr-4 whitespace-nowrap">
+                                                    <Badge
+                                                        variant="outline"
+                                                        className={`gap-1 text-xs ${
+                                                            student.docs_completed
+                                                                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                                                                : 'bg-muted text-muted-foreground'
+                                                        }`}
+                                                    >
+                                                        <FileCheck2 className="size-3" />
+                                                        {
+                                                            student.approved_docs_count
+                                                        }{' '}
+                                                        /{' '}
+                                                        {
+                                                            student.total_required_docs_count
+                                                        }{' '}
+                                                        Approved
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="text-center py-3 pr-4 whitespace-nowrap">
+    {student.is_completed ? (
+        <Badge className="gap-1 bg-emerald-600 text-xs text-white hover:bg-emerald-600">
+            <CheckCircle2 className="size-3.5" />
+            Completed
+        </Badge>
+    ) : (
+        <Badge
+            variant="outline"
+            style={
+                !student.hours_completed
+                    ? {
+                          backgroundColor: `hsl(${student.progress_percent * 1.2}, 75%, 50%, 0.15)`,
+                          color: `hsl(${student.progress_percent * 1.2}, 75%, 45%)`,
+                          borderColor: `hsl(${student.progress_percent * 1.2}, 75%, 50%, 0.3)`,
+                      }
+                    : undefined
+            }
+            className={`text-xs font-medium border ${
+                student.hours_completed
+                    ? 'bg-purple-500/15 text-purple-600 border-purple-500/30 dark:text-purple-400'
+                    : ''
+            }`}
+        >
+            {student.hours_completed
+                ? 'Hours Met • Docs Pending'
+                : `${Math.round(student.progress_percent)}% Rendered`}
+        </Badge>
+    )}
+</TableCell>
+                                                <TableCell className="py-3 text-right whitespace-nowrap">
+                                                    <div className="flex items-center justify-end gap-1.5">
+                                                        <CompletionSummaryDialog
+                                                            internUserId={
+                                                                student.intern_user_id
+                                                            }
+                                                            internName={
+                                                                student.name
+                                                            }
+                                                            isCompleted={
+                                                                student.is_completed
+                                                            }
+                                                        />
+                                                        <InternDocumentsDialog
+                                                            internUserId={
+                                                                student.intern_user_id
+                                                            }
+                                                            internName={
+                                                                student.name
+                                                            }
+                                                        />
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
                             </div>
                         )}
 
-                        {/* Grid view — desktop */}
+                        {/* Grid view */}
                         {view === 'grid' && (
-                            <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3">
                                 {students.data.map((student) => (
-                                    <Card key={student.intern_user_id} className="flex flex-col justify-between">
+                                    <Card
+                                        key={student.intern_user_id}
+                                        className="flex flex-col justify-between"
+                                    >
                                         <CardHeader className="pb-3">
                                             <div className="flex items-start justify-between gap-2">
-                                                <CardTitle className="text-base font-semibold truncate">
-                                                    {student.name}
-                                                </CardTitle>
-                                                <Badge variant="outline" className="shrink-0 text-xs font-normal">
-                                                    {student.id_number ?? 'No ID'}
+                                                <div className="min-w-0">
+                                                    <CardTitle className="truncate text-base font-semibold">
+                                                        {student.name}
+                                                    </CardTitle>
+                                                    <p
+                                                        className="mt-0.5 truncate text-xs text-muted-foreground"
+                                                        title={student.email}
+                                                    >
+                                                        {student.email}
+                                                    </p>
+                                                </div>
+                                                <Badge
+                                                    variant="outline"
+                                                    className="shrink-0 font-mono text-xs"
+                                                >
+                                                    {student.id_number ??
+                                                        'No ID'}
                                                 </Badge>
                                             </div>
                                         </CardHeader>
-                                        <CardContent className="flex flex-col gap-2.5 text-xs text-muted-foreground">
-                                            <div className="flex items-center gap-2">
-                                                <Mail className="size-3.5 shrink-0" />
-                                                <span className="truncate">{student.email}</span>
-                                            </div>
+                                        <CardContent className="flex flex-col gap-2.5 pt-0 text-xs text-muted-foreground">
                                             {student.contact_number && (
                                                 <div className="flex items-center gap-2">
                                                     <Phone className="size-3.5 shrink-0" />
-                                                    <span>{student.contact_number}</span>
+                                                    <span>
+                                                        {student.contact_number}
+                                                    </span>
                                                 </div>
                                             )}
                                             <div className="flex items-center gap-2">
                                                 <Building2 className="size-3.5 shrink-0" />
-                                                <span className="truncate font-medium text-foreground">{student.hte_name}</span>
+                                                <span className="truncate font-medium text-foreground">
+                                                    {student.hte_name}
+                                                </span>
                                             </div>
                                             <div className="mt-2 flex items-center justify-between border-t pt-2">
                                                 <span className="flex items-center gap-1.5 text-muted-foreground">
-                                                    <Clock className="size-3.5" /> Rendered:
+                                                    <Clock className="size-3.5" />{' '}
+                                                    Rendered:
                                                 </span>
-                                                <span className="font-semibold text-foreground text-xs">
-                                                    {formatLongDuration(student.total_hours)}
+                                                <span className="text-xs font-semibold text-foreground">
+                                                    {formatHours(
+                                                        student.total_hours,
+                                                    )}
                                                 </span>
                                             </div>
                                         </CardContent>
@@ -374,22 +567,35 @@ export default function MyStudents({
                         )}
 
                         {/* Mobile list view */}
-                        <div className="sm:hidden flex flex-col gap-3">
+                        <div className="flex flex-col gap-3 sm:hidden">
                             {students.data.map((student) => (
                                 <Card key={student.intern_user_id}>
-                                    <CardContent className="p-4 flex flex-col gap-2">
+                                    <CardContent className="flex flex-col gap-2 p-4">
                                         <div className="flex items-start justify-between gap-2">
-                                            <div>
-                                                <p className="font-semibold text-sm">{student.name}</p>
-                                                <p className="text-xs text-muted-foreground">{student.email}</p>
+                                            <div className="min-w-0">
+                                                <p className="truncate text-sm font-semibold text-foreground">
+                                                    {student.name}
+                                                </p>
+                                                <p className="truncate text-xs text-muted-foreground">
+                                                    {student.email}
+                                                </p>
                                             </div>
-                                            <Badge variant="outline" className="text-xs">
+                                            <Badge
+                                                variant="outline"
+                                                className="shrink-0 font-mono text-xs"
+                                            >
                                                 {student.id_number ?? 'No ID'}
                                             </Badge>
                                         </div>
-                                        <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t">
-                                            <span className="truncate max-w-[160px] font-medium text-foreground">{student.hte_name}</span>
-                                            <span>{formatLongDuration(student.total_hours)}</span>
+                                        <div className="flex items-center justify-between border-t pt-1 text-xs text-muted-foreground">
+                                            <span className="max-w-[160px] truncate font-medium text-foreground">
+                                                {student.hte_name}
+                                            </span>
+                                            <span className="font-semibold text-foreground">
+                                                {formatHours(
+                                                    student.total_hours,
+                                                )}
+                                            </span>
                                         </div>
                                     </CardContent>
                                 </Card>

@@ -14,6 +14,9 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+
 type TicketActionsProps = {
     ticketId: number;
     type: 'missing_time_in' | 'open' | 'no_record';
@@ -22,9 +25,9 @@ type TicketActionsProps = {
 };
 
 export const badgeStyles: Record<TicketActionsProps['type'], string> = {
-    missing_time_in: 'bg-red-100 text-red-400 border-red-500',
-    open: 'bg-amber-100 text-amber-400 border-amber-500',
-    no_record: 'bg-red-100 text-red-400 border-red-500',
+    missing_time_in: 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-950/50 dark:text-yellow-300 dark:border-yellow-800',
+    open: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800',
+    no_record: 'bg-red-100 text-red-800 border-red-300 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800',
 };
 
 const typeLabel: Record<TicketActionsProps['type'], string> = {
@@ -81,6 +84,8 @@ export function TicketActions({ ticketId, type, proposedTimeIn, proposedTimeOut 
 
     const [openApprove, setOpenApprove] = useState(false);
     const [openReject, setOpenReject] = useState(false);
+    const [rejectionReason, setRejectionReason] = useState('');
+    const [rejectionError, setRejectionError] = useState('');
     const [processing, setProcessing] = useState(false);
 
     const handleApprove = () => {
@@ -103,18 +108,40 @@ export function TicketActions({ ticketId, type, proposedTimeIn, proposedTimeOut 
         );
     };
 
+    const handleOpenRejectChange = (open: boolean) => {
+        setOpenReject(open);
+        if (!open) {
+            setRejectionReason('');
+            setRejectionError('');
+        }
+    };
+
     const handleReject = () => {
+        const trimmed = rejectionReason.trim();
+        if (!trimmed) {
+            setRejectionError('Please provide a reason for rejecting this resolution request.');
+            return;
+        }
+
         setProcessing(true);
         router.patch(
             `/supervisor/resolution-tickets/${ticketId}/reject`,
-            {},
+            {
+                rejection_reason: trimmed,
+            },
             {
                 preserveScroll: true,
                 onSuccess: () => {
                     toast.success('Resolution request rejected.');
                     setOpenReject(false);
+                    setRejectionReason('');
+                    setRejectionError('');
                 },
-                onError: (errors) => toast.error(Object.values(errors)[0] ?? 'Could not reject this ticket.'),
+                onError: (errors) => {
+                    const message = Object.values(errors)[0] ?? 'Could not reject this ticket.';
+                    setRejectionError(message);
+                    toast.error(message);
+                },
                 onFinish: () => setProcessing(false),
             },
         );
@@ -132,13 +159,13 @@ export function TicketActions({ ticketId, type, proposedTimeIn, proposedTimeOut 
                         Approve
                     </Button>
                 </DialogTrigger>
-                <DialogContent>
-                    <DialogHeader>
+                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto w-[calc(100vw-2rem)] sm:w-full">
+                    <DialogHeader className="space-y-2">
                         <div className="flex items-center gap-2">
                             <DialogTitle>Confirm Approval</DialogTitle>
                             <AttendanceBadge status={type} />
                         </div>
-                        <DialogDescription className="space-y-3">
+                        <DialogDescription className="space-y-3 text-left">
                             <p>Are you sure you want to approve this resolution ticket? This action cannot be undone.</p>
                             <div className="rounded-md bg-muted p-3 text-sm text-foreground">
                                 <p className="font-semibold mb-1">Proposed Changes:</p>
@@ -165,7 +192,7 @@ export function TicketActions({ ticketId, type, proposedTimeIn, proposedTimeOut 
             </Dialog>
 
             {/* REJECT MODAL */}
-            <Dialog open={openReject} onOpenChange={setOpenReject}>
+            <Dialog open={openReject} onOpenChange={handleOpenRejectChange}>
                 <DialogTrigger asChild>
                     <Button 
                         size="sm" 
@@ -174,14 +201,14 @@ export function TicketActions({ ticketId, type, proposedTimeIn, proposedTimeOut 
                         Reject
                     </Button>
                 </DialogTrigger>
-                <DialogContent>
-                    <DialogHeader>
+                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto w-[calc(100vw-2rem)] sm:w-full">
+                    <DialogHeader className="space-y-2">
                         <div className="flex items-center gap-2">
-                            <DialogTitle>Confirm Rejection</DialogTitle>
+                            <DialogTitle>Reject Resolution Request</DialogTitle>
                             <AttendanceBadge status={type} />
                         </div>
-                        <DialogDescription className="space-y-3">
-                            <p>Reject this resolution request? The day will go back to looking missing.</p>
+                        <DialogDescription className="space-y-3 text-left">
+                            <p>Please state the reason for rejecting this resolution request. The intern will receive a notification with your reason.</p>
                             <div className="rounded-md bg-muted p-3 text-sm text-foreground">
                                 <p className="font-semibold mb-1">Proposed Changes to Reject:</p>
                                 <ul className="list-inside list-disc space-y-0.5 opacity-90">
@@ -191,16 +218,46 @@ export function TicketActions({ ticketId, type, proposedTimeIn, proposedTimeOut 
                             </div>
                         </DialogDescription>
                     </DialogHeader>
+
+                    <div className="space-y-2 py-1">
+                        <Label htmlFor={`rejection-reason-${ticketId}`} className="text-sm font-medium">
+                            Reason for Rejection <span className="text-destructive">*</span>
+                        </Label>
+                        <Textarea
+                            id={`rejection-reason-${ticketId}`}
+                            value={rejectionReason}
+                            onChange={(e) => {
+                                setRejectionReason(e.target.value);
+                                if (rejectionError) setRejectionError('');
+                            }}
+                            placeholder="e.g., No supervisor confirmation on site, incorrect time indicated, etc."
+                            rows={3}
+                            maxLength={1000}
+                            disabled={processing}
+                            className={`min-h-[90px] max-h-[200px] resize-y break-words [overflow-wrap:anywhere] ${
+                                rejectionError ? 'border-destructive focus-visible:ring-destructive' : ''
+                            }`}
+                        />
+                        <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                            <span className={`min-w-0 flex-1 break-words ${rejectionError ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+                                {rejectionError || 'Explain why this request is being rejected.'}
+                            </span>
+                            <span className="shrink-0 text-muted-foreground tabular-nums">
+                                {rejectionReason.length}/1000
+                            </span>
+                        </div>
+                    </div>
+
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setOpenReject(false)} disabled={processing}>
+                        <Button variant="outline" onClick={() => handleOpenRejectChange(false)} disabled={processing}>
                             Cancel
                         </Button>
                         <Button 
-                            disabled={processing}
+                            disabled={processing || !rejectionReason.trim()}
                             onClick={handleReject}
                             className="bg-rose-600 text-white hover:bg-rose-700 dark:bg-rose-700 dark:hover:bg-rose-600"
                         >
-                            {processing ? 'Rejecting…' : 'Yes, Reject'}
+                            {processing ? 'Rejecting…' : 'Reject Request'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

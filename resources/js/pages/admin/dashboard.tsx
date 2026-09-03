@@ -267,7 +267,7 @@ export default function AdminDashboard({
                                     }
                                     checkedIn={todayAttendance.checked_in}
                                     total={todayAttendance.total}
-                                    subtitle="interns checked in"
+                                    subtitle="Interns checked in"
                                 />
                             )}
                         </CardContent>
@@ -376,7 +376,7 @@ export default function AdminDashboard({
                                     Recent Registrations
                                 </CardTitle>
                                 <CardDescription>
-                                    Latest student intern sign-ups awaiting verification
+                                    Latest student intern sign-ups awaiting approval
                                 </CardDescription>
                             </div>
                             <Badge variant="outline" className="text-xs font-normal">
