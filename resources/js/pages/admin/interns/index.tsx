@@ -7,7 +7,7 @@ import {
     Table as TableIcon,
     X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { InternActions } from '@/components/intern-actions';
 import { NumberedPagination } from '@/components/numbered-pagination';
@@ -17,6 +17,7 @@ import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { useDebounce } from '@/hooks/use-debounce';
 import {
     Table,
     TableBody,
@@ -65,8 +66,10 @@ export default function InternsIndex({
     filters,
 }: InternsIndexProps) {
     const [view, setView] = useState<ViewMode>('table');
-    const [search, setSearch] = useState(filters.search);
+    const [search, setSearch] = useState(filters.search || '');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+    const debouncedSearch = useDebounce(search, 300);
+    const isFirstRender = useRef(true);
 
     const [undoOpen, setUndoOpen] = useState(false);
     const [undoTarget, setUndoTarget] = useState<Intern | null>(null);
@@ -103,16 +106,33 @@ return;
 
     const baseParams = () => ({
         status: currentStatus,
-        search: filters.search || undefined,
+        search: search || undefined,
         per_page: String(filters.per_page),
     });
 
-    const visit = (params: Record<string, string | undefined>) => {
+    const visit = (params: Record<string, string | undefined>, replace = true) => {
         router.get('/admin/interns', params, {
             preserveState: true,
             preserveScroll: true,
+            replace,
         });
     };
+
+    // Automatically trigger search as user types
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        if (debouncedSearch !== (filters.search || '')) {
+            visit({
+                ...baseParams(),
+                search: debouncedSearch || undefined,
+                page: undefined,
+            });
+        }
+    }, [debouncedSearch]);
 
     const switchTab = (status: string) => {
         setSearch('');
@@ -134,7 +154,7 @@ return;
     };
 
     const goToPage = (page: number) =>
-        visit({ ...baseParams(), page: String(page) });
+        visit({ ...baseParams(), page: String(page) }, false);
     const changePerPage = (perPage: number) =>
         visit({ ...baseParams(), per_page: String(perPage), page: undefined });
 
@@ -213,7 +233,7 @@ return;
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search interns…"
+                                placeholder="Search internsâ€¦"
                                 className="h-9 w-48 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
                             {search && (
@@ -301,7 +321,7 @@ return;
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search interns…"
+                                placeholder="Search internsâ€¦"
                                 className="h-9 w-full rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
                             {search && (

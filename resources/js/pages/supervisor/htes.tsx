@@ -12,13 +12,14 @@ import {
     Users,
     X,
 } from 'lucide-react';
-import { Fragment, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useDebounce } from '@/hooks/use-debounce';
 import {
     Select,
     SelectContent,
@@ -113,24 +114,47 @@ export default function SupervisorHtes({
     filters,
 }: HtesIndexProps) {
     const [view, setView] = useState<ViewMode>('table');
-    const [search, setSearch] = useState(filters.search);
+    const [search, setSearch] = useState(filters.search || '');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+    const debouncedSearch = useDebounce(search, 300);
+    const isFirstRender = useRef(true);
     const [expandedHteIds, setExpandedHteIds] = useState<Set<number>>(
         new Set(),
     );
 
+    useEffect(() => {
+        setSearch(filters.search || '');
+    }, [filters.search]);
+
     const baseParams = () => ({
-        search: filters.search || undefined,
+        search: search || undefined,
         status: filters.status ?? undefined,
         per_page: String(filters.per_page),
     });
 
-    const visit = (params: Record<string, string | undefined>) => {
+    const visit = (params: Record<string, string | undefined>, replace = true) => {
         router.get('/supervisor/htes', params, {
             preserveState: true,
             preserveScroll: true,
+            replace,
         });
     };
+
+    // Automatically trigger search as user types
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        if (debouncedSearch !== (filters.search || '')) {
+            visit({
+                ...baseParams(),
+                search: debouncedSearch || undefined,
+                page: undefined,
+            });
+        }
+    }, [debouncedSearch]);
 
     const applySearch = (e: FormEvent) => {
         e.preventDefault();
@@ -158,7 +182,7 @@ export default function SupervisorHtes({
     };
 
     const goToPage = (page: number) => {
-        visit({ ...baseParams(), page: String(page) });
+        visit({ ...baseParams(), page: String(page) }, false);
     };
 
     const changePerPage = (perPage: number) => {

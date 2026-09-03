@@ -61,6 +61,15 @@ export default function Register({
     const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
     const [privacyAccepted, setPrivacyAccepted] = useState(false);
     const [hasReadPolicy, setHasReadPolicy] = useState(false);
+    const [passwordInput, setPasswordInput] = useState('');
+
+    const passwordChecks = [
+        { label: 'At least 8 characters', met: passwordInput.length >= 8 },
+        { label: 'At least 1 uppercase letter (A-Z)', met: /[A-Z]/.test(passwordInput) },
+        { label: 'At least 1 lowercase letter (a-z)', met: /[a-z]/.test(passwordInput) },
+        { label: 'At least 1 number (0-9)', met: /\d/.test(passwordInput) },
+        { label: 'At least 1 symbol (@$!%*#?&)', met: /[^A-Za-z0-9]/.test(passwordInput) },
+    ];
 
     const [selectedSex, setSelectedSex] = useState<string>('');
     const [selectedProgram, setSelectedProgram] = useState<string>('');
@@ -352,8 +361,30 @@ export default function Register({
                                 name="password"
                                 placeholder="Password"
                                 passwordrules={passwordRules}
+                                value={passwordInput}
+                                onChange={(e) => setPasswordInput(e.target.value)}
                                 disabled={isSubmitting}
                             />
+                            {passwordInput.length > 0 && (
+                                <div className="space-y-1 rounded-lg border bg-muted/40 p-2.5 text-xs">
+                                    <span className="block text-[11px] font-medium tracking-wider text-foreground/80 uppercase">
+                                        Password requirements:
+                                    </span>
+                                    {passwordChecks.map((rule) => (
+                                        <div
+                                            key={rule.label}
+                                            className={
+                                                rule.met
+                                                    ? 'flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400'
+                                                    : 'flex items-center gap-1.5 text-muted-foreground'
+                                            }
+                                        >
+                                            <span>{rule.met ? '✓' : '•'}</span>
+                                            <span>{rule.label}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                             <InputError message={formErrors.password} />
                         </div>
 
@@ -430,6 +461,7 @@ export default function Register({
                 </div>
             </form>
 
+            {/* Registration Submitted Dialog */}
             <Dialog
                 open={showApprovalDialog}
                 onOpenChange={(open) => {

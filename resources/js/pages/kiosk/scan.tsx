@@ -59,7 +59,7 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
     const scannerRef = useRef<Html5Qrcode | null>(null);
     const inFlightRef = useRef(false);
     const lastProcessedRef = useRef<{ value: string; at: number } | null>(null);
-    // ADDED — monotonically increasing ID; only the response matching the
+    // ADDED â€” monotonically increasing ID; only the response matching the
     // most recent request is ever allowed to update the screen
     const requestSeqRef = useRef(0);
     const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -263,18 +263,16 @@ clearTimeout(flashTimerRef.current);
         <>
             <Head title={kioskName} />
             <div
-                className="fixed inset-0 flex flex-col items-center justify-center gap-6 overflow-y-auto bg-black p-4"
+                className="fixed inset-0 flex flex-col items-center justify-center overflow-y-auto bg-black p-4"
                 style={{
-                    backgroundImage: `url('/images/cic-bg.jpg')`,
+                    backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)), url('/images/cic-bg.jpg')`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
+                    backgroundAttachment: 'fixed',
                 }}
             >
-                {/* Background image overlay with opacity */}
-                <div className="absolute inset-0 bg-black/90" />
-
                 {/* Content wrapper */}
-                <div className="relative flex w-full flex-col items-center gap-6">
+                <div className="relative my-auto flex w-full flex-col items-center">
                     {/* Logo Section */}
                     <div className="flex items-end justify-center">
                         <img
@@ -336,7 +334,7 @@ clearTimeout(flashTimerRef.current);
                             )}
                         </div>
 
-                        {/* ID card — persists until the next scan */}
+                        {/* ID card â€” persists until the next scan */}
                         <div
                             className={`mx-auto w-full max-w-sm rounded-lg border-4 p-6 text-white backdrop-blur-sm transition-colors duration-300 ${
                                 !lastIntern
@@ -357,7 +355,7 @@ clearTimeout(flashTimerRef.current);
                                 </div>
                             ) : (
                                 <div className="flex flex-col gap-4">
-                                    {/* Photo — falls back to the generic icon if the
+                                    {/* Photo â€” falls back to the generic icon if the
                                     intern hasn't uploaded one */}
                                     <div className="mx-auto flex size-28 items-center justify-center overflow-hidden rounded-full bg-white/10">
                                         {lastIntern.photoUrl ? (

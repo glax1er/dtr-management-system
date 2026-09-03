@@ -12,9 +12,10 @@ import {
     Users,
     X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import InputError from '@/components/input-error';
+import { useDebounce } from '@/hooks/use-debounce';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
@@ -55,7 +56,7 @@ import {
 } from '@/components/ui/tooltip';
 import { dashboard } from '@/routes';
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface Hte {
     hte_id: number;
     hte_name: string;
@@ -91,7 +92,7 @@ interface SupervisorsIndexProps {
 
 type ViewMode = 'table' | 'grid';
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+// â”€â”€ Main page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function SupervisorsIndex({
     supervisors,
     htes,
@@ -99,8 +100,10 @@ export default function SupervisorsIndex({
     filters,
 }: SupervisorsIndexProps) {
     const [view, setView] = useState<ViewMode>('table');
-    const [search, setSearch] = useState(filters.search);
+    const [search, setSearch] = useState(filters.search || '');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+    const debouncedSearch = useDebounce(search, 300);
+    const isFirstRender = useRef(true);
 
     const [addOpen, setAddOpen] = useState(false);
     const [editingSupervisor, setEditingSupervisor] =
@@ -125,11 +128,17 @@ export default function SupervisorsIndex({
         program_id: '',
     });
 
-    // ── Navigation ─────────────────────────────────────────────────────────
-    const visit = (params: Record<string, string | undefined>) =>
+    // Keep local search in sync with filter props
+    useEffect(() => {
+        setSearch(filters.search || '');
+    }, [filters.search]);
+
+    // â”€â”€ Navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    const visit = (params: Record<string, string | undefined>, replace = true) =>
         router.get('/admin/supervisors', params, {
             preserveState: true,
             preserveScroll: true,
+            replace,
         });
 
     const baseParams = () => ({
@@ -137,6 +146,22 @@ export default function SupervisorsIndex({
         type: filters.type ?? undefined,
         per_page: String(filters.per_page),
     });
+
+    // Automatically trigger search as user types
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        if (debouncedSearch !== (filters.search || '')) {
+            visit({
+                ...baseParams(),
+                search: debouncedSearch || undefined,
+                page: undefined,
+            });
+        }
+    }, [debouncedSearch]);
 
     const applySearch = (e: FormEvent) => {
         e.preventDefault();
@@ -161,11 +186,11 @@ export default function SupervisorsIndex({
     };
 
     const goToPage = (page: number) =>
-        visit({ ...baseParams(), page: String(page) });
+        visit({ ...baseParams(), page: String(page) }, false);
     const changePerPage = (perPage: number) =>
         visit({ ...baseParams(), per_page: String(perPage), page: undefined });
 
-    // ── CRUD ───────────────────────────────────────────────────────────────
+    // â”€â”€ CRUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const handleAddSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const url =
@@ -234,7 +259,7 @@ return;
         setArchiveName('');
     };
 
-    // ── Per-row actions (shared between table and grid) ────────────────────
+    // â”€â”€ Per-row actions (shared between table and grid) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const SupervisorActions = ({ supervisor }: { supervisor: Supervisor }) => (
         <div className="flex justify-center gap-1">
             <Tooltip>
@@ -296,7 +321,7 @@ return;
         </div>
     );
 
-    // ── Render ─────────────────────────────────────────────────────────────
+    // â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     return (
         <>
             <Head title="Supervisors" />
@@ -322,7 +347,7 @@ return;
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search supervisors…"
+                                placeholder="Search supervisorsâ€¦"
                                 className="h-9 w-48 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
                             {search && (
@@ -350,7 +375,7 @@ return;
                             )}
                         </button>
 
-                        {/* Type filter — full on desktop, icon-only on mobile */}
+                        {/* Type filter â€” full on desktop, icon-only on mobile */}
                         <div className="hidden sm:block">
                             <Select
                                 value={filters.type ?? 'all'}
@@ -395,7 +420,7 @@ return;
                             </Select>
                         </div>
 
-                        {/* View toggle — desktop only */}
+                        {/* View toggle â€” desktop only */}
                         <div className="hidden sm:block">
                             <Tabs
                                 value={view}
@@ -438,7 +463,7 @@ return;
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search supervisors…"
+                                placeholder="Search supervisorsâ€¦"
                                 className="h-9 w-full rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
                             {search && (
@@ -472,7 +497,7 @@ return;
                     </Card>
                 ) : (
                     <>
-                        {/* Table — desktop only */}
+                        {/* Table â€” desktop only */}
                         {view === 'table' && (
                             <div className="hidden sm:block">
                                 <Card>
@@ -571,7 +596,7 @@ return;
                             </div>
                         )}
 
-                        {/* Grid — always on mobile, desktop when grid tab selected */}
+                        {/* Grid â€” always on mobile, desktop when grid tab selected */}
                         <div className={view === 'table' ? 'sm:hidden' : ''}>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {supervisors.data.map((supervisor) => (
@@ -632,7 +657,7 @@ return;
                 )}
             </div>
 
-            {/* ── Add dialog ───────────────────────────────────────────────── */}
+            {/* â”€â”€ Add dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <Dialog open={addOpen} onOpenChange={setAddOpen}>
                 <DialogContent>
                     <form
@@ -791,7 +816,7 @@ return;
                 </DialogContent>
             </Dialog>
 
-            {/* ── Edit dialog ──────────────────────────────────────────────── */}
+            {/* â”€â”€ Edit dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <Dialog
                 open={editingSupervisor !== null}
                 onOpenChange={(open) => !open && setEditingSupervisor(null)}
@@ -927,7 +952,7 @@ return;
                 </DialogContent>
             </Dialog>
 
-            {/* ── Archive confirmation ──────────────────────────────────────── */}
+            {/* â”€â”€ Archive confirmation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <ConfirmationDialog
                 open={archiveOpen}
                 onOpenChange={setArchiveOpen}

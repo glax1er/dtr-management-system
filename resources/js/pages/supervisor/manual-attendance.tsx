@@ -115,7 +115,7 @@ return interns;
     }, [interns, searchQuery]);
 
     // A row only needs a date plus *either* a time in or a time out (or
-    // both) — a supervisor might only know one side of the shift, e.g.
+    // both) â€” a supervisor might only know one side of the shift, e.g.
     // the intern forgot to scan in and only has a time-out on record.
     const isRowValid = (entry: Entry) =>
         Boolean(entry.date) && Boolean(entry.time_in || entry.time_out);
@@ -163,7 +163,7 @@ return interns;
             ),
         );
 
-        // Any manual edit — including picking a new date — means whatever
+        // Any manual edit â€” including picking a new date â€” means whatever
         // was pre-filled no longer necessarily reflects the saved record,
         // so clear the hint until a fresh lookup (if any) confirms it.
         setRowNotices((current) =>
@@ -182,7 +182,7 @@ return interns;
     // When a supervisor picks a date that already has attendance on file
     // (a kiosk scan or an earlier manual entry), pre-fill that row's time
     // in / time out from what's already there instead of leaving them to
-    // retype — and re-check whenever they switch interns too, since the
+    // retype â€” and re-check whenever they switch interns too, since the
     // same date can carry a different record per intern.
     const lookupExisting = async (
         index: number,
@@ -224,7 +224,7 @@ return interns;
                 time_out?: string | null;
             } = await response.json();
 
-            // Resolve the row either way — when nothing is found we still
+            // Resolve the row either way â€” when nothing is found we still
             // need to clear out whatever a previous lookup pre-filled,
             // otherwise switching to a blank date/intern just leaves the
             // old values sitting there looking "stuck".
@@ -244,13 +244,13 @@ return interns;
                 current.map((notice, currentIndex) =>
                     currentIndex === index
                         ? data.found
-                            ? 'Existing record found for this date — time in / time out pre-filled below.'
+                            ? 'Existing record found for this date â€” time in / time out pre-filled below.'
                             : null
                         : notice,
                 ),
             );
         } catch {
-            // Prefill is a convenience, not a requirement for saving —
+            // Prefill is a convenience, not a requirement for saving â€”
             // fail silently and let the supervisor type it in manually.
         }
     };
@@ -559,7 +559,7 @@ return interns;
                                                                         {intern.id_number &&
                                                                             intern.program_name && (
                                                                                 <span>
-                                                                                    •
+                                                                                    â€¢
                                                                                 </span>
                                                                             )}
                                                                         {intern.program_name && (
@@ -609,7 +609,7 @@ return interns;
                                         Attendance records
                                     </CardTitle>
                                     <CardDescription className="mt-0.5">
-                                        Time in and time out are each optional —
+                                        Time in and time out are each optional â€”
                                         enter whichever was actually recorded.
                                     </CardDescription>
                                 </div>

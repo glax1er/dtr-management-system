@@ -73,22 +73,6 @@ class FortifyServiceProvider extends ServiceProvider
                 return null;
             }
 
-            // Admin accounts bypass all approval and verification checks
-            if ($user->isAdmin()) {
-                return $user;
-            }
-
-            // If email is not verified, require verification via modal on login
-            if (! $user->hasVerifiedEmail()) {
-                $user->sendEmailVerificationNotification();
-
-                throw ValidationException::withMessages([
-                    'unverified_email' => $user->email,
-                    Fortify::username() => 'Your email address is not verified yet. We have sent a 6-digit verification code to your email.',
-                ]);
-            }
-
-            // If an intern has verified their email, verify their profile approval status
             if ($user->isIntern()) {
                 $status = $user->internProfile?->status;
 
@@ -98,6 +82,30 @@ class FortifyServiceProvider extends ServiceProvider
                             'rejected' => 'Your registration was not approved. Please contact your program coordinator.',
                             default => 'Your registration is still pending admin approval. Please check back later.',
                         },
+                    ]);
+                }
+            }
+
+            // Admin accounts bypass approval, verification, and supervisor checks.
+            if ($user->isAdmin()) {
+                return $user;
+            }
+
+            if (! $user->hasVerifiedEmail()) {
+                $user->sendEmailVerificationNotification();
+
+                throw ValidationException::withMessages([
+                    'unverified_email' => $user->email,
+                    Fortify::username() => 'Your email address is not verified yet. We have sent a 6-digit verification code to your email.',
+                ]);
+            }
+
+            if ($user->isSupervisor()) {
+                $profile = $user->supervisorProfile;
+
+                if (! $profile || $profile->status !== 'active') {
+                    throw ValidationException::withMessages([
+                        Fortify::username() => 'Your supervisor account has been deactivated or archived. Please contact the administrator.',
                     ]);
                 }
             }

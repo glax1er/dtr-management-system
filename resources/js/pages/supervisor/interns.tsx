@@ -13,13 +13,14 @@ import {
     Table as TableIcon,
     X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
 import { Badge } from '@/components/ui/badge';
 import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
 import { Button } from '@/components/ui/button';
+import { useDebounce } from '@/hooks/use-debounce';
 import {
     Card,
     CardContent,
@@ -129,16 +130,16 @@ function formatMonthDayYear(dateStr: string): string {
 }
 
 function formatLongDateRange(from: string, to: string): string {
-    return `${formatMonthDayYear(from)} – ${formatMonthDayYear(to)}`;
+    return `${formatMonthDayYear(from)} â€“ ${formatMonthDayYear(to)}`;
 }
 
 function formatLongTime(time: string | null): string {
-    return time ? time.trim() : '—';
+    return time ? time.trim() : 'â€”';
 }
 
 function formatLongDuration(hours: number): string {
     if (hours <= 0) {
-        return '—';
+        return 'â€”';
     }
 
     const totalMinutes = Math.round(hours * 60);
@@ -170,18 +171,25 @@ export default function MyInterns({
     scopeName,
 }: MyInternsProps) {
     const [view, setView] = useState<ViewMode>('table');
-    const [search, setSearch] = useState(filters.search);
+    const [search, setSearch] = useState(filters.search || '');
     const [fromDraft, setFromDraft] = useState(filters.from);
     const [toDraft, setToDraft] = useState(filters.to);
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+    const debouncedSearch = useDebounce(search, 300);
+    const isFirstRender = useRef(true);
+
+    useEffect(() => {
+        setSearch(filters.search || '');
+    }, [filters.search]);
 
     const hasActiveFilters =
         filters.search !== '' || filters.remarks !== null || mode === 'range';
 
-    const visit = (params: Record<string, string | undefined>) => {
+    const visit = (params: Record<string, string | undefined>, replace = true) => {
         router.get('/supervisor/interns', params, {
             preserveState: true,
             preserveScroll: true,
+            replace,
         });
     };
 
@@ -189,12 +197,28 @@ export default function MyInterns({
         ...(mode === 'range'
             ? { from: filters.from, to: filters.to }
             : { month: month ?? undefined }),
-        search: filters.search || undefined,
+        search: search || undefined,
         remarks: filters.remarks ?? undefined,
         sort: filters.sort,
         direction: filters.direction,
         per_page: String(filters.per_page),
     });
+
+    // Automatically trigger search as user types
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        if (debouncedSearch !== (filters.search || '')) {
+            visit({
+                ...baseParams(),
+                search: debouncedSearch || undefined,
+                page: undefined,
+            });
+        }
+    }, [debouncedSearch]);
 
     const goToMonth = (targetMonth: string) => {
         visit({
@@ -311,7 +335,7 @@ export default function MyInterns({
                         <p className="mt-1 ml-[3.25rem] text-sm text-muted-foreground">
                             {internCount}{' '}
                             {internCount === 1 ? 'intern' : 'interns'}
-                            {scopeName ? ` • ${scopeName}` : ''}
+                            {scopeName ? ` â€¢ ${scopeName}` : ''}
                         </p>
                     </div>
 
@@ -326,7 +350,7 @@ export default function MyInterns({
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search by name…"
+                                placeholder="Search by nameâ€¦"
                                 className="h-9 w-48 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
                             {search && (
@@ -433,7 +457,7 @@ export default function MyInterns({
                             </div>
                         )}
 
-                        {/* View toggle — desktop only */}
+                        {/* View toggle â€” desktop only */}
                         <div className="hidden sm:block">
                             <Tabs
                                 value={view}
@@ -468,7 +492,7 @@ export default function MyInterns({
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search by name…"
+                                placeholder="Search by nameâ€¦"
                                 className="h-9 w-full rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
                             {search && (
@@ -645,11 +669,11 @@ export default function MyInterns({
                     </Card>
                 ) : (
                     <>
-                        {/* Table View — desktop */}
+                        {/* Table View â€” desktop */}
                         {view === 'table' && (
                             <div className="hidden sm:block">
                                 <Card className="flex-1">
-                                    <CardHeader className="flex flex-row items-center justify-between px-6 py-4">
+                                    <CardHeader className="flex flex-row items-center justify-between ">
                                         <CardTitle className="text-base font-semibold">
                                             Attendance Logs
                                         </CardTitle>
@@ -761,7 +785,7 @@ export default function MyInterns({
                             </div>
                         )}
 
-                        {/* Grid View — desktop */}
+                        {/* Grid View â€” desktop */}
                         {view === 'grid' && (
                             <div className="hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3">
                                 {logs.data.map((log) => (

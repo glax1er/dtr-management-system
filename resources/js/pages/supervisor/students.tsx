@@ -13,8 +13,9 @@ import {
     Table as TableIcon,
     X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
+import { useDebounce } from '@/hooks/use-debounce';
 
 import { CompletionSummaryDialog } from '@/components/completion-summary-dialog';
 import { InternDocumentsDialog } from '@/components/intern-documents-dialog';
@@ -38,6 +39,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 
@@ -109,6 +111,8 @@ export default function MyStudents({
     // instead of via a post-commit effect.
     const [syncedSearch, setSyncedSearch] = useState(filters.search || '');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+    const debouncedSearch = useDebounce(search, 300);
+    const isFirstRender = useRef(true);
 
     const docInternId =
         typeof window !== 'undefined'
@@ -156,7 +160,7 @@ export default function MyStudents({
     }
 
     const baseParams = () => ({
-        search: filters.search || undefined,
+        search: search || undefined,
         hte_id: filters.hte_id ? String(filters.hte_id) : undefined,
         completion_status:
             filters.completion_status && filters.completion_status !== 'all'
@@ -165,12 +169,29 @@ export default function MyStudents({
         per_page: String(filters.per_page),
     });
 
-    const visit = (params: Record<string, string | undefined>) => {
+    const visit = (params: Record<string, string | undefined>, replace = true) => {
         router.get('/supervisor/interns', params, {
             preserveState: true,
             preserveScroll: true,
+            replace,
         });
     };
+
+    // Automatically trigger search as user types
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        if (debouncedSearch !== (filters.search || '')) {
+            visit({
+                ...baseParams(),
+                search: debouncedSearch || undefined,
+                page: undefined,
+            });
+        }
+    }, [debouncedSearch]);
 
     const applySearch = (e: FormEvent) => {
         e.preventDefault();
@@ -203,7 +224,7 @@ export default function MyStudents({
     };
 
     const goToPage = (page: number) => {
-        visit({ ...baseParams(), page: String(page) });
+        visit({ ...baseParams(), page: String(page) }, false);
     };
 
     const changePerPage = (perPage: number) => {
@@ -226,7 +247,7 @@ export default function MyStudents({
                         <p className="mt-1 ml-[3.25rem] text-sm text-muted-foreground">
                             {studentCount}{' '}
                             {studentCount === 1 ? 'intern' : 'interns'}
-                            {scopeName ? ` • ${scopeName}` : ''}
+                            {scopeName ? ` â€¢ ${scopeName}` : ''}
                         </p>
                     </div>
 
@@ -267,7 +288,7 @@ export default function MyStudents({
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search students…"
+                                placeholder="Search studentsâ€¦"
                                 className="h-9 w-48 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
                             {search && (
@@ -351,6 +372,23 @@ export default function MyStudents({
                                 </SelectContent>
                             </Select>
                         </div>
+
+                        {/* View toggle â€” desktop only */}
+                        <div className="hidden sm:block">
+                            <Tabs
+                                value={view}
+                                onValueChange={(v) => setView(v as ViewMode)}
+                            >
+                                <TabsList>
+                                    <TabsTrigger value="table">
+                                        <TableIcon className="size-4" />
+                                    </TabsTrigger>
+                                    <TabsTrigger value="grid">
+                                        <LayoutGrid className="size-4" />
+                                    </TabsTrigger>
+                                </TabsList>
+                            </Tabs>
+                        </div>
                     </div>
                 </div>
 
@@ -362,7 +400,7 @@ export default function MyStudents({
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search students…"
+                            placeholder="Search studentsâ€¦"
                             className="h-9 w-full rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                         />
                     </form>
@@ -449,7 +487,7 @@ export default function MyStudents({
                                                     </TableCell>
                                                     <TableCell className="py-3 pr-4 whitespace-nowrap">
                                                         {student.id_number ??
-                                                            '—'}
+                                                            'â€”'}
                                                     </TableCell>
                                                     <TableCell
                                                         className="max-w-[140px] truncate py-3 pr-4"
@@ -519,7 +557,7 @@ export default function MyStudents({
                                                                 className="text-xs font-normal text-muted-foreground"
                                                             >
                                                                 {student.hours_completed
-                                                                    ? 'Hours Met • Docs Pending'
+                                                                    ? 'Hours Met â€¢ Docs Pending'
                                                                     : `${Math.round(student.progress_percent)}% Rendered`}
                                                             </Badge>
                                                         )}

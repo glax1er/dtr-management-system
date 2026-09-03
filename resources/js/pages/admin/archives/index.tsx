@@ -8,13 +8,14 @@ import {
     Trash2,
     X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { useDebounce } from '@/hooks/use-debounce';
 import {
     Table,
     TableBody,
@@ -31,7 +32,7 @@ import {
 } from '@/components/ui/tooltip';
 import { dashboard } from '@/routes';
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface ArchivedRecord {
     id: number;
     name: string;
@@ -75,6 +76,8 @@ export default function ArchivesIndex({
     const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters?.search ?? '');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+    const debouncedSearch = useDebounce(search, 300);
+    const isFirstRender = useRef(true);
 
     // Confirmation dialog state
     const [restoreOpen, setRestoreOpen] = useState(false);
@@ -88,19 +91,40 @@ export default function ArchivesIndex({
 
     const activeTab = TABS.find((t) => t.value === currentType) ?? TABS[0];
 
-    // ── Navigation & Query Handling ──────────────────────────────────────────
+    useEffect(() => {
+        setSearch(filters?.search ?? '');
+    }, [filters?.search]);
+
+    // â”€â”€ Navigation & Query Handling â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const baseParams = () => ({
         type: currentType,
         search: search || undefined,
         per_page: filters?.per_page ? String(filters.per_page) : undefined,
     });
 
-    const visit = (params: Record<string, string | undefined>) => {
+    const visit = (params: Record<string, string | undefined>, replace = true) => {
         router.get('/admin/archives', params, {
             preserveState: true,
             preserveScroll: true,
+            replace,
         });
     };
+
+    // Automatically trigger search as user types
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        if (debouncedSearch !== (filters?.search ?? '')) {
+            visit({
+                ...baseParams(),
+                search: debouncedSearch || undefined,
+                page: undefined,
+            });
+        }
+    }, [debouncedSearch]);
 
     const switchTab = (type: string) => {
         setSearch('');
@@ -126,11 +150,11 @@ export default function ArchivesIndex({
     };
 
     const goToPage = (page: number) =>
-        visit({ ...baseParams(), page: String(page) });
+        visit({ ...baseParams(), page: String(page) }, false);
     const changePerPage = (perPage: number) =>
         visit({ ...baseParams(), per_page: String(perPage), page: undefined });
 
-    // ── Action Handlers ──────────────────────────────────────────────────────
+    // â”€â”€ Action Handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const openRestoreDialog = (record: ArchivedRecord) => {
         setRestoreTarget(record);
         setRestoreOpen(true);
@@ -170,7 +194,7 @@ return;
                 preserveScroll: true,
                 // Inertia's onSuccess fires for ANY completed visit (including a
                 // back()->with('error', ...) redirect when the delete was blocked
-                // by a foreign key constraint) — it does NOT mean the record was
+                // by a foreign key constraint) â€” it does NOT mean the record was
                 // actually deleted. Check the fresh flash props before treating
                 // this as resolved, otherwise the dialog closes and the row looks
                 // "handled" even though it's still sitting in the database.
@@ -190,7 +214,7 @@ return;
         );
     };
 
-    // ── Action Component ─────────────────────────────────────────────────────
+    // â”€â”€ Action Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const ArchiveActions = ({ record }: { record: ArchivedRecord }) => (
         <div className="flex justify-center gap-1">
             <Tooltip>
@@ -246,7 +270,7 @@ return;
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder={`Search ${activeTab.label.toLowerCase()}…`}
+                                placeholder={`Search ${activeTab.label.toLowerCase()}â€¦`}
                                 className="h-9 w-48 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
                             {search && (
@@ -291,7 +315,7 @@ return;
                             </Tabs>
                         </div>
 
-                        {/* View Switcher — Desktop Only */}
+                        {/* View Switcher â€” Desktop Only */}
                         <div className="hidden sm:block">
                             <div className="inline-flex rounded-md border p-0.5">
                                 <Button
@@ -335,7 +359,7 @@ return;
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder={`Search ${activeTab.label.toLowerCase()}…`}
+                                placeholder={`Search ${activeTab.label.toLowerCase()}â€¦`}
                                 className="h-9 w-full rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
                             {search && (
@@ -367,7 +391,7 @@ return;
                     </Card>
                 ) : (
                     <>
-                        {/* Table View — Desktop Only */}
+                        {/* Table View â€” Desktop Only */}
                         {view === 'table' && (
                             <div className="hidden sm:block">
                                 <Card>
@@ -427,7 +451,7 @@ return;
                             </div>
                         )}
 
-                        {/* Grid View — Mobile Default & Desktop Grid View */}
+                        {/* Grid View â€” Mobile Default & Desktop Grid View */}
                         <div className={view === 'table' ? 'sm:hidden' : ''}>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {records.data.map((record) => (
