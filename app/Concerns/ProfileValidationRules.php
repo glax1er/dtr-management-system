@@ -8,6 +8,9 @@ use Illuminate\Validation\Rule;
 
 trait ProfileValidationRules
 {
+    /**
+     * @return array<string, array<int, ValidationRule|array<mixed>|string>>
+     */
     protected function profileRules(?int $userId = null, bool $restrictToUsepDomain = true): array
     {
         return [

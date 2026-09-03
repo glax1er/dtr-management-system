@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use App\Concerns\ProfileValidationRules;
 use App\Models\User;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -16,6 +17,9 @@ class StoreOjtSupervisorRequest extends FormRequest
         return true;
     }
 
+    /**
+     * @return array<string, array<int, ValidationRule|array<mixed>|string>>
+     */
     public function rules(): array
     {
         return [
