@@ -21,7 +21,6 @@ import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
-import { useDebounce } from '@/hooks/use-debounce';
 import {
     Dialog,
     DialogContent,
@@ -53,6 +52,7 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useDebounce } from '@/hooks/use-debounce';
 import { dashboard } from '@/routes';
 
 interface Hte {
@@ -220,6 +220,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
+
             return;
         }
 
@@ -230,6 +231,8 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                 page: undefined,
             });
         }
+    // Navigation helpers intentionally remain local to preserve current filters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch]);
 
     const applySearch = (event: FormEvent) => {

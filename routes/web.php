@@ -128,6 +128,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware('role:' . User::ROLE_SUPERVISOR)->prefix('supervisor')->name('supervisor.')->group(function () {
         // Shared between both supervisor types
+        Route::get('dashboard', [SupervisorDashboardController::class, 'index'])->name('dashboard');
         Route::get('interns', [InternsController::class, 'index'])->name('interns.index');
         Route::get('interns/{internUserId}/completion-summary', [InternsController::class, 'completionSummary'])->name('interns.completion-summary');
         Route::get('interns/{internUserId}/dtr-report', [InternsController::class, 'downloadInternDtr'])->name('interns.dtr-report');
@@ -151,8 +152,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Only HTE Supervisors
     Route::middleware('hte-supervisor')->group(function () {
-        Route::get('dashboard', [SupervisorDashboardController::class, 'index'])->name('dashboard');
-
         Route::get('resolution-tickets', [SupervisorResolutionTicketController::class, 'index'])
             ->name('resolution-tickets.index');
         Route::patch('resolution-tickets/{resolutionTicket}/approve', [SupervisorResolutionTicketController::class, 'approve'])

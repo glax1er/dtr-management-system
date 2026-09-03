@@ -15,7 +15,6 @@ import type { Paginated } from '@/components/pagination-footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
-import { useDebounce } from '@/hooks/use-debounce';
 import {
     Table,
     TableBody,
@@ -30,6 +29,7 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useDebounce } from '@/hooks/use-debounce';
 import { dashboard } from '@/routes';
 
 // â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -91,10 +91,6 @@ export default function ArchivesIndex({
 
     const activeTab = TABS.find((t) => t.value === currentType) ?? TABS[0];
 
-    useEffect(() => {
-        setSearch(filters?.search ?? '');
-    }, [filters?.search]);
-
     // â”€â”€ Navigation & Query Handling â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const baseParams = () => ({
         type: currentType,
@@ -114,6 +110,7 @@ export default function ArchivesIndex({
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
+
             return;
         }
 
@@ -124,6 +121,9 @@ export default function ArchivesIndex({
                 page: undefined,
             });
         }
+    // Navigation helpers intentionally remain local to preserve the current
+    // filter state while debounced search requests are issued.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch]);
 
     const switchTab = (type: string) => {

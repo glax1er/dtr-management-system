@@ -15,7 +15,6 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import InputError from '@/components/input-error';
-import { useDebounce } from '@/hooks/use-debounce';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
@@ -54,6 +53,7 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useDebounce } from '@/hooks/use-debounce';
 import { dashboard } from '@/routes';
 
 // â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -128,11 +128,6 @@ export default function SupervisorsIndex({
         program_id: '',
     });
 
-    // Keep local search in sync with filter props
-    useEffect(() => {
-        setSearch(filters.search || '');
-    }, [filters.search]);
-
     // â”€â”€ Navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const visit = (params: Record<string, string | undefined>, replace = true) =>
         router.get('/admin/supervisors', params, {
@@ -151,6 +146,7 @@ export default function SupervisorsIndex({
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
+
             return;
         }
 
@@ -161,6 +157,8 @@ export default function SupervisorsIndex({
                 page: undefined,
             });
         }
+    // Navigation helpers intentionally remain local to preserve current filters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch]);
 
     const applySearch = (e: FormEvent) => {

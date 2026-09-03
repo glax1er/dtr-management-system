@@ -17,7 +17,6 @@ import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
-import { useDebounce } from '@/hooks/use-debounce';
 import {
     Table,
     TableBody,
@@ -27,6 +26,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useDebounce } from '@/hooks/use-debounce';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 
@@ -122,6 +122,7 @@ return;
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
+
             return;
         }
 
@@ -132,6 +133,8 @@ return;
                 page: undefined,
             });
         }
+    // Navigation helpers intentionally remain local to preserve current filters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch]);
 
     const switchTab = (status: string) => {

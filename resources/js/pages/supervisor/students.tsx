@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { useDebounce } from '@/hooks/use-debounce';
 
 import { CompletionSummaryDialog } from '@/components/completion-summary-dialog';
 import { InternDocumentsDialog } from '@/components/intern-documents-dialog';
@@ -40,6 +39,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useDebounce } from '@/hooks/use-debounce';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 
@@ -181,6 +181,7 @@ export default function MyStudents({
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
+
             return;
         }
 
@@ -191,6 +192,8 @@ export default function MyStudents({
                 page: undefined,
             });
         }
+    // Navigation helpers intentionally remain local to preserve current filters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch]);
 
     const applySearch = (e: FormEvent) => {

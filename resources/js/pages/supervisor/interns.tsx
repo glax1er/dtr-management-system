@@ -20,7 +20,6 @@ import type { Paginated } from '@/components/pagination-footer';
 import { Badge } from '@/components/ui/badge';
 import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
 import { Button } from '@/components/ui/button';
-import { useDebounce } from '@/hooks/use-debounce';
 import {
     Card,
     CardContent,
@@ -45,6 +44,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useDebounce } from '@/hooks/use-debounce';
 import { dashboard } from '@/routes';
 
 interface AttendanceLogRow {
@@ -178,10 +178,6 @@ export default function MyInterns({
     const debouncedSearch = useDebounce(search, 300);
     const isFirstRender = useRef(true);
 
-    useEffect(() => {
-        setSearch(filters.search || '');
-    }, [filters.search]);
-
     const hasActiveFilters =
         filters.search !== '' || filters.remarks !== null || mode === 'range';
 
@@ -208,6 +204,7 @@ export default function MyInterns({
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
+
             return;
         }
 
@@ -218,6 +215,8 @@ export default function MyInterns({
                 page: undefined,
             });
         }
+    // Navigation helpers intentionally remain local to preserve current filters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch]);
 
     const goToMonth = (targetMonth: string) => {

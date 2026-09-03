@@ -31,6 +31,10 @@ class DashboardController extends Controller
         $supervisor = auth()->user();
         $supervisorProfile = $supervisor->supervisorProfile;
 
+        if ($supervisorProfile?->isOjtSupervisor()) {
+            return redirect()->route('supervisor.interns.index');
+        }
+
         $validated = $request->validate([
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:' . self::MAX_PER_PAGE],

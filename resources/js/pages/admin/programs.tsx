@@ -18,7 +18,6 @@ import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
-import { useDebounce } from '@/hooks/use-debounce';
 import {
     Dialog,
     DialogContent,
@@ -45,6 +44,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useDebounce } from '@/hooks/use-debounce';
 import { dashboard } from '@/routes';
 
 interface Program {
@@ -90,14 +90,6 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
     const [archiveId, setArchiveId] = useState<number | null>(null);
     const [archiveName, setArchiveName] = useState('');
 
-    useEffect(() => {
-        setSearch(filters.search || '');
-    }, [filters.search]);
-
-    useEffect(() => {
-        setStatus(filters.status || '');
-    }, [filters.status]);
-
     const visit = (params: Record<string, string | undefined>, replace = true) => {
         router.get('/admin/programs', params, {
             preserveState: true,
@@ -116,6 +108,7 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
+
             return;
         }
 
@@ -126,6 +119,9 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
                 page: undefined,
             });
         }
+    // Navigation helpers intentionally remain local to preserve the current
+    // filter state while debounced search requests are issued.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch]);
 
     const applySearch = (event: FormEvent) => {
