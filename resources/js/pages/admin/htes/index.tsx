@@ -12,7 +12,7 @@ import {
     Table as TableIcon,
     X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { FormEvent } from 'react';
 import InputError from '@/components/input-error';
 import { NumberedPagination } from '@/components/numbered-pagination';
@@ -162,6 +162,21 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
     const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters.search || '');
     const [status, setStatus] = useState(filters.status || '');
+    // Track the filter values search/status were last synced from, so
+    // browser back/forward navigation (which changes `filters` without
+    // this component unmounting) resets the local drafts during render
+    // instead of via a post-commit effect.
+    const [syncedFilters, setSyncedFilters] = useState(filters);
+
+    if (
+        filters.search !== syncedFilters.search ||
+        filters.status !== syncedFilters.status
+    ) {
+        setSyncedFilters(filters);
+        setSearch(filters.search || '');
+        setStatus(filters.status || '');
+    }
+
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
     const [addOpen, setAddOpen] = useState(false);
@@ -182,15 +197,6 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
         address: '',
         contact_number: '',
     });
-
-    // Keep local search and status in sync with filter props
-    useEffect(() => {
-        setSearch(filters.search || '');
-    }, [filters.search]);
-
-    useEffect(() => {
-        setStatus(filters.status || '');
-    }, [filters.status]);
 
     // ── Navigation helpers ──────────────────────────────────────────
     const visit = (params: Record<string, string | undefined>) => {
@@ -286,8 +292,8 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
         e.preventDefault();
 
         if (!editingHte) {
-return;
-}
+            return;
+        }
 
         editForm.patch(`/admin/htes/${editingHte.hte_id}`, {
             preserveScroll: true,

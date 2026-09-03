@@ -59,13 +59,15 @@ export default function VerifyEmailDialog({
         }
     }, [email]);
 
-    useEffect(() => {
-        if (!open) {
+    const handleOpenChange = (next: boolean) => {
+        onOpenChange(next);
+
+        if (!next) {
             formActionsRef.current.reset();
             formActionsRef.current.clearErrors();
             setResendStatus(null);
         }
-    }, [open]);
+    };
 
     // Countdown timer for resend button
     useEffect(() => {
@@ -128,7 +130,7 @@ return;
     const activeStatus = resendStatus || status;
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="p-6 sm:max-w-md">
                 <DialogHeader className="flex flex-col items-center space-y-3 text-center">
                     <div className="rounded-full bg-primary/10 p-3 text-primary ring-8 ring-primary/5">

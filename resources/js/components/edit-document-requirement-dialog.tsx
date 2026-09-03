@@ -73,6 +73,11 @@ export function EditDocumentRequirementDialog({
     const [isDragOver, setIsDragOver] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Populates the form from `item` whenever the dialog opens for a new
+    // item. Kept as an effect (not moved into handleOpenChange) because
+    // the open=true transition happens via the parent setting `open`
+    // directly, not through this component's onOpenChange — there's no
+    // handler in this component to move the logic into.
     useEffect(() => {
         if (item && open) {
             setName(item.name);

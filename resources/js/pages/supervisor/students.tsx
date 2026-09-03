@@ -87,8 +87,8 @@ const ALL_STATUSES = 'all';
 
 function formatHours(hours: number): string {
     if (hours <= 0) {
-return '0 hrs';
-}
+        return '0 hrs';
+    }
 
     return `${hours.toFixed(1)} hrs`;
 }
@@ -104,6 +104,10 @@ export default function MyStudents({
 }: MyStudentsProps) {
     const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters.search || '');
+    // Track the filter value search was last synced from, so browser
+    // back/forward navigation resets the local draft during render
+    // instead of via a post-commit effect.
+    const [syncedSearch, setSyncedSearch] = useState(filters.search || '');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
     const docInternId =
@@ -127,8 +131,8 @@ export default function MyStudents({
 
     useEffect(() => {
         if (!docInternId) {
-return;
-}
+            return;
+        }
 
         const el =
             document.getElementById(`student-row-${docInternId}`) ||
@@ -136,8 +140,8 @@ return;
             document.getElementById(`student-mobile-${docInternId}`);
 
         if (!el) {
-return;
-}
+            return;
+        }
 
         const timer = setTimeout(() => {
             el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -146,9 +150,10 @@ return;
         return () => clearTimeout(timer);
     }, [docInternId, students.data]);
 
-    useEffect(() => {
+    if ((filters.search || '') !== syncedSearch) {
+        setSyncedSearch(filters.search || '');
         setSearch(filters.search || '');
-    }, [filters.search]);
+    }
 
     const baseParams = () => ({
         search: filters.search || undefined,

@@ -32,6 +32,11 @@ export default function Login({
 
     const page = usePage<{ errors?: Record<string, string> }>();
 
+    // Both effects below react to Inertia updating this page's props in
+    // place after a server round-trip (e.g. a failed login submit
+    // redirects back to /login with new errors/flags) — the component
+    // instance isn't remounted, so these can't be replaced by an
+    // initializer or a local event handler.
     useEffect(() => {
         if (showVerification) {
             setShowVerifyModal(true);

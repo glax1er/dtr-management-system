@@ -82,7 +82,11 @@ throw new Error('Failed to load documents');
         }
     }, [internUserId]);
 
-    // Auto-fetch if defaultOpen
+    // Fetches documents when the dialog mounts already open via a
+    // URL-driven deep link (see /supervisor/interns?doc_intern=...
+    // links from notifications). defaultOpen only matters at mount —
+    // it's read once into isOpen's initial state above — so this isn't
+    // copying a prop into state on every render.
     useEffect(() => {
         if (defaultOpen) {
             fetchDocuments();
