@@ -356,7 +356,7 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
                             applySearch(event);
                             setMobileSearchOpen(false);
                         }}
-                        className="flex items-center gap-2 sm:hidden w-full"
+                        className="flex w-full items-center gap-2 sm:hidden"
                     >
                         <div className="relative flex-1">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -471,10 +471,18 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
                                                             </TableCell>
                                                             <TableCell className="px-6 text-center">
                                                                 <ProgramActions
-                                                                    program={program}
-                                                                    onEdit={openEdit}
-                                                                    onToggleActive={toggleActive}
-                                                                    onArchive={openArchiveDialog}
+                                                                    program={
+                                                                        program
+                                                                    }
+                                                                    onEdit={
+                                                                        openEdit
+                                                                    }
+                                                                    onToggleActive={
+                                                                        toggleActive
+                                                                    }
+                                                                    onArchive={
+                                                                        openArchiveDialog
+                                                                    }
                                                                 />
                                                             </TableCell>
                                                         </TableRow>
@@ -519,8 +527,12 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
                                                     <ProgramActions
                                                         program={program}
                                                         onEdit={openEdit}
-                                                        onToggleActive={toggleActive}
-                                                        onArchive={openArchiveDialog}
+                                                        onToggleActive={
+                                                            toggleActive
+                                                        }
+                                                        onArchive={
+                                                            openArchiveDialog
+                                                        }
                                                     />
                                                 </div>
                                             </div>

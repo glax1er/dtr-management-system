@@ -145,12 +145,20 @@ export default function InternSchedule({
     const [showStandardSchedule, setShowStandardSchedule] = useState(true);
     const [showRestDays, setShowRestDays] = useState(true);
 
-    const highlightDate = typeof window !== 'undefined'
-        ? new URLSearchParams(window.location.search).get('highlight_date') || null
-        : null;
-    const highlightPeriod = typeof window !== 'undefined'
-        ? Number(new URLSearchParams(window.location.search).get('highlight_period')) || null
-        : null;
+    const highlightDate =
+        typeof window !== 'undefined'
+            ? new URLSearchParams(window.location.search).get(
+                  'highlight_date',
+              ) || null
+            : null;
+    const highlightPeriod =
+        typeof window !== 'undefined'
+            ? Number(
+                  new URLSearchParams(window.location.search).get(
+                      'highlight_period',
+                  ),
+              ) || null
+            : null;
 
     // Scroll to highlighted day or period
     useEffect(() => {
@@ -158,7 +166,9 @@ export default function InternSchedule({
 
         const targetDate =
             highlightDate ||
-            (highlightPeriod ? days.find((d) => d.period_id === highlightPeriod)?.date : null);
+            (highlightPeriod
+                ? days.find((d) => d.period_id === highlightPeriod)?.date
+                : null);
 
         if (targetDate) {
             const el =
@@ -179,7 +189,13 @@ export default function InternSchedule({
     useEffect(() => {
         const interval = window.setInterval(() => {
             router.reload({
-                only: ['days', 'paginatedDays', 'stats', 'globalPeriods', 'htePeriods'],
+                only: [
+                    'days',
+                    'paginatedDays',
+                    'stats',
+                    'globalPeriods',
+                    'htePeriods',
+                ],
             });
         }, 60_000);
 
@@ -192,7 +208,7 @@ export default function InternSchedule({
             router.get(
                 '/intern/schedule',
                 { month: currentMonth, page: 1 },
-                { preserveScroll: true, preserveState: true }
+                { preserveScroll: true, preserveState: true },
             );
             return;
         }
@@ -219,7 +235,7 @@ export default function InternSchedule({
         router.get(
             '/intern/schedule',
             { month: nextMonthParam, page: 1 },
-            { preserveScroll: true, preserveState: true }
+            { preserveScroll: true, preserveState: true },
         );
     };
 
@@ -227,7 +243,7 @@ export default function InternSchedule({
         router.get(
             '/intern/schedule',
             { month, page, per_page: paginatedDays.per_page },
-            { preserveState: true, preserveScroll: true }
+            { preserveState: true, preserveScroll: true },
         );
     };
 
@@ -235,7 +251,7 @@ export default function InternSchedule({
         router.get(
             '/intern/schedule',
             { month, per_page: perPage, page: 1 },
-            { preserveState: true, preserveScroll: true }
+            { preserveState: true, preserveScroll: true },
         );
     };
 
@@ -247,9 +263,16 @@ export default function InternSchedule({
     // Filter table rows if searching or using filters
     const filteredTableDays = useMemo(() => {
         return paginatedDays.data.filter((day) => {
-            if (!showHteSchedule && day.source_type === 'hte_override') return false;
-            if (!showGlobalSchedule && day.source_type === 'global_schedule') return false;
-            if (!showStandardSchedule && day.source_type === 'default_schedule' && day.is_workday) return false;
+            if (!showHteSchedule && day.source_type === 'hte_override')
+                return false;
+            if (!showGlobalSchedule && day.source_type === 'global_schedule')
+                return false;
+            if (
+                !showStandardSchedule &&
+                day.source_type === 'default_schedule' &&
+                day.is_workday
+            )
+                return false;
             if (!showRestDays && !day.is_workday) return false;
 
             if (search.trim()) {
@@ -258,14 +281,23 @@ export default function InternSchedule({
                     !day.date.toLowerCase().includes(q) &&
                     !day.day_name.toLowerCase().includes(q) &&
                     !day.source_label.toLowerCase().includes(q) &&
-                    !(day.expected_start_time_formatted || '').toLowerCase().includes(q)
+                    !(day.expected_start_time_formatted || '')
+                        .toLowerCase()
+                        .includes(q)
                 ) {
                     return false;
                 }
             }
             return true;
         });
-    }, [paginatedDays.data, showHteSchedule, showGlobalSchedule, showStandardSchedule, showRestDays, search]);
+    }, [
+        paginatedDays.data,
+        showHteSchedule,
+        showGlobalSchedule,
+        showStandardSchedule,
+        showRestDays,
+        search,
+    ]);
 
     return (
         <>
@@ -299,7 +331,7 @@ export default function InternSchedule({
                                 <button
                                     type="button"
                                     onClick={() => setSearch('')}
-                                    className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                                    className="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground"
                                 >
                                     <X className="size-3.5" />
                                 </button>
@@ -317,7 +349,7 @@ export default function InternSchedule({
                             >
                                 <ChevronLeft className="size-4" />
                             </Button>
-                            <span className="px-3 text-xs font-semibold text-foreground whitespace-nowrap">
+                            <span className="px-3 text-xs font-semibold whitespace-nowrap text-foreground">
                                 {monthLabel}
                             </span>
                             <Button
@@ -333,12 +365,21 @@ export default function InternSchedule({
 
                         {/* View Mode Switcher (Grid & Table Tabs) */}
                         <div className="hidden sm:block">
-                            <Tabs value={view} onValueChange={(v) => setView(v as ViewMode)}>
+                            <Tabs
+                                value={view}
+                                onValueChange={(v) => setView(v as ViewMode)}
+                            >
                                 <TabsList>
-                                    <TabsTrigger value="table" className="gap-1.5 text-xs">
+                                    <TabsTrigger
+                                        value="table"
+                                        className="gap-1.5 text-xs"
+                                    >
                                         <TableIcon className="size-4" />
                                     </TabsTrigger>
-                                    <TabsTrigger value="grid" className="gap-1.5 text-xs">
+                                    <TabsTrigger
+                                        value="grid"
+                                        className="gap-1.5 text-xs"
+                                    >
                                         <LayoutGrid className="size-4" />
                                     </TabsTrigger>
                                 </TabsList>
@@ -346,7 +387,7 @@ export default function InternSchedule({
                         </div>
 
                         {/* Workdays Indicator */}
-                        <div className="flex items-center gap-3 bg-card border border-border/70 rounded-lg px-3.5 py-1.5 shrink-0">
+                        <div className="flex shrink-0 items-center gap-3 rounded-lg border border-border/70 bg-card px-3.5 py-1.5">
                             <div className="text-right">
                                 <p className="text-xs font-semibold text-foreground">
                                     {stats.workdays_count} Work Days
@@ -355,19 +396,19 @@ export default function InternSchedule({
                                     {stats.restdays_count} rest days
                                 </p>
                             </div>
-                            <div className="size-2 rounded-full bg-emerald-500 shrink-0" />
+                            <div className="size-2 shrink-0 rounded-full bg-emerald-500" />
                         </div>
                     </div>
                 </div>
 
                 {/* ── Main Google Calendar Workspace Layout ────────────────────── */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+                <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-12">
                     {/* ── Left Sidebar (Google Calendar Style) ────────────────── */}
-                    <div className="lg:col-span-3 space-y-3">
+                    <div className="space-y-3 lg:col-span-3">
                         {/* Mini Month Calendar */}
-                        <Card className="p-3.5 shadow-2xs border">
-                            <div className="flex items-center justify-between pb-2 mb-2 border-b">
-                                <span className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <Card className="border p-3.5 shadow-2xs">
+                            <div className="mb-2 flex items-center justify-between border-b pb-2">
+                                <span className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-foreground uppercase">
                                     <CalendarIcon className="size-3.5 text-primary" />
                                     {monthLabel}
                                 </span>
@@ -376,7 +417,9 @@ export default function InternSchedule({
                                         variant="ghost"
                                         size="icon"
                                         className="size-6 text-muted-foreground hover:text-foreground"
-                                        onClick={() => handleNavigateMonth('prev')}
+                                        onClick={() =>
+                                            handleNavigateMonth('prev')
+                                        }
                                         title="Previous month"
                                     >
                                         <ChevronLeft className="size-3.5" />
@@ -385,7 +428,9 @@ export default function InternSchedule({
                                         variant="ghost"
                                         size="icon"
                                         className="size-6 text-muted-foreground hover:text-foreground"
-                                        onClick={() => handleNavigateMonth('next')}
+                                        onClick={() =>
+                                            handleNavigateMonth('next')
+                                        }
                                         title="Next month"
                                     >
                                         <ChevronRight className="size-3.5" />
@@ -394,9 +439,12 @@ export default function InternSchedule({
                             </div>
 
                             {/* Mini Weekday Headers */}
-                            <div className="grid grid-cols-7 gap-1 text-center mb-1">
+                            <div className="mb-1 grid grid-cols-7 gap-1 text-center">
                                 {MINI_WEEKDAYS.map((w, idx) => (
-                                    <span key={`mini-w-${idx}`} className="text-[10px] font-bold text-muted-foreground/70">
+                                    <span
+                                        key={`mini-w-${idx}`}
+                                        className="text-[10px] font-bold text-muted-foreground/70"
+                                    >
                                         {w}
                                     </span>
                                 ))}
@@ -410,14 +458,16 @@ export default function InternSchedule({
                                         type="button"
                                         onClick={() => handleOpenDay(d)}
                                         className={cn(
-                                            "size-7 rounded-full text-xs font-medium flex items-center justify-center transition-all cursor-pointer",
+                                            'flex size-7 cursor-pointer items-center justify-center rounded-full text-xs font-medium transition-all',
                                             d.is_today
-                                                ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                                                ? 'bg-primary font-bold text-primary-foreground shadow-xs'
                                                 : d.is_current_month
-                                                  ? d.source_type === 'hte_override' && d.is_workday
-                                                      ? "text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-950/50 font-semibold"
-                                                      : "text-foreground hover:bg-muted/70"
-                                                  : "text-muted-foreground/35 hover:bg-muted/20"
+                                                  ? d.source_type ===
+                                                        'hte_override' &&
+                                                    d.is_workday
+                                                      ? 'font-semibold text-purple-700 hover:bg-purple-100 dark:text-purple-300 dark:hover:bg-purple-950/50'
+                                                      : 'text-foreground hover:bg-muted/70'
+                                                  : 'text-muted-foreground/35 hover:bg-muted/20',
                                         )}
                                     >
                                         {d.day_number}
@@ -427,76 +477,93 @@ export default function InternSchedule({
                         </Card>
 
                         {/* Schedule Type Filters (Interactive Checkboxes) */}
-                        <Card className="p-3.5 shadow-2xs border space-y-3">
-                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
+                        <Card className="space-y-3 border p-3.5 shadow-2xs">
+                            <span className="block text-xs font-bold tracking-wider text-muted-foreground uppercase">
                                 Schedule Filters
                             </span>
 
                             <div className="space-y-2.5 text-xs">
                                 {/* 🟣 HTE Time Schedule */}
-                                <label className="flex items-center justify-between cursor-pointer select-none group">
+                                <label className="group flex cursor-pointer items-center justify-between select-none">
                                     <div className="flex items-center gap-2">
                                         <Checkbox
                                             checked={showHteSchedule}
-                                            onCheckedChange={(checked) => setShowHteSchedule(Boolean(checked))}
+                                            onCheckedChange={(checked) =>
+                                                setShowHteSchedule(
+                                                    Boolean(checked),
+                                                )
+                                            }
                                         />
-                                        <span className="font-medium text-foreground group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-                                            HTE Time Schedule{hte ? ` (${hte.name})` : ''}
+                                        <span className="font-medium text-foreground transition-colors group-hover:text-purple-600 dark:group-hover:text-purple-400">
+                                            HTE Time Schedule
+                                            {hte ? ` (${hte.name})` : ''}
                                         </span>
                                     </div>
-                                    <span className="size-2.5 rounded-full bg-purple-600 shrink-0" />
+                                    <span className="size-2.5 shrink-0 rounded-full bg-purple-600" />
                                 </label>
 
                                 {/* 🔵 Global OJT Schedule */}
-                                <label className="flex items-center justify-between cursor-pointer select-none group">
+                                <label className="group flex cursor-pointer items-center justify-between select-none">
                                     <div className="flex items-center gap-2">
                                         <Checkbox
                                             checked={showGlobalSchedule}
-                                            onCheckedChange={(checked) => setShowGlobalSchedule(Boolean(checked))}
+                                            onCheckedChange={(checked) =>
+                                                setShowGlobalSchedule(
+                                                    Boolean(checked),
+                                                )
+                                            }
                                         />
-                                        <span className="font-medium text-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                        <span className="font-medium text-foreground transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400">
                                             Global OJT Schedule
                                         </span>
                                     </div>
-                                    <span className="size-2.5 rounded-full bg-blue-600 shrink-0" />
+                                    <span className="size-2.5 shrink-0 rounded-full bg-blue-600" />
                                 </label>
 
                                 {/* ⚪ Standard 8:00 AM */}
-                                <label className="flex items-center justify-between cursor-pointer select-none group">
+                                <label className="group flex cursor-pointer items-center justify-between select-none">
                                     <div className="flex items-center gap-2">
                                         <Checkbox
                                             checked={showStandardSchedule}
-                                            onCheckedChange={(checked) => setShowStandardSchedule(Boolean(checked))}
+                                            onCheckedChange={(checked) =>
+                                                setShowStandardSchedule(
+                                                    Boolean(checked),
+                                                )
+                                            }
                                         />
-                                        <span className="font-medium text-foreground group-hover:text-primary transition-colors">
+                                        <span className="font-medium text-foreground transition-colors group-hover:text-primary">
                                             Standard 8:00 AM
                                         </span>
                                     </div>
-                                    <span className="size-2.5 rounded-full bg-slate-400 dark:bg-slate-500 shrink-0" />
+                                    <span className="size-2.5 shrink-0 rounded-full bg-slate-400 dark:bg-slate-500" />
                                 </label>
 
                                 {/* ☕ Rest Days */}
-                                <label className="flex items-center justify-between cursor-pointer select-none group">
+                                <label className="group flex cursor-pointer items-center justify-between select-none">
                                     <div className="flex items-center gap-2">
                                         <Checkbox
                                             checked={showRestDays}
-                                            onCheckedChange={(checked) => setShowRestDays(Boolean(checked))}
+                                            onCheckedChange={(checked) =>
+                                                setShowRestDays(
+                                                    Boolean(checked),
+                                                )
+                                            }
                                         />
-                                        <span className="text-muted-foreground group-hover:text-foreground transition-colors font-medium">
+                                        <span className="font-medium text-muted-foreground transition-colors group-hover:text-foreground">
                                             Rest Days
                                         </span>
                                     </div>
-                                    <span className="size-2.5 rounded-full bg-muted-foreground/30 border shrink-0" />
+                                    <span className="size-2.5 shrink-0 rounded-full border bg-muted-foreground/30" />
                                 </label>
                             </div>
                         </Card>
                     </div>
 
                     {/* ── Main Area: Grid View / Table View ───────────────────── */}
-                    <div className="lg:col-span-9 space-y-4">
+                    <div className="space-y-4 lg:col-span-9">
                         {view === 'grid' ? (
                             /* ── GOOGLE CALENDAR GRID VIEW ────────────────────────── */
-                            <Card className="shadow-xs border overflow-hidden">
+                            <Card className="overflow-hidden border shadow-xs">
                                 <div className="flex flex-col">
                                     {/* Weekday Column Headers */}
                                     <div className="grid grid-cols-7 border-b bg-muted/40 text-center">
@@ -504,10 +571,10 @@ export default function InternSchedule({
                                             <div
                                                 key={`head-${name}`}
                                                 className={cn(
-                                                    "py-2.5 text-[11px] sm:text-xs font-semibold tracking-wider uppercase border-r last:border-r-0",
+                                                    'border-r py-2.5 text-[11px] font-semibold tracking-wider uppercase last:border-r-0 sm:text-xs',
                                                     i === 0 || i === 6
-                                                        ? "text-muted-foreground/60"
-                                                        : "text-muted-foreground"
+                                                        ? 'text-muted-foreground/60'
+                                                        : 'text-muted-foreground',
                                                 )}
                                             >
                                                 {name}
@@ -520,38 +587,65 @@ export default function InternSchedule({
                                         {days.map((day) => {
                                             // Check visibility based on filters
                                             let isVisible = true;
-                                            if (!showRestDays && !day.is_workday) isVisible = false;
-                                            if (!showHteSchedule && day.source_type === 'hte_override') isVisible = false;
-                                            if (!showGlobalSchedule && day.source_type === 'global_schedule') isVisible = false;
-                                            if (!showStandardSchedule && day.source_type === 'default_schedule' && day.is_workday) isVisible = false;
+                                            if (
+                                                !showRestDays &&
+                                                !day.is_workday
+                                            )
+                                                isVisible = false;
+                                            if (
+                                                !showHteSchedule &&
+                                                day.source_type ===
+                                                    'hte_override'
+                                            )
+                                                isVisible = false;
+                                            if (
+                                                !showGlobalSchedule &&
+                                                day.source_type ===
+                                                    'global_schedule'
+                                            )
+                                                isVisible = false;
+                                            if (
+                                                !showStandardSchedule &&
+                                                day.source_type ===
+                                                    'default_schedule' &&
+                                                day.is_workday
+                                            )
+                                                isVisible = false;
 
                                             const isDayHighlighted =
                                                 highlightDate === day.date ||
-                                                (highlightPeriod !== null && day.period_id === highlightPeriod);
+                                                (highlightPeriod !== null &&
+                                                    day.period_id ===
+                                                        highlightPeriod);
 
                                             return (
                                                 <button
                                                     key={`grid-day-${day.date}`}
                                                     id={`grid-day-${day.date}`}
                                                     type="button"
-                                                    onClick={() => handleOpenDay(day)}
+                                                    onClick={() =>
+                                                        handleOpenDay(day)
+                                                    }
                                                     className={cn(
-                                                        "group relative flex flex-col justify-between min-h-[95px] sm:min-h-[115px] p-2 text-left transition-all cursor-pointer overflow-hidden hover:bg-muted/30",
-                                                        !day.is_current_month && "bg-muted/15 opacity-40 hover:opacity-70",
-                                                        day.is_today && "bg-primary/5 ring-1 ring-inset ring-primary/40",
-                                                        isDayHighlighted && "ring-2 ring-primary bg-primary/10 dark:bg-primary/20 shadow-md font-medium"
+                                                        'group relative flex min-h-[95px] cursor-pointer flex-col justify-between overflow-hidden p-2 text-left transition-all hover:bg-muted/30 sm:min-h-[115px]',
+                                                        !day.is_current_month &&
+                                                            'bg-muted/15 opacity-40 hover:opacity-70',
+                                                        day.is_today &&
+                                                            'bg-primary/5 ring-1 ring-primary/40 ring-inset',
+                                                        isDayHighlighted &&
+                                                            'bg-primary/10 font-medium shadow-md ring-2 ring-primary dark:bg-primary/20',
                                                     )}
                                                 >
                                                     {/* Day number */}
-                                                    <div className="flex items-center justify-between w-full mb-1">
+                                                    <div className="mb-1 flex w-full items-center justify-between">
                                                         <span
                                                             className={cn(
-                                                                "size-6 sm:size-6.5 text-xs font-semibold flex items-center justify-center rounded-full transition-transform",
+                                                                'flex size-6 items-center justify-center rounded-full text-xs font-semibold transition-transform sm:size-6.5',
                                                                 day.is_today
-                                                                    ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                                                                    ? 'bg-primary font-bold text-primary-foreground shadow-xs'
                                                                     : day.is_current_month
-                                                                      ? "text-foreground"
-                                                                      : "text-muted-foreground/60"
+                                                                      ? 'text-foreground'
+                                                                      : 'text-muted-foreground/60',
                                                             )}
                                                         >
                                                             {day.day_number}
@@ -559,12 +653,13 @@ export default function InternSchedule({
 
                                                         <div className="flex items-center gap-1">
                                                             {isDayHighlighted && (
-                                                                <Badge className="bg-primary text-primary-foreground text-[8px] font-bold uppercase gap-0.5 px-1 py-0 animate-pulse">
-                                                                    <Sparkles className="size-2.5" /> Focus
+                                                                <Badge className="animate-pulse gap-0.5 bg-primary px-1 py-0 text-[8px] font-bold text-primary-foreground uppercase">
+                                                                    <Sparkles className="size-2.5" />{' '}
+                                                                    Focus
                                                                 </Badge>
                                                             )}
                                                             {day.is_today && (
-                                                                <span className="hidden sm:inline-block text-[9px] font-bold uppercase tracking-wider text-primary pr-1">
+                                                                <span className="hidden pr-1 text-[9px] font-bold tracking-wider text-primary uppercase sm:inline-block">
                                                                     Today
                                                                 </span>
                                                             )}
@@ -573,36 +668,44 @@ export default function InternSchedule({
 
                                                     {/* Event Chip */}
                                                     {isVisible && (
-                                                        <div className="w-full mt-auto">
+                                                        <div className="mt-auto w-full">
                                                             {day.is_workday ? (
                                                                 <div
                                                                     className={cn(
-                                                                        "w-full rounded-md px-1.5 py-1 text-[11px] font-medium flex items-center justify-between gap-1 shadow-2xs transition-all",
-                                                                        day.source_type === 'hte_override'
-                                                                            ? "bg-purple-500/15 text-purple-700 dark:text-purple-300 border-l-3 border-l-purple-600 dark:border-l-purple-400 hover:bg-purple-500/25"
-                                                                            : day.source_type === 'global_schedule'
-                                                                              ? "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-l-3 border-l-blue-600 dark:border-l-blue-400 hover:bg-blue-500/25"
-                                                                              : "bg-muted/80 text-foreground border-l-3 border-l-slate-400 dark:border-l-slate-500 hover:bg-muted"
+                                                                        'flex w-full items-center justify-between gap-1 rounded-md px-1.5 py-1 text-[11px] font-medium shadow-2xs transition-all',
+                                                                        day.source_type ===
+                                                                            'hte_override'
+                                                                            ? 'border-l-3 border-l-purple-600 bg-purple-500/15 text-purple-700 hover:bg-purple-500/25 dark:border-l-purple-400 dark:text-purple-300'
+                                                                            : day.source_type ===
+                                                                                'global_schedule'
+                                                                              ? 'border-l-3 border-l-blue-600 bg-blue-500/15 text-blue-700 hover:bg-blue-500/25 dark:border-l-blue-400 dark:text-blue-300'
+                                                                              : 'border-l-3 border-l-slate-400 bg-muted/80 text-foreground hover:bg-muted dark:border-l-slate-500',
                                                                     )}
                                                                 >
-                                                                    <span className="font-bold tabular-nums truncate">
-                                                                        {day.expected_start_time_formatted}
+                                                                    <span className="truncate font-bold tabular-nums">
+                                                                        {
+                                                                            day.expected_start_time_formatted
+                                                                        }
                                                                     </span>
-                                                                    {day.source_type === 'hte_override' && (
-                                                                        <span className="hidden sm:inline-block text-[9px] font-semibold opacity-85 truncate">
+                                                                    {day.source_type ===
+                                                                        'hte_override' && (
+                                                                        <span className="hidden truncate text-[9px] font-semibold opacity-85 sm:inline-block">
                                                                             HTE
                                                                         </span>
                                                                     )}
-                                                                    {day.source_type === 'global_schedule' && (
-                                                                        <span className="hidden sm:inline-block text-[9px] font-semibold opacity-85 truncate">
+                                                                    {day.source_type ===
+                                                                        'global_schedule' && (
+                                                                        <span className="hidden truncate text-[9px] font-semibold opacity-85 sm:inline-block">
                                                                             Global
                                                                         </span>
                                                                     )}
                                                                 </div>
                                                             ) : (
-                                                                <div className="w-full rounded-md bg-muted/40 px-1.5 py-0.5 text-[10px] text-muted-foreground flex items-center gap-1 font-medium">
+                                                                <div className="flex w-full items-center gap-1 rounded-md bg-muted/40 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                                                                     <Coffee className="size-2.5 shrink-0 opacity-60" />
-                                                                    <span className="truncate">Rest Day</span>
+                                                                    <span className="truncate">
+                                                                        Rest Day
+                                                                    </span>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -615,8 +718,8 @@ export default function InternSchedule({
                             </Card>
                         ) : (
                             /* ── TABLE VIEW (With NumberedPagination matching existing pages) ── */
-                            <Card className="shadow-xs border overflow-hidden">
-                                <CardHeader className="py-3 px-4 sm:px-6 border-b bg-card">
+                            <Card className="overflow-hidden border shadow-xs">
+                                <CardHeader className="border-b bg-card px-4 py-3 sm:px-6">
                                     <div className="flex items-center justify-between">
                                         <CardTitle className="text-base font-semibold">
                                             Schedule Roster for {monthLabel}
@@ -627,84 +730,115 @@ export default function InternSchedule({
                                     </div>
                                 </CardHeader>
 
-                                <CardContent className="p-0 flex flex-col justify-between">
+                                <CardContent className="flex flex-col justify-between p-0">
                                     <Table>
                                         <TableHeader className="bg-muted/40">
                                             <TableRow>
-                                                <TableHead className="pl-6 font-semibold">Date</TableHead>
-                                                <TableHead className="text-center font-semibold">Day</TableHead>
-                                                <TableHead className="text-center font-semibold">Expected Arrival</TableHead>
-                                                <TableHead className="text-center font-semibold">Schedule Type</TableHead>
-                                                <TableHead className="pr-6 text-center font-semibold">Action</TableHead>
+                                                <TableHead className="pl-6 font-semibold">
+                                                    Date
+                                                </TableHead>
+                                                <TableHead className="text-center font-semibold">
+                                                    Day
+                                                </TableHead>
+                                                <TableHead className="text-center font-semibold">
+                                                    Expected Arrival
+                                                </TableHead>
+                                                <TableHead className="text-center font-semibold">
+                                                    Schedule Type
+                                                </TableHead>
+                                                <TableHead className="pr-6 text-center font-semibold">
+                                                    Action
+                                                </TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {filteredTableDays.map((day) => {
                                                 const isDayHighlighted =
-                                                    highlightDate === day.date ||
-                                                    (highlightPeriod !== null && day.period_id === highlightPeriod);
+                                                    highlightDate ===
+                                                        day.date ||
+                                                    (highlightPeriod !== null &&
+                                                        day.period_id ===
+                                                            highlightPeriod);
 
                                                 return (
                                                     <TableRow
                                                         key={`table-row-${day.date}`}
                                                         id={`table-row-${day.date}`}
                                                         className={cn(
-                                                            "hover:bg-muted/40 transition-colors",
-                                                            isDayHighlighted && "bg-primary/10 ring-2 ring-primary/40 dark:bg-primary/20 font-medium"
+                                                            'transition-colors hover:bg-muted/40',
+                                                            isDayHighlighted &&
+                                                                'bg-primary/10 font-medium ring-2 ring-primary/40 dark:bg-primary/20',
                                                         )}
                                                     >
                                                         <TableCell className="pl-6 font-medium">
                                                             <div className="flex items-center gap-2">
-                                                                <span>{day.date}</span>
+                                                                <span>
+                                                                    {day.date}
+                                                                </span>
                                                                 {isDayHighlighted && (
-                                                                    <Badge className="bg-primary text-primary-foreground text-[10px] uppercase font-semibold gap-1 animate-pulse">
-                                                                        <Sparkles className="size-3" /> Focus
+                                                                    <Badge className="animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase">
+                                                                        <Sparkles className="size-3" />{' '}
+                                                                        Focus
                                                                     </Badge>
                                                                 )}
                                                                 {day.is_today && (
                                                                     <StatusBadge
                                                                         status="today"
                                                                         label="Today"
-                                                                        className="text-[10px] py-0 border-primary text-primary font-bold"
+                                                                        className="border-primary py-0 text-[10px] font-bold text-primary"
                                                                     />
                                                                 )}
                                                             </div>
                                                         </TableCell>
-                                                    <TableCell className="text-center text-muted-foreground text-xs">
-                                                        {day.day_name}
-                                                    </TableCell>
-                                                    <TableCell className="text-center tabular-nums font-semibold text-xs">
-                                                        {day.is_workday ? (
-                                                            <span className="text-foreground">
-                                                                {day.expected_start_time_formatted}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-muted-foreground/60 font-normal">
-                                                                Rest Day
-                                                            </span>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell className="text-center">
-                                                        <StatusBadge
-                                                            status={!day.is_workday ? 'rest_day' : day.source_type}
-                                                            label={day.is_workday ? day.source_label : 'Rest Days'}
-                                                            className="text-xs font-medium"
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell className="pr-6 text-center">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="h-7 text-xs font-medium"
-                                                            onClick={() => handleOpenDay(day)}
-                                                        >
-                                                            View Details
-                                                        </Button>
-                                                    </TableCell>
-                                                </TableRow>
-                                            );
-                                        })}
-                                    </TableBody>
+                                                        <TableCell className="text-center text-xs text-muted-foreground">
+                                                            {day.day_name}
+                                                        </TableCell>
+                                                        <TableCell className="text-center text-xs font-semibold tabular-nums">
+                                                            {day.is_workday ? (
+                                                                <span className="text-foreground">
+                                                                    {
+                                                                        day.expected_start_time_formatted
+                                                                    }
+                                                                </span>
+                                                            ) : (
+                                                                <span className="font-normal text-muted-foreground/60">
+                                                                    Rest Day
+                                                                </span>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="text-center">
+                                                            <StatusBadge
+                                                                status={
+                                                                    !day.is_workday
+                                                                        ? 'rest_day'
+                                                                        : day.source_type
+                                                                }
+                                                                label={
+                                                                    day.is_workday
+                                                                        ? day.source_label
+                                                                        : 'Rest Days'
+                                                                }
+                                                                className="text-xs font-medium"
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell className="pr-6 text-center">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-7 text-xs font-medium"
+                                                                onClick={() =>
+                                                                    handleOpenDay(
+                                                                        day,
+                                                                    )
+                                                                }
+                                                            >
+                                                                View Details
+                                                            </Button>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            })}
+                                        </TableBody>
                                     </Table>
 
                                     {/* Numbered Pagination */}
@@ -726,65 +860,74 @@ export default function InternSchedule({
 
             {/* ── Day Details Modal ────────────────────────────────────────── */}
             <Dialog open={dayModalOpen} onOpenChange={setDayModalOpen}>
-                <DialogContent className="sm:max-w-md p-6 gap-4">
+                <DialogContent className="gap-4 p-6 sm:max-w-md">
                     {selectedDay && (
                         <>
-                            <DialogHeader className="pb-2 border-b pr-8 text-left">
+                            <DialogHeader className="border-b pr-8 pb-2 text-left">
                                 <div className="flex flex-wrap items-center gap-2">
                                     <StatusBadge
                                         status={
-                                            selectedDay.source_type === 'hte_override'
+                                            selectedDay.source_type ===
+                                            'hte_override'
                                                 ? 'hte_override'
-                                                : selectedDay.source_type === 'global_schedule'
+                                                : selectedDay.source_type ===
+                                                    'global_schedule'
                                                   ? 'global_schedule'
                                                   : selectedDay.is_workday
                                                     ? 'work_day'
                                                     : 'rest_day'
                                         }
                                         label={
-                                            selectedDay.source_type === 'hte_override'
+                                            selectedDay.source_type ===
+                                            'hte_override'
                                                 ? 'HTE Time Schedule'
-                                                : selectedDay.source_type === 'global_schedule'
+                                                : selectedDay.source_type ===
+                                                    'global_schedule'
                                                   ? 'Global OJT Schedule'
                                                   : selectedDay.is_workday
                                                     ? 'Work Day'
                                                     : 'Rest Day'
                                         }
-                                        className="text-xs px-2.5 py-0.5"
+                                        className="px-2.5 py-0.5 text-xs"
                                     />
 
                                     {selectedDay.is_today && (
                                         <StatusBadge
                                             status="today"
                                             label="Today"
-                                            className="text-xs border-primary text-primary font-bold"
+                                            className="border-primary text-xs font-bold text-primary"
                                         />
                                     )}
                                 </div>
 
-                                <DialogTitle className="text-xl font-bold text-foreground mt-2">
+                                <DialogTitle className="mt-2 text-xl font-bold text-foreground">
                                     {selectedDay.day_name}, {selectedDay.date}
                                 </DialogTitle>
                             </DialogHeader>
 
                             <div className="space-y-3 py-1">
                                 {/* Expected Arrival Time Display */}
-                                <div className="flex items-center justify-between p-3.5 rounded-xl border bg-muted/20">
+                                <div className="flex items-center justify-between rounded-xl border bg-muted/20 p-3.5">
                                     <div className="flex items-center gap-3">
                                         <div
                                             className={cn(
-                                                "p-2 rounded-lg shrink-0",
+                                                'shrink-0 rounded-lg p-2',
                                                 selectedDay.is_workday
-                                                    ? selectedDay.source_type === 'hte_override'
-                                                        ? "bg-purple-500/10 text-purple-600 dark:text-purple-400"
-                                                        : "bg-primary/10 text-primary"
-                                                    : "bg-muted text-muted-foreground"
+                                                    ? selectedDay.source_type ===
+                                                      'hte_override'
+                                                        ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400'
+                                                        : 'bg-primary/10 text-primary'
+                                                    : 'bg-muted text-muted-foreground',
                                             )}
                                         >
-                                            {selectedDay.is_workday ? <Clock className="size-5" /> : <Coffee className="size-5" />}
+                                            {selectedDay.is_workday ? (
+                                                <Clock className="size-5" />
+                                            ) : (
+                                                <Coffee className="size-5" />
+                                            )}
                                         </div>
                                         <div>
-                                            <span className="text-xs text-muted-foreground font-medium block">
+                                            <span className="block text-xs font-medium text-muted-foreground">
                                                 Expected Check-in Time
                                             </span>
                                             <strong className="text-lg font-bold text-foreground">
@@ -804,35 +947,52 @@ export default function InternSchedule({
 
                                 {/* Active Schedule Period Specifications (Only shown for configured HTE / Global periods) */}
                                 {selectedDay.period_name && (
-                                    <div className="rounded-xl border p-3.5 space-y-2 text-xs">
+                                    <div className="space-y-2 rounded-xl border p-3.5 text-xs">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-muted-foreground">Schedule Type:</span>
+                                            <span className="text-muted-foreground">
+                                                Schedule Type:
+                                            </span>
                                             <span className="font-semibold text-foreground">
                                                 {selectedDay.source_label}
                                             </span>
                                         </div>
 
                                         <div className="flex items-center justify-between">
-                                            <span className="text-muted-foreground">Period Name:</span>
+                                            <span className="text-muted-foreground">
+                                                Period Name:
+                                            </span>
                                             <span className="font-medium text-foreground">
                                                 {selectedDay.period_name}
                                             </span>
                                         </div>
 
-                                        {selectedDay.period_start_date && selectedDay.period_end_date && (
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-muted-foreground">Effective Dates:</span>
-                                                <span className="font-medium text-foreground">
-                                                    {selectedDay.period_start_date} – {selectedDay.period_end_date}
-                                                </span>
-                                            </div>
-                                        )}
+                                        {selectedDay.period_start_date &&
+                                            selectedDay.period_end_date && (
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-muted-foreground">
+                                                        Effective Dates:
+                                                    </span>
+                                                    <span className="font-medium text-foreground">
+                                                        {
+                                                            selectedDay.period_start_date
+                                                        }{' '}
+                                                        –{' '}
+                                                        {
+                                                            selectedDay.period_end_date
+                                                        }
+                                                    </span>
+                                                </div>
+                                            )}
 
                                         {selectedDay.period_updated_at_human && (
                                             <div className="flex items-center justify-between">
-                                                <span className="text-muted-foreground">Last Updated:</span>
                                                 <span className="text-muted-foreground">
-                                                    {selectedDay.period_updated_at_human}
+                                                    Last Updated:
+                                                </span>
+                                                <span className="text-muted-foreground">
+                                                    {
+                                                        selectedDay.period_updated_at_human
+                                                    }
                                                 </span>
                                             </div>
                                         )}
@@ -840,7 +1000,7 @@ export default function InternSchedule({
                                 )}
                             </div>
 
-                            <DialogFooter className="pt-2 border-t">
+                            <DialogFooter className="border-t pt-2">
                                 <Button
                                     variant="outline"
                                     onClick={() => setDayModalOpen(false)}

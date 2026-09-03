@@ -80,18 +80,19 @@ export function StatCard({
         <Card
             className={cn(
                 'group relative overflow-hidden transition-all duration-300 hover:shadow-md',
-                onClick && 'cursor-pointer hover:border-primary/40 hover:bg-card/80 active:scale-[0.99]',
+                onClick &&
+                    'cursor-pointer hover:border-primary/40 hover:bg-card/80 active:scale-[0.99]',
             )}
             style={{ animationDelay: `${index * 60}ms` }}
             onClick={onClick}
         >
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-xs font-medium text-muted-foreground transition-colors group-hover:text-foreground sm:text-sm">
                     {label}
                 </CardTitle>
                 <div
                     className={cn(
-                        'flex size-9 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110 shadow-xs',
+                        'flex size-9 shrink-0 items-center justify-center rounded-xl shadow-xs transition-transform duration-300 group-hover:scale-110',
                         variantStyles[variant],
                     )}
                 >
@@ -99,11 +100,15 @@ export function StatCard({
                 </div>
             </CardHeader>
             <CardContent className="pt-0">
-                <div className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground tabular-nums">
-                    {displayValue !== undefined ? displayValue : value !== undefined ? <CountUp value={value} /> : null}
+                <div className="text-2xl font-bold tracking-tight text-foreground tabular-nums sm:text-3xl">
+                    {displayValue !== undefined ? (
+                        displayValue
+                    ) : value !== undefined ? (
+                        <CountUp value={value} />
+                    ) : null}
                 </div>
                 {description && (
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="mt-1 text-xs text-muted-foreground">
                         {description}
                     </p>
                 )}
@@ -121,7 +126,7 @@ export function AttendanceRing({
     percent,
     checkedIn,
     total,
-    subtitle = "interns",
+    subtitle = 'interns',
     size = 156,
 }: {
     percent: number;
@@ -166,11 +171,11 @@ export function AttendanceRing({
                         className="fill-none stroke-primary transition-all duration-700 ease-out"
                     />
                 </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center px-2 text-center pointer-events-none">
-                    <span className="text-2xl sm:text-3xl font-bold tracking-tight tabular-nums text-foreground leading-none">
+                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-2 text-center">
+                    <span className="text-2xl leading-none font-bold tracking-tight text-foreground tabular-nums sm:text-3xl">
                         <CountUp value={clamped} />%
                     </span>
-                    <span className="text-xs font-semibold text-muted-foreground mt-1 tabular-nums whitespace-nowrap">
+                    <span className="mt-1 text-xs font-semibold whitespace-nowrap text-muted-foreground tabular-nums">
                         {checkedIn} / {total}
                     </span>
                 </div>
@@ -203,7 +208,7 @@ export function TrendBarChart({
     if (total === 0) {
         return (
             <div className="flex h-32 items-center justify-center text-center">
-                <p className="text-xs sm:text-sm text-muted-foreground">
+                <p className="text-xs text-muted-foreground sm:text-sm">
                     No activity recorded in this period.
                 </p>
             </div>
@@ -224,16 +229,18 @@ export function TrendBarChart({
                             className="group relative flex h-full flex-1 flex-col items-center justify-end"
                         >
                             {/* Hover tooltip */}
-                            <div className="pointer-events-none absolute -top-8 z-20 hidden rounded-md bg-popover px-2 py-1 text-[11px] font-medium text-popover-foreground shadow-md border group-hover:flex items-center gap-1 whitespace-nowrap transition-all">
+                            <div className="pointer-events-none absolute -top-8 z-20 hidden items-center gap-1 rounded-md border bg-popover px-2 py-1 text-[11px] font-medium whitespace-nowrap text-popover-foreground shadow-md transition-all group-hover:flex">
                                 <span>{point.count}</span>
-                                <span className="text-muted-foreground">({point.label})</span>
+                                <span className="text-muted-foreground">
+                                    ({point.label})
+                                </span>
                             </div>
 
                             {/* Bar element */}
                             <div
                                 className={cn(
-                                    "w-full rounded-t-md transition-all duration-500 ease-out group-hover:opacity-90",
-                                    point.count > 0 ? barColor : "bg-muted/60"
+                                    'w-full rounded-t-md transition-all duration-500 ease-out group-hover:opacity-90',
+                                    point.count > 0 ? barColor : 'bg-muted/60',
                                 )}
                                 style={{
                                     height: `${heightPercent}%`,
@@ -246,9 +253,9 @@ export function TrendBarChart({
             </div>
 
             {/* Date labels below */}
-            <div className="flex justify-between items-center px-0.5 text-[10px] text-muted-foreground select-none">
+            <div className="flex items-center justify-between px-0.5 text-[10px] text-muted-foreground select-none">
                 <span>{data[0]?.label}</span>
-                <span className="hidden sm:inline text-center">
+                <span className="hidden text-center sm:inline">
                     {data[Math.floor(data.length / 2)]?.label}
                 </span>
                 <span>{data[data.length - 1]?.label}</span>
@@ -265,8 +272,8 @@ export function RankedList({
     items,
     mounted,
     onItemClick,
-    emptyMessage = "No items recorded yet.",
-    itemLabel = "item",
+    emptyMessage = 'No items recorded yet.',
+    itemLabel = 'item',
 }: {
     items: { name: string; count: number }[];
     mounted: boolean;
@@ -279,7 +286,7 @@ export function RankedList({
     if (items.length === 0) {
         return (
             <div className="flex h-32 items-center justify-center text-center">
-                <p className="text-xs sm:text-sm text-muted-foreground">
+                <p className="text-xs text-muted-foreground sm:text-sm">
                     {emptyMessage}
                 </p>
             </div>
@@ -298,31 +305,31 @@ export function RankedList({
                         key={item.name}
                         onClick={() => onItemClick?.(item.name)}
                         className={cn(
-                            "group flex flex-col gap-1.5 rounded-lg p-2 transition-colors",
-                            onItemClick && "cursor-pointer hover:bg-muted/50"
+                            'group flex flex-col gap-1.5 rounded-lg p-2 transition-colors',
+                            onItemClick && 'cursor-pointer hover:bg-muted/50',
                         )}
                     >
                         <div className="flex items-center justify-between text-xs sm:text-sm">
-                            <div className="flex items-center gap-2 min-w-0">
+                            <div className="flex min-w-0 items-center gap-2">
                                 <span
                                     className={cn(
-                                        "flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold",
+                                        'flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold',
                                         index === 0
-                                            ? "bg-primary text-primary-foreground"
+                                            ? 'bg-primary text-primary-foreground'
                                             : index === 1
-                                            ? "bg-primary/70 text-primary-foreground"
-                                            : index === 2
-                                            ? "bg-primary/40 text-foreground"
-                                            : "bg-muted text-muted-foreground"
+                                              ? 'bg-primary/70 text-primary-foreground'
+                                              : index === 2
+                                                ? 'bg-primary/40 text-foreground'
+                                                : 'bg-muted text-muted-foreground',
                                     )}
                                 >
                                     {index + 1}
                                 </span>
-                                <span className="truncate font-medium text-foreground group-hover:text-primary transition-colors">
+                                <span className="truncate font-medium text-foreground transition-colors group-hover:text-primary">
                                     {item.name}
                                 </span>
                             </div>
-                            <span className="shrink-0 text-xs font-semibold tabular-nums text-muted-foreground">
+                            <span className="shrink-0 text-xs font-semibold text-muted-foreground tabular-nums">
                                 <CountUp value={item.count} /> {itemLabel}
                                 {item.count === 1 ? '' : 's'}
                             </span>
@@ -344,4 +351,3 @@ export function RankedList({
         </div>
     );
 }
-

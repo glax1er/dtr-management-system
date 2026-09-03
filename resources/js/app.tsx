@@ -52,7 +52,9 @@ router.on('navigate', () => {
     if (
         typeof document !== 'undefined' &&
         document.body &&
-        !document.querySelector('[data-slot="dialog-content"][data-state="open"]') &&
+        !document.querySelector(
+            '[data-slot="dialog-content"][data-state="open"]',
+        ) &&
         document.body.style.pointerEvents === 'none'
     ) {
         document.body.style.removeProperty('pointer-events');

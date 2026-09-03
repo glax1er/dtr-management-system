@@ -73,7 +73,9 @@ export function ResolutionRequestDialog({
                 closeAndReset();
             },
             onError: (errors) => {
-                const msg = Object.values(errors)[0] ?? 'Could not submit resolution request.';
+                const msg =
+                    Object.values(errors)[0] ??
+                    'Could not submit resolution request.';
                 toast.error(msg);
                 setStep('form');
             },
@@ -97,50 +99,77 @@ export function ResolutionRequestDialog({
                     Request Resolution
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto w-[calc(100vw-2rem)] sm:w-full">
+            <DialogContent className="max-h-[90vh] w-[calc(100vw-2rem)] max-w-lg overflow-y-auto sm:w-full">
                 {step === 'form' ? (
                     <>
                         <DialogHeader>
                             <DialogTitle>Request Resolution</DialogTitle>
                             <DialogDescription>
-                                {day}, {date} — fill in what's missing and explain why.
+                                {day}, {date} — fill in what's missing and
+                                explain why.
                             </DialogDescription>
                         </DialogHeader>
 
                         <div className="space-y-4">
                             {needsTimeIn ? (
                                 <div className="space-y-1">
-                                    <Label htmlFor="proposed_time_in">Time In</Label>
+                                    <Label htmlFor="proposed_time_in">
+                                        Time In
+                                    </Label>
                                     <Input
                                         id="proposed_time_in"
                                         type="time"
                                         value={form.data.proposed_time_in}
-                                        onChange={(e) => form.setData('proposed_time_in', e.target.value)}
+                                        onChange={(e) =>
+                                            form.setData(
+                                                'proposed_time_in',
+                                                e.target.value,
+                                            )
+                                        }
                                     />
-                                    <InputError message={form.errors.proposed_time_in} />
+                                    <InputError
+                                        message={form.errors.proposed_time_in}
+                                    />
                                 </div>
                             ) : (
                                 <div className="flex justify-between gap-4 text-sm">
-                                    <span className="shrink-0 text-muted-foreground">Time In (already recorded)</span>
-                                    <span className="min-w-0 text-right break-words">{existingTimeIn ?? '—'}</span>
+                                    <span className="shrink-0 text-muted-foreground">
+                                        Time In (already recorded)
+                                    </span>
+                                    <span className="min-w-0 text-right break-words">
+                                        {existingTimeIn ?? '—'}
+                                    </span>
                                 </div>
                             )}
 
                             {needsTimeOut ? (
                                 <div className="space-y-1">
-                                    <Label htmlFor="proposed_time_out">Time Out</Label>
+                                    <Label htmlFor="proposed_time_out">
+                                        Time Out
+                                    </Label>
                                     <Input
                                         id="proposed_time_out"
                                         type="time"
                                         value={form.data.proposed_time_out}
-                                        onChange={(e) => form.setData('proposed_time_out', e.target.value)}
+                                        onChange={(e) =>
+                                            form.setData(
+                                                'proposed_time_out',
+                                                e.target.value,
+                                            )
+                                        }
                                     />
-                                    <InputError message={form.errors.proposed_time_out} />
+                                    <InputError
+                                        message={form.errors.proposed_time_out}
+                                    />
                                 </div>
                             ) : (
                                 <div className="flex justify-between gap-4 text-sm">
-                                    <span className="shrink-0 text-muted-foreground">Time Out (already recorded)</span>
-                                    <span className="min-w-0 text-right break-words">{existingTimeOut ?? '—'}</span>
+                                    <span className="shrink-0 text-muted-foreground">
+                                        Time Out (already recorded)
+                                    </span>
+                                    <span className="min-w-0 text-right break-words">
+                                        {existingTimeOut ?? '—'}
+                                    </span>
                                 </div>
                             )}
 
@@ -149,10 +178,12 @@ export function ResolutionRequestDialog({
                                 <Textarea
                                     id="reason"
                                     value={form.data.reason}
-                                    onChange={(e) => form.setData('reason', e.target.value)}
+                                    onChange={(e) =>
+                                        form.setData('reason', e.target.value)
+                                    }
                                     placeholder="What happened on this day?"
                                     maxLength={1000}
-                                    className="min-h-[80px] max-h-[180px] resize-y break-words [overflow-wrap:anywhere]"
+                                    className="max-h-[180px] min-h-[80px] resize-y [overflow-wrap:anywhere] break-words"
                                 />
                                 <InputError message={form.errors.reason} />
                             </div>
@@ -166,8 +197,10 @@ export function ResolutionRequestDialog({
                             <Button
                                 onClick={handleContinue}
                                 disabled={
-                                    (needsTimeIn && !form.data.proposed_time_in) ||
-                                    (needsTimeOut && !form.data.proposed_time_out) ||
+                                    (needsTimeIn &&
+                                        !form.data.proposed_time_in) ||
+                                    (needsTimeOut &&
+                                        !form.data.proposed_time_out) ||
                                     !form.data.reason
                                 }
                             >
@@ -178,48 +211,72 @@ export function ResolutionRequestDialog({
                 ) : (
                     <>
                         <DialogHeader>
-                            <DialogTitle>Confirm Resolution Request</DialogTitle>
+                            <DialogTitle>
+                                Confirm Resolution Request
+                            </DialogTitle>
                             <DialogDescription>
-                                Double-check this before sending it to your supervisor.
+                                Double-check this before sending it to your
+                                supervisor.
                             </DialogDescription>
                         </DialogHeader>
 
                         <div className="min-w-0 space-y-2 text-sm">
                             <div className="flex justify-between gap-4">
-                                <span className="shrink-0 text-muted-foreground">Date</span>
+                                <span className="shrink-0 text-muted-foreground">
+                                    Date
+                                </span>
                                 <span className="min-w-0 text-right break-words">
                                     {day}, {date}
                                 </span>
                             </div>
                             <div className="flex justify-between gap-4">
-                                <span className="shrink-0 text-muted-foreground">Time In</span>
+                                <span className="shrink-0 text-muted-foreground">
+                                    Time In
+                                </span>
                                 <span className="min-w-0 text-right break-words">
-                                    {needsTimeIn ? formatTo12Hour(form.data.proposed_time_in) : (existingTimeIn ?? '—')}
+                                    {needsTimeIn
+                                        ? formatTo12Hour(
+                                              form.data.proposed_time_in,
+                                          )
+                                        : (existingTimeIn ?? '—')}
                                 </span>
                             </div>
                             <div className="flex justify-between gap-4">
-                                <span className="shrink-0 text-muted-foreground">Time Out</span>
+                                <span className="shrink-0 text-muted-foreground">
+                                    Time Out
+                                </span>
                                 <span className="min-w-0 text-right break-words">
-                                    {needsTimeOut ? formatTo12Hour(form.data.proposed_time_out) : (existingTimeOut ?? '—')}
+                                    {needsTimeOut
+                                        ? formatTo12Hour(
+                                              form.data.proposed_time_out,
+                                          )
+                                        : (existingTimeOut ?? '—')}
                                 </span>
                             </div>
-                            <div className="min-w-0 border-t pt-2 space-y-1">
-                                <span className="text-muted-foreground block text-xs">Reason</span>
-                                <p className="break-words [overflow-wrap:anywhere] [word-break:break-word] text-foreground text-sm whitespace-pre-wrap">
+                            <div className="min-w-0 space-y-1 border-t pt-2">
+                                <span className="block text-xs text-muted-foreground">
+                                    Reason
+                                </span>
+                                <p className="text-sm [overflow-wrap:anywhere] break-words [word-break:break-word] whitespace-pre-wrap text-foreground">
                                     {form.data.reason}
                                 </p>
                             </div>
                         </div>
 
                         <DialogFooter>
-                            <Button variant="outline" onClick={() => setStep('form')}>
+                            <Button
+                                variant="outline"
+                                onClick={() => setStep('form')}
+                            >
                                 Back
                             </Button>
-                            <Button 
-                                onClick={handleSubmit} 
+                            <Button
+                                onClick={handleSubmit}
                                 disabled={form.processing}
                             >
-                                {form.processing ? 'Submitting...' : 'Confirm & Submit'}
+                                {form.processing
+                                    ? 'Submitting...'
+                                    : 'Confirm & Submit'}
                             </Button>
                         </DialogFooter>
                     </>

@@ -13,7 +13,11 @@ export default function AuthLayout({
     children: React.ReactNode;
 }) {
     return (
-        <AuthLayoutTemplate title={title} description={description} maxWidth={maxWidth}>
+        <AuthLayoutTemplate
+            title={title}
+            description={description}
+            maxWidth={maxWidth}
+        >
             {children}
             <FlashToaster />
         </AuthLayoutTemplate>

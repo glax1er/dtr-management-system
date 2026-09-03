@@ -15,10 +15,10 @@ export default function AppLogo() {
             </div>
 
             <div className="grid flex-1 text-left group-data-[collapsible=icon]:hidden">
-                <span className="text-[11px] font-semibold leading-tight">
+                <span className="text-[11px] leading-tight font-semibold">
                     USeP - CIC
                 </span>
-                <span className="text-[9px] font-normal leading-tight">
+                <span className="text-[9px] leading-tight font-normal">
                     Internship Management System
                 </span>
             </div>

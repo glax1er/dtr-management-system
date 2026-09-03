@@ -26,9 +26,10 @@ export default function ForgotPasswordDialog({
     const page = usePage<{ status?: string }>();
     const [sentStatus, setSentStatus] = useState<string | null>(null);
 
-    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
-        email: '',
-    });
+    const { data, setData, post, processing, errors, reset, clearErrors } =
+        useForm({
+            email: '',
+        });
 
     // useForm's reset/clearErrors aren't guaranteed to keep a stable identity
     // across renders, so we route through a ref instead of listing them
@@ -63,7 +64,9 @@ export default function ForgotPasswordDialog({
         post('/forgot-password', {
             preserveScroll: true,
             onSuccess: (pageResponse) => {
-                const responseStatus = (pageResponse.props as { status?: string }).status;
+                const responseStatus = (
+                    pageResponse.props as { status?: string }
+                ).status;
                 if (responseStatus) {
                     setSentStatus(responseStatus);
                 } else {
@@ -76,24 +79,25 @@ export default function ForgotPasswordDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md p-6">
-                <DialogHeader className="flex flex-col items-center text-center space-y-3">
+            <DialogContent className="p-6 sm:max-w-md">
+                <DialogHeader className="flex flex-col items-center space-y-3 text-center">
                     <div className="rounded-full bg-primary/10 p-3 text-primary ring-8 ring-primary/5">
                         <KeyRound className="h-7 w-7" />
                     </div>
 
                     <div className="space-y-1 text-center">
-                        <DialogTitle className="text-lg font-semibold tracking-tight text-foreground text-center">
+                        <DialogTitle className="text-center text-lg font-semibold tracking-tight text-foreground">
                             Forgot your password?
                         </DialogTitle>
-                        <DialogDescription className="text-xs text-muted-foreground text-center max-w-xs mx-auto">
-                            Enter your email address below and we'll send you a link to reset your password.
+                        <DialogDescription className="mx-auto max-w-xs text-center text-xs text-muted-foreground">
+                            Enter your email address below and we'll send you a
+                            link to reset your password.
                         </DialogDescription>
                     </div>
                 </DialogHeader>
 
                 {sentStatus && (
-                    <div className="w-full flex items-center justify-center gap-2 p-3 text-xs font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 rounded-lg animate-in fade-in-50 duration-300">
+                    <div className="flex w-full animate-in items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs font-medium text-emerald-700 duration-300 fade-in-50 dark:border-emerald-800/50 dark:bg-emerald-950/30 dark:text-emerald-400">
                         <CheckCircle2 className="h-4 w-4 shrink-0" />
                         <span>{sentStatus}</span>
                     </div>
@@ -101,7 +105,10 @@ export default function ForgotPasswordDialog({
 
                 <form onSubmit={handleSubmit} className="w-full space-y-4 pt-1">
                     <div className="grid gap-2">
-                        <Label htmlFor="forgot-password-email" className="text-xs font-medium">
+                        <Label
+                            htmlFor="forgot-password-email"
+                            className="text-xs font-medium"
+                        >
                             Email address
                         </Label>
                         <Input
@@ -123,7 +130,7 @@ export default function ForgotPasswordDialog({
                     <div className="flex flex-col gap-2 pt-2">
                         <Button
                             type="submit"
-                            className="w-full h-10 font-medium"
+                            className="h-10 w-full font-medium"
                             disabled={processing || !data.email}
                         >
                             {processing ? (
@@ -141,7 +148,7 @@ export default function ForgotPasswordDialog({
                             variant="ghost"
                             size="sm"
                             onClick={() => onOpenChange(false)}
-                            className="text-xs text-muted-foreground hover:text-foreground h-8"
+                            className="h-8 text-xs text-muted-foreground hover:text-foreground"
                         >
                             Back to log in
                         </Button>

@@ -19,13 +19,18 @@ interface Props {
     role?: string;
 }
 
-export default function NotificationSettings({ preferences, options = [], role }: Props) {
+export default function NotificationSettings({
+    preferences,
+    options = [],
+    role,
+}: Props) {
     const initialData: Record<string, boolean> = {};
     (options || []).forEach((opt) => {
         initialData[opt.key] = preferences?.[opt.key] ?? opt.default ?? true;
     });
 
-    const { data, setData, patch, processing, recentlySuccessful } = useForm<Record<string, boolean>>(initialData);
+    const { data, setData, patch, processing, recentlySuccessful } =
+        useForm<Record<string, boolean>>(initialData);
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -34,7 +39,9 @@ export default function NotificationSettings({ preferences, options = [], role }
         });
     };
 
-    const roleLabel = role ? role.charAt(0).toUpperCase() + role.slice(1) : null;
+    const roleLabel = role
+        ? role.charAt(0).toUpperCase() + role.slice(1)
+        : null;
 
     return (
         <>
@@ -50,7 +57,7 @@ export default function NotificationSettings({ preferences, options = [], role }
                         description="Choose which types of notifications you want to receive across the system."
                     />
                     {roleLabel && (
-                        <span className="shrink-0 inline-flex items-center rounded-md bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground border">
+                        <span className="inline-flex shrink-0 items-center rounded-md border bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
                             {roleLabel} Settings
                         </span>
                     )}
@@ -60,12 +67,18 @@ export default function NotificationSettings({ preferences, options = [], role }
                     <Card className="space-y-5 p-5">
                         {options && options.length > 0 ? (
                             options.map((option) => (
-                                <div key={option.key} className="flex items-start space-x-3">
+                                <div
+                                    key={option.key}
+                                    className="flex items-start space-x-3"
+                                >
                                     <Checkbox
                                         id={option.key}
                                         checked={data[option.key] ?? true}
                                         onCheckedChange={(checked) =>
-                                            setData(option.key, Boolean(checked))
+                                            setData(
+                                                option.key,
+                                                Boolean(checked),
+                                            )
                                         }
                                     />
                                     <div className="grid gap-1 leading-none">
@@ -82,7 +95,10 @@ export default function NotificationSettings({ preferences, options = [], role }
                                 </div>
                             ))
                         ) : (
-                            <p className="text-sm text-muted-foreground">No notification preferences available for your role.</p>
+                            <p className="text-sm text-muted-foreground">
+                                No notification preferences available for your
+                                role.
+                            </p>
                         )}
                     </Card>
 
@@ -92,7 +108,9 @@ export default function NotificationSettings({ preferences, options = [], role }
                         </Button>
 
                         {recentlySuccessful && (
-                            <p className="text-sm text-muted-foreground">Saved.</p>
+                            <p className="text-sm text-muted-foreground">
+                                Saved.
+                            </p>
                         )}
                     </div>
                 </form>

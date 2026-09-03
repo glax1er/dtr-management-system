@@ -1,5 +1,14 @@
 import { Head, router } from '@inertiajs/react';
-import { Calendar, CalendarClock, Clock, Pencil, Plus, Sparkles, Trash2, X } from 'lucide-react';
+import {
+    Calendar,
+    CalendarClock,
+    Clock,
+    Pencil,
+    Plus,
+    Sparkles,
+    Trash2,
+    X,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -127,11 +136,11 @@ function PeriodForm({
 }) {
     const handleSetAllWeekdays = (time: string) => {
         const updated = { ...form.daySchedule };
-        (['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const).forEach(
-            (day) => {
-                updated[day] = time;
-            },
-        );
+        (
+            ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const
+        ).forEach((day) => {
+            updated[day] = time;
+        });
         onChange({ daySchedule: updated });
     };
 
@@ -144,14 +153,17 @@ function PeriodForm({
         <div className="flex flex-col gap-5 py-2">
             {/* Section 1: Period Details */}
             <div className="flex flex-col gap-4 rounded-xl border bg-muted/20 p-4">
-                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <div className="flex items-center gap-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                     <Calendar className="size-3.5" />
                     <span>Override Period Details</span>
                 </div>
 
                 {/* Period Name */}
                 <div className="grid gap-1.5">
-                    <Label htmlFor="override-name" className="text-sm font-medium">
+                    <Label
+                        htmlFor="override-name"
+                        className="text-sm font-medium"
+                    >
                         Period Name{' '}
                         <span className="text-xs font-normal text-muted-foreground">
                             (optional)
@@ -169,8 +181,12 @@ function PeriodForm({
                 {/* Date range in 2 spacious columns */}
                 <div className="grid gap-4 sm:grid-cols-2">
                     <div className="grid gap-1.5">
-                        <Label htmlFor="override-start-date" className="text-sm font-medium">
-                            Start Date <span className="text-destructive">*</span>
+                        <Label
+                            htmlFor="override-start-date"
+                            className="text-sm font-medium"
+                        >
+                            Start Date{' '}
+                            <span className="text-destructive">*</span>
                         </Label>
                         <DatePicker
                             id="override-start-date"
@@ -183,7 +199,10 @@ function PeriodForm({
                         />
                     </div>
                     <div className="grid gap-1.5">
-                        <Label htmlFor="override-end-date" className="text-sm font-medium">
+                        <Label
+                            htmlFor="override-end-date"
+                            className="text-sm font-medium"
+                        >
                             End Date <span className="text-destructive">*</span>
                         </Label>
                         <DatePicker
@@ -203,12 +222,13 @@ function PeriodForm({
             <div className="flex flex-col gap-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
-                        <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                        <Label className="flex items-center gap-2 text-sm font-semibold text-foreground">
                             <Clock className="size-4 text-primary" />
                             Expected Start Times
                         </Label>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                            Set arrival time for workdays. Days left blank will follow normal schedule.
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                            Set arrival time for workdays. Days left blank will
+                            follow normal schedule.
                         </p>
                     </div>
 
@@ -219,7 +239,7 @@ function PeriodForm({
                             variant="outline"
                             size="sm"
                             onClick={() => handleSetAllWeekdays('08:00')}
-                            className="h-7 text-xs px-2 gap-1 rounded-md text-muted-foreground hover:text-foreground"
+                            className="h-7 gap-1 rounded-md px-2 text-xs text-muted-foreground hover:text-foreground"
                         >
                             <Sparkles className="size-3 text-primary" />
                             Mon–Fri 8:00 AM
@@ -229,7 +249,7 @@ function PeriodForm({
                             variant="ghost"
                             size="sm"
                             onClick={handleClearAll}
-                            className="h-7 text-xs px-2 text-muted-foreground hover:text-destructive"
+                            className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive"
                         >
                             Clear
                         </Button>
@@ -237,41 +257,42 @@ function PeriodForm({
                 </div>
 
                 {/* Day schedule cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                     {DAYS.map((day) => {
                         const isSet = Boolean(form.daySchedule[day]);
-                        const isWeekend = day === 'saturday' || day === 'sunday';
+                        const isWeekend =
+                            day === 'saturday' || day === 'sunday';
 
                         return (
                             <div
                                 key={day}
                                 className={cn(
-                                    "flex items-center justify-between rounded-xl border p-2.5 px-3.5 transition-all gap-3",
+                                    'flex items-center justify-between gap-3 rounded-xl border p-2.5 px-3.5 transition-all',
                                     isSet
-                                        ? "border-primary/40 bg-primary/5 dark:bg-primary/10 shadow-xs"
-                                        : "border-border bg-background/60 hover:bg-muted/30",
+                                        ? 'border-primary/40 bg-primary/5 shadow-xs dark:bg-primary/10'
+                                        : 'border-border bg-background/60 hover:bg-muted/30',
                                 )}
                             >
-                                <div className="flex items-center gap-2.5 min-w-28">
+                                <div className="flex min-w-28 items-center gap-2.5">
                                     <span
                                         className={cn(
-                                            "size-2 rounded-full shrink-0",
+                                            'size-2 shrink-0 rounded-full',
                                             isSet
-                                                ? "bg-primary"
-                                                : "bg-muted-foreground/30",
+                                                ? 'bg-primary'
+                                                : 'bg-muted-foreground/30',
                                         )}
                                     />
                                     <div className="flex flex-col">
-                                        <span className="text-sm font-medium leading-none">
+                                        <span className="text-sm leading-none font-medium">
                                             {DAY_LABELS[day]}
                                         </span>
-                                        <span className="text-[10px] text-muted-foreground mt-0.5">
+                                        <span className="mt-0.5 text-[10px] text-muted-foreground">
                                             {isWeekend ? 'Weekend' : 'Weekday'}
                                         </span>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-1.5 flex-1 max-w-[140px]">
+                                <div className="flex max-w-[140px] flex-1 items-center gap-1.5">
                                     <Input
                                         type="time"
                                         value={form.daySchedule[day] ?? ''}
@@ -284,10 +305,10 @@ function PeriodForm({
                                             })
                                         }
                                         className={cn(
-                                            "h-8 text-xs rounded-lg px-2 bg-background",
+                                            'h-8 rounded-lg bg-background px-2 text-xs',
                                             isSet
-                                                ? "font-medium text-foreground border-primary/30"
-                                                : "text-muted-foreground border-input",
+                                                ? 'border-primary/30 font-medium text-foreground'
+                                                : 'border-input text-muted-foreground',
                                         )}
                                     />
                                     {isSet && (
@@ -301,7 +322,7 @@ function PeriodForm({
                                                     },
                                                 })
                                             }
-                                            className="text-muted-foreground hover:text-destructive p-1 rounded-md hover:bg-muted cursor-pointer"
+                                            className="cursor-pointer rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
                                             title="Clear day"
                                         >
                                             <X className="size-3" />
@@ -335,21 +356,21 @@ function PeriodRow({
         <div
             id={`schedule-period-${period.id}`}
             className={cn(
-                "rounded-lg border p-4 transition-all duration-300",
+                'rounded-lg border p-4 transition-all duration-300',
                 isHighlighted
-                    ? "ring-2 ring-primary border-primary bg-primary/5 dark:bg-primary/10 shadow-sm"
-                    : "bg-card"
+                    ? 'border-primary bg-primary/5 shadow-sm ring-2 ring-primary dark:bg-primary/10'
+                    : 'bg-card',
             )}
         >
             {/* Period header */}
             <div className="mb-3 flex items-start justify-between gap-2">
                 <div>
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex flex-wrap items-center gap-2">
                         <p className="font-semibold text-foreground">
                             {period.name || 'Unnamed period'}
                         </p>
                         {isHighlighted && (
-                            <Badge className="bg-primary text-primary-foreground font-semibold text-[10px] uppercase gap-1 animate-pulse">
+                            <Badge className="animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase">
                                 <Sparkles className="size-3" />
                                 Updated / Focus
                             </Badge>
@@ -476,7 +497,10 @@ export default function SupervisorSchedule({
                     setAddForm(emptyForm());
                 },
                 onError: (errors) => {
-                    toast.error(Object.values(errors)[0] ?? 'Could not create override period.');
+                    toast.error(
+                        Object.values(errors)[0] ??
+                            'Could not create override period.',
+                    );
                 },
                 onFinish: () => setProcessing(false),
             },
@@ -512,7 +536,10 @@ export default function SupervisorSchedule({
                     setEditingId(null);
                 },
                 onError: (errors) => {
-                    toast.error(Object.values(errors)[0] ?? 'Could not update override period.');
+                    toast.error(
+                        Object.values(errors)[0] ??
+                            'Could not update override period.',
+                    );
                 },
                 onFinish: () => setProcessing(false),
             },
@@ -539,7 +566,10 @@ export default function SupervisorSchedule({
                 setDeleteName('');
             },
             onError: (errors) => {
-                toast.error(Object.values(errors)[0] ?? 'Could not delete override period.');
+                toast.error(
+                    Object.values(errors)[0] ??
+                        'Could not delete override period.',
+                );
             },
             onFinish: () => setProcessing(false),
         });
@@ -561,7 +591,8 @@ export default function SupervisorSchedule({
                             HTE Schedule
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Global periods (set by admin) apply to your interns by default. Add an override if your HTE differs.
+                            Global periods (set by admin) apply to your interns
+                            by default. Add an override if your HTE differs.
                         </p>
                     </div>
 
@@ -590,7 +621,9 @@ export default function SupervisorSchedule({
                                         key={period.id}
                                         period={period}
                                         readOnly
-                                        isHighlighted={highlightId === period.id}
+                                        isHighlighted={
+                                            highlightId === period.id
+                                        }
                                     />
                                 ))}
                             </div>
@@ -618,7 +651,9 @@ export default function SupervisorSchedule({
                                         key={period.id}
                                         period={period}
                                         readOnly={false}
-                                        isHighlighted={highlightId === period.id}
+                                        isHighlighted={
+                                            highlightId === period.id
+                                        }
                                         onEdit={openEdit}
                                         onDelete={openDelete}
                                     />
@@ -631,16 +666,17 @@ export default function SupervisorSchedule({
 
             {/* ── Add dialog ───────────────────────────────────────────────── */}
             <Dialog open={addOpen} onOpenChange={setAddOpen}>
-                <DialogContent className="max-h-[92vh] sm:max-w-2xl overflow-y-auto p-6 gap-5">
-                    <DialogHeader className="gap-1.5 pb-3 border-b">
-                        <DialogTitle className="text-xl font-semibold flex items-center gap-2.5">
+                <DialogContent className="max-h-[92vh] gap-5 overflow-y-auto p-6 sm:max-w-2xl">
+                    <DialogHeader className="gap-1.5 border-b pb-3">
+                        <DialogTitle className="flex items-center gap-2.5 text-xl font-semibold">
                             <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-xs">
                                 <Calendar className="size-5" />
                             </span>
                             Add Override Period
                         </DialogTitle>
-                        <DialogDescription className="text-xs sm:text-sm text-muted-foreground">
-                            Set custom date ranges and daily expected start times specifically for your HTE.
+                        <DialogDescription className="text-xs text-muted-foreground sm:text-sm">
+                            Set custom date ranges and daily expected start
+                            times specifically for your HTE.
                         </DialogDescription>
                     </DialogHeader>
                     <PeriodForm
@@ -649,7 +685,7 @@ export default function SupervisorSchedule({
                             setAddForm((f) => ({ ...f, ...patch }))
                         }
                     />
-                    <DialogFooter className="pt-3 border-t gap-2 sm:gap-0">
+                    <DialogFooter className="gap-2 border-t pt-3 sm:gap-0">
                         <Button
                             variant="outline"
                             onClick={() => setAddOpen(false)}
@@ -666,16 +702,17 @@ export default function SupervisorSchedule({
 
             {/* ── Edit dialog ──────────────────────────────────────────────── */}
             <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                <DialogContent className="max-h-[92vh] sm:max-w-2xl overflow-y-auto p-6 gap-5">
-                    <DialogHeader className="gap-1.5 pb-3 border-b">
-                        <DialogTitle className="text-xl font-semibold flex items-center gap-2.5">
+                <DialogContent className="max-h-[92vh] gap-5 overflow-y-auto p-6 sm:max-w-2xl">
+                    <DialogHeader className="gap-1.5 border-b pb-3">
+                        <DialogTitle className="flex items-center gap-2.5 text-xl font-semibold">
                             <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-xs">
                                 <Calendar className="size-5" />
                             </span>
                             Edit Override Period
                         </DialogTitle>
-                        <DialogDescription className="text-xs sm:text-sm text-muted-foreground">
-                            Update the date range or expected start times for each day.
+                        <DialogDescription className="text-xs text-muted-foreground sm:text-sm">
+                            Update the date range or expected start times for
+                            each day.
                         </DialogDescription>
                     </DialogHeader>
                     <PeriodForm
@@ -684,7 +721,7 @@ export default function SupervisorSchedule({
                             setEditForm((f) => ({ ...f, ...patch }))
                         }
                     />
-                    <DialogFooter className="pt-3 border-t gap-2 sm:gap-0">
+                    <DialogFooter className="gap-2 border-t pt-3 sm:gap-0">
                         <Button
                             variant="outline"
                             onClick={() => setEditOpen(false)}

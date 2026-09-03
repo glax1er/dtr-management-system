@@ -35,10 +35,11 @@ export default function VerifyEmailDialog({
     const [isResending, setIsResending] = useState(false);
     const [resendStatus, setResendStatus] = useState<string | null>(null);
 
-    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
-        code: '',
-        email: email || '',
-    });
+    const { data, setData, post, processing, errors, reset, clearErrors } =
+        useForm({
+            code: '',
+            email: email || '',
+        });
 
     // useForm's setData/reset/clearErrors aren't guaranteed to keep a stable
     // identity across renders, so both effects below read through this ref
@@ -68,7 +69,10 @@ export default function VerifyEmailDialog({
     // Countdown timer for resend button
     useEffect(() => {
         if (cooldown > 0) {
-            const timer = setTimeout(() => setCooldown((prev) => prev - 1), 1000);
+            const timer = setTimeout(
+                () => setCooldown((prev) => prev - 1),
+                1000,
+            );
             return () => clearTimeout(timer);
         }
     }, [cooldown]);
@@ -97,7 +101,9 @@ export default function VerifyEmailDialog({
             {
                 preserveScroll: true,
                 onSuccess: () => {
-                    setResendStatus('A new verification code has been sent to your email.');
+                    setResendStatus(
+                        'A new verification code has been sent to your email.',
+                    );
                 },
                 onFinish: () => {
                     setIsResending(false);
@@ -116,21 +122,21 @@ export default function VerifyEmailDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md p-6">
-                <DialogHeader className="flex flex-col items-center text-center space-y-3">
+            <DialogContent className="p-6 sm:max-w-md">
+                <DialogHeader className="flex flex-col items-center space-y-3 text-center">
                     <div className="rounded-full bg-primary/10 p-3 text-primary ring-8 ring-primary/5">
                         <ShieldCheck className="h-7 w-7" />
                     </div>
 
                     <div className="space-y-1 text-center">
-                        <DialogTitle className="text-lg font-semibold tracking-tight text-foreground text-center">
+                        <DialogTitle className="text-center text-lg font-semibold tracking-tight text-foreground">
                             Verify your email address
                         </DialogTitle>
-                        <DialogDescription className="text-xs text-muted-foreground text-center">
+                        <DialogDescription className="text-center text-xs text-muted-foreground">
                             We sent a 6-digit verification code to
                         </DialogDescription>
                         {(email || data.email) && (
-                            <p className="font-medium text-xs text-foreground bg-muted/60 py-1 px-3 rounded-md inline-block border border-border/50 mt-1 max-w-[280px] truncate">
+                            <p className="mt-1 inline-block max-w-[280px] truncate rounded-md border border-border/50 bg-muted/60 px-3 py-1 text-xs font-medium text-foreground">
                                 {email || data.email}
                             </p>
                         )}
@@ -138,7 +144,7 @@ export default function VerifyEmailDialog({
                 </DialogHeader>
 
                 {activeStatus && (
-                    <div className="w-full flex items-center justify-center gap-2 p-3 text-xs font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 rounded-lg animate-in fade-in-50 duration-300">
+                    <div className="flex w-full animate-in items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs font-medium text-emerald-700 duration-300 fade-in-50 dark:border-emerald-800/50 dark:bg-emerald-950/30 dark:text-emerald-400">
                         <CheckCircle2 className="h-4 w-4 shrink-0" />
                         <span>{activeStatus}</span>
                     </div>
@@ -154,22 +160,43 @@ export default function VerifyEmailDialog({
                             autoFocus
                         >
                             <InputOTPGroup className="gap-1.5 sm:gap-2">
-                                <InputOTPSlot index={0} className="h-11 w-10 sm:h-12 sm:w-11 text-base font-semibold border-input" />
-                                <InputOTPSlot index={1} className="h-11 w-10 sm:h-12 sm:w-11 text-base font-semibold border-input" />
-                                <InputOTPSlot index={2} className="h-11 w-10 sm:h-12 sm:w-11 text-base font-semibold border-input" />
-                                <InputOTPSlot index={3} className="h-11 w-10 sm:h-12 sm:w-11 text-base font-semibold border-input" />
-                                <InputOTPSlot index={4} className="h-11 w-10 sm:h-12 sm:w-11 text-base font-semibold border-input" />
-                                <InputOTPSlot index={5} className="h-11 w-10 sm:h-12 sm:w-11 text-base font-semibold border-input" />
+                                <InputOTPSlot
+                                    index={0}
+                                    className="h-11 w-10 border-input text-base font-semibold sm:h-12 sm:w-11"
+                                />
+                                <InputOTPSlot
+                                    index={1}
+                                    className="h-11 w-10 border-input text-base font-semibold sm:h-12 sm:w-11"
+                                />
+                                <InputOTPSlot
+                                    index={2}
+                                    className="h-11 w-10 border-input text-base font-semibold sm:h-12 sm:w-11"
+                                />
+                                <InputOTPSlot
+                                    index={3}
+                                    className="h-11 w-10 border-input text-base font-semibold sm:h-12 sm:w-11"
+                                />
+                                <InputOTPSlot
+                                    index={4}
+                                    className="h-11 w-10 border-input text-base font-semibold sm:h-12 sm:w-11"
+                                />
+                                <InputOTPSlot
+                                    index={5}
+                                    className="h-11 w-10 border-input text-base font-semibold sm:h-12 sm:w-11"
+                                />
                             </InputOTPGroup>
                         </InputOTP>
 
-                        <InputError message={errors.code} className="text-xs mt-1" />
+                        <InputError
+                            message={errors.code}
+                            className="mt-1 text-xs"
+                        />
                     </div>
 
                     <Button
                         type="submit"
                         disabled={processing || data.code.length !== 6}
-                        className="w-full h-10 font-medium"
+                        className="h-10 w-full font-medium"
                     >
                         {processing ? (
                             <>
@@ -182,14 +209,14 @@ export default function VerifyEmailDialog({
                     </Button>
                 </form>
 
-                <div className="flex flex-col items-center gap-2.5 pt-3 text-xs w-full border-t border-border/60">
+                <div className="flex w-full flex-col items-center gap-2.5 border-t border-border/60 pt-3 text-xs">
                     <div className="flex items-center justify-center gap-1 text-muted-foreground">
                         <span>Didn't receive the code?</span>
                         <button
                             type="button"
                             onClick={handleResend}
                             disabled={cooldown > 0 || isResending}
-                            className="font-medium text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1 ml-1"
+                            className="ml-1 inline-flex items-center gap-1 font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             {isResending ? (
                                 <>
@@ -209,7 +236,7 @@ export default function VerifyEmailDialog({
                         variant="ghost"
                         size="sm"
                         onClick={handleClose}
-                        className="text-xs text-muted-foreground hover:text-foreground h-8"
+                        className="h-8 text-xs text-muted-foreground hover:text-foreground"
                     >
                         Cancel / Back to log in
                     </Button>

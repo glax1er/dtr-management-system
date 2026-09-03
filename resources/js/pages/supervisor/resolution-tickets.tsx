@@ -28,7 +28,11 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { dashboard } from '@/routes';
 
 type ResolutionTicketRow = {
@@ -61,7 +65,9 @@ export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
             }
             if (search.trim() !== '') {
                 const query = search.toLowerCase();
-                const nameMatch = ticket.intern_name.toLowerCase().includes(query);
+                const nameMatch = ticket.intern_name
+                    .toLowerCase()
+                    .includes(query);
                 const reasonMatch = ticket.reason.toLowerCase().includes(query);
                 const dateMatch = ticket.date.toLowerCase().includes(query);
                 if (!nameMatch && !reasonMatch && !dateMatch) {
@@ -87,7 +93,8 @@ export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
                             Resolution Tickets
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Pending requests from interns for missing Time In/Out on their DTR.
+                            Pending requests from interns for missing Time
+                            In/Out on their DTR.
                         </p>
                     </div>
 
@@ -120,55 +127,89 @@ export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
                             className="inline-flex size-9 items-center justify-center rounded-md border bg-background text-muted-foreground hover:text-foreground sm:hidden"
                             aria-label="Toggle search"
                         >
-                            {mobileSearchOpen ? <X className="size-4" /> : <Search className="size-4" />}
+                            {mobileSearchOpen ? (
+                                <X className="size-4" />
+                            ) : (
+                                <Search className="size-4" />
+                            )}
                         </button>
 
                         {/* Type filter dropdown */}
                         <div className="hidden sm:block">
                             <Select
                                 value={typeFilter}
-                                onValueChange={(v) => setTypeFilter(v as TypeFilter)}
+                                onValueChange={(v) =>
+                                    setTypeFilter(v as TypeFilter)
+                                }
                             >
                                 <SelectTrigger className="h-9 w-44">
                                     <SlidersHorizontal className="mr-1 size-3.5 shrink-0 text-muted-foreground" />
                                     <SelectValue placeholder="All types" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">All types</SelectItem>
-                                    <SelectItem value="missing_time_in">Missing Time In</SelectItem>
-                                    <SelectItem value="open">No Time Out</SelectItem>
-                                    <SelectItem value="no_record">No Record</SelectItem>
+                                    <SelectItem value="all">
+                                        All types
+                                    </SelectItem>
+                                    <SelectItem value="missing_time_in">
+                                        Missing Time In
+                                    </SelectItem>
+                                    <SelectItem value="open">
+                                        No Time Out
+                                    </SelectItem>
+                                    <SelectItem value="no_record">
+                                        No Record
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                         <div className="sm:hidden">
                             <Select
                                 value={typeFilter}
-                                onValueChange={(v) => setTypeFilter(v as TypeFilter)}
+                                onValueChange={(v) =>
+                                    setTypeFilter(v as TypeFilter)
+                                }
                             >
                                 <SelectTrigger className="inline-flex size-9 items-center justify-center p-0 [&>span]:hidden [&>svg:last-child]:hidden">
                                     <SlidersHorizontal className="size-4 text-muted-foreground" />
                                 </SelectTrigger>
                                 <SelectContent align="end">
-                                    <SelectItem value="all">All types</SelectItem>
-                                    <SelectItem value="missing_time_in">Missing Time In</SelectItem>
-                                    <SelectItem value="open">No Time Out</SelectItem>
-                                    <SelectItem value="no_record">No Record</SelectItem>
+                                    <SelectItem value="all">
+                                        All types
+                                    </SelectItem>
+                                    <SelectItem value="missing_time_in">
+                                        Missing Time In
+                                    </SelectItem>
+                                    <SelectItem value="open">
+                                        No Time Out
+                                    </SelectItem>
+                                    <SelectItem value="no_record">
+                                        No Record
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
 
                         {/* View toggle — desktop only */}
                         <div className="hidden sm:block">
-                            <Tabs value={view} onValueChange={(v) => setView(v as ViewMode)}>
+                            <Tabs
+                                value={view}
+                                onValueChange={(v) => setView(v as ViewMode)}
+                            >
                                 <TabsList>
-                                    <TabsTrigger value="table"><TableIcon className="size-4" /></TabsTrigger>
-                                    <TabsTrigger value="grid"><LayoutGrid className="size-4" /></TabsTrigger>
+                                    <TabsTrigger value="table">
+                                        <TableIcon className="size-4" />
+                                    </TabsTrigger>
+                                    <TabsTrigger value="grid">
+                                        <LayoutGrid className="size-4" />
+                                    </TabsTrigger>
                                 </TabsList>
                             </Tabs>
                         </div>
 
-                        <Badge variant="secondary" className="px-3 py-1 font-semibold text-xs shrink-0">
+                        <Badge
+                            variant="secondary"
+                            className="shrink-0 px-3 py-1 text-xs font-semibold"
+                        >
                             {filteredTickets.length} Pending
                         </Badge>
                     </div>
@@ -176,7 +217,7 @@ export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
 
                 {/* Mobile inline search */}
                 {mobileSearchOpen && (
-                    <div className="flex items-center gap-2 sm:hidden w-full">
+                    <div className="flex w-full items-center gap-2 sm:hidden">
                         <div className="relative flex-1">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                             <input
@@ -190,7 +231,10 @@ export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
                             {search && (
                                 <button
                                     type="button"
-                                    onClick={() => { setSearch(''); setMobileSearchOpen(false); }}
+                                    onClick={() => {
+                                        setSearch('');
+                                        setMobileSearchOpen(false);
+                                    }}
                                     className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                                 >
                                     <X className="size-3.5" />
@@ -219,55 +263,95 @@ export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
                                         <Table>
                                             <TableHeader className="bg-muted/40">
                                                 <TableRow>
-                                                    <TableHead className="px-6 font-semibold">Intern</TableHead>
-                                                    <TableHead className="px-6 font-semibold">Date</TableHead>
-                                                    <TableHead className="px-6 text-center font-semibold">Type</TableHead>
-                                                    <TableHead className="px-6 text-center font-semibold">Proposed In</TableHead>
-                                                    <TableHead className="px-6 text-center font-semibold">Proposed Out</TableHead>
-                                                    <TableHead className="px-6 font-semibold">Reason</TableHead>
-                                                    <TableHead className="px-6 text-center font-semibold">Actions</TableHead>
+                                                    <TableHead className="px-6 font-semibold">
+                                                        Intern
+                                                    </TableHead>
+                                                    <TableHead className="px-6 font-semibold">
+                                                        Date
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center font-semibold">
+                                                        Type
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center font-semibold">
+                                                        Proposed In
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center font-semibold">
+                                                        Proposed Out
+                                                    </TableHead>
+                                                    <TableHead className="px-6 font-semibold">
+                                                        Reason
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center font-semibold">
+                                                        Actions
+                                                    </TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {filteredTickets.map((ticket) => (
-                                                    <TableRow key={ticket.id}>
-                                                        <TableCell className="px-6 font-medium whitespace-nowrap text-foreground">
-                                                            {ticket.intern_name}
-                                                        </TableCell>
-                                                        <TableCell className="px-6 whitespace-nowrap text-muted-foreground">
-                                                            {ticket.date}
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-center whitespace-nowrap">
-                                                            <AttendanceBadge status={ticket.type} />
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-center whitespace-nowrap font-medium text-foreground">
-                                                            {ticket.proposed_time_in ?? '—'}
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-center whitespace-nowrap font-medium text-foreground">
-                                                            {ticket.proposed_time_out ?? '—'}
-                                                        </TableCell>
-                                                        <TableCell className="max-w-xs px-6">
-                                                            <Tooltip>
-                                                                <TooltipTrigger asChild>
-                                                                    <p className="truncate text-muted-foreground cursor-default">
-                                                                        {ticket.reason}
-                                                                    </p>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent className="max-w-sm break-words [overflow-wrap:anywhere] [word-break:break-word] whitespace-pre-wrap">
-                                                                    {ticket.reason}
-                                                                </TooltipContent>
-                                                            </Tooltip>
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-center whitespace-nowrap">
-                                                            <TicketActions
-                                                                ticketId={ticket.id}
-                                                                type={ticket.type}
-                                                                proposedTimeIn={ticket.proposed_time_in}
-                                                                proposedTimeOut={ticket.proposed_time_out}
-                                                            />
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
+                                                {filteredTickets.map(
+                                                    (ticket) => (
+                                                        <TableRow
+                                                            key={ticket.id}
+                                                        >
+                                                            <TableCell className="px-6 font-medium whitespace-nowrap text-foreground">
+                                                                {
+                                                                    ticket.intern_name
+                                                                }
+                                                            </TableCell>
+                                                            <TableCell className="px-6 whitespace-nowrap text-muted-foreground">
+                                                                {ticket.date}
+                                                            </TableCell>
+                                                            <TableCell className="px-6 text-center whitespace-nowrap">
+                                                                <AttendanceBadge
+                                                                    status={
+                                                                        ticket.type
+                                                                    }
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell className="px-6 text-center font-medium whitespace-nowrap text-foreground">
+                                                                {ticket.proposed_time_in ??
+                                                                    '—'}
+                                                            </TableCell>
+                                                            <TableCell className="px-6 text-center font-medium whitespace-nowrap text-foreground">
+                                                                {ticket.proposed_time_out ??
+                                                                    '—'}
+                                                            </TableCell>
+                                                            <TableCell className="max-w-xs px-6">
+                                                                <Tooltip>
+                                                                    <TooltipTrigger
+                                                                        asChild
+                                                                    >
+                                                                        <p className="cursor-default truncate text-muted-foreground">
+                                                                            {
+                                                                                ticket.reason
+                                                                            }
+                                                                        </p>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent className="max-w-sm [overflow-wrap:anywhere] break-words [word-break:break-word] whitespace-pre-wrap">
+                                                                        {
+                                                                            ticket.reason
+                                                                        }
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TableCell>
+                                                            <TableCell className="px-6 text-center whitespace-nowrap">
+                                                                <TicketActions
+                                                                    ticketId={
+                                                                        ticket.id
+                                                                    }
+                                                                    type={
+                                                                        ticket.type
+                                                                    }
+                                                                    proposedTimeIn={
+                                                                        ticket.proposed_time_in
+                                                                    }
+                                                                    proposedTimeOut={
+                                                                        ticket.proposed_time_out
+                                                                    }
+                                                                />
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ),
+                                                )}
                                             </TableBody>
                                         </Table>
                                     </CardContent>
@@ -277,44 +361,66 @@ export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
 
                         {/* Grid view — desktop */}
                         {view === 'grid' && (
-                            <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3">
                                 {filteredTickets.map((ticket) => (
-                                    <Card key={ticket.id} className="flex flex-col justify-between">
+                                    <Card
+                                        key={ticket.id}
+                                        className="flex flex-col justify-between"
+                                    >
                                         <CardHeader className="pb-3">
                                             <div className="flex items-start justify-between gap-2">
                                                 <div className="min-w-0 flex-1">
-                                                    <CardTitle className="text-base font-semibold truncate">
+                                                    <CardTitle className="truncate text-base font-semibold">
                                                         {ticket.intern_name}
                                                     </CardTitle>
-                                                    <p className="text-xs text-muted-foreground mt-0.5">{ticket.date}</p>
+                                                    <p className="mt-0.5 text-xs text-muted-foreground">
+                                                        {ticket.date}
+                                                    </p>
                                                 </div>
-                                                <AttendanceBadge status={ticket.type} />
+                                                <AttendanceBadge
+                                                    status={ticket.type}
+                                                />
                                             </div>
                                         </CardHeader>
                                         <CardContent className="space-y-3 pt-0 text-xs">
-                                            <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/30 p-2.5 border">
+                                            <div className="grid grid-cols-2 gap-2 rounded-lg border bg-muted/30 p-2.5">
                                                 <div>
-                                                    <span className="block text-[10px] text-muted-foreground">Proposed In</span>
-                                                    <span className="font-semibold text-foreground">{ticket.proposed_time_in ?? '—'}</span>
+                                                    <span className="block text-[10px] text-muted-foreground">
+                                                        Proposed In
+                                                    </span>
+                                                    <span className="font-semibold text-foreground">
+                                                        {ticket.proposed_time_in ??
+                                                            '—'}
+                                                    </span>
                                                 </div>
                                                 <div>
-                                                    <span className="block text-[10px] text-muted-foreground">Proposed Out</span>
-                                                    <span className="font-semibold text-foreground">{ticket.proposed_time_out ?? '—'}</span>
+                                                    <span className="block text-[10px] text-muted-foreground">
+                                                        Proposed Out
+                                                    </span>
+                                                    <span className="font-semibold text-foreground">
+                                                        {ticket.proposed_time_out ??
+                                                            '—'}
+                                                    </span>
                                                 </div>
                                             </div>
 
                                             {ticket.reason && (
-                                                <p className="text-muted-foreground bg-muted/20 p-2 rounded-md italic break-words [overflow-wrap:anywhere] [word-break:break-word] line-clamp-3">
-                                                    &ldquo;{ticket.reason}&rdquo;
+                                                <p className="line-clamp-3 rounded-md bg-muted/20 p-2 [overflow-wrap:anywhere] break-words [word-break:break-word] text-muted-foreground italic">
+                                                    &ldquo;{ticket.reason}
+                                                    &rdquo;
                                                 </p>
                                             )}
 
-                                            <div className="flex justify-end pt-1 border-t">
+                                            <div className="flex justify-end border-t pt-1">
                                                 <TicketActions
                                                     ticketId={ticket.id}
                                                     type={ticket.type}
-                                                    proposedTimeIn={ticket.proposed_time_in}
-                                                    proposedTimeOut={ticket.proposed_time_out}
+                                                    proposedTimeIn={
+                                                        ticket.proposed_time_in
+                                                    }
+                                                    proposedTimeOut={
+                                                        ticket.proposed_time_out
+                                                    }
                                                 />
                                             </div>
                                         </CardContent>
@@ -326,28 +432,44 @@ export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
                         {/* Mobile cards list */}
                         <div className="divide-y rounded-lg border bg-card sm:hidden">
                             {filteredTickets.map((ticket) => (
-                                <div key={ticket.id} className="flex flex-col gap-3 p-4">
+                                <div
+                                    key={ticket.id}
+                                    className="flex flex-col gap-3 p-4"
+                                >
                                     <div className="flex items-start justify-between gap-2">
                                         <div className="min-w-0 flex-1">
-                                            <p className="font-semibold text-sm text-foreground truncate">{ticket.intern_name}</p>
-                                            <p className="text-xs text-muted-foreground">{ticket.date}</p>
+                                            <p className="truncate text-sm font-semibold text-foreground">
+                                                {ticket.intern_name}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {ticket.date}
+                                            </p>
                                         </div>
                                         <AttendanceBadge status={ticket.type} />
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-2 text-xs bg-muted/20 p-2.5 rounded-lg border">
+                                    <div className="grid grid-cols-2 gap-2 rounded-lg border bg-muted/20 p-2.5 text-xs">
                                         <div>
-                                            <span className="block text-[10px] text-muted-foreground">Proposed In</span>
-                                            <span className="font-semibold text-foreground">{ticket.proposed_time_in ?? '—'}</span>
+                                            <span className="block text-[10px] text-muted-foreground">
+                                                Proposed In
+                                            </span>
+                                            <span className="font-semibold text-foreground">
+                                                {ticket.proposed_time_in ?? '—'}
+                                            </span>
                                         </div>
                                         <div>
-                                            <span className="block text-[10px] text-muted-foreground">Proposed Out</span>
-                                            <span className="font-semibold text-foreground">{ticket.proposed_time_out ?? '—'}</span>
+                                            <span className="block text-[10px] text-muted-foreground">
+                                                Proposed Out
+                                            </span>
+                                            <span className="font-semibold text-foreground">
+                                                {ticket.proposed_time_out ??
+                                                    '—'}
+                                            </span>
                                         </div>
                                     </div>
 
                                     {ticket.reason && (
-                                        <p className="text-xs text-muted-foreground bg-muted/10 p-2 rounded-md italic break-words [overflow-wrap:anywhere] [word-break:break-word]">
+                                        <p className="rounded-md bg-muted/10 p-2 text-xs [overflow-wrap:anywhere] break-words [word-break:break-word] text-muted-foreground italic">
                                             &ldquo;{ticket.reason}&rdquo;
                                         </p>
                                     )}
@@ -356,8 +478,12 @@ export default function ResolutionTickets({ tickets }: ResolutionTicketsProps) {
                                         <TicketActions
                                             ticketId={ticket.id}
                                             type={ticket.type}
-                                            proposedTimeIn={ticket.proposed_time_in}
-                                            proposedTimeOut={ticket.proposed_time_out}
+                                            proposedTimeIn={
+                                                ticket.proposed_time_in
+                                            }
+                                            proposedTimeOut={
+                                                ticket.proposed_time_out
+                                            }
                                         />
                                     </div>
                                 </div>

@@ -188,9 +188,7 @@ export function NumberedPagination({
                         <PaginationNext
                             href="#"
                             aria-disabled={currentPage >= lastPage}
-                            tabIndex={
-                                currentPage >= lastPage ? -1 : undefined
-                            }
+                            tabIndex={currentPage >= lastPage ? -1 : undefined}
                             className={
                                 currentPage >= lastPage
                                     ? 'pointer-events-none opacity-40'

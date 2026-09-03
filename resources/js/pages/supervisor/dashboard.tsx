@@ -150,7 +150,10 @@ export default function SupervisorDashboard({
             value: pendingTickets,
             icon: FileWarning,
             variant: 'warning' as const,
-            description: pendingTickets > 0 ? 'Awaiting resolution' : 'Zero pending requests',
+            description:
+                pendingTickets > 0
+                    ? 'Awaiting resolution'
+                    : 'Zero pending requests',
             onClick: () => router.visit('/supervisor/resolution-tickets'),
         },
     ];
@@ -186,15 +189,19 @@ export default function SupervisorDashboard({
                 {/* Header banner */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex flex-col gap-1">
-                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                             Welcome back, {auth.user.name}
                         </h1>
                         <p className="text-sm text-muted-foreground">
-                            Real-time overview of attendance tracking, kiosk scans, and resolution requests.
+                            Real-time overview of attendance tracking, kiosk
+                            scans, and resolution requests.
                         </p>
                     </div>
                     {scopeName && (
-                        <Badge variant="secondary" className="px-3 py-1 font-medium text-xs shadow-xs">
+                        <Badge
+                            variant="secondary"
+                            className="px-3 py-1 text-xs font-medium shadow-xs"
+                        >
                             {scopeName}
                         </Badge>
                     )}
@@ -218,7 +225,7 @@ export default function SupervisorDashboard({
 
                 {/* Analytics row 1: scan momentum + right-now attendance */}
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                    <Card className="lg:col-span-2 shadow-xs">
+                    <Card className="shadow-xs lg:col-span-2">
                         <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
                             <div>
                                 <CardTitle className="text-base font-semibold">
@@ -226,7 +233,8 @@ export default function SupervisorDashboard({
                                 </CardTitle>
                                 <CardDescription>
                                     {scansTotal} scan
-                                    {scansTotal === 1 ? '' : 's'} recorded in this window
+                                    {scansTotal === 1 ? '' : 's'} recorded in
+                                    this window
                                 </CardDescription>
                             </div>
                             <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
@@ -242,7 +250,7 @@ export default function SupervisorDashboard({
                         </CardContent>
                     </Card>
 
-                    <Card className="shadow-xs flex flex-col justify-between">
+                    <Card className="flex flex-col justify-between shadow-xs">
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <div>
                                 <CardTitle className="text-base font-semibold">
@@ -283,7 +291,8 @@ export default function SupervisorDashboard({
                                 Resolution Ticket Pipeline
                             </CardTitle>
                             <CardDescription>
-                                Status distribution of attendance change requests
+                                Status distribution of attendance change
+                                requests
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="flex flex-col gap-4">
@@ -314,15 +323,23 @@ export default function SupervisorDashboard({
                                     <button
                                         key={item.status}
                                         type="button"
-                                        onClick={() => router.visit('/supervisor/resolution-tickets')}
-                                        className="flex items-center justify-between rounded-lg p-2 text-sm transition-colors hover:bg-muted/60 text-left w-full"
+                                        onClick={() =>
+                                            router.visit(
+                                                '/supervisor/resolution-tickets',
+                                            )
+                                        }
+                                        className="flex w-full items-center justify-between rounded-lg p-2 text-left text-sm transition-colors hover:bg-muted/60"
                                     >
                                         <div className="flex items-center gap-2.5">
                                             <span
                                                 className={`size-3 shrink-0 rounded-full ${TICKET_STATUS_META[item.status].dotClass}`}
                                             />
                                             <span className="font-medium text-foreground">
-                                                {TICKET_STATUS_META[item.status].label}
+                                                {
+                                                    TICKET_STATUS_META[
+                                                        item.status
+                                                    ].label
+                                                }
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-2">
@@ -330,7 +347,15 @@ export default function SupervisorDashboard({
                                                 <CountUp value={item.count} />
                                             </span>
                                             <span className="text-xs text-muted-foreground">
-                                                ({totalTicketCount > 0 ? Math.round((item.count / totalTicketCount) * 100) : 0}%)
+                                                (
+                                                {totalTicketCount > 0
+                                                    ? Math.round(
+                                                          (item.count /
+                                                              totalTicketCount) *
+                                                              100,
+                                                      )
+                                                    : 0}
+                                                %)
                                             </span>
                                         </div>
                                     </button>
@@ -339,7 +364,7 @@ export default function SupervisorDashboard({
                         </CardContent>
                     </Card>
 
-                    <Card className="lg:col-span-2 shadow-xs">
+                    <Card className="shadow-xs lg:col-span-2">
                         <CardHeader className="pb-3">
                             <CardTitle className="text-base font-semibold">
                                 Top Interns by Scans (Last 14 Days)
@@ -373,10 +398,14 @@ export default function SupervisorDashboard({
                                     Recent Scans
                                 </CardTitle>
                                 <CardDescription>
-                                    Live activity log from the HTE scanning station
+                                    Live activity log from the HTE scanning
+                                    station
                                 </CardDescription>
                             </div>
-                            <Badge variant="outline" className="text-xs font-normal">
+                            <Badge
+                                variant="outline"
+                                className="text-xs font-normal"
+                            >
                                 Total {recentScans.total}
                             </Badge>
                         </div>
@@ -384,41 +413,60 @@ export default function SupervisorDashboard({
                     <CardContent className="flex flex-col gap-4">
                         {recentScans.data.length === 0 ? (
                             <div className="py-12 text-center text-sm text-muted-foreground">
-                                No scans recorded yet — this list fills up as interns from your HTE scan in.
+                                No scans recorded yet — this list fills up as
+                                interns from your HTE scan in.
                             </div>
                         ) : (
                             <>
                                 {/* Table — desktop view */}
-                                <div className="hidden sm:block rounded-lg border overflow-hidden">
+                                <div className="hidden overflow-hidden rounded-lg border sm:block">
                                     <Table>
                                         <TableHeader className="bg-muted/40">
                                             <TableRow>
-                                                <TableHead className="font-semibold px-4">Intern Name</TableHead>
-                                                <TableHead className="font-semibold text-center px-4">ID Number</TableHead>
-                                                <TableHead className="font-semibold text-center px-4">Type</TableHead>
-                                                <TableHead className="font-semibold text-right px-4">Scanned At</TableHead>
+                                                <TableHead className="px-4 font-semibold">
+                                                    Intern Name
+                                                </TableHead>
+                                                <TableHead className="px-4 text-center font-semibold">
+                                                    ID Number
+                                                </TableHead>
+                                                <TableHead className="px-4 text-center font-semibold">
+                                                    Type
+                                                </TableHead>
+                                                <TableHead className="px-4 text-right font-semibold">
+                                                    Scanned At
+                                                </TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {recentScans.data.map((scan) => (
                                                 <TableRow key={scan.id}>
-                                                    <TableCell className="font-medium text-foreground px-4">
+                                                    <TableCell className="px-4 font-medium text-foreground">
                                                         {scan.intern_name}
                                                     </TableCell>
-                                                    <TableCell className="text-center text-muted-foreground tabular-nums px-4">
+                                                    <TableCell className="px-4 text-center text-muted-foreground tabular-nums">
                                                         {scan.id_number ?? '—'}
                                                     </TableCell>
-                                                    <TableCell className="text-center px-4">
+                                                    <TableCell className="px-4 text-center">
                                                         <Badge
-                                                            variant={scan.label === 'time_in' ? 'default' : 'secondary'}
-                                                            className="font-medium text-xs shadow-xs"
+                                                            variant={
+                                                                scan.label ===
+                                                                'time_in'
+                                                                    ? 'default'
+                                                                    : 'secondary'
+                                                            }
+                                                            className="text-xs font-medium shadow-xs"
                                                         >
-                                                            {scan.label === 'time_in' ? 'Time In' : 'Time Out'}
+                                                            {scan.label ===
+                                                            'time_in'
+                                                                ? 'Time In'
+                                                                : 'Time Out'}
                                                         </Badge>
                                                     </TableCell>
                                                     <TableCell
-                                                        className="text-right text-muted-foreground whitespace-nowrap text-xs px-4"
-                                                        title={scan.scanned_at_full}
+                                                        className="px-4 text-right text-xs whitespace-nowrap text-muted-foreground"
+                                                        title={
+                                                            scan.scanned_at_full
+                                                        }
                                                     >
                                                         {scan.scanned_at}
                                                     </TableCell>
@@ -436,18 +484,27 @@ export default function SupervisorDashboard({
                                             className="flex items-center justify-between p-3.5"
                                         >
                                             <div className="flex flex-col gap-0.5">
-                                                <span className="font-medium text-sm text-foreground">
+                                                <span className="text-sm font-medium text-foreground">
                                                     {scan.intern_name}
                                                 </span>
-                                                <span className="text-xs text-muted-foreground" title={scan.scanned_at_full}>
+                                                <span
+                                                    className="text-xs text-muted-foreground"
+                                                    title={scan.scanned_at_full}
+                                                >
                                                     {scan.scanned_at}
                                                 </span>
                                             </div>
                                             <Badge
-                                                variant={scan.label === 'time_in' ? 'default' : 'secondary'}
-                                                className="font-medium text-xs"
+                                                variant={
+                                                    scan.label === 'time_in'
+                                                        ? 'default'
+                                                        : 'secondary'
+                                                }
+                                                className="text-xs font-medium"
                                             >
-                                                {scan.label === 'time_in' ? 'Time In' : 'Time Out'}
+                                                {scan.label === 'time_in'
+                                                    ? 'Time In'
+                                                    : 'Time Out'}
                                             </Badge>
                                         </div>
                                     ))}

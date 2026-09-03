@@ -53,8 +53,8 @@ export default function Login({
             <Head title="Log in" />
 
             {status && (
-                <div className="mb-2 flex items-start gap-2.5 p-3.5 text-xs font-medium text-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50 rounded-lg animate-in fade-in-50 duration-300">
-                    <span className="shrink-0 mt-0.5 inline-block h-2 w-2 rounded-full bg-emerald-500" />
+                <div className="mb-2 flex animate-in items-start gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 p-3.5 text-xs font-medium text-emerald-800 duration-300 fade-in-50 dark:border-emerald-800/50 dark:bg-emerald-950/30 dark:text-emerald-300">
+                    <span className="mt-0.5 inline-block h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
                     <span className="leading-relaxed">{status}</span>
                 </div>
             )}
@@ -88,8 +88,10 @@ export default function Login({
                                     {canResetPassword && (
                                         <button
                                             type="button"
-                                            onClick={() => setShowForgotPassword(true)}
-                                            className="ml-auto text-sm text-muted-foreground hover:text-foreground underline underline-offset-4 cursor-pointer transition-colors"
+                                            onClick={() =>
+                                                setShowForgotPassword(true)
+                                            }
+                                            className="ml-auto cursor-pointer text-sm text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground"
                                             tabIndex={5}
                                         >
                                             Forgot your password?

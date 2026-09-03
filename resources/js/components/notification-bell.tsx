@@ -255,8 +255,13 @@ export function NotificationBell() {
                                         <button
                                             type="button"
                                             title="Delete notification"
-                                            onClick={(e) => deleteNotification(e, notification.id)}
-                                            className="absolute top-3 right-2.5 rounded-md p-1 text-muted-foreground/50 opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 focus:opacity-100"
+                                            onClick={(e) =>
+                                                deleteNotification(
+                                                    e,
+                                                    notification.id,
+                                                )
+                                            }
+                                            className="absolute top-3 right-2.5 rounded-md p-1 text-muted-foreground/50 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive focus:opacity-100"
                                         >
                                             <Trash2 className="size-3.5" />
                                         </button>

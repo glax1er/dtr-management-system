@@ -69,15 +69,26 @@ export default function InternDashboard({
     const [startDate, setStartDate] = useState<string>('');
     const [endDate, setEndDate] = useState<string>('');
 
-    const highlightDate = typeof window !== 'undefined'
-        ? new URLSearchParams(window.location.search).get('highlight_date') || null
-        : null;
-    const highlightTicket = typeof window !== 'undefined'
-        ? Number(new URLSearchParams(window.location.search).get('highlight_ticket')) || null
-        : null;
-    const highlightHours = typeof window !== 'undefined'
-        ? new URLSearchParams(window.location.search).get('highlight_hours') === '1'
-        : false;
+    const highlightDate =
+        typeof window !== 'undefined'
+            ? new URLSearchParams(window.location.search).get(
+                  'highlight_date',
+              ) || null
+            : null;
+    const highlightTicket =
+        typeof window !== 'undefined'
+            ? Number(
+                  new URLSearchParams(window.location.search).get(
+                      'highlight_ticket',
+                  ),
+              ) || null
+            : null;
+    const highlightHours =
+        typeof window !== 'undefined'
+            ? new URLSearchParams(window.location.search).get(
+                  'highlight_hours',
+              ) === '1'
+            : false;
 
     useEffect(() => {
         if (highlightHours) {
@@ -99,11 +110,17 @@ export default function InternDashboard({
                 document.getElementById(`attendance-card-${highlightDate}`);
         }
         if (!el && highlightTicket) {
-            const targetLog = logs.data.find((l) => l.pending_ticket_id === highlightTicket);
+            const targetLog = logs.data.find(
+                (l) => l.pending_ticket_id === highlightTicket,
+            );
             if (targetLog) {
                 el =
-                    document.getElementById(`attendance-row-${targetLog.date}`) ||
-                    document.getElementById(`attendance-card-${targetLog.date}`);
+                    document.getElementById(
+                        `attendance-row-${targetLog.date}`,
+                    ) ||
+                    document.getElementById(
+                        `attendance-card-${targetLog.date}`,
+                    );
             }
         }
 
@@ -334,8 +351,9 @@ export default function InternDashboard({
                     <Card
                         id="hours-progress-card"
                         className={cn(
-                            "flex flex-col justify-between shadow-xs lg:col-span-2 transition-all duration-300",
-                            highlightHours && "ring-2 ring-primary border-primary bg-primary/5 dark:bg-primary/10 shadow-md"
+                            'flex flex-col justify-between shadow-xs transition-all duration-300 lg:col-span-2',
+                            highlightHours &&
+                                'border-primary bg-primary/5 shadow-md ring-2 ring-primary dark:bg-primary/10',
                         )}
                     >
                         <CardHeader className="border-b border-border/60 pb-3">
@@ -344,13 +362,14 @@ export default function InternDashboard({
                                     OJT Hours Progress & Milestones
                                 </CardTitle>
                                 {highlightHours && (
-                                    <Badge className="bg-primary text-primary-foreground font-semibold text-[10px] uppercase gap-1 animate-pulse">
+                                    <Badge className="animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase">
                                         <Sparkles className="size-3" /> Focus
                                     </Badge>
                                 )}
                             </div>
                             <CardDescription>
-                                Track your overall completion towards the required {hours.required} total hours
+                                Track your overall completion towards the
+                                required {hours.required} total hours
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="pt-5 pb-5">
@@ -370,7 +389,9 @@ export default function InternDashboard({
                                     </p>
                                     <div className="space-y-2">
                                         {milestones.map((m) => {
-                                            const isDone = hours.total_rendered >= m.targetHours;
+                                            const isDone =
+                                                hours.total_rendered >=
+                                                m.targetHours;
 
                                             return (
                                                 <div
@@ -391,14 +412,18 @@ export default function InternDashboard({
                                                         <span
                                                             className={cn(
                                                                 'font-medium',
-                                                                isDone && 'text-foreground',
+                                                                isDone &&
+                                                                    'text-foreground',
                                                             )}
                                                         >
                                                             {m.label}
                                                         </span>
                                                     </div>
                                                     <span className="font-semibold text-foreground/80 tabular-nums">
-                                                        {m.targetHours.toFixed(0)} hrs
+                                                        {m.targetHours.toFixed(
+                                                            0,
+                                                        )}{' '}
+                                                        hrs
                                                     </span>
                                                 </div>
                                             );
@@ -450,7 +475,8 @@ export default function InternDashboard({
                                 <div className="flex aspect-square w-40 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border bg-muted/30 p-4 text-center">
                                     <QrCode className="size-10 text-muted-foreground/60" />
                                     <span className="text-xs leading-tight text-muted-foreground">
-                                        Generated automatically once your account is approved.
+                                        Generated automatically once your
+                                        account is approved.
                                     </span>
                                 </div>
                             )}
@@ -467,17 +493,18 @@ export default function InternDashboard({
                                     Monthly Attendance Log
                                 </CardTitle>
                                 <CardDescription>
-                                    Daily check-ins, rendered hours, and resolution ticket status
+                                    Daily check-ins, rendered hours, and
+                                    resolution ticket status
                                 </CardDescription>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 w-full lg:w-auto">
+                            <div className="flex w-full flex-wrap items-center gap-2.5 sm:gap-3 lg:w-auto">
                                 {/* Month Selector */}
-                                <div className="flex items-center justify-between sm:justify-start gap-1.5 rounded-xl border border-border bg-muted/40 p-1 w-full sm:w-auto">
+                                <div className="flex w-full items-center justify-between gap-1.5 rounded-xl border border-border bg-muted/40 p-1 sm:w-auto sm:justify-start">
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="size-7 rounded-lg shrink-0"
+                                        className="size-7 shrink-0 rounded-lg"
                                         onClick={() =>
                                             goToMonth(shiftMonth(month, -1))
                                         }
@@ -485,18 +512,19 @@ export default function InternDashboard({
                                     >
                                         <ChevronLeft className="size-4" />
                                     </Button>
-                                    <div className="px-2 text-center flex-1 sm:flex-initial">
+                                    <div className="flex-1 px-2 text-center sm:flex-initial">
                                         <span className="text-xs font-semibold whitespace-nowrap text-foreground">
                                             {monthLabel}
                                         </span>
                                         <span className="block text-[10px] text-muted-foreground tabular-nums">
-                                            {monthTotalHours.toFixed(2)} hrs total
+                                            {monthTotalHours.toFixed(2)} hrs
+                                            total
                                         </span>
                                     </div>
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="size-7 rounded-lg shrink-0"
+                                        className="size-7 shrink-0 rounded-lg"
                                         disabled={!canGoNextMonth}
                                         onClick={() =>
                                             goToMonth(shiftMonth(month, 1))
@@ -508,29 +536,35 @@ export default function InternDashboard({
                                 </div>
 
                                 {/* Date Range Picker + DTR Report */}
-                                <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-                                <div className="flex items-center gap-1.5 flex-1 min-w-0 w-full sm:w-auto sm:flex-initial">
-                                        <div className="flex-1 min-w-0 sm:w-43 sm:flex-initial">
+                                <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto">
+                                    <div className="flex w-full min-w-0 flex-1 items-center gap-1.5 sm:w-auto sm:flex-initial">
+                                        <div className="min-w-0 flex-1 sm:w-43 sm:flex-initial">
                                             <DatePicker
                                                 date={startDate}
-                                                onDateChange={(d) => setStartDate(d)}
+                                                onDateChange={(d) =>
+                                                    setStartDate(d)
+                                                }
                                                 placeholder="Start date"
                                                 maxDate={endDate || undefined}
                                                 className="h-8 text-xs"
                                                 clearable
                                             />
                                         </div>
-                                        <span className="text-xs text-muted-foreground shrink-0">to</span>
-                                        <div className="flex-1 min-w-0 sm:w-43 sm:flex-initial">
+                                        <span className="shrink-0 text-xs text-muted-foreground">
+                                            to
+                                        </span>
+                                        <div className="min-w-0 flex-1 sm:w-43 sm:flex-initial">
                                             <DatePicker
                                                 date={endDate}
-                                                onDateChange={(d) => setEndDate(d)}
+                                                onDateChange={(d) =>
+                                                    setEndDate(d)
+                                                }
                                                 placeholder="End date"
                                                 minDate={startDate || undefined}
                                                 className="h-8 text-xs"
                                                 clearable
                                                 align="end"
-                                        />
+                                            />
                                         </div>
                                     </div>
 
@@ -538,7 +572,7 @@ export default function InternDashboard({
                                     <Button
                                         size="sm"
                                         variant="default"
-                                        className="h-8 gap-1.5 text-xs font-medium w-full sm:w-auto shrink-0"
+                                        className="h-8 w-full shrink-0 gap-1.5 text-xs font-medium sm:w-auto"
                                         onClick={() => {
                                             const base = '/intern/dtr-report';
                                             let url = base + '?';
@@ -549,13 +583,17 @@ export default function InternDashboard({
                                                 url += `month=${month}`;
                                             }
 
-                                            window.open(url, '_blank', 'noopener');
+                                            window.open(
+                                                url,
+                                                '_blank',
+                                                'noopener',
+                                            );
                                         }}
                                     >
                                         <Download className="size-3.5" />
                                         <span>DTR Report</span>
                                     </Button>
-                            </div>
+                                </div>
                             </div>
                         </div>
                     </CardHeader>
@@ -568,7 +606,8 @@ export default function InternDashboard({
                                     No attendance records for {monthLabel}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                    Your daily scans and approved resolution tickets will appear here.
+                                    Your daily scans and approved resolution
+                                    tickets will appear here.
                                 </p>
                             </div>
                         ) : (
@@ -601,28 +640,41 @@ export default function InternDashboard({
                                         <TableBody>
                                             {logs.data.map((log) => {
                                                 const isHighlighted =
-                                                    (highlightDate !== null && log.date === highlightDate) ||
-                                                    (highlightTicket !== null && log.pending_ticket_id === highlightTicket);
+                                                    (highlightDate !== null &&
+                                                        log.date ===
+                                                            highlightDate) ||
+                                                    (highlightTicket !== null &&
+                                                        log.pending_ticket_id ===
+                                                            highlightTicket);
 
                                                 return (
                                                     <TableRow
                                                         key={log.date}
                                                         id={`attendance-row-${log.date}`}
                                                         className={cn(
-                                                            "hover:bg-muted/50 transition-all duration-300",
-                                                            isHighlighted && "bg-primary/10 ring-2 ring-primary/40 dark:bg-primary/20"
+                                                            'transition-all duration-300 hover:bg-muted/50',
+                                                            isHighlighted &&
+                                                                'bg-primary/10 ring-2 ring-primary/40 dark:bg-primary/20',
                                                         )}
                                                     >
                                                         <TableCell className="pl-6 font-medium">
                                                             <div className="flex items-center gap-1.5">
-                                                                <span>{log.date}</span>
+                                                                <span>
+                                                                    {log.date}
+                                                                </span>
                                                                 {isHighlighted && (
-                                                                    <Badge className="bg-primary text-primary-foreground text-[10px] uppercase font-semibold gap-1 animate-pulse">
-                                                                        <Sparkles className="size-2.5" /> Focus
+                                                                    <Badge className="animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase">
+                                                                        <Sparkles className="size-2.5" />{' '}
+                                                                        Focus
                                                                     </Badge>
                                                                 )}
                                                                 <span className="text-xs text-muted-foreground">
-                                                                    ({log.day.slice(0, 3)})
+                                                                    (
+                                                                    {log.day.slice(
+                                                                        0,
+                                                                        3,
+                                                                    )}
+                                                                    )
                                                                 </span>
                                                             </div>
                                                         </TableCell>
@@ -630,47 +682,80 @@ export default function InternDashboard({
                                                             {log.time_in ?? '—'}
                                                         </TableCell>
                                                         <TableCell className="text-center text-muted-foreground tabular-nums">
-                                                            {log.time_out ?? '—'}
+                                                            {log.time_out ??
+                                                                '—'}
                                                         </TableCell>
                                                         <TableCell className="text-center font-medium tabular-nums">
-                                                            {log.hours_rendered > 0 ? (
-                                                                <span>{log.hours_rendered.toFixed(2)} hrs</span>
+                                                            {log.hours_rendered >
+                                                            0 ? (
+                                                                <span>
+                                                                    {log.hours_rendered.toFixed(
+                                                                        2,
+                                                                    )}{' '}
+                                                                    hrs
+                                                                </span>
                                                             ) : (
-                                                                <span className="text-muted-foreground/60">0.00</span>
+                                                                <span className="text-muted-foreground/60">
+                                                                    0.00
+                                                                </span>
                                                             )}
                                                         </TableCell>
                                                         <TableCell className="text-center">
-    <AttendanceBadge status={log.pending_ticket_id !== null ? 'pending_review' : log.status} />
-</TableCell>
+                                                            <AttendanceBadge
+                                                                status={
+                                                                    log.pending_ticket_id !==
+                                                                    null
+                                                                        ? 'pending_review'
+                                                                        : log.status
+                                                                }
+                                                            />
+                                                        </TableCell>
                                                         <TableCell className="pr-6 text-center">
-                                                            {log.status === 'complete' ? (
-                                                                <span className="text-xs text-muted-foreground/50">—</span>
-                                                            ) : log.pending_ticket_id !== null ? (
+                                                            {log.status ===
+                                                            'complete' ? (
+                                                                <span className="text-xs text-muted-foreground/50">
+                                                                    —
+                                                                </span>
+                                                            ) : log.pending_ticket_id !==
+                                                              null ? (
                                                                 <div className="flex items-center justify-center">
                                                                     <Tooltip>
-                                                                        <TooltipTrigger asChild>
+                                                                        <TooltipTrigger
+                                                                            asChild
+                                                                        >
                                                                             <Button
                                                                                 variant="ghost"
                                                                                 size="icon"
-                                                                                className="size-8 text-amber-600 hover:bg-amber-500/10 hover:text-amber-600 dark:text-amber-400 dark:hover:bg-amber-500/20 cursor-default"
+                                                                                className="size-8 cursor-default text-amber-600 hover:bg-amber-500/10 hover:text-amber-600 dark:text-amber-400 dark:hover:bg-amber-500/20"
                                                                                 aria-label="Request submitted"
                                                                             >
                                                                                 <Clock className="size-4" />
                                                                             </Button>
                                                                         </TooltipTrigger>
                                                                         <TooltipContent>
-                                                                            Request submitted
+                                                                            Request
+                                                                            submitted
                                                                         </TooltipContent>
                                                                     </Tooltip>
                                                                 </div>
                                                             ) : (
                                                                 <div className="flex justify-center">
                                                                     <ResolutionRequestDialog
-                                                                        date={log.date}
-                                                                        day={log.day}
-                                                                        status={log.status}
-                                                                        existingTimeIn={log.time_in}
-                                                                        existingTimeOut={log.time_out}
+                                                                        date={
+                                                                            log.date
+                                                                        }
+                                                                        day={
+                                                                            log.day
+                                                                        }
+                                                                        status={
+                                                                            log.status
+                                                                        }
+                                                                        existingTimeIn={
+                                                                            log.time_in
+                                                                        }
+                                                                        existingTimeOut={
+                                                                            log.time_out
+                                                                        }
                                                                     />
                                                                 </div>
                                                             )}
@@ -686,16 +771,20 @@ export default function InternDashboard({
                                 <div className="divide-y divide-border overflow-hidden rounded-lg border sm:hidden">
                                     {logs.data.map((log) => {
                                         const isHighlighted =
-                                            (highlightDate !== null && log.date === highlightDate) ||
-                                            (highlightTicket !== null && log.pending_ticket_id === highlightTicket);
+                                            (highlightDate !== null &&
+                                                log.date === highlightDate) ||
+                                            (highlightTicket !== null &&
+                                                log.pending_ticket_id ===
+                                                    highlightTicket);
 
                                         return (
                                             <div
                                                 key={log.date}
                                                 id={`attendance-card-${log.date}`}
                                                 className={cn(
-                                                    "space-y-3 bg-card p-4 transition-all duration-300",
-                                                    isHighlighted && "bg-primary/10 ring-2 ring-primary/40"
+                                                    'space-y-3 bg-card p-4 transition-all duration-300',
+                                                    isHighlighted &&
+                                                        'bg-primary/10 ring-2 ring-primary/40',
                                                 )}
                                             >
                                                 <div className="flex items-center justify-between">
@@ -705,8 +794,9 @@ export default function InternDashboard({
                                                                 {log.date}
                                                             </p>
                                                             {isHighlighted && (
-                                                                <Badge className="bg-primary text-primary-foreground text-[10px] uppercase font-semibold gap-1 animate-pulse">
-                                                                    <Sparkles className="size-2.5" /> Focus
+                                                                <Badge className="animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase">
+                                                                    <Sparkles className="size-2.5" />{' '}
+                                                                    Focus
                                                                 </Badge>
                                                             )}
                                                         </div>
@@ -714,7 +804,14 @@ export default function InternDashboard({
                                                             {log.day}
                                                         </p>
                                                     </div>
-                                                    <AttendanceBadge status={log.pending_ticket_id !== null ? 'pending_review' : log.status} />
+                                                    <AttendanceBadge
+                                                        status={
+                                                            log.pending_ticket_id !==
+                                                            null
+                                                                ? 'pending_review'
+                                                                : log.status
+                                                        }
+                                                    />
                                                 </div>
 
                                                 <div className="grid grid-cols-3 gap-2 text-center">
@@ -731,7 +828,8 @@ export default function InternDashboard({
                                                             Time Out
                                                         </p>
                                                         <p className="mt-0.5 text-xs font-semibold tabular-nums">
-                                                            {log.time_out ?? '—'}
+                                                            {log.time_out ??
+                                                                '—'}
                                                         </p>
                                                     </div>
                                                     <div className="rounded-lg bg-muted/40 p-2">
@@ -739,30 +837,37 @@ export default function InternDashboard({
                                                             Hours
                                                         </p>
                                                         <p className="mt-0.5 text-xs font-semibold tabular-nums">
-                                                            {log.hours_rendered.toFixed(2)}
+                                                            {log.hours_rendered.toFixed(
+                                                                2,
+                                                            )}
                                                         </p>
                                                     </div>
                                                 </div>
 
                                                 <div className="flex items-center justify-end pt-1">
-                                                    {log.status === 'complete' ? (
+                                                    {log.status ===
+                                                    'complete' ? (
                                                         <span className="text-xs text-muted-foreground/60">
                                                             Complete
                                                         </span>
-                                                    ) : log.pending_ticket_id !== null ? (
+                                                    ) : log.pending_ticket_id !==
+                                                      null ? (
                                                         <Tooltip>
-                                                            <TooltipTrigger asChild>
+                                                            <TooltipTrigger
+                                                                asChild
+                                                            >
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="icon"
-                                                                    className="size-8 text-amber-600 hover:bg-amber-500/10 hover:text-amber-600 dark:text-amber-400 dark:hover:bg-amber-500/20 cursor-default"
+                                                                    className="size-8 cursor-default text-amber-600 hover:bg-amber-500/10 hover:text-amber-600 dark:text-amber-400 dark:hover:bg-amber-500/20"
                                                                     aria-label="Request submitted"
                                                                 >
                                                                     <Clock className="size-4" />
                                                                 </Button>
                                                             </TooltipTrigger>
                                                             <TooltipContent>
-                                                                Request submitted
+                                                                Request
+                                                                submitted
                                                             </TooltipContent>
                                                         </Tooltip>
                                                     ) : (
@@ -770,8 +875,12 @@ export default function InternDashboard({
                                                             date={log.date}
                                                             day={log.day}
                                                             status={log.status}
-                                                            existingTimeIn={log.time_in}
-                                                            existingTimeOut={log.time_out}
+                                                            existingTimeIn={
+                                                                log.time_in
+                                                            }
+                                                            existingTimeOut={
+                                                                log.time_out
+                                                            }
                                                         />
                                                     )}
                                                 </div>

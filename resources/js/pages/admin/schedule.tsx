@@ -1,5 +1,15 @@
 import { Head, router } from '@inertiajs/react';
-import { Calendar, CalendarDays, CalendarClock, Clock, Pencil, Plus, Sparkles, Trash2, X } from 'lucide-react';
+import {
+    Calendar,
+    CalendarDays,
+    CalendarClock,
+    Clock,
+    Pencil,
+    Plus,
+    Sparkles,
+    Trash2,
+    X,
+} from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -17,15 +27,32 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 
 // ── Constants ────────────────────────────────────────────────────────────────
-const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
+const DAYS = [
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+    'sunday',
+] as const;
 const DAY_LABELS: Record<string, string> = {
-    monday: 'Monday', tuesday: 'Tuesday', wednesday: 'Wednesday',
-    thursday: 'Thursday', friday: 'Friday', saturday: 'Saturday', sunday: 'Sunday',
+    monday: 'Monday',
+    tuesday: 'Tuesday',
+    wednesday: 'Wednesday',
+    thursday: 'Thursday',
+    friday: 'Friday',
+    saturday: 'Saturday',
+    sunday: 'Sunday',
 };
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -56,7 +83,9 @@ const formFromPeriod = (p: SchedulePeriod): FormState => ({
     name: p.name ?? '',
     startDate: p.start_date,
     endDate: p.end_date,
-    daySchedule: Object.fromEntries(DAYS.map((d) => [d, p.day_schedule[d] ?? ''])),
+    daySchedule: Object.fromEntries(
+        DAYS.map((d) => [d, p.day_schedule[d] ?? '']),
+    ),
 });
 
 const buildPayload = (form: FormState) =>
@@ -82,11 +111,11 @@ function PeriodForm({
 }) {
     const handleSetAllWeekdays = (time: string) => {
         const updated = { ...form.daySchedule };
-        (['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const).forEach(
-            (day) => {
-                updated[day] = time;
-            }
-        );
+        (
+            ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const
+        ).forEach((day) => {
+            updated[day] = time;
+        });
         onChange({ daySchedule: updated });
     };
 
@@ -99,15 +128,21 @@ function PeriodForm({
         <div className="flex flex-col gap-5 py-2">
             {/* Section 1: Period Details */}
             <div className="flex flex-col gap-4 rounded-xl border bg-muted/20 p-4">
-                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <div className="flex items-center gap-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                     <Calendar className="size-3.5" />
                     <span>Period Details</span>
                 </div>
 
                 {/* Period Name */}
                 <div className="grid gap-1.5">
-                    <Label htmlFor="period-name" className="text-sm font-medium">
-                        Period Name <span className="text-xs font-normal text-muted-foreground">(optional)</span>
+                    <Label
+                        htmlFor="period-name"
+                        className="text-sm font-medium"
+                    >
+                        Period Name{' '}
+                        <span className="text-xs font-normal text-muted-foreground">
+                            (optional)
+                        </span>
                     </Label>
                     <Input
                         id="period-name"
@@ -121,8 +156,12 @@ function PeriodForm({
                 {/* Date range in 2 spacious columns */}
                 <div className="grid gap-4 sm:grid-cols-2">
                     <div className="grid gap-1.5">
-                        <Label htmlFor="start-date" className="text-sm font-medium">
-                            Start Date <span className="text-destructive">*</span>
+                        <Label
+                            htmlFor="start-date"
+                            className="text-sm font-medium"
+                        >
+                            Start Date{' '}
+                            <span className="text-destructive">*</span>
                         </Label>
                         <DatePicker
                             id="start-date"
@@ -135,7 +174,10 @@ function PeriodForm({
                         />
                     </div>
                     <div className="grid gap-1.5">
-                        <Label htmlFor="end-date" className="text-sm font-medium">
+                        <Label
+                            htmlFor="end-date"
+                            className="text-sm font-medium"
+                        >
                             End Date <span className="text-destructive">*</span>
                         </Label>
                         <DatePicker
@@ -155,12 +197,13 @@ function PeriodForm({
             <div className="flex flex-col gap-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
-                        <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                        <Label className="flex items-center gap-2 text-sm font-semibold text-foreground">
                             <Clock className="size-4 text-primary" />
                             Expected Start Times
                         </Label>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                            Set arrival time for workdays. Days left blank are rest / off days.
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                            Set arrival time for workdays. Days left blank are
+                            rest / off days.
                         </p>
                     </div>
 
@@ -171,7 +214,7 @@ function PeriodForm({
                             variant="outline"
                             size="sm"
                             onClick={() => handleSetAllWeekdays('08:00')}
-                            className="h-7 text-xs px-2 gap-1 rounded-md text-muted-foreground hover:text-foreground"
+                            className="h-7 gap-1 rounded-md px-2 text-xs text-muted-foreground hover:text-foreground"
                         >
                             <Sparkles className="size-3 text-primary" />
                             Mon–Fri 8:00 AM
@@ -181,7 +224,7 @@ function PeriodForm({
                             variant="ghost"
                             size="sm"
                             onClick={handleClearAll}
-                            className="h-7 text-xs px-2 text-muted-foreground hover:text-destructive"
+                            className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive"
                         >
                             Clear
                         </Button>
@@ -189,41 +232,42 @@ function PeriodForm({
                 </div>
 
                 {/* Day schedule cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                     {DAYS.map((day) => {
                         const isSet = Boolean(form.daySchedule[day]);
-                        const isWeekend = day === 'saturday' || day === 'sunday';
+                        const isWeekend =
+                            day === 'saturday' || day === 'sunday';
 
                         return (
                             <div
                                 key={day}
                                 className={cn(
-                                    "flex items-center justify-between rounded-xl border p-2.5 px-3.5 transition-all gap-3",
+                                    'flex items-center justify-between gap-3 rounded-xl border p-2.5 px-3.5 transition-all',
                                     isSet
-                                        ? "border-primary/40 bg-primary/5 dark:bg-primary/10 shadow-xs"
-                                        : "border-border bg-background/60 hover:bg-muted/30"
+                                        ? 'border-primary/40 bg-primary/5 shadow-xs dark:bg-primary/10'
+                                        : 'border-border bg-background/60 hover:bg-muted/30',
                                 )}
                             >
-                                <div className="flex items-center gap-2.5 min-w-28">
+                                <div className="flex min-w-28 items-center gap-2.5">
                                     <span
                                         className={cn(
-                                            "size-2 rounded-full shrink-0",
+                                            'size-2 shrink-0 rounded-full',
                                             isSet
-                                                ? "bg-primary"
-                                                : "bg-muted-foreground/30"
+                                                ? 'bg-primary'
+                                                : 'bg-muted-foreground/30',
                                         )}
                                     />
                                     <div className="flex flex-col">
-                                        <span className="text-sm font-medium leading-none">
+                                        <span className="text-sm leading-none font-medium">
                                             {DAY_LABELS[day]}
                                         </span>
-                                        <span className="text-[10px] text-muted-foreground mt-0.5">
+                                        <span className="mt-0.5 text-[10px] text-muted-foreground">
                                             {isWeekend ? 'Weekend' : 'Weekday'}
                                         </span>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-1.5 flex-1 max-w-[140px]">
+                                <div className="flex max-w-[140px] flex-1 items-center gap-1.5">
                                     <Input
                                         type="time"
                                         value={form.daySchedule[day] ?? ''}
@@ -236,10 +280,10 @@ function PeriodForm({
                                             })
                                         }
                                         className={cn(
-                                            "h-8 text-xs rounded-lg px-2 bg-background",
+                                            'h-8 rounded-lg bg-background px-2 text-xs',
                                             isSet
-                                                ? "font-medium text-foreground border-primary/30"
-                                                : "text-muted-foreground border-input"
+                                                ? 'border-primary/30 font-medium text-foreground'
+                                                : 'border-input text-muted-foreground',
                                         )}
                                     />
                                     {isSet && (
@@ -253,7 +297,7 @@ function PeriodForm({
                                                     },
                                                 })
                                             }
-                                            className="text-muted-foreground hover:text-destructive p-1 rounded-md hover:bg-muted cursor-pointer"
+                                            className="cursor-pointer rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
                                             title="Clear day"
                                         >
                                             <X className="size-3" />
@@ -270,7 +314,11 @@ function PeriodForm({
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
-export default function AdminSchedule({ periods }: { periods: SchedulePeriod[] }) {
+export default function AdminSchedule({
+    periods,
+}: {
+    periods: SchedulePeriod[];
+}) {
     const [addOpen, setAddOpen] = useState(false);
     const [addForm, setAddForm] = useState<FormState>(emptyForm);
 
@@ -282,9 +330,12 @@ export default function AdminSchedule({ periods }: { periods: SchedulePeriod[] }
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [deleteName, setDeleteName] = useState('');
 
-    const highlightId = typeof window !== 'undefined'
-        ? Number(new URLSearchParams(window.location.search).get('highlight')) || null
-        : null;
+    const highlightId =
+        typeof window !== 'undefined'
+            ? Number(
+                  new URLSearchParams(window.location.search).get('highlight'),
+              ) || null
+            : null;
 
     // Scroll to and briefly highlight the period indicated by the notification
     useEffect(() => {
@@ -392,7 +443,9 @@ export default function AdminSchedule({ periods }: { periods: SchedulePeriod[] }
                 {/* Existing periods */}
                 <Card className="flex-1">
                     <CardHeader>
-                        <CardTitle className="text-base">Schedule Periods</CardTitle>
+                        <CardTitle className="text-base">
+                            Schedule Periods
+                        </CardTitle>
                     </CardHeader>
                     <CardContent>
                         {periods.length === 0 ? (
@@ -402,17 +455,18 @@ export default function AdminSchedule({ periods }: { periods: SchedulePeriod[] }
                         ) : (
                             <div className="flex flex-col gap-3">
                                 {periods.map((period) => {
-                                    const isHighlighted = highlightId === period.id;
+                                    const isHighlighted =
+                                        highlightId === period.id;
 
                                     return (
                                         <div
                                             key={period.id}
                                             id={`schedule-period-${period.id}`}
                                             className={cn(
-                                                "rounded-lg border p-4 transition-all duration-300",
+                                                'rounded-lg border p-4 transition-all duration-300',
                                                 isHighlighted
-                                                    ? "ring-2 ring-primary border-primary bg-primary/5 dark:bg-primary/10 shadow-sm"
-                                                    : "bg-card"
+                                                    ? 'border-primary bg-primary/5 shadow-sm ring-2 ring-primary dark:bg-primary/10'
+                                                    : 'bg-card',
                                             )}
                                         >
                                             {/* Period header */}
@@ -420,74 +474,101 @@ export default function AdminSchedule({ periods }: { periods: SchedulePeriod[] }
                                                 <div>
                                                     <div className="flex items-center gap-2">
                                                         <p className="font-medium">
-                                                            {period.name ?? 'Unnamed period'}
+                                                            {period.name ??
+                                                                'Unnamed period'}
                                                         </p>
                                                         {isHighlighted && (
-                                                            <Badge className="bg-primary text-primary-foreground font-semibold text-[10px] uppercase gap-1 animate-pulse">
+                                                            <Badge className="animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase">
                                                                 <Sparkles className="size-3" />
                                                                 Updated / Focus
                                                             </Badge>
                                                         )}
                                                     </div>
                                                     <p className="text-xs text-muted-foreground">
-                                                        {period.start_date} – {period.end_date}
-                                                        {isPast(period.end_date) && (
-                                                            <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide">
+                                                        {period.start_date} –{' '}
+                                                        {period.end_date}
+                                                        {isPast(
+                                                            period.end_date,
+                                                        ) && (
+                                                            <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium tracking-wide uppercase">
                                                                 Past
                                                             </span>
                                                         )}
                                                     </p>
                                                 </div>
-                                            {!isPast(period.end_date) && (
-                                                <div className="flex shrink-0 gap-1">
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() => openEdit(period)}
+                                                {!isPast(period.end_date) && (
+                                                    <div className="flex shrink-0 gap-1">
+                                                        <Tooltip>
+                                                            <TooltipTrigger
+                                                                asChild
                                                             >
-                                                                <Pencil className="size-4 text-blue-600" />
-                                                            </Button>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent>Edit</TooltipContent>
-                                                    </Tooltip>
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() => openDelete(period)}
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() =>
+                                                                        openEdit(
+                                                                            period,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <Pencil className="size-4 text-blue-600" />
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                Edit
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                        <Tooltip>
+                                                            <TooltipTrigger
+                                                                asChild
                                                             >
-                                                                <Trash2 className="size-4 text-destructive" />
-                                                            </Button>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent>Delete</TooltipContent>
-                                                    </Tooltip>
-                                                </div>
-                                            )}
-                                        </div>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() =>
+                                                                        openDelete(
+                                                                            period,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <Trash2 className="size-4 text-destructive" />
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                Delete
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </div>
+                                                )}
+                                            </div>
 
-                                        {/* Day schedule grid */}
-                                        <div className="grid grid-cols-2 gap-1.5 text-sm sm:grid-cols-4">
-                                            {DAYS.map((day) => (
-                                                <div
-                                                    key={day}
-                                                    className="flex justify-between gap-2 rounded-md bg-muted/40 px-2.5 py-1.5"
-                                                >
-                                                    <span className="text-muted-foreground">
-                                                        {DAY_LABELS[day].slice(0, 3)}
-                                                    </span>
-                                                    <span className="font-medium tabular-nums">
-                                                        {formatTime12(period.day_schedule[day])}
-                                                    </span>
-                                                </div>
-                                            ))}
+                                            {/* Day schedule grid */}
+                                            <div className="grid grid-cols-2 gap-1.5 text-sm sm:grid-cols-4">
+                                                {DAYS.map((day) => (
+                                                    <div
+                                                        key={day}
+                                                        className="flex justify-between gap-2 rounded-md bg-muted/40 px-2.5 py-1.5"
+                                                    >
+                                                        <span className="text-muted-foreground">
+                                                            {DAY_LABELS[
+                                                                day
+                                                            ].slice(0, 3)}
+                                                        </span>
+                                                        <span className="font-medium tabular-nums">
+                                                            {formatTime12(
+                                                                period
+                                                                    .day_schedule[
+                                                                    day
+                                                                ],
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                                    );
+                                })}
+                            </div>
                         )}
                     </CardContent>
                 </Card>
@@ -495,24 +576,30 @@ export default function AdminSchedule({ periods }: { periods: SchedulePeriod[] }
 
             {/* ── Add dialog ───────────────────────────────────────────────── */}
             <Dialog open={addOpen} onOpenChange={setAddOpen}>
-                <DialogContent className="max-h-[92vh] sm:max-w-2xl overflow-y-auto p-6 gap-5">
-                    <DialogHeader className="gap-1.5 pb-3 border-b">
-                        <DialogTitle className="text-xl font-semibold flex items-center gap-2.5">
+                <DialogContent className="max-h-[92vh] gap-5 overflow-y-auto p-6 sm:max-w-2xl">
+                    <DialogHeader className="gap-1.5 border-b pb-3">
+                        <DialogTitle className="flex items-center gap-2.5 text-xl font-semibold">
                             <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-xs">
                                 <CalendarDays className="size-5" />
                             </span>
                             Add Schedule Period
                         </DialogTitle>
-                        <DialogDescription className="text-xs sm:text-sm text-muted-foreground">
-                            Set the effective date range and expected arrival time for each workday.
+                        <DialogDescription className="text-xs text-muted-foreground sm:text-sm">
+                            Set the effective date range and expected arrival
+                            time for each workday.
                         </DialogDescription>
                     </DialogHeader>
                     <PeriodForm
                         form={addForm}
-                        onChange={(patch) => setAddForm((f) => ({ ...f, ...patch }))}
+                        onChange={(patch) =>
+                            setAddForm((f) => ({ ...f, ...patch }))
+                        }
                     />
-                    <DialogFooter className="pt-3 border-t gap-2 sm:gap-0">
-                        <Button variant="outline" onClick={() => setAddOpen(false)}>
+                    <DialogFooter className="gap-2 border-t pt-3 sm:gap-0">
+                        <Button
+                            variant="outline"
+                            onClick={() => setAddOpen(false)}
+                        >
                             Cancel
                         </Button>
                         <Button onClick={submitAdd}>Save Period</Button>
@@ -522,24 +609,30 @@ export default function AdminSchedule({ periods }: { periods: SchedulePeriod[] }
 
             {/* ── Edit dialog ──────────────────────────────────────────────── */}
             <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                <DialogContent className="max-h-[92vh] sm:max-w-2xl overflow-y-auto p-6 gap-5">
-                    <DialogHeader className="gap-1.5 pb-3 border-b">
-                        <DialogTitle className="text-xl font-semibold flex items-center gap-2.5">
+                <DialogContent className="max-h-[92vh] gap-5 overflow-y-auto p-6 sm:max-w-2xl">
+                    <DialogHeader className="gap-1.5 border-b pb-3">
+                        <DialogTitle className="flex items-center gap-2.5 text-xl font-semibold">
                             <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-xs">
                                 <CalendarDays className="size-5" />
                             </span>
                             Edit Schedule Period
                         </DialogTitle>
-                        <DialogDescription className="text-xs sm:text-sm text-muted-foreground">
-                            Update the date range or expected start times for each day.
+                        <DialogDescription className="text-xs text-muted-foreground sm:text-sm">
+                            Update the date range or expected start times for
+                            each day.
                         </DialogDescription>
                     </DialogHeader>
                     <PeriodForm
                         form={editForm}
-                        onChange={(patch) => setEditForm((f) => ({ ...f, ...patch }))}
+                        onChange={(patch) =>
+                            setEditForm((f) => ({ ...f, ...patch }))
+                        }
                     />
-                    <DialogFooter className="pt-3 border-t gap-2 sm:gap-0">
-                        <Button variant="outline" onClick={() => setEditOpen(false)}>
+                    <DialogFooter className="gap-2 border-t pt-3 sm:gap-0">
+                        <Button
+                            variant="outline"
+                            onClick={() => setEditOpen(false)}
+                        >
                             Cancel
                         </Button>
                         <Button onClick={submitEdit}>Save Changes</Button>

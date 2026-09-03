@@ -104,8 +104,10 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
         return interns.filter(
             (intern) =>
                 intern.name.toLowerCase().includes(q) ||
-                (intern.id_number && intern.id_number.toLowerCase().includes(q)) ||
-                (intern.program_name && intern.program_name.toLowerCase().includes(q)),
+                (intern.id_number &&
+                    intern.id_number.toLowerCase().includes(q)) ||
+                (intern.program_name &&
+                    intern.program_name.toLowerCase().includes(q)),
         );
     }, [interns, searchQuery]);
 
@@ -229,9 +231,7 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
                         ? {
                               ...entry,
                               time_in: data.found ? (data.time_in ?? '') : '',
-                              time_out: data.found
-                                  ? (data.time_out ?? '')
-                                  : '',
+                              time_out: data.found ? (data.time_out ?? '') : '',
                           }
                         : entry,
                 ),
@@ -386,7 +386,7 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
             <Head title="Manual Attendance" />
 
             <div className="flex w-full flex-1 flex-col gap-4 p-4 sm:gap-5 sm:p-5 lg:h-[calc(100dvh-4rem)] lg:overflow-hidden lg:p-6">
-                <div className="flex flex-wrap items-center justify-between gap-3 shrink-0">
+                <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
                     <div>
                         <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
                             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
@@ -395,7 +395,8 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
                             Manual Attendance
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Add verified attendance from paper records or missed kiosk scans.
+                            Add verified attendance from paper records or missed
+                            kiosk scans.
                         </p>
                     </div>
                 </div>
@@ -410,15 +411,21 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
                                 </CardTitle>
                             </div>
                             <CardDescription>
-                                Select the person whose attendance you are adding.
+                                Select the person whose attendance you are
+                                adding.
                             </CardDescription>
                         </CardHeader>
 
                         <CardContent className="space-y-3">
                             <div className="space-y-1.5">
-                                <Label htmlFor="intern-combobox">Intern name</Label>
+                                <Label htmlFor="intern-combobox">
+                                    Intern name
+                                </Label>
 
-                                <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+                                <Popover
+                                    open={searchOpen}
+                                    onOpenChange={setSearchOpen}
+                                >
                                     <PopoverTrigger asChild>
                                         <Button
                                             id="intern-combobox"
@@ -426,44 +433,51 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
                                             variant="outline"
                                             role="combobox"
                                             aria-expanded={searchOpen}
-                                            className="w-full justify-between h-10 px-3 bg-background font-normal text-left shadow-xs border-border hover:bg-accent/40"
+                                            className="h-10 w-full justify-between border-border bg-background px-3 text-left font-normal shadow-xs hover:bg-accent/40"
                                         >
                                             {selectedIntern ? (
-                                                <div className="flex items-center gap-2 min-w-0 flex-1">
-                                                    <UserRound className="size-4 text-primary shrink-0" />
-                                                    <span className="truncate font-medium text-foreground text-sm">
+                                                <div className="flex min-w-0 flex-1 items-center gap-2">
+                                                    <UserRound className="size-4 shrink-0 text-primary" />
+                                                    <span className="truncate text-sm font-medium text-foreground">
                                                         {selectedIntern.name}
                                                     </span>
                                                     {selectedIntern.id_number && (
                                                         <Badge
                                                             variant="outline"
-                                                            className="px-1.5 py-0 text-[10px] font-mono shrink-0 hidden sm:inline-flex"
+                                                            className="hidden shrink-0 px-1.5 py-0 font-mono text-[10px] sm:inline-flex"
                                                         >
-                                                            {selectedIntern.id_number}
+                                                            {
+                                                                selectedIntern.id_number
+                                                            }
                                                         </Badge>
                                                     )}
                                                 </div>
                                             ) : (
-                                                <span className="text-muted-foreground text-sm flex items-center gap-2">
-                                                    <UserRound className="size-4 text-muted-foreground/60 shrink-0" />
-                                                    Search or choose an intern...
+                                                <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                    <UserRound className="size-4 shrink-0 text-muted-foreground/60" />
+                                                    Search or choose an
+                                                    intern...
                                                 </span>
                                             )}
-                                            <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground ml-2 opacity-70" />
+                                            <ChevronsUpDown className="ml-2 size-4 shrink-0 text-muted-foreground opacity-70" />
                                         </Button>
                                     </PopoverTrigger>
 
                                     <PopoverContent
-                                        className="w-[calc(100vw-2rem)] max-w-sm sm:w-[var(--radix-popover-trigger-width)] p-0 shadow-lg rounded-xl border border-border bg-popover"
+                                        className="w-[calc(100vw-2rem)] max-w-sm rounded-xl border border-border bg-popover p-0 shadow-lg sm:w-[var(--radix-popover-trigger-width)]"
                                         align="start"
                                         sideOffset={6}
                                     >
-                                        <div className="flex items-center border-b border-border px-3 py-2.5 gap-2">
+                                        <div className="flex items-center gap-2 border-b border-border px-3 py-2.5">
                                             <Search className="size-4 shrink-0 text-muted-foreground" />
                                             <input
                                                 type="text"
                                                 value={searchQuery}
-                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                onChange={(e) =>
+                                                    setSearchQuery(
+                                                        e.target.value,
+                                                    )
+                                                }
                                                 placeholder="Search by name, ID, or program..."
                                                 className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                                                 autoFocus
@@ -471,53 +485,93 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
                                             {searchQuery && (
                                                 <button
                                                     type="button"
-                                                    onClick={() => setSearchQuery('')}
-                                                    className="rounded-full p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted"
+                                                    onClick={() =>
+                                                        setSearchQuery('')
+                                                    }
+                                                    className="rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                                                 >
                                                     <X className="size-3.5" />
                                                 </button>
                                             )}
                                         </div>
 
-                                        <div className="max-h-60 overflow-y-auto p-1.5 space-y-0.5">
+                                        <div className="max-h-60 space-y-0.5 overflow-y-auto p-1.5">
                                             {filteredInterns.length === 0 ? (
                                                 <div className="py-6 text-center text-xs text-muted-foreground">
-                                                    No interns found matching &ldquo;{searchQuery}&rdquo;
+                                                    No interns found matching
+                                                    &ldquo;{searchQuery}&rdquo;
                                                 </div>
                                             ) : (
-                                                filteredInterns.map((intern) => {
-                                                    const isSelected = String(intern.user_id) === internId;
+                                                filteredInterns.map(
+                                                    (intern) => {
+                                                        const isSelected =
+                                                            String(
+                                                                intern.user_id,
+                                                            ) === internId;
 
-                                                    return (
-                                                        <button
-                                                            key={intern.user_id}
-                                                            type="button"
-                                                            onClick={() => {
-                                                                handleSelectIntern(String(intern.user_id));
-                                                                setSearchOpen(false);
-                                                                setSearchQuery('');
-                                                            }}
-                                                            className={cn(
-                                                                'w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-sm transition-colors',
-                                                                isSelected
-                                                                    ? 'bg-primary/10 text-primary font-medium'
-                                                                    : 'text-foreground hover:bg-accent hover:text-accent-foreground',
-                                                            )}
-                                                        >
-                                                            <div className="min-w-0 flex-1">
-                                                                <p className="truncate text-sm font-medium">{intern.name}</p>
-                                                                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                                                                    {intern.id_number && <span>ID: {intern.id_number}</span>}
-                                                                    {intern.id_number && intern.program_name && <span>•</span>}
-                                                                    {intern.program_name && (
-                                                                        <span className="truncate">{intern.program_name}</span>
-                                                                    )}
+                                                        return (
+                                                            <button
+                                                                key={
+                                                                    intern.user_id
+                                                                }
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    handleSelectIntern(
+                                                                        String(
+                                                                            intern.user_id,
+                                                                        ),
+                                                                    );
+                                                                    setSearchOpen(
+                                                                        false,
+                                                                    );
+                                                                    setSearchQuery(
+                                                                        '',
+                                                                    );
+                                                                }}
+                                                                className={cn(
+                                                                    'flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors',
+                                                                    isSelected
+                                                                        ? 'bg-primary/10 font-medium text-primary'
+                                                                        : 'text-foreground hover:bg-accent hover:text-accent-foreground',
+                                                                )}
+                                                            >
+                                                                <div className="min-w-0 flex-1">
+                                                                    <p className="truncate text-sm font-medium">
+                                                                        {
+                                                                            intern.name
+                                                                        }
+                                                                    </p>
+                                                                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                                                                        {intern.id_number && (
+                                                                            <span>
+                                                                                ID:{' '}
+                                                                                {
+                                                                                    intern.id_number
+                                                                                }
+                                                                            </span>
+                                                                        )}
+                                                                        {intern.id_number &&
+                                                                            intern.program_name && (
+                                                                                <span>
+                                                                                    •
+                                                                                </span>
+                                                                            )}
+                                                                        {intern.program_name && (
+                                                                            <span className="truncate">
+                                                                                {
+                                                                                    intern.program_name
+                                                                                }
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                            {isSelected && <Check className="size-4 shrink-0 text-primary ml-2" />}
-                                                        </button>
-                                                    );
-                                                })
+                                                                {isSelected && (
+                                                                    <Check className="ml-2 size-4 shrink-0 text-primary" />
+                                                                )}
+                                                            </button>
+                                                        );
+                                                    },
+                                                )
                                             )}
                                         </div>
                                     </PopoverContent>

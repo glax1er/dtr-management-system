@@ -24,24 +24,26 @@ type TicketActionsProps = {
 };
 
 export const badgeStyles: Record<TicketActionsProps['type'], string> = {
-    missing_time_in: 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-950/50 dark:text-yellow-300 dark:border-yellow-800',
+    missing_time_in:
+        'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-950/50 dark:text-yellow-300 dark:border-yellow-800',
     open: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800',
-    no_record: 'bg-red-100 text-red-800 border-red-300 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800',
+    no_record:
+        'bg-red-100 text-red-800 border-red-300 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800',
 };
 
 export function formatTo12Hour(timeStr: string | null): string {
     if (!timeStr) return '—';
-    
+
     try {
         const cleanTime = timeStr.trim();
         if (/am|pm/i.test(cleanTime)) return cleanTime;
         const date = new Date(`2000-01-01T${cleanTime}`);
         if (isNaN(date.getTime())) return cleanTime;
-        
+
         return date.toLocaleTimeString('en-US', {
             hour: 'numeric',
             minute: '2-digit',
-            hour12: true
+            hour12: true,
         });
     } catch {
         return timeStr;
@@ -71,7 +73,12 @@ function to24Hour(timeStr: string | null): string | null {
     return `${String(hours).padStart(2, '0')}:${minutes}`;
 }
 
-export function TicketActions({ ticketId, type, proposedTimeIn, proposedTimeOut }: TicketActionsProps) {
+export function TicketActions({
+    ticketId,
+    type,
+    proposedTimeIn,
+    proposedTimeOut,
+}: TicketActionsProps) {
     const needsTimeIn = type === 'missing_time_in' || type === 'no_record';
     const needsTimeOut = type === 'open' || type === 'no_record';
 
@@ -86,8 +93,12 @@ export function TicketActions({ ticketId, type, proposedTimeIn, proposedTimeOut 
         router.patch(
             `/supervisor/resolution-tickets/${ticketId}/approve`,
             {
-                ...(needsTimeIn ? { final_time_in: to24Hour(proposedTimeIn) } : {}),
-                ...(needsTimeOut ? { final_time_out: to24Hour(proposedTimeOut) } : {}),
+                ...(needsTimeIn
+                    ? { final_time_in: to24Hour(proposedTimeIn) }
+                    : {}),
+                ...(needsTimeOut
+                    ? { final_time_out: to24Hour(proposedTimeOut) }
+                    : {}),
             },
             {
                 preserveScroll: true,
@@ -95,7 +106,11 @@ export function TicketActions({ ticketId, type, proposedTimeIn, proposedTimeOut 
                     toast.success('Resolution request approved.');
                     setOpenApprove(false);
                 },
-                onError: (errors) => toast.error(Object.values(errors)[0] ?? 'Could not approve this ticket.'),
+                onError: (errors) =>
+                    toast.error(
+                        Object.values(errors)[0] ??
+                            'Could not approve this ticket.',
+                    ),
                 onFinish: () => setProcessing(false),
             },
         );
@@ -112,7 +127,9 @@ export function TicketActions({ ticketId, type, proposedTimeIn, proposedTimeOut 
     const handleReject = () => {
         const trimmed = rejectionReason.trim();
         if (!trimmed) {
-            setRejectionError('Please provide a reason for rejecting this resolution request.');
+            setRejectionError(
+                'Please provide a reason for rejecting this resolution request.',
+            );
             return;
         }
 
@@ -131,7 +148,9 @@ export function TicketActions({ ticketId, type, proposedTimeIn, proposedTimeOut 
                     setRejectionError('');
                 },
                 onError: (errors) => {
-                    const message = Object.values(errors)[0] ?? 'Could not reject this ticket.';
+                    const message =
+                        Object.values(errors)[0] ??
+                        'Could not reject this ticket.';
                     setRejectionError(message);
                     toast.error(message);
                 },
@@ -145,36 +164,61 @@ export function TicketActions({ ticketId, type, proposedTimeIn, proposedTimeOut 
             {/* APPROVE MODAL */}
             <Dialog open={openApprove} onOpenChange={setOpenApprove}>
                 <DialogTrigger asChild>
-                    <Button 
-                        size="sm" 
+                    <Button
+                        size="sm"
                         className="bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600"
                     >
                         Approve
                     </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto w-[calc(100vw-2rem)] sm:w-full">
+                <DialogContent className="max-h-[90vh] w-[calc(100vw-2rem)] max-w-lg overflow-y-auto sm:w-full">
                     <DialogHeader className="space-y-2">
                         <div className="flex items-center gap-2">
                             <DialogTitle>Confirm Approval</DialogTitle>
                             <AttendanceBadge status={type} />
                         </div>
                         <DialogDescription className="space-y-3 text-left">
-                            <p>Are you sure you want to approve this resolution ticket? This action cannot be undone.</p>
+                            <p>
+                                Are you sure you want to approve this resolution
+                                ticket? This action cannot be undone.
+                            </p>
                             <div className="rounded-md bg-muted p-3 text-sm text-foreground">
-                                <p className="font-semibold mb-1">Proposed Changes:</p>
+                                <p className="mb-1 font-semibold">
+                                    Proposed Changes:
+                                </p>
                                 <ul className="list-inside list-disc space-y-0.5 opacity-90">
-                                    {needsTimeIn && <li>Time In: <span className="font-medium">{formatTo12Hour(proposedTimeIn)}</span></li>}
-                                    {needsTimeOut && <li>Time Out: <span className="font-medium">{formatTo12Hour(proposedTimeOut)}</span></li>}
+                                    {needsTimeIn && (
+                                        <li>
+                                            Time In:{' '}
+                                            <span className="font-medium">
+                                                {formatTo12Hour(proposedTimeIn)}
+                                            </span>
+                                        </li>
+                                    )}
+                                    {needsTimeOut && (
+                                        <li>
+                                            Time Out:{' '}
+                                            <span className="font-medium">
+                                                {formatTo12Hour(
+                                                    proposedTimeOut,
+                                                )}
+                                            </span>
+                                        </li>
+                                    )}
                                 </ul>
                             </div>
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setOpenApprove(false)} disabled={processing}>
+                        <Button
+                            variant="outline"
+                            onClick={() => setOpenApprove(false)}
+                            disabled={processing}
+                        >
                             Cancel
                         </Button>
-                        <Button 
-                            onClick={handleApprove} 
+                        <Button
+                            onClick={handleApprove}
                             disabled={processing}
                             className="bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600"
                         >
@@ -187,34 +231,60 @@ export function TicketActions({ ticketId, type, proposedTimeIn, proposedTimeOut 
             {/* REJECT MODAL */}
             <Dialog open={openReject} onOpenChange={handleOpenRejectChange}>
                 <DialogTrigger asChild>
-                    <Button 
-                        size="sm" 
+                    <Button
+                        size="sm"
                         className="bg-rose-600 text-white hover:bg-rose-700 dark:bg-rose-700 dark:hover:bg-rose-600"
                     >
                         Reject
                     </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto w-[calc(100vw-2rem)] sm:w-full">
+                <DialogContent className="max-h-[90vh] w-[calc(100vw-2rem)] max-w-lg overflow-y-auto sm:w-full">
                     <DialogHeader className="space-y-2">
                         <div className="flex items-center gap-2">
                             <DialogTitle>Reject Resolution Request</DialogTitle>
                             <AttendanceBadge status={type} />
                         </div>
                         <DialogDescription className="space-y-3 text-left">
-                            <p>Please state the reason for rejecting this resolution request. The intern will receive a notification with your reason.</p>
+                            <p>
+                                Please state the reason for rejecting this
+                                resolution request. The intern will receive a
+                                notification with your reason.
+                            </p>
                             <div className="rounded-md bg-muted p-3 text-sm text-foreground">
-                                <p className="font-semibold mb-1">Proposed Changes to Reject:</p>
+                                <p className="mb-1 font-semibold">
+                                    Proposed Changes to Reject:
+                                </p>
                                 <ul className="list-inside list-disc space-y-0.5 opacity-90">
-                                    {needsTimeIn && <li>Time In: <span className="font-medium">{formatTo12Hour(proposedTimeIn)}</span></li>}
-                                    {needsTimeOut && <li>Time Out: <span className="font-medium">{formatTo12Hour(proposedTimeOut)}</span></li>}
+                                    {needsTimeIn && (
+                                        <li>
+                                            Time In:{' '}
+                                            <span className="font-medium">
+                                                {formatTo12Hour(proposedTimeIn)}
+                                            </span>
+                                        </li>
+                                    )}
+                                    {needsTimeOut && (
+                                        <li>
+                                            Time Out:{' '}
+                                            <span className="font-medium">
+                                                {formatTo12Hour(
+                                                    proposedTimeOut,
+                                                )}
+                                            </span>
+                                        </li>
+                                    )}
                                 </ul>
                             </div>
                         </DialogDescription>
                     </DialogHeader>
 
                     <div className="space-y-2 py-1">
-                        <Label htmlFor={`rejection-reason-${ticketId}`} className="text-sm font-medium">
-                            Reason for Rejection <span className="text-destructive">*</span>
+                        <Label
+                            htmlFor={`rejection-reason-${ticketId}`}
+                            className="text-sm font-medium"
+                        >
+                            Reason for Rejection{' '}
+                            <span className="text-destructive">*</span>
                         </Label>
                         <Textarea
                             id={`rejection-reason-${ticketId}`}
@@ -227,13 +297,18 @@ export function TicketActions({ ticketId, type, proposedTimeIn, proposedTimeOut 
                             rows={3}
                             maxLength={1000}
                             disabled={processing}
-                            className={`min-h-[90px] max-h-[200px] resize-y break-words [overflow-wrap:anywhere] ${
-                                rejectionError ? 'border-destructive focus-visible:ring-destructive' : ''
+                            className={`max-h-[200px] min-h-[90px] resize-y [overflow-wrap:anywhere] break-words ${
+                                rejectionError
+                                    ? 'border-destructive focus-visible:ring-destructive'
+                                    : ''
                             }`}
                         />
                         <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                            <span className={`min-w-0 flex-1 break-words ${rejectionError ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
-                                {rejectionError || 'Explain why this request is being rejected.'}
+                            <span
+                                className={`min-w-0 flex-1 break-words ${rejectionError ? 'font-medium text-destructive' : 'text-muted-foreground'}`}
+                            >
+                                {rejectionError ||
+                                    'Explain why this request is being rejected.'}
                             </span>
                             <span className="shrink-0 text-muted-foreground tabular-nums">
                                 {rejectionReason.length}/1000
@@ -242,10 +317,14 @@ export function TicketActions({ ticketId, type, proposedTimeIn, proposedTimeOut 
                     </div>
 
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => handleOpenRejectChange(false)} disabled={processing}>
+                        <Button
+                            variant="outline"
+                            onClick={() => handleOpenRejectChange(false)}
+                            disabled={processing}
+                        >
                             Cancel
                         </Button>
-                        <Button 
+                        <Button
                             disabled={processing || !rejectionReason.trim()}
                             onClick={handleReject}
                             className="bg-rose-600 text-white hover:bg-rose-700 dark:bg-rose-700 dark:hover:bg-rose-600"

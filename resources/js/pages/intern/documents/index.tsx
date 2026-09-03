@@ -43,7 +43,11 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 export interface DocumentItem {
@@ -110,27 +114,31 @@ const getFolderColorClass = (catName: string) => {
     if (lower.includes('pre')) {
         return {
             border: 'hover:border-blue-500/50',
-            activeBorder: 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-300',
+            activeBorder:
+                'border-blue-500 bg-blue-50/50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-300',
             iconBg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
         };
     }
     if (lower.includes('during')) {
         return {
             border: 'hover:border-amber-500/50',
-            activeBorder: 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300',
+            activeBorder:
+                'border-amber-500 bg-amber-50/50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300',
             iconBg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
         };
     }
     if (lower.includes('eval')) {
         return {
             border: 'hover:border-emerald-500/50',
-            activeBorder: 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300',
+            activeBorder:
+                'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300',
             iconBg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
         };
     }
     return {
         border: 'hover:border-purple-500/50',
-        activeBorder: 'border-purple-500 bg-purple-50/50 dark:bg-purple-950/20 text-purple-700 dark:text-purple-300',
+        activeBorder:
+            'border-purple-500 bg-purple-50/50 dark:bg-purple-950/20 text-purple-700 dark:text-purple-300',
         iconBg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
     };
 };
@@ -147,17 +155,25 @@ export default function InternDocuments({
     const [previewDoc, setPreviewDoc] = useState<DocumentItem | null>(null);
     const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
-    const highlightType = typeof window !== 'undefined'
-        ? new URLSearchParams(window.location.search).get('highlight') || null
-        : null;
+    const highlightType =
+        typeof window !== 'undefined'
+            ? new URLSearchParams(window.location.search).get('highlight') ||
+              null
+            : null;
 
     // Auto-switch to folder containing the highlighted document
     useEffect(() => {
         if (!highlightType) return;
         const targetDoc = checklist.find(
-            (d) => d.document_type === highlightType || String(d.id) === highlightType
+            (d) =>
+                d.document_type === highlightType ||
+                String(d.id) === highlightType,
         );
-        if (targetDoc && activeFolder !== 'all' && activeFolder !== targetDoc.category) {
+        if (
+            targetDoc &&
+            activeFolder !== 'all' &&
+            activeFolder !== targetDoc.category
+        ) {
             setActiveFolder(targetDoc.category);
         }
     }, [highlightType, checklist]);
@@ -167,7 +183,9 @@ export default function InternDocuments({
         if (!highlightType) return;
 
         const targetDoc = checklist.find(
-            (d) => d.document_type === highlightType || String(d.id) === highlightType
+            (d) =>
+                d.document_type === highlightType ||
+                String(d.id) === highlightType,
         );
         const typeKey = targetDoc ? targetDoc.document_type : highlightType;
 
@@ -206,25 +224,33 @@ export default function InternDocuments({
     // ── Filtered Items ───────────────────────────────────────────────────────
     const filteredChecklist = useMemo(() => {
         return checklist.filter((item) => {
-            if (activeFolder !== 'all' && item.category !== activeFolder) return false;
+            if (activeFolder !== 'all' && item.category !== activeFolder)
+                return false;
             if (search.trim()) {
                 const q = search.toLowerCase();
                 if (
                     !item.name.toLowerCase().includes(q) &&
                     !item.description?.toLowerCase().includes(q) &&
                     !item.category?.toLowerCase().includes(q)
-                ) return false;
+                )
+                    return false;
             }
             return true;
         });
     }, [checklist, activeFolder, search]);
 
     // ── Handlers ─────────────────────────────────────────────────────────────
-    const handleFileSelect = (typeKey: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileSelect = (
+        typeKey: string,
+        e: React.ChangeEvent<HTMLInputElement>,
+    ) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+        if (
+            file.type !== 'application/pdf' &&
+            !file.name.toLowerCase().endsWith('.pdf')
+        ) {
             toast.error('Only PDF documents (.pdf) are allowed.');
             e.target.value = '';
             return;
@@ -245,9 +271,12 @@ export default function InternDocuments({
         router.post('/intern/documents', formData, {
             preserveScroll: true,
             forceFormData: true,
-            onSuccess: () => { toast.success('Document uploaded.'); },
+            onSuccess: () => {
+                toast.success('Document uploaded.');
+            },
             onError: (errors) => {
-                const errorMsg = errors.file || errors.document_type || 'Upload failed.';
+                const errorMsg =
+                    errors.file || errors.document_type || 'Upload failed.';
                 toast.error(errorMsg);
             },
             onFinish: () => {
@@ -264,7 +293,8 @@ export default function InternDocuments({
             window.location.href = doc.template_download_url;
         } else {
             toast.warning(`No blank format available yet for "${doc.name}".`, {
-                description: 'Please ask your OJT Supervisor for the official format.',
+                description:
+                    'Please ask your OJT Supervisor for the official format.',
             });
         }
     };
@@ -274,8 +304,12 @@ export default function InternDocuments({
         if (confirm(`Remove your upload for "${doc.name}"?`)) {
             router.delete(`/intern/documents/${doc.id}`, {
                 preserveScroll: true,
-                onSuccess: () => { toast.success('Document removed.'); },
-                onError: () => { toast.error('Failed to remove document.'); },
+                onSuccess: () => {
+                    toast.success('Document removed.');
+                },
+                onError: () => {
+                    toast.error('Failed to remove document.');
+                },
             });
         }
     };
@@ -332,28 +366,38 @@ export default function InternDocuments({
 
                         {/* View Mode Switcher */}
                         <div className="hidden sm:block">
-                            <Tabs value={view} onValueChange={(v) => setView(v as ViewMode)}>
+                            <Tabs
+                                value={view}
+                                onValueChange={(v) => setView(v as ViewMode)}
+                            >
                                 <TabsList>
-                                    <TabsTrigger value="table"><TableIcon className="size-4" /></TabsTrigger>
-                                    <TabsTrigger value="grid"><LayoutGrid className="size-4" /></TabsTrigger>
+                                    <TabsTrigger value="table">
+                                        <TableIcon className="size-4" />
+                                    </TabsTrigger>
+                                    <TabsTrigger value="grid">
+                                        <LayoutGrid className="size-4" />
+                                    </TabsTrigger>
                                 </TabsList>
                             </Tabs>
                         </div>
 
                         {/* Progress Indicator */}
-                        <div className="flex items-center gap-3 bg-card border border-border/70 rounded-lg px-3.5 py-1.5 shrink-0">
+                        <div className="flex shrink-0 items-center gap-3 rounded-lg border border-border/70 bg-card px-3.5 py-1.5">
                             <div className="text-right">
                                 <p className="text-xs font-semibold text-foreground">
-                                    {stats.approved_required} of {stats.total_required} Approved
+                                    {stats.approved_required} of{' '}
+                                    {stats.total_required} Approved
                                 </p>
                                 <p className="text-[11px] text-muted-foreground">
                                     {stats.progress_percentage}% completed
                                 </p>
                             </div>
-                            <div className="w-16 h-2 bg-secondary rounded-full overflow-hidden">
+                            <div className="h-2 w-16 overflow-hidden rounded-full bg-secondary">
                                 <div
-                                    className="h-full bg-primary transition-all duration-300 rounded-full"
-                                    style={{ width: `${stats.progress_percentage}%` }}
+                                    className="h-full rounded-full bg-primary transition-all duration-300"
+                                    style={{
+                                        width: `${stats.progress_percentage}%`,
+                                    }}
                                 />
                             </div>
                         </div>
@@ -369,7 +413,7 @@ export default function InternDocuments({
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Search documents..."
-                            className="h-9 w-full rounded-md border border-input bg-background pl-8 pr-8 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                            className="h-9 w-full rounded-md border border-input bg-background pr-8 pl-8 text-sm focus:ring-1 focus:ring-ring focus:outline-none"
                             autoFocus
                         />
                         {search && (
@@ -389,7 +433,7 @@ export default function InternDocuments({
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <Folder className="size-4 text-primary" />
-                            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                            <h2 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                                 Categories &amp; Folders
                             </h2>
                         </div>
@@ -399,7 +443,7 @@ export default function InternDocuments({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setActiveFolder('all')}
-                                className="h-7 text-xs gap-1 text-primary hover:text-primary"
+                                className="h-7 gap-1 text-xs text-primary hover:text-primary"
                             >
                                 <ArrowLeft className="size-3" />
                                 View All Categories
@@ -408,7 +452,7 @@ export default function InternDocuments({
                     </div>
 
                     {/* Category Folder Cards Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
                         {folders.map((f) => {
                             const colors = getFolderColorClass(f.name);
                             const isSelected = activeFolder === f.name;
@@ -417,28 +461,49 @@ export default function InternDocuments({
                                 <button
                                     key={f.name}
                                     type="button"
-                                    onClick={() => setActiveFolder(isSelected ? 'all' : f.name)}
-                                    className={`flex items-start gap-3 p-3.5 rounded-xl border text-left transition-all duration-200 cursor-pointer ${
+                                    onClick={() =>
+                                        setActiveFolder(
+                                            isSelected ? 'all' : f.name,
+                                        )
+                                    }
+                                    className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 text-left transition-all duration-200 ${
                                         isSelected
-                                            ? colors.activeBorder + ' shadow-sm ring-1 ring-primary/30'
-                                            : 'bg-card border-border/70 hover:bg-accent/40 ' + colors.border
+                                            ? colors.activeBorder +
+                                              ' shadow-sm ring-1 ring-primary/30'
+                                            : 'border-border/70 bg-card hover:bg-accent/40 ' +
+                                              colors.border
                                     }`}
                                 >
-                                    <div className={`p-2.5 rounded-lg shrink-0 ${colors.iconBg}`}>
+                                    <div
+                                        className={`shrink-0 rounded-lg p-2.5 ${colors.iconBg}`}
+                                    >
                                         {isSelected ? (
                                             <FolderOpen className="size-5" />
                                         ) : (
                                             <Folder className="size-5" />
                                         )}
                                     </div>
-                                    <div className="flex-1 min-w-0 space-y-1">
-                                        <div className="font-semibold text-sm truncate text-foreground">
+                                    <div className="min-w-0 flex-1 space-y-1">
+                                        <div className="truncate text-sm font-semibold text-foreground">
                                             {f.name}
                                         </div>
                                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                            <span>{f.total_items} {f.total_items === 1 ? 'doc' : 'docs'}</span>
+                                            <span>
+                                                {f.total_items}{' '}
+                                                {f.total_items === 1
+                                                    ? 'doc'
+                                                    : 'docs'}
+                                            </span>
                                             <span>•</span>
-                                            <span className={f.approved_count === f.total_items && f.total_items > 0 ? 'text-emerald-600 font-medium' : ''}>
+                                            <span
+                                                className={
+                                                    f.approved_count ===
+                                                        f.total_items &&
+                                                    f.total_items > 0
+                                                        ? 'font-medium text-emerald-600'
+                                                        : ''
+                                                }
+                                            >
                                                 {f.approved_count} approved
                                             </span>
                                         </div>
@@ -450,37 +515,50 @@ export default function InternDocuments({
                 </div>
 
                 {/* ── Breadcrumb & Filter Status Header ───────────────────────── */}
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2 pt-2">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pt-2 pb-2">
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <button
                             type="button"
                             onClick={() => setActiveFolder('all')}
-                            className={`hover:text-foreground font-medium transition-colors ${
-                                activeFolder === 'all' ? 'text-foreground font-semibold' : ''
+                            className={`font-medium transition-colors hover:text-foreground ${
+                                activeFolder === 'all'
+                                    ? 'font-semibold text-foreground'
+                                    : ''
                             }`}
                         >
                             All Documents
                         </button>
                         <span>/</span>
                         <span className="font-semibold text-foreground">
-                            {activeFolder === 'all' ? 'All Categories' : activeFolder}
+                            {activeFolder === 'all'
+                                ? 'All Categories'
+                                : activeFolder}
                         </span>
-                        <Badge variant="outline" className="ml-1.5 text-[10px] px-1.5 py-0">
+                        <Badge
+                            variant="outline"
+                            className="ml-1.5 px-1.5 py-0 text-[10px]"
+                        >
                             {filteredChecklist.length} items
                         </Badge>
                     </div>
 
                     <div className="text-xs text-muted-foreground">
-                        Upload format: <span className="font-medium text-foreground">.pdf</span> (max 10 MB)
+                        Upload format:{' '}
+                        <span className="font-medium text-foreground">
+                            .pdf
+                        </span>{' '}
+                        (max 10 MB)
                     </div>
                 </div>
 
                 {/* ── Documents Display Section ──────────────────────────────── */}
                 {filteredChecklist.length === 0 ? (
                     <Card className="border-dashed p-10 text-center text-muted-foreground">
-                        <FileCheck className="mx-auto size-10 text-muted-foreground/50 mb-3" />
-                        <h3 className="font-medium text-sm text-foreground">No documents found</h3>
-                        <p className="text-xs mt-1">
+                        <FileCheck className="mx-auto mb-3 size-10 text-muted-foreground/50" />
+                        <h3 className="text-sm font-medium text-foreground">
+                            No documents found
+                        </h3>
+                        <p className="mt-1 text-xs">
                             {search
                                 ? 'No documents match your search query.'
                                 : 'No documents configured in this section.'}
@@ -488,40 +566,44 @@ export default function InternDocuments({
                     </Card>
                 ) : view === 'grid' ? (
                     /* ── Grid View ── */
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                         {filteredChecklist.map((doc) => {
-                            const isUploading = uploadingType === doc.document_type;
+                            const isUploading =
+                                uploadingType === doc.document_type;
                             const hasUploaded = doc.status !== 'missing';
                             const isHighlighted =
                                 highlightType === doc.document_type ||
-                                (doc.id !== null && highlightType === String(doc.id));
+                                (doc.id !== null &&
+                                    highlightType === String(doc.id));
 
                             return (
                                 <Card
                                     key={doc.document_type}
                                     id={`doc-card-${doc.document_type}`}
                                     className={cn(
-                                        "transition-all duration-300 border-border/70 flex flex-col justify-between",
+                                        'flex flex-col justify-between border-border/70 transition-all duration-300',
                                         isHighlighted
-                                            ? "ring-2 ring-primary border-primary bg-primary/5 dark:bg-primary/10 shadow-md"
+                                            ? 'border-primary bg-primary/5 shadow-md ring-2 ring-primary dark:bg-primary/10'
                                             : doc.status === 'approved'
-                                              ? 'bg-card border-emerald-500/30 hover:border-emerald-500/50 shadow-sm'
+                                              ? 'border-emerald-500/30 bg-card shadow-sm hover:border-emerald-500/50'
                                               : doc.status === 'rejected'
-                                                ? 'bg-card border-destructive/30 hover:border-destructive/50'
+                                                ? 'border-destructive/30 bg-card hover:border-destructive/50'
                                                 : hasUploaded
-                                                  ? 'bg-card hover:border-primary/50 shadow-sm'
-                                                  : 'bg-card/60 hover:bg-card border-dashed'
+                                                  ? 'bg-card shadow-sm hover:border-primary/50'
+                                                  : 'border-dashed bg-card/60 hover:bg-card',
                                     )}
                                 >
-                                    <CardContent className="p-4 space-y-3">
+                                    <CardContent className="space-y-3 p-4">
                                         {/* Card Header */}
                                         <div className="flex items-start justify-between gap-2">
-                                            <div className="flex items-start gap-2.5 min-w-0">
+                                            <div className="flex min-w-0 items-start gap-2.5">
                                                 <div
-                                                    className={`p-2.5 rounded-xl shrink-0 ${
-                                                        doc.status === 'approved'
+                                                    className={`shrink-0 rounded-xl p-2.5 ${
+                                                        doc.status ===
+                                                        'approved'
                                                             ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                                                            : doc.status === 'rejected'
+                                                            : doc.status ===
+                                                                'rejected'
                                                               ? 'bg-destructive/10 text-destructive'
                                                               : hasUploaded
                                                                 ? 'bg-primary/10 text-primary'
@@ -532,79 +614,135 @@ export default function InternDocuments({
                                                 </div>
                                                 <div className="min-w-0 space-y-0.5">
                                                     <div className="flex flex-wrap items-center gap-1.5">
-                                                        <Badge variant="outline" className="text-[9px] uppercase tracking-wider text-muted-foreground px-1.5 py-0">
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="px-1.5 py-0 text-[9px] tracking-wider text-muted-foreground uppercase"
+                                                        >
                                                             {doc.category}
                                                         </Badge>
-                                                        <StatusBadge status={doc.required ? 'required' : 'optional'} className="text-[9px] px-1.5 py-0" />
+                                                        <StatusBadge
+                                                            status={
+                                                                doc.required
+                                                                    ? 'required'
+                                                                    : 'optional'
+                                                            }
+                                                            className="px-1.5 py-0 text-[9px]"
+                                                        />
                                                         {isHighlighted && (
-                                                            <Badge className="bg-primary text-primary-foreground font-semibold text-[10px] uppercase gap-1 animate-pulse">
+                                                            <Badge className="animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase">
                                                                 <Sparkles className="size-3" />
                                                                 Focus
                                                             </Badge>
                                                         )}
                                                     </div>
-                                                    <h3 className="font-semibold text-sm text-foreground leading-snug">
+                                                    <h3 className="text-sm leading-snug font-semibold text-foreground">
                                                         {doc.name}
                                                     </h3>
                                                 </div>
                                             </div>
 
                                             {/* Submission Status Badge */}
-                                            {doc.status === 'approved' && <StatusBadge status="approved" className="text-[10px] shrink-0" />}
-                                            {doc.status === 'pending_review' && <StatusBadge status="pending_review" label="Under Review" className="text-[10px] shrink-0" />}
-                                            {doc.status === 'rejected' && <StatusBadge status="rejected" label="Needs Revision" className="text-[10px] shrink-0" />}
-                                            {doc.status === 'missing' && <StatusBadge status="not_submitted" className="text-[10px] shrink-0" />}
+                                            {doc.status === 'approved' && (
+                                                <StatusBadge
+                                                    status="approved"
+                                                    className="shrink-0 text-[10px]"
+                                                />
+                                            )}
+                                            {doc.status ===
+                                                'pending_review' && (
+                                                <StatusBadge
+                                                    status="pending_review"
+                                                    label="Under Review"
+                                                    className="shrink-0 text-[10px]"
+                                                />
+                                            )}
+                                            {doc.status === 'rejected' && (
+                                                <StatusBadge
+                                                    status="rejected"
+                                                    label="Needs Revision"
+                                                    className="shrink-0 text-[10px]"
+                                                />
+                                            )}
+                                            {doc.status === 'missing' && (
+                                                <StatusBadge
+                                                    status="not_submitted"
+                                                    className="shrink-0 text-[10px]"
+                                                />
+                                            )}
                                         </div>
 
                                         {/* Description */}
                                         {doc.description && (
-                                            <p className="text-xs text-muted-foreground line-clamp-2">
+                                            <p className="line-clamp-2 text-xs text-muted-foreground">
                                                 {doc.description}
                                             </p>
                                         )}
 
                                         {/* Submission Details or Upload Prompt */}
                                         {hasUploaded ? (
-                                            <div className="bg-muted/40 p-2.5 rounded-lg border border-border/40 space-y-1 text-xs text-muted-foreground">
-                                                <div className="flex items-center gap-1.5 font-medium text-foreground truncate">
-                                                    <Badge variant="outline" className="text-[9px] px-1 py-0 font-bold uppercase">PDF</Badge>
-                                                    <span className="truncate">{doc.original_filename}</span>
+                                            <div className="space-y-1 rounded-lg border border-border/40 bg-muted/40 p-2.5 text-xs text-muted-foreground">
+                                                <div className="flex items-center gap-1.5 truncate font-medium text-foreground">
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="px-1 py-0 text-[9px] font-bold uppercase"
+                                                    >
+                                                        PDF
+                                                    </Badge>
+                                                    <span className="truncate">
+                                                        {doc.original_filename}
+                                                    </span>
                                                 </div>
                                                 <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                                                    <span>{doc.file_size || 'No size'}</span>
-                                                    <span>{doc.submitted_at || ''}</span>
+                                                    <span>
+                                                        {doc.file_size ||
+                                                            'No size'}
+                                                    </span>
+                                                    <span>
+                                                        {doc.submitted_at || ''}
+                                                    </span>
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div className="bg-muted/20 p-2.5 rounded-lg border border-dashed border-border/60 text-xs text-muted-foreground flex items-center gap-2">
-                                                <FileUp className="size-4 text-muted-foreground/60 shrink-0" />
-                                                <span>No document uploaded yet.</span>
+                                            <div className="flex items-center gap-2 rounded-lg border border-dashed border-border/60 bg-muted/20 p-2.5 text-xs text-muted-foreground">
+                                                <FileUp className="size-4 shrink-0 text-muted-foreground/60" />
+                                                <span>
+                                                    No document uploaded yet.
+                                                </span>
                                             </div>
                                         )}
 
                                         {/* Template Instructions */}
                                         {doc.template_instructions && (
-                                            <div className="w-full text-left bg-primary/5 border border-primary/15 rounded-lg p-2 text-xs flex items-start gap-1.5">
-                                                <Info className="size-3.5 text-primary shrink-0 mt-0.5" />
+                                            <div className="flex w-full items-start gap-1.5 rounded-lg border border-primary/15 bg-primary/5 p-2 text-left text-xs">
+                                                <Info className="mt-0.5 size-3.5 shrink-0 text-primary" />
                                                 <span className="line-clamp-2">
-                                                    <strong className="text-primary">Note: </strong>
+                                                    <strong className="text-primary">
+                                                        Note:{' '}
+                                                    </strong>
                                                     {doc.template_instructions}
                                                 </span>
                                             </div>
                                         )}
 
                                         {/* Rejection Note */}
-                                        {doc.status === 'rejected' && doc.rejection_reason && (
-                                            <Alert variant="destructive" className="py-1.5 px-2.5 text-xs bg-destructive/10 border-destructive/20">
-                                                <AlertDescription className="text-xs">
-                                                    <strong>Revision needed:</strong> {doc.rejection_reason}
-                                                </AlertDescription>
-                                            </Alert>
-                                        )}
+                                        {doc.status === 'rejected' &&
+                                            doc.rejection_reason && (
+                                                <Alert
+                                                    variant="destructive"
+                                                    className="border-destructive/20 bg-destructive/10 px-2.5 py-1.5 text-xs"
+                                                >
+                                                    <AlertDescription className="text-xs">
+                                                        <strong>
+                                                            Revision needed:
+                                                        </strong>{' '}
+                                                        {doc.rejection_reason}
+                                                    </AlertDescription>
+                                                </Alert>
+                                            )}
                                     </CardContent>
 
                                     {/* Action Toolbar */}
-                                    <div className="border-t border-border/50 px-4 py-2.5 flex items-center justify-between gap-2 bg-muted/10">
+                                    <div className="flex items-center justify-between gap-2 border-t border-border/50 bg-muted/10 px-4 py-2.5">
                                         {/* Left: Download Blank Form + Preview */}
                                         <div className="flex items-center gap-1">
                                             <Tooltip>
@@ -613,14 +751,20 @@ export default function InternDocuments({
                                                         size="sm"
                                                         variant="outline"
                                                         className="h-8 gap-1.5 text-xs"
-                                                        onClick={() => handleDownloadTemplate(doc)}
+                                                        onClick={() =>
+                                                            handleDownloadTemplate(
+                                                                doc,
+                                                            )
+                                                        }
                                                     >
                                                         <Download className="size-3.5" />
                                                         Blank Form
                                                     </Button>
                                                 </TooltipTrigger>
                                                 <TooltipContent>
-                                                    {doc.has_template ? `Download ${doc.template_filename}` : 'No template uploaded yet'}
+                                                    {doc.has_template
+                                                        ? `Download ${doc.template_filename}`
+                                                        : 'No template uploaded yet'}
                                                 </TooltipContent>
                                             </Tooltip>
 
@@ -631,13 +775,20 @@ export default function InternDocuments({
                                                             size="sm"
                                                             variant="outline"
                                                             className="h-8 gap-1 text-xs"
-                                                            onClick={() => setPreviewDoc(doc)}
+                                                            onClick={() =>
+                                                                setPreviewDoc(
+                                                                    doc,
+                                                                )
+                                                            }
                                                         >
                                                             <Eye className="size-3.5" />
                                                             View
                                                         </Button>
                                                     </TooltipTrigger>
-                                                    <TooltipContent>Preview uploaded document</TooltipContent>
+                                                    <TooltipContent>
+                                                        Preview uploaded
+                                                        document
+                                                    </TooltipContent>
                                                 </Tooltip>
                                             )}
                                         </div>
@@ -647,48 +798,89 @@ export default function InternDocuments({
                                             {/* Hidden File Input */}
                                             <input
                                                 type="file"
-                                                ref={(el) => { fileInputRefs.current[doc.document_type] = el; }}
+                                                ref={(el) => {
+                                                    fileInputRefs.current[
+                                                        doc.document_type
+                                                    ] = el;
+                                                }}
                                                 accept=".pdf,application/pdf"
                                                 className="hidden"
-                                                onChange={(e) => handleFileSelect(doc.document_type, e)}
+                                                onChange={(e) =>
+                                                    handleFileSelect(
+                                                        doc.document_type,
+                                                        e,
+                                                    )
+                                                }
                                             />
 
                                             {hasUploaded ? (
                                                 <>
                                                     {doc.download_url && (
-                                                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-primary" asChild>
-                                                            <a href={doc.download_url} download title="Download your uploaded file">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            className="h-8 w-8 p-0 text-muted-foreground hover:text-primary"
+                                                            asChild
+                                                        >
+                                                            <a
+                                                                href={
+                                                                    doc.download_url
+                                                                }
+                                                                download
+                                                                title="Download your uploaded file"
+                                                            >
                                                                 <Download className="size-3.5" />
                                                             </a>
                                                         </Button>
                                                     )}
 
-                                                    {doc.status !== 'approved' && (
+                                                    {doc.status !==
+                                                        'approved' && (
                                                         <Button
                                                             size="sm"
                                                             variant="secondary"
-                                                            disabled={isUploading}
+                                                            disabled={
+                                                                isUploading
+                                                            }
                                                             className="h-8 gap-1 text-xs"
-                                                            onClick={() => fileInputRefs.current[doc.document_type]?.click()}
+                                                            onClick={() =>
+                                                                fileInputRefs.current[
+                                                                    doc
+                                                                        .document_type
+                                                                ]?.click()
+                                                            }
                                                         >
-                                                            {isUploading ? <Loader2 className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
+                                                            {isUploading ? (
+                                                                <Loader2 className="size-3.5 animate-spin" />
+                                                            ) : (
+                                                                <RefreshCw className="size-3.5" />
+                                                            )}
                                                             Replace
                                                         </Button>
                                                     )}
 
-                                                    {doc.status !== 'approved' && (
+                                                    {doc.status !==
+                                                        'approved' && (
                                                         <Tooltip>
-                                                            <TooltipTrigger asChild>
+                                                            <TooltipTrigger
+                                                                asChild
+                                                            >
                                                                 <Button
                                                                     size="sm"
                                                                     variant="ghost"
                                                                     className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-                                                                    onClick={() => handleDelete(doc)}
+                                                                    onClick={() =>
+                                                                        handleDelete(
+                                                                            doc,
+                                                                        )
+                                                                    }
                                                                 >
                                                                     <Trash2 className="size-3.5" />
                                                                 </Button>
                                                             </TooltipTrigger>
-                                                            <TooltipContent>Remove upload</TooltipContent>
+                                                            <TooltipContent>
+                                                                Remove upload
+                                                            </TooltipContent>
                                                         </Tooltip>
                                                     )}
                                                 </>
@@ -697,10 +889,20 @@ export default function InternDocuments({
                                                     size="sm"
                                                     disabled={isUploading}
                                                     className="h-8 gap-1.5 text-xs shadow-none"
-                                                    onClick={() => fileInputRefs.current[doc.document_type]?.click()}
+                                                    onClick={() =>
+                                                        fileInputRefs.current[
+                                                            doc.document_type
+                                                        ]?.click()
+                                                    }
                                                 >
-                                                    {isUploading ? <Loader2 className="size-3.5 animate-spin" /> : <FileUp className="size-3.5" />}
-                                                    {isUploading ? 'Uploading...' : 'Upload PDF'}
+                                                    {isUploading ? (
+                                                        <Loader2 className="size-3.5 animate-spin" />
+                                                    ) : (
+                                                        <FileUp className="size-3.5" />
+                                                    )}
+                                                    {isUploading
+                                                        ? 'Uploading...'
+                                                        : 'Upload PDF'}
                                                 </Button>
                                             )}
                                         </div>
@@ -716,61 +918,95 @@ export default function InternDocuments({
                             <Table>
                                 <TableHeader>
                                     <TableRow className="bg-muted/50">
-                                        <TableHead className="px-6">Document</TableHead>
-                                        <TableHead className="px-6 text-center">Category</TableHead>
-                                        <TableHead className="px-6 text-center">Requirement</TableHead>
-                                        <TableHead className="px-6 text-center">Status</TableHead>
-                                        <TableHead className="px-6 text-center">Uploaded File</TableHead>
-                                        <TableHead className="px-6 text-center">Blank Form</TableHead>
-                                        <TableHead className="px-6 text-center">Actions</TableHead>
+                                        <TableHead className="px-6">
+                                            Document
+                                        </TableHead>
+                                        <TableHead className="px-6 text-center">
+                                            Category
+                                        </TableHead>
+                                        <TableHead className="px-6 text-center">
+                                            Requirement
+                                        </TableHead>
+                                        <TableHead className="px-6 text-center">
+                                            Status
+                                        </TableHead>
+                                        <TableHead className="px-6 text-center">
+                                            Uploaded File
+                                        </TableHead>
+                                        <TableHead className="px-6 text-center">
+                                            Blank Form
+                                        </TableHead>
+                                        <TableHead className="px-6 text-center">
+                                            Actions
+                                        </TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {filteredChecklist.map((doc) => {
-                                        const isUploading = uploadingType === doc.document_type;
-                                        const hasUploaded = doc.status !== 'missing';
+                                        const isUploading =
+                                            uploadingType === doc.document_type;
+                                        const hasUploaded =
+                                            doc.status !== 'missing';
                                         const isHighlighted =
-                                            highlightType === doc.document_type ||
-                                            (doc.id !== null && highlightType === String(doc.id));
+                                            highlightType ===
+                                                doc.document_type ||
+                                            (doc.id !== null &&
+                                                highlightType ===
+                                                    String(doc.id));
 
                                         return (
                                             <TableRow
                                                 key={doc.document_type}
                                                 id={`doc-row-${doc.document_type}`}
                                                 className={cn(
-                                                    "transition-all duration-300 hover:bg-muted/30",
+                                                    'transition-all duration-300 hover:bg-muted/30',
                                                     isHighlighted
-                                                        ? "bg-primary/10 ring-2 ring-primary/40 dark:bg-primary/20"
-                                                        : doc.status === 'approved'
+                                                        ? 'bg-primary/10 ring-2 ring-primary/40 dark:bg-primary/20'
+                                                        : doc.status ===
+                                                            'approved'
                                                           ? 'border-l-2 border-l-emerald-500'
-                                                          : doc.status === 'rejected'
+                                                          : doc.status ===
+                                                              'rejected'
                                                             ? 'border-l-2 border-l-destructive'
-                                                            : ''
+                                                            : '',
                                                 )}
                                             >
                                                 {/* Document Name */}
                                                 <TableCell className="px-6 font-medium text-foreground">
                                                     <div className="space-y-0.5">
                                                         <div className="flex items-center gap-2">
-                                                            <div className="font-semibold">{doc.name}</div>
+                                                            <div className="font-semibold">
+                                                                {doc.name}
+                                                            </div>
                                                             {isHighlighted && (
-                                                                <Badge className="bg-primary text-primary-foreground font-semibold text-[10px] uppercase gap-1 animate-pulse">
+                                                                <Badge className="animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase">
                                                                     <Sparkles className="size-3" />
                                                                     Focus
                                                                 </Badge>
                                                             )}
                                                         </div>
-                                                        <div className="text-xs text-muted-foreground font-normal line-clamp-1">
-                                                            {doc.description || 'No description provided.'}
+                                                        <div className="line-clamp-1 text-xs font-normal text-muted-foreground">
+                                                            {doc.description ||
+                                                                'No description provided.'}
                                                         </div>
-                                                        {doc.status === 'rejected' && doc.rejection_reason && (
-                                                            <div className="text-xs text-destructive font-normal line-clamp-1">
-                                                                <strong>Revision:</strong> {doc.rejection_reason}
-                                                            </div>
-                                                        )}
+                                                        {doc.status ===
+                                                            'rejected' &&
+                                                            doc.rejection_reason && (
+                                                                <div className="line-clamp-1 text-xs font-normal text-destructive">
+                                                                    <strong>
+                                                                        Revision:
+                                                                    </strong>{' '}
+                                                                    {
+                                                                        doc.rejection_reason
+                                                                    }
+                                                                </div>
+                                                            )}
                                                         {doc.template_instructions && (
                                                             <div className="text-[11px] text-muted-foreground italic">
-                                                                Note: {doc.template_instructions}
+                                                                Note:{' '}
+                                                                {
+                                                                    doc.template_instructions
+                                                                }
                                                             </div>
                                                         )}
                                                     </div>
@@ -778,38 +1014,86 @@ export default function InternDocuments({
 
                                                 {/* Category */}
                                                 <TableCell className="px-6 text-center">
-                                                    <Badge variant="outline" className="text-xs">
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="text-xs"
+                                                    >
                                                         {doc.category}
                                                     </Badge>
                                                 </TableCell>
 
                                                 {/* Requirement */}
                                                 <TableCell className="px-6 text-center">
-                                                    <StatusBadge status={doc.required ? 'required' : 'optional'} />
+                                                    <StatusBadge
+                                                        status={
+                                                            doc.required
+                                                                ? 'required'
+                                                                : 'optional'
+                                                        }
+                                                    />
                                                 </TableCell>
 
                                                 {/* Status */}
                                                 <TableCell className="px-6 text-center">
-                                                    {doc.status === 'approved' && <StatusBadge status="approved" />}
-                                                    {doc.status === 'pending_review' && <StatusBadge status="pending_review" label="Under Review" />}
-                                                    {doc.status === 'rejected' && <StatusBadge status="rejected" label="Needs Revision" />}
-                                                    {doc.status === 'missing' && <StatusBadge status="not_submitted" />}
+                                                    {doc.status ===
+                                                        'approved' && (
+                                                        <StatusBadge status="approved" />
+                                                    )}
+                                                    {doc.status ===
+                                                        'pending_review' && (
+                                                        <StatusBadge
+                                                            status="pending_review"
+                                                            label="Under Review"
+                                                        />
+                                                    )}
+                                                    {doc.status ===
+                                                        'rejected' && (
+                                                        <StatusBadge
+                                                            status="rejected"
+                                                            label="Needs Revision"
+                                                        />
+                                                    )}
+                                                    {doc.status ===
+                                                        'missing' && (
+                                                        <StatusBadge status="not_submitted" />
+                                                    )}
                                                 </TableCell>
 
                                                 {/* Uploaded File */}
                                                 <TableCell className="px-6 text-center text-xs">
                                                     {hasUploaded ? (
-                                                        <div className="space-y-0.5 max-w-[180px] mx-auto">
-                                                            <div className="font-medium text-foreground flex items-center justify-center gap-1.5 truncate">
-                                                                <Badge variant="outline" className="text-[9px] px-1 py-0 uppercase font-bold">PDF</Badge>
-                                                                <span className="truncate" title={doc.original_filename || ''}>{doc.original_filename}</span>
+                                                        <div className="mx-auto max-w-[180px] space-y-0.5">
+                                                            <div className="flex items-center justify-center gap-1.5 truncate font-medium text-foreground">
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className="px-1 py-0 text-[9px] font-bold uppercase"
+                                                                >
+                                                                    PDF
+                                                                </Badge>
+                                                                <span
+                                                                    className="truncate"
+                                                                    title={
+                                                                        doc.original_filename ||
+                                                                        ''
+                                                                    }
+                                                                >
+                                                                    {
+                                                                        doc.original_filename
+                                                                    }
+                                                                </span>
                                                             </div>
-                                                            <div className="text-muted-foreground text-[11px]">
-                                                                {doc.file_size} • {doc.submitted_at}
+                                                            <div className="text-[11px] text-muted-foreground">
+                                                                {doc.file_size}{' '}
+                                                                •{' '}
+                                                                {
+                                                                    doc.submitted_at
+                                                                }
                                                             </div>
                                                         </div>
                                                     ) : (
-                                                        <span className="text-muted-foreground italic">None uploaded</span>
+                                                        <span className="text-muted-foreground italic">
+                                                            None uploaded
+                                                        </span>
                                                     )}
                                                 </TableCell>
 
@@ -817,20 +1101,31 @@ export default function InternDocuments({
                                                 <TableCell className="px-6 text-center text-xs">
                                                     {doc.has_template ? (
                                                         <Tooltip>
-                                                            <TooltipTrigger asChild>
+                                                            <TooltipTrigger
+                                                                asChild
+                                                            >
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="icon"
                                                                     className="size-8 text-primary hover:text-primary"
-                                                                    onClick={() => handleDownloadTemplate(doc)}
+                                                                    onClick={() =>
+                                                                        handleDownloadTemplate(
+                                                                            doc,
+                                                                        )
+                                                                    }
                                                                 >
                                                                     <Download className="size-4" />
                                                                 </Button>
                                                             </TooltipTrigger>
-                                                            <TooltipContent>Download Blank Form</TooltipContent>
+                                                            <TooltipContent>
+                                                                Download Blank
+                                                                Form
+                                                            </TooltipContent>
                                                         </Tooltip>
                                                     ) : (
-                                                        <span className="text-muted-foreground italic">—</span>
+                                                        <span className="text-muted-foreground italic">
+                                                            —
+                                                        </span>
                                                     )}
                                                 </TableCell>
 
@@ -839,88 +1134,144 @@ export default function InternDocuments({
                                                     {/* Hidden File Input */}
                                                     <input
                                                         type="file"
-                                                        ref={(el) => { fileInputRefs.current[doc.document_type] = el; }}
+                                                        ref={(el) => {
+                                                            fileInputRefs.current[
+                                                                doc.document_type
+                                                            ] = el;
+                                                        }}
                                                         accept=".pdf,application/pdf"
                                                         className="hidden"
-                                                        onChange={(e) => handleFileSelect(doc.document_type, e)}
+                                                        onChange={(e) =>
+                                                            handleFileSelect(
+                                                                doc.document_type,
+                                                                e,
+                                                            )
+                                                        }
                                                     />
 
                                                     <div className="flex items-center justify-center gap-1">
                                                         {/* Preview */}
                                                         {doc.preview_url && (
                                                             <Tooltip>
-                                                                <TooltipTrigger asChild>
+                                                                <TooltipTrigger
+                                                                    asChild
+                                                                >
                                                                     <Button
                                                                         variant="ghost"
                                                                         size="icon"
                                                                         className="size-8 text-foreground hover:text-primary"
-                                                                        onClick={() => setPreviewDoc(doc)}
+                                                                        onClick={() =>
+                                                                            setPreviewDoc(
+                                                                                doc,
+                                                                            )
+                                                                        }
                                                                     >
                                                                         <Eye className="size-4" />
                                                                     </Button>
                                                                 </TooltipTrigger>
-                                                                <TooltipContent>Preview Document</TooltipContent>
+                                                                <TooltipContent>
+                                                                    Preview
+                                                                    Document
+                                                                </TooltipContent>
                                                             </Tooltip>
                                                         )}
 
                                                         {/* Download submitted file */}
-                                                        {doc.download_url && hasUploaded && (
-                                                            <Tooltip>
-                                                                <TooltipTrigger asChild>
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        className="size-8 text-foreground hover:text-primary"
+                                                        {doc.download_url &&
+                                                            hasUploaded && (
+                                                                <Tooltip>
+                                                                    <TooltipTrigger
                                                                         asChild
                                                                     >
-                                                                        <a href={doc.download_url} download>
-                                                                            <Download className="size-4" />
-                                                                        </a>
-                                                                    </Button>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent>Download Your File</TooltipContent>
-                                                            </Tooltip>
-                                                        )}
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            className="size-8 text-foreground hover:text-primary"
+                                                                            asChild
+                                                                        >
+                                                                            <a
+                                                                                href={
+                                                                                    doc.download_url
+                                                                                }
+                                                                                download
+                                                                            >
+                                                                                <Download className="size-4" />
+                                                                            </a>
+                                                                        </Button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>
+                                                                        Download
+                                                                        Your
+                                                                        File
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            )}
 
                                                         {/* Upload / Replace */}
-                                                        {doc.status !== 'approved' && (
+                                                        {doc.status !==
+                                                            'approved' && (
                                                             <Tooltip>
-                                                                <TooltipTrigger asChild>
+                                                                <TooltipTrigger
+                                                                    asChild
+                                                                >
                                                                     <Button
                                                                         variant="ghost"
                                                                         size="icon"
-                                                                        disabled={isUploading}
-                                                                        className="size-8 text-blue-600 hover:text-blue-700"
-                                                                        onClick={() => fileInputRefs.current[doc.document_type]?.click()}
-                                                                    >
-                                                                        {isUploading
-                                                                            ? <Loader2 className="size-4 animate-spin" />
-                                                                            : hasUploaded
-                                                                              ? <RefreshCw className="size-4" />
-                                                                              : <FileUp className="size-4" />
+                                                                        disabled={
+                                                                            isUploading
                                                                         }
+                                                                        className="size-8 text-blue-600 hover:text-blue-700"
+                                                                        onClick={() =>
+                                                                            fileInputRefs.current[
+                                                                                doc
+                                                                                    .document_type
+                                                                            ]?.click()
+                                                                        }
+                                                                    >
+                                                                        {isUploading ? (
+                                                                            <Loader2 className="size-4 animate-spin" />
+                                                                        ) : hasUploaded ? (
+                                                                            <RefreshCw className="size-4" />
+                                                                        ) : (
+                                                                            <FileUp className="size-4" />
+                                                                        )}
                                                                     </Button>
                                                                 </TooltipTrigger>
-                                                                <TooltipContent>{hasUploaded ? 'Replace File' : 'Upload PDF'}</TooltipContent>
+                                                                <TooltipContent>
+                                                                    {hasUploaded
+                                                                        ? 'Replace File'
+                                                                        : 'Upload PDF'}
+                                                                </TooltipContent>
                                                             </Tooltip>
                                                         )}
 
                                                         {/* Remove */}
-                                                        {hasUploaded && doc.status !== 'approved' && (
-                                                            <Tooltip>
-                                                                <TooltipTrigger asChild>
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        className="size-8 text-destructive hover:text-destructive"
-                                                                        onClick={() => handleDelete(doc)}
+                                                        {hasUploaded &&
+                                                            doc.status !==
+                                                                'approved' && (
+                                                                <Tooltip>
+                                                                    <TooltipTrigger
+                                                                        asChild
                                                                     >
-                                                                        <Trash2 className="size-4" />
-                                                                    </Button>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent>Remove Upload</TooltipContent>
-                                                            </Tooltip>
-                                                        )}
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            className="size-8 text-destructive hover:text-destructive"
+                                                                            onClick={() =>
+                                                                                handleDelete(
+                                                                                    doc,
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            <Trash2 className="size-4" />
+                                                                        </Button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>
+                                                                        Remove
+                                                                        Upload
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            )}
                                                     </div>
                                                 </TableCell>
                                             </TableRow>
@@ -936,21 +1287,28 @@ export default function InternDocuments({
             {/* ── PDF Preview Dialog ────────────────────────────────────────── */}
             <Dialog
                 open={previewDoc !== null}
-                onOpenChange={(open) => { if (!open) setPreviewDoc(null); }}
+                onOpenChange={(open) => {
+                    if (!open) setPreviewDoc(null);
+                }}
             >
-                <DialogContent className="max-w-4xl w-[95vw] h-[85vh] p-0 flex flex-col gap-0 overflow-hidden">
-                    <DialogHeader className="px-5 py-3 border-b border-border flex flex-row items-center justify-between shrink-0">
+                <DialogContent className="flex h-[85vh] w-[95vw] max-w-4xl flex-col gap-0 overflow-hidden p-0">
+                    <DialogHeader className="flex shrink-0 flex-row items-center justify-between border-b border-border px-5 py-3">
                         <div>
                             <DialogTitle className="text-sm font-semibold">
                                 {previewDoc?.name}
                             </DialogTitle>
-                            <DialogDescription className="text-xs text-muted-foreground truncate max-w-md">
+                            <DialogDescription className="max-w-md truncate text-xs text-muted-foreground">
                                 {previewDoc?.original_filename}
                             </DialogDescription>
                         </div>
-                        <div className="flex items-center gap-2 mr-6">
+                        <div className="mr-6 flex items-center gap-2">
                             {previewDoc?.download_url && (
-                                <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" asChild>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 gap-1 text-xs"
+                                    asChild
+                                >
                                     <a href={previewDoc.download_url} download>
                                         <Download className="h-3.5 w-3.5" />
                                         Download
@@ -958,8 +1316,17 @@ export default function InternDocuments({
                                 </Button>
                             )}
                             {previewDoc?.preview_url && (
-                                <Button size="sm" variant="secondary" className="h-7 gap-1 text-xs" asChild>
-                                    <a href={previewDoc.preview_url} target="_blank" rel="noopener noreferrer">
+                                <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    className="h-7 gap-1 text-xs"
+                                    asChild
+                                >
+                                    <a
+                                        href={previewDoc.preview_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
                                         Open Tab
                                     </a>
                                 </Button>
@@ -967,15 +1334,15 @@ export default function InternDocuments({
                         </div>
                     </DialogHeader>
 
-                    <div className="flex-1 bg-muted/20 w-full h-full relative">
+                    <div className="relative h-full w-full flex-1 bg-muted/20">
                         {previewDoc?.preview_url ? (
                             <iframe
                                 src={previewDoc.preview_url}
                                 title={previewDoc.name}
-                                className="w-full h-full border-0"
+                                className="h-full w-full border-0"
                             />
                         ) : (
-                            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
                                 Unable to load preview.
                             </div>
                         )}

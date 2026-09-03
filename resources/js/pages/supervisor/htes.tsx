@@ -134,7 +134,11 @@ export default function SupervisorHtes({
 
     const applySearch = (e: FormEvent) => {
         e.preventDefault();
-        visit({ ...baseParams(), search: search || undefined, page: undefined });
+        visit({
+            ...baseParams(),
+            search: search || undefined,
+            page: undefined,
+        });
     };
 
     const clearSearch = () => {
@@ -145,7 +149,10 @@ export default function SupervisorHtes({
     const changeStatus = (value: string) => {
         visit({
             ...baseParams(),
-            status: value === ALL_STATUSES ? undefined : (value as 'active' | 'inactive'),
+            status:
+                value === ALL_STATUSES
+                    ? undefined
+                    : (value as 'active' | 'inactive'),
             page: undefined,
         });
     };
@@ -187,13 +194,17 @@ export default function SupervisorHtes({
                             Host Training Establishments
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            {hteCount} HTE{hteCount === 1 ? '' : 's'} hosting interns from {scopeName ?? 'your program'}.
+                            {hteCount} HTE{hteCount === 1 ? '' : 's'} hosting
+                            interns from {scopeName ?? 'your program'}.
                         </p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
                         {/* Desktop search */}
-                        <form onSubmit={applySearch} className="relative hidden sm:block">
+                        <form
+                            onSubmit={applySearch}
+                            className="relative hidden sm:block"
+                        >
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                             <input
                                 type="text"
@@ -220,7 +231,11 @@ export default function SupervisorHtes({
                             className="inline-flex size-9 items-center justify-center rounded-md border bg-background text-muted-foreground hover:text-foreground sm:hidden"
                             aria-label="Toggle search"
                         >
-                            {mobileSearchOpen ? <X className="size-4" /> : <Search className="size-4" />}
+                            {mobileSearchOpen ? (
+                                <X className="size-4" />
+                            ) : (
+                                <Search className="size-4" />
+                            )}
                         </button>
 
                         {/* Status filter */}
@@ -234,9 +249,15 @@ export default function SupervisorHtes({
                                     <SelectValue placeholder="All Status" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value={ALL_STATUSES}>All Status</SelectItem>
-                                    <SelectItem value="active">Active</SelectItem>
-                                    <SelectItem value="inactive">Inactive</SelectItem>
+                                    <SelectItem value={ALL_STATUSES}>
+                                        All Status
+                                    </SelectItem>
+                                    <SelectItem value="active">
+                                        Active
+                                    </SelectItem>
+                                    <SelectItem value="inactive">
+                                        Inactive
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -249,19 +270,32 @@ export default function SupervisorHtes({
                                     <SlidersHorizontal className="size-4 text-muted-foreground" />
                                 </SelectTrigger>
                                 <SelectContent align="end">
-                                    <SelectItem value={ALL_STATUSES}>All Status</SelectItem>
-                                    <SelectItem value="active">Active</SelectItem>
-                                    <SelectItem value="inactive">Inactive</SelectItem>
+                                    <SelectItem value={ALL_STATUSES}>
+                                        All Status
+                                    </SelectItem>
+                                    <SelectItem value="active">
+                                        Active
+                                    </SelectItem>
+                                    <SelectItem value="inactive">
+                                        Inactive
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
 
                         {/* View toggle — desktop only */}
                         <div className="hidden sm:block">
-                            <Tabs value={view} onValueChange={(v) => setView(v as ViewMode)}>
+                            <Tabs
+                                value={view}
+                                onValueChange={(v) => setView(v as ViewMode)}
+                            >
                                 <TabsList>
-                                    <TabsTrigger value="table"><TableIcon className="size-4" /></TabsTrigger>
-                                    <TabsTrigger value="grid"><LayoutGrid className="size-4" /></TabsTrigger>
+                                    <TabsTrigger value="table">
+                                        <TableIcon className="size-4" />
+                                    </TabsTrigger>
+                                    <TabsTrigger value="grid">
+                                        <LayoutGrid className="size-4" />
+                                    </TabsTrigger>
                                 </TabsList>
                             </Tabs>
                         </div>
@@ -275,7 +309,7 @@ export default function SupervisorHtes({
                             applySearch(e);
                             setMobileSearchOpen(false);
                         }}
-                        className="flex items-center gap-2 sm:hidden w-full"
+                        className="flex w-full items-center gap-2 sm:hidden"
                     >
                         <div className="relative flex-1">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -300,7 +334,9 @@ export default function SupervisorHtes({
                                 </button>
                             )}
                         </div>
-                        <Button type="submit" size="sm">Search</Button>
+                        <Button type="submit" size="sm">
+                            Search
+                        </Button>
                     </form>
                 )}
 
@@ -308,7 +344,10 @@ export default function SupervisorHtes({
                 {htes.data.length === 0 ? (
                     <Card>
                         <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                            No HTEs{filters.search || filters.status ? ' match this filter.' : ' yet.'}
+                            No HTEs
+                            {filters.search || filters.status
+                                ? ' match this filter.'
+                                : ' yet.'}
                         </CardContent>
                     </Card>
                 ) : (
@@ -322,23 +361,45 @@ export default function SupervisorHtes({
                                             <TableHeader className="bg-muted/40">
                                                 <TableRow>
                                                     <TableHead className="w-8 px-4" />
-                                                    <TableHead className="px-6 font-semibold">Host Training Establishment</TableHead>
-                                                    <TableHead className="px-6 text-center font-semibold">Address</TableHead>
-                                                    <TableHead className="px-6 text-center font-semibold">Contact</TableHead>
-                                                    <TableHead className="px-6 text-center font-semibold">Status</TableHead>
-                                                    <TableHead className="px-6 text-center font-semibold">Interns</TableHead>
+                                                    <TableHead className="px-6 font-semibold">
+                                                        Host Training
+                                                        Establishment
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center font-semibold">
+                                                        Address
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center font-semibold">
+                                                        Contact
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center font-semibold">
+                                                        Status
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center font-semibold">
+                                                        Interns
+                                                    </TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {htes.data.map((hte) => {
-                                                    const isExpanded = expandedHteIds.has(hte.hte_id);
+                                                    const isExpanded =
+                                                        expandedHteIds.has(
+                                                            hte.hte_id,
+                                                        );
 
                                                     return (
-                                                        <Fragment key={hte.hte_id}>
+                                                        <Fragment
+                                                            key={hte.hte_id}
+                                                        >
                                                             <TableRow
-                                                                onClick={() => toggleExpanded(hte.hte_id)}
+                                                                onClick={() =>
+                                                                    toggleExpanded(
+                                                                        hte.hte_id,
+                                                                    )
+                                                                }
                                                                 className="cursor-pointer hover:bg-muted/50"
-                                                                aria-expanded={isExpanded}
+                                                                aria-expanded={
+                                                                    isExpanded
+                                                                }
                                                             >
                                                                 <TableCell className="px-4 text-muted-foreground">
                                                                     <ChevronDown
@@ -346,67 +407,137 @@ export default function SupervisorHtes({
                                                                     />
                                                                 </TableCell>
                                                                 <TableCell className="px-6 font-medium text-foreground">
-                                                                    {hte.hte_name}
+                                                                    {
+                                                                        hte.hte_name
+                                                                    }
                                                                 </TableCell>
                                                                 <TableCell
                                                                     className="max-w-xs truncate px-6 text-center text-muted-foreground"
-                                                                    title={hte.address ?? undefined}
+                                                                    title={
+                                                                        hte.address ??
+                                                                        undefined
+                                                                    }
                                                                 >
-                                                                    {hte.address ?? '—'}
+                                                                    {hte.address ??
+                                                                        '—'}
                                                                 </TableCell>
                                                                 <TableCell className="px-6 text-center">
-                                                                    <p className="truncate text-foreground font-medium" title={hte.contact_person ?? undefined}>
-                                                                        {hte.contact_person ?? '—'}
+                                                                    <p
+                                                                        className="truncate font-medium text-foreground"
+                                                                        title={
+                                                                            hte.contact_person ??
+                                                                            undefined
+                                                                        }
+                                                                    >
+                                                                        {hte.contact_person ??
+                                                                            '—'}
                                                                     </p>
                                                                     {hte.contact_number && (
                                                                         <p className="truncate text-xs text-muted-foreground">
-                                                                            {hte.contact_number}
+                                                                            {
+                                                                                hte.contact_number
+                                                                            }
                                                                         </p>
                                                                     )}
                                                                 </TableCell>
                                                                 <TableCell className="px-6 text-center">
-                                                                    <StatusBadge status={hte.status} />
+                                                                    <StatusBadge
+                                                                        status={
+                                                                            hte.status
+                                                                        }
+                                                                    />
                                                                 </TableCell>
                                                                 <TableCell className="px-6 text-center font-semibold text-foreground">
-                                                                    {hte.interns_count}
+                                                                    {
+                                                                        hte.interns_count
+                                                                    }
                                                                 </TableCell>
                                                             </TableRow>
                                                             {isExpanded && (
                                                                 <TableRow className="bg-muted/15 hover:bg-muted/15">
-                                                                    <TableCell colSpan={6} className="px-6 py-4">
-                                                                        {hte.interns.length === 0 ? (
+                                                                    <TableCell
+                                                                        colSpan={
+                                                                            6
+                                                                        }
+                                                                        className="px-6 py-4"
+                                                                    >
+                                                                        {hte
+                                                                            .interns
+                                                                            .length ===
+                                                                        0 ? (
                                                                             <p className="text-sm text-muted-foreground">
-                                                                                No interns from your program here yet.
+                                                                                No
+                                                                                interns
+                                                                                from
+                                                                                your
+                                                                                program
+                                                                                here
+                                                                                yet.
                                                                             </p>
                                                                         ) : (
-                                                                            <div className="rounded-lg border bg-card overflow-hidden">
+                                                                            <div className="overflow-hidden rounded-lg border bg-card">
                                                                                 <Table>
                                                                                     <TableHeader className="bg-muted/40">
                                                                                         <TableRow>
-                                                                                            <TableHead className="px-4 font-semibold">Intern</TableHead>
-                                                                                            <TableHead className="px-4 text-center font-semibold">ID Number</TableHead>
-                                                                                            <TableHead className="px-4 text-center font-semibold">Contact</TableHead>
-                                                                                            <TableHead className="px-4 text-right font-semibold">Hours Rendered</TableHead>
+                                                                                            <TableHead className="px-4 font-semibold">
+                                                                                                Intern
+                                                                                            </TableHead>
+                                                                                            <TableHead className="px-4 text-center font-semibold">
+                                                                                                ID
+                                                                                                Number
+                                                                                            </TableHead>
+                                                                                            <TableHead className="px-4 text-center font-semibold">
+                                                                                                Contact
+                                                                                            </TableHead>
+                                                                                            <TableHead className="px-4 text-right font-semibold">
+                                                                                                Hours
+                                                                                                Rendered
+                                                                                            </TableHead>
                                                                                         </TableRow>
                                                                                     </TableHeader>
                                                                                     <TableBody>
-                                                                                        {hte.interns.map((intern) => (
-                                                                                            <TableRow key={intern.intern_user_id}>
-                                                                                                <TableCell className="px-4">
-                                                                                                    <p className="font-medium text-foreground whitespace-nowrap">{intern.name}</p>
-                                                                                                    <p className="text-xs text-muted-foreground max-w-[200px] truncate" title={intern.email}>{intern.email}</p>
-                                                                                                </TableCell>
-                                                                                                <TableCell className="px-4 text-center whitespace-nowrap text-muted-foreground tabular-nums">
-                                                                                                    {intern.id_number ?? '—'}
-                                                                                                </TableCell>
-                                                                                                <TableCell className="px-4 text-center whitespace-nowrap text-muted-foreground tabular-nums">
-                                                                                                    {intern.contact_number ?? '—'}
-                                                                                                </TableCell>
-                                                                                                <TableCell className="px-4 whitespace-nowrap text-right font-medium text-foreground">
-                                                                                                    {formatLongDuration(intern.total_hours)}
-                                                                                                </TableCell>
-                                                                                            </TableRow>
-                                                                                        ))}
+                                                                                        {hte.interns.map(
+                                                                                            (
+                                                                                                intern,
+                                                                                            ) => (
+                                                                                                <TableRow
+                                                                                                    key={
+                                                                                                        intern.intern_user_id
+                                                                                                    }
+                                                                                                >
+                                                                                                    <TableCell className="px-4">
+                                                                                                        <p className="font-medium whitespace-nowrap text-foreground">
+                                                                                                            {
+                                                                                                                intern.name
+                                                                                                            }
+                                                                                                        </p>
+                                                                                                        <p
+                                                                                                            className="max-w-[200px] truncate text-xs text-muted-foreground"
+                                                                                                            title={
+                                                                                                                intern.email
+                                                                                                            }
+                                                                                                        >
+                                                                                                            {
+                                                                                                                intern.email
+                                                                                                            }
+                                                                                                        </p>
+                                                                                                    </TableCell>
+                                                                                                    <TableCell className="px-4 text-center whitespace-nowrap text-muted-foreground tabular-nums">
+                                                                                                        {intern.id_number ??
+                                                                                                            '—'}
+                                                                                                    </TableCell>
+                                                                                                    <TableCell className="px-4 text-center whitespace-nowrap text-muted-foreground tabular-nums">
+                                                                                                        {intern.contact_number ??
+                                                                                                            '—'}
+                                                                                                    </TableCell>
+                                                                                                    <TableCell className="px-4 text-right font-medium whitespace-nowrap text-foreground">
+                                                                                                        {formatLongDuration(
+                                                                                                            intern.total_hours,
+                                                                                                        )}
+                                                                                                    </TableCell>
+                                                                                                </TableRow>
+                                                                                            ),
+                                                                                        )}
                                                                                     </TableBody>
                                                                                 </Table>
                                                                             </div>
@@ -426,44 +557,61 @@ export default function SupervisorHtes({
 
                         {/* Grid view — desktop */}
                         {view === 'grid' && (
-                            <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3">
                                 {htes.data.map((hte) => {
-                                    const isExpanded = expandedHteIds.has(hte.hte_id);
+                                    const isExpanded = expandedHteIds.has(
+                                        hte.hte_id,
+                                    );
 
                                     return (
-                                        <Card key={hte.hte_id} className="flex flex-col justify-between">
+                                        <Card
+                                            key={hte.hte_id}
+                                            className="flex flex-col justify-between"
+                                        >
                                             <CardHeader className="pb-3">
                                                 <div className="flex items-start justify-between gap-2">
-                                                    <CardTitle className="text-base font-semibold truncate">
+                                                    <CardTitle className="truncate text-base font-semibold">
                                                         {hte.hte_name}
                                                     </CardTitle>
-                                                    <StatusBadge status={hte.status} />
+                                                    <StatusBadge
+                                                        status={hte.status}
+                                                    />
                                                 </div>
                                             </CardHeader>
                                             <CardContent className="flex flex-col gap-2.5 text-xs text-muted-foreground">
                                                 {hte.address && (
                                                     <div className="flex items-center gap-2">
                                                         <MapPin className="size-3.5 shrink-0" />
-                                                        <span className="truncate">{hte.address}</span>
+                                                        <span className="truncate">
+                                                            {hte.address}
+                                                        </span>
                                                     </div>
                                                 )}
                                                 {hte.contact_person && (
                                                     <div className="flex items-center gap-2">
                                                         <User className="size-3.5 shrink-0" />
-                                                        <span className="truncate">{hte.contact_person}</span>
+                                                        <span className="truncate">
+                                                            {hte.contact_person}
+                                                        </span>
                                                     </div>
                                                 )}
                                                 {hte.contact_number && (
                                                     <div className="flex items-center gap-2">
                                                         <Phone className="size-3.5 shrink-0" />
-                                                        <span>{hte.contact_number}</span>
+                                                        <span>
+                                                            {hte.contact_number}
+                                                        </span>
                                                     </div>
                                                 )}
                                                 <div className="mt-2 flex items-center justify-between border-t pt-2">
                                                     <span className="flex items-center gap-1.5 text-muted-foreground">
-                                                        <Users className="size-3.5" /> Assigned Interns:
+                                                        <Users className="size-3.5" />{' '}
+                                                        Assigned Interns:
                                                     </span>
-                                                    <Badge variant="secondary" className="font-semibold text-xs">
+                                                    <Badge
+                                                        variant="secondary"
+                                                        className="text-xs font-semibold"
+                                                    >
                                                         {hte.interns_count}
                                                     </Badge>
                                                 </div>
@@ -473,20 +621,47 @@ export default function SupervisorHtes({
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
-                                                            className="w-full text-xs h-7 justify-between"
-                                                            onClick={() => toggleExpanded(hte.hte_id)}
+                                                            className="h-7 w-full justify-between text-xs"
+                                                            onClick={() =>
+                                                                toggleExpanded(
+                                                                    hte.hte_id,
+                                                                )
+                                                            }
                                                         >
-                                                            <span>{isExpanded ? 'Hide Interns' : 'View Interns'}</span>
-                                                            <ChevronDown className={`size-3.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                                            <span>
+                                                                {isExpanded
+                                                                    ? 'Hide Interns'
+                                                                    : 'View Interns'}
+                                                            </span>
+                                                            <ChevronDown
+                                                                className={`size-3.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                                            />
                                                         </Button>
                                                         {isExpanded && (
-                                                            <div className="mt-2 flex flex-col gap-1.5 rounded-md border p-2 bg-muted/20">
-                                                                {hte.interns.map((intern) => (
-                                                                    <div key={intern.intern_user_id} className="flex items-center justify-between text-[11px]">
-                                                                        <span className="font-medium text-foreground truncate">{intern.name}</span>
-                                                                        <span className="text-muted-foreground">{formatLongDuration(intern.total_hours)}</span>
-                                                                    </div>
-                                                                ))}
+                                                            <div className="mt-2 flex flex-col gap-1.5 rounded-md border bg-muted/20 p-2">
+                                                                {hte.interns.map(
+                                                                    (
+                                                                        intern,
+                                                                    ) => (
+                                                                        <div
+                                                                            key={
+                                                                                intern.intern_user_id
+                                                                            }
+                                                                            className="flex items-center justify-between text-[11px]"
+                                                                        >
+                                                                            <span className="truncate font-medium text-foreground">
+                                                                                {
+                                                                                    intern.name
+                                                                                }
+                                                                            </span>
+                                                                            <span className="text-muted-foreground">
+                                                                                {formatLongDuration(
+                                                                                    intern.total_hours,
+                                                                                )}
+                                                                            </span>
+                                                                        </div>
+                                                                    ),
+                                                                )}
                                                             </div>
                                                         )}
                                                     </div>
@@ -499,24 +674,41 @@ export default function SupervisorHtes({
                         )}
 
                         {/* Mobile list view */}
-                        <div className="sm:hidden flex flex-col gap-3">
+                        <div className="flex flex-col gap-3 sm:hidden">
                             {htes.data.map((hte) => {
-                                const isExpanded = expandedHteIds.has(hte.hte_id);
+                                const isExpanded = expandedHteIds.has(
+                                    hte.hte_id,
+                                );
 
                                 return (
                                     <Card key={hte.hte_id}>
-                                        <CardContent className="p-4 flex flex-col gap-2">
+                                        <CardContent className="flex flex-col gap-2 p-4">
                                             <div className="flex items-start justify-between gap-2">
-                                                <p className="font-semibold text-sm text-foreground">{hte.hte_name}</p>
-                                                <StatusBadge status={hte.status} />
+                                                <p className="text-sm font-semibold text-foreground">
+                                                    {hte.hte_name}
+                                                </p>
+                                                <StatusBadge
+                                                    status={hte.status}
+                                                />
                                             </div>
                                             {hte.address && (
-                                                <p className="text-xs text-muted-foreground">{hte.address}</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {hte.address}
+                                                </p>
                                             )}
-                                            <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t">
-                                                <span>{hte.contact_person ?? 'No contact person'}</span>
-                                                <Badge variant="secondary" className="text-xs font-semibold">
-                                                    {hte.interns_count} intern{hte.interns_count === 1 ? '' : 's'}
+                                            <div className="flex items-center justify-between border-t pt-1 text-xs text-muted-foreground">
+                                                <span>
+                                                    {hte.contact_person ??
+                                                        'No contact person'}
+                                                </span>
+                                                <Badge
+                                                    variant="secondary"
+                                                    className="text-xs font-semibold"
+                                                >
+                                                    {hte.interns_count} intern
+                                                    {hte.interns_count === 1
+                                                        ? ''
+                                                        : 's'}
                                                 </Badge>
                                             </div>
 
@@ -525,23 +717,51 @@ export default function SupervisorHtes({
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        className="w-full text-xs h-7 justify-between"
-                                                        onClick={() => toggleExpanded(hte.hte_id)}
+                                                        className="h-7 w-full justify-between text-xs"
+                                                        onClick={() =>
+                                                            toggleExpanded(
+                                                                hte.hte_id,
+                                                            )
+                                                        }
                                                     >
-                                                        <span>{isExpanded ? 'Hide Interns' : 'View Interns'}</span>
-                                                        <ChevronDown className={`size-3.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                                        <span>
+                                                            {isExpanded
+                                                                ? 'Hide Interns'
+                                                                : 'View Interns'}
+                                                        </span>
+                                                        <ChevronDown
+                                                            className={`size-3.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                                        />
                                                     </Button>
                                                     {isExpanded && (
-                                                        <div className="mt-2 flex flex-col gap-1.5 rounded-md border p-2 bg-muted/20">
-                                                            {hte.interns.map((intern) => (
-                                                                <div key={intern.intern_user_id} className="flex items-center justify-between text-xs border-b last:border-0 pb-1 last:pb-0">
-                                                                    <div>
-                                                                        <p className="font-medium text-foreground">{intern.name}</p>
-                                                                        <p className="text-[10px] text-muted-foreground font-mono">{intern.id_number ?? 'No ID'}</p>
+                                                        <div className="mt-2 flex flex-col gap-1.5 rounded-md border bg-muted/20 p-2">
+                                                            {hte.interns.map(
+                                                                (intern) => (
+                                                                    <div
+                                                                        key={
+                                                                            intern.intern_user_id
+                                                                        }
+                                                                        className="flex items-center justify-between border-b pb-1 text-xs last:border-0 last:pb-0"
+                                                                    >
+                                                                        <div>
+                                                                            <p className="font-medium text-foreground">
+                                                                                {
+                                                                                    intern.name
+                                                                                }
+                                                                            </p>
+                                                                            <p className="font-mono text-[10px] text-muted-foreground">
+                                                                                {intern.id_number ??
+                                                                                    'No ID'}
+                                                                            </p>
+                                                                        </div>
+                                                                        <span className="font-medium text-muted-foreground">
+                                                                            {formatLongDuration(
+                                                                                intern.total_hours,
+                                                                            )}
+                                                                        </span>
                                                                     </div>
-                                                                    <span className="font-medium text-muted-foreground">{formatLongDuration(intern.total_hours)}</span>
-                                                                </div>
-                                                            ))}
+                                                                ),
+                                                            )}
                                                         </div>
                                                     )}
                                                 </div>

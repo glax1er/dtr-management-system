@@ -59,7 +59,11 @@ const TABS: { label: string; value: string }[] = [
     { label: 'Rejected', value: 'rejected' },
 ];
 
-export default function InternsIndex({ interns, currentStatus, filters }: InternsIndexProps) {
+export default function InternsIndex({
+    interns,
+    currentStatus,
+    filters,
+}: InternsIndexProps) {
     const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters.search);
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -70,9 +74,12 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<Intern | null>(null);
 
-    const highlightId = typeof window !== 'undefined'
-        ? Number(new URLSearchParams(window.location.search).get('highlight')) || null
-        : null;
+    const highlightId =
+        typeof window !== 'undefined'
+            ? Number(
+                  new URLSearchParams(window.location.search).get('highlight'),
+              ) || null
+            : null;
 
     useEffect(() => {
         if (!highlightId) return;
@@ -96,7 +103,10 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
     });
 
     const visit = (params: Record<string, string | undefined>) => {
-        router.get('/admin/interns', params, { preserveState: true, preserveScroll: true });
+        router.get('/admin/interns', params, {
+            preserveState: true,
+            preserveScroll: true,
+        });
     };
 
     const switchTab = (status: string) => {
@@ -106,7 +116,11 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
 
     const applySearch = (e: FormEvent) => {
         e.preventDefault();
-        visit({ ...baseParams(), search: search || undefined, page: undefined });
+        visit({
+            ...baseParams(),
+            search: search || undefined,
+            page: undefined,
+        });
     };
 
     const clearSearch = () => {
@@ -114,16 +128,25 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
         visit({ ...baseParams(), search: undefined, page: undefined });
     };
 
-    const goToPage = (page: number) => visit({ ...baseParams(), page: String(page) });
+    const goToPage = (page: number) =>
+        visit({ ...baseParams(), page: String(page) });
     const changePerPage = (perPage: number) =>
         visit({ ...baseParams(), per_page: String(perPage), page: undefined });
 
     const approve = (intern: Intern) => {
-        router.post(`/admin/interns/${intern.user_id}/approve`, {}, { preserveScroll: true });
+        router.post(
+            `/admin/interns/${intern.user_id}/approve`,
+            {},
+            { preserveScroll: true },
+        );
     };
 
     const reject = (intern: Intern) => {
-        router.post(`/admin/interns/${intern.user_id}/reject`, {}, { preserveScroll: true });
+        router.post(
+            `/admin/interns/${intern.user_id}/reject`,
+            {},
+            { preserveScroll: true },
+        );
     };
 
     const openUndoDialog = (intern: Intern) => {
@@ -133,7 +156,11 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
 
     const submitUndo = () => {
         if (!undoTarget) return;
-        router.post(`/admin/interns/${undoTarget.user_id}/undo`, {}, { preserveScroll: true });
+        router.post(
+            `/admin/interns/${undoTarget.user_id}/undo`,
+            {},
+            { preserveScroll: true },
+        );
         setUndoOpen(false);
         setUndoTarget(null);
     };
@@ -145,7 +172,9 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
 
     const submitDelete = () => {
         if (!deleteTarget) return;
-        router.delete(`/admin/interns/${deleteTarget.user_id}`, { preserveScroll: true });
+        router.delete(`/admin/interns/${deleteTarget.user_id}`, {
+            preserveScroll: true,
+        });
         setDeleteOpen(false);
         setDeleteTarget(null);
     };
@@ -163,8 +192,11 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                         Interns
                     </h1>
 
-                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-                        <form onSubmit={applySearch} className="relative hidden sm:block">
+                    <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end">
+                        <form
+                            onSubmit={applySearch}
+                            className="relative hidden sm:block"
+                        >
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                             <input
                                 type="text"
@@ -190,14 +222,25 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                             className="inline-flex size-9 shrink-0 items-center justify-center rounded-md border bg-background text-muted-foreground hover:text-foreground sm:hidden"
                             aria-label="Toggle search"
                         >
-                            {mobileSearchOpen ? <X className="size-4" /> : <Search className="size-4" />}
+                            {mobileSearchOpen ? (
+                                <X className="size-4" />
+                            ) : (
+                                <Search className="size-4" />
+                            )}
                         </button>
 
-                        <div className="overflow-x-auto max-w-[calc(100%-3rem)] sm:max-w-none scrollbar-none">
-                            <Tabs value={currentStatus} onValueChange={switchTab}>
+                        <div className="max-w-[calc(100%-3rem)] scrollbar-none overflow-x-auto sm:max-w-none">
+                            <Tabs
+                                value={currentStatus}
+                                onValueChange={switchTab}
+                            >
                                 <TabsList className="w-auto">
                                     {TABS.map((tab) => (
-                                        <TabsTrigger key={tab.value} value={tab.value} className="text-xs sm:text-sm px-2 sm:px-3">
+                                        <TabsTrigger
+                                            key={tab.value}
+                                            value={tab.value}
+                                            className="px-2 text-xs sm:px-3 sm:text-sm"
+                                        >
                                             {tab.label}
                                         </TabsTrigger>
                                     ))}
@@ -208,7 +251,9 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                         <div className="hidden sm:block">
                             <div className="inline-flex rounded-md border p-0.5">
                                 <Button
-                                    variant={view === 'table' ? 'secondary' : 'ghost'}
+                                    variant={
+                                        view === 'table' ? 'secondary' : 'ghost'
+                                    }
                                     size="icon"
                                     className="size-8"
                                     onClick={() => setView('table')}
@@ -216,7 +261,9 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                                     <TableIcon className="size-4" />
                                 </Button>
                                 <Button
-                                    variant={view === 'grid' ? 'secondary' : 'ghost'}
+                                    variant={
+                                        view === 'grid' ? 'secondary' : 'ghost'
+                                    }
                                     size="icon"
                                     className="size-8"
                                     onClick={() => setView('grid')}
@@ -230,8 +277,11 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
 
                 {mobileSearchOpen && (
                     <form
-                        onSubmit={(e) => { applySearch(e); setMobileSearchOpen(false); }}
-                        className="flex items-center gap-2 sm:hidden w-full"
+                        onSubmit={(e) => {
+                            applySearch(e);
+                            setMobileSearchOpen(false);
+                        }}
+                        className="flex w-full items-center gap-2 sm:hidden"
                     >
                         <div className="relative flex-1">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -246,21 +296,27 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                             {search && (
                                 <button
                                     type="button"
-                                    onClick={() => { clearSearch(); setMobileSearchOpen(false); }}
+                                    onClick={() => {
+                                        clearSearch();
+                                        setMobileSearchOpen(false);
+                                    }}
                                     className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                                 >
                                     <X className="size-3.5" />
                                 </button>
                             )}
                         </div>
-                        <Button type="submit" size="sm">Search</Button>
+                        <Button type="submit" size="sm">
+                            Search
+                        </Button>
                     </form>
                 )}
 
                 {interns.data.length === 0 ? (
                     <Card>
                         <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                            No {currentStatus} interns{filters.search ? ' match your search.' : '.'}
+                            No {currentStatus} interns
+                            {filters.search ? ' match your search.' : '.'}
                         </CardContent>
                     </Card>
                 ) : (
@@ -272,33 +328,54 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                                         <Table>
                                             <TableHeader>
                                                 <TableRow>
-                                                    <TableHead className="px-6">Name</TableHead>
-                                                    <TableHead className="px-6 text-center">ID Number</TableHead>
-                                                    <TableHead className="px-6 text-center">Program</TableHead>
-                                                    <TableHead className="px-6 text-center">HTE</TableHead>
-                                                    <TableHead className="px-6 text-center">Status</TableHead>
-                                                    <TableHead className="px-6 text-center">Registered</TableHead>
-                                                    <TableHead className="px-6 text-center">Actions</TableHead>
+                                                    <TableHead className="px-6">
+                                                        Name
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        ID Number
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        Program
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        HTE
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        Status
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        Registered
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        Actions
+                                                    </TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {interns.data.map((intern) => {
-                                                    const isHighlighted = highlightId === intern.user_id;
+                                                    const isHighlighted =
+                                                        highlightId ===
+                                                        intern.user_id;
 
                                                     return (
                                                         <TableRow
                                                             key={intern.user_id}
                                                             id={`intern-row-${intern.user_id}`}
                                                             className={cn(
-                                                                "transition-all duration-300",
-                                                                isHighlighted && "bg-primary/10 ring-2 ring-primary/40 dark:bg-primary/20"
+                                                                'transition-all duration-300',
+                                                                isHighlighted &&
+                                                                    'bg-primary/10 ring-2 ring-primary/40 dark:bg-primary/20',
                                                             )}
                                                         >
                                                             <TableCell className="px-6">
                                                                 <div className="flex items-center gap-2">
-                                                                    <p className="font-medium whitespace-nowrap">{intern.name}</p>
+                                                                    <p className="font-medium whitespace-nowrap">
+                                                                        {
+                                                                            intern.name
+                                                                        }
+                                                                    </p>
                                                                     {isHighlighted && (
-                                                                        <Badge className="bg-primary text-primary-foreground font-semibold text-[10px] uppercase gap-1 animate-pulse">
+                                                                        <Badge className="animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase">
                                                                             <Sparkles className="size-3" />
                                                                             Focus
                                                                         </Badge>
@@ -306,39 +383,69 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                                                                 </div>
                                                                 <p
                                                                     className="max-w-[180px] truncate text-xs text-muted-foreground"
-                                                                    title={intern.email}
+                                                                    title={
+                                                                        intern.email
+                                                                    }
                                                                 >
-                                                                    {intern.email}
+                                                                    {
+                                                                        intern.email
+                                                                    }
                                                                 </p>
                                                             </TableCell>
                                                             <TableCell className="px-6 text-center whitespace-nowrap">
-                                                                {intern.id_number}
+                                                                {
+                                                                    intern.id_number
+                                                                }
                                                             </TableCell>
                                                             <TableCell
                                                                 className="max-w-[160px] truncate px-6 text-center"
-                                                                title={intern.program_name}
+                                                                title={
+                                                                    intern.program_name
+                                                                }
                                                             >
-                                                                {intern.program_name}
+                                                                {
+                                                                    intern.program_name
+                                                                }
                                                             </TableCell>
                                                             <TableCell
                                                                 className="max-w-[160px] truncate px-6 text-center"
-                                                                title={intern.hte_name}
+                                                                title={
+                                                                    intern.hte_name
+                                                                }
                                                             >
-                                                                {intern.hte_name}
+                                                                {
+                                                                    intern.hte_name
+                                                                }
                                                             </TableCell>
                                                             <TableCell className="px-6 text-center">
-                                                                <StatusBadge status={intern.status} />
+                                                                <StatusBadge
+                                                                    status={
+                                                                        intern.status
+                                                                    }
+                                                                />
                                                             </TableCell>
                                                             <TableCell className="px-6 text-center whitespace-nowrap text-muted-foreground">
-                                                                {intern.registered_at}
+                                                                {
+                                                                    intern.registered_at
+                                                                }
                                                             </TableCell>
                                                             <TableCell className="px-6 text-center">
                                                                 <InternActions
-                                                                    intern={intern}
-                                                                    onApprove={approve}
-                                                                    onReject={reject}
-                                                                    onUndo={openUndoDialog}
-                                                                    onDelete={openDeleteDialog}
+                                                                    intern={
+                                                                        intern
+                                                                    }
+                                                                    onApprove={
+                                                                        approve
+                                                                    }
+                                                                    onReject={
+                                                                        reject
+                                                                    }
+                                                                    onUndo={
+                                                                        openUndoDialog
+                                                                    }
+                                                                    onDelete={
+                                                                        openDeleteDialog
+                                                                    }
                                                                 />
                                                             </TableCell>
                                                         </TableRow>
@@ -361,15 +468,17 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                         <div className={view === 'table' ? 'sm:hidden' : ''}>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {interns.data.map((intern) => {
-                                    const isHighlighted = highlightId === intern.user_id;
+                                    const isHighlighted =
+                                        highlightId === intern.user_id;
 
                                     return (
                                         <Card
                                             key={intern.user_id}
                                             id={`intern-card-${intern.user_id}`}
                                             className={cn(
-                                                "transition-all duration-300",
-                                                isHighlighted && "ring-2 ring-primary border-primary bg-primary/5 dark:bg-primary/10 shadow-sm"
+                                                'transition-all duration-300',
+                                                isHighlighted &&
+                                                    'border-primary bg-primary/5 shadow-sm ring-2 ring-primary dark:bg-primary/10',
                                             )}
                                         >
                                             <CardHeader>
@@ -380,7 +489,7 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                                                                 {intern.name}
                                                             </CardTitle>
                                                             {isHighlighted && (
-                                                                <Badge className="bg-primary text-primary-foreground font-semibold text-[10px] uppercase gap-1 animate-pulse">
+                                                                <Badge className="animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase">
                                                                     <Sparkles className="size-3" />
                                                                     Focus
                                                                 </Badge>
@@ -390,7 +499,11 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                                                             {intern.email}
                                                         </p>
                                                         <div className="mt-2">
-                                                            <StatusBadge status={intern.status} />
+                                                            <StatusBadge
+                                                                status={
+                                                                    intern.status
+                                                                }
+                                                            />
                                                         </div>
                                                     </div>
                                                     <div className="shrink-0">
@@ -398,28 +511,48 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                                                             intern={intern}
                                                             onApprove={approve}
                                                             onReject={reject}
-                                                            onUndo={openUndoDialog}
-                                                            onDelete={openDeleteDialog}
+                                                            onUndo={
+                                                                openUndoDialog
+                                                            }
+                                                            onDelete={
+                                                                openDeleteDialog
+                                                            }
                                                         />
                                                     </div>
                                                 </div>
                                             </CardHeader>
                                             <CardContent className="space-y-2 text-sm">
                                                 <div className="flex justify-between gap-2">
-                                                    <span className="text-muted-foreground">ID Number</span>
-                                                    <span>{intern.id_number}</span>
+                                                    <span className="text-muted-foreground">
+                                                        ID Number
+                                                    </span>
+                                                    <span>
+                                                        {intern.id_number}
+                                                    </span>
                                                 </div>
                                                 <div className="flex justify-between gap-2">
-                                                    <span className="shrink-0 text-muted-foreground">Program</span>
-                                                    <span className="truncate text-right">{intern.program_name}</span>
+                                                    <span className="shrink-0 text-muted-foreground">
+                                                        Program
+                                                    </span>
+                                                    <span className="truncate text-right">
+                                                        {intern.program_name}
+                                                    </span>
                                                 </div>
                                                 <div className="flex justify-between gap-2">
-                                                    <span className="shrink-0 text-muted-foreground">HTE</span>
-                                                    <span className="truncate text-right">{intern.hte_name}</span>
+                                                    <span className="shrink-0 text-muted-foreground">
+                                                        HTE
+                                                    </span>
+                                                    <span className="truncate text-right">
+                                                        {intern.hte_name}
+                                                    </span>
                                                 </div>
                                                 <div className="flex justify-between gap-2">
-                                                    <span className="text-muted-foreground">Registered</span>
-                                                    <span>{intern.registered_at}</span>
+                                                    <span className="text-muted-foreground">
+                                                        Registered
+                                                    </span>
+                                                    <span>
+                                                        {intern.registered_at}
+                                                    </span>
                                                 </div>
                                             </CardContent>
                                         </Card>

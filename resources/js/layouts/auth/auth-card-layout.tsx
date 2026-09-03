@@ -21,7 +21,6 @@ export default function AuthCardLayout({
     return (
         <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
             <div className={`flex w-full ${maxWidth} flex-col gap-6`}>
-
                 <div className="flex flex-col gap-6">
                     <Card className="rounded-xl">
                         <CardHeader className="text-center">
@@ -29,7 +28,7 @@ export default function AuthCardLayout({
                                 <img
                                     src="/images/usep-logo.png"
                                     alt="USEP logo"
-                                    className="h-12 w-auto object-contain mb-2"
+                                    className="mb-2 h-12 w-auto object-contain"
                                 />
                                 <img
                                     src="/images/cims-logo-light.png"
@@ -44,7 +43,7 @@ export default function AuthCardLayout({
                                 <img
                                     src="/images/cic-logo.png"
                                     alt="App logo"
-                                    className="h-12 w-auto rounded-full object-contain mb-2"
+                                    className="mb-2 h-12 w-auto rounded-full object-contain"
                                 />
                             </div>
                             <CardTitle className="text-xl">{title}</CardTitle>

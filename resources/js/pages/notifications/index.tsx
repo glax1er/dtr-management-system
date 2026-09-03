@@ -1,5 +1,12 @@
 import { router, usePage } from '@inertiajs/react';
-import { BellOff, Check, CheckCheck, ChevronRight, Search, Trash2 } from 'lucide-react';
+import {
+    BellOff,
+    Check,
+    CheckCheck,
+    ChevronRight,
+    Search,
+    Trash2,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -8,10 +15,9 @@ import {
     NOTIFICATION_CATEGORY_LABELS,
     formatRelativeTime,
     getNotificationCategory,
-    getNotificationTone
-    
+    getNotificationTone,
 } from '@/lib/notifications';
-import type {NotificationCategory} from '@/lib/notifications';
+import type { NotificationCategory } from '@/lib/notifications';
 import { cn } from '@/lib/utils';
 import type { Notification, PageProps } from '@/types';
 
@@ -54,20 +60,20 @@ function getDateGroup(dateString?: string | null): string {
     const diffDays = Math.round((today - day) / (1000 * 60 * 60 * 24));
 
     if (diffDays <= 0) {
-return 'Today';
-}
+        return 'Today';
+    }
 
     if (diffDays === 1) {
-return 'Yesterday';
-}
+        return 'Yesterday';
+    }
 
     if (diffDays <= 7) {
-return 'This week';
-}
+        return 'This week';
+    }
 
     if (diffDays <= 30) {
-return 'This month';
-}
+        return 'This month';
+    }
 
     return 'Earlier';
 }
@@ -132,7 +138,8 @@ export default function NotificationsPage() {
 
     const openNotification = (notification: Notification) => {
         const href = notification.href;
-        const hasMeaningfulHref = href && href !== '/dashboard' && href !== '/intern/dashboard';
+        const hasMeaningfulHref =
+            href && href !== '/dashboard' && href !== '/intern/dashboard';
 
         if (!hasMeaningfulHref) {
             // No specific destination — just mark as read in place
@@ -213,9 +220,7 @@ export default function NotificationsPage() {
             {/* Header */}
             <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-semibold">
-                        Notifications
-                    </h1>
+                    <h1 className="text-2xl font-semibold">Notifications</h1>
                     <p className="text-muted-foreground">
                         {count > 0
                             ? `${count} unread notification${count === 1 ? '' : 's'}`
@@ -254,9 +259,7 @@ export default function NotificationsPage() {
                         <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             value={query}
-                            onChange={(event) =>
-                                setQuery(event.target.value)
-                            }
+                            onChange={(event) => setQuery(event.target.value)}
                             placeholder="Search notifications"
                             className="pl-9"
                         />
@@ -341,8 +344,8 @@ export default function NotificationsPage() {
                             No matches
                         </p>
                         <p className="mx-auto max-w-sm text-sm text-muted-foreground">
-                            No notifications match these filters. Try
-                            adjusting or resetting them.
+                            No notifications match these filters. Try adjusting
+                            or resetting them.
                         </p>
                     </div>
                     {isFiltering && (
@@ -381,7 +384,9 @@ export default function NotificationsPage() {
                                     return (
                                         <div
                                             key={notification.id}
-                                            onClick={() => openNotification(notification)}
+                                            onClick={() =>
+                                                openNotification(notification)
+                                            }
                                             className={cn(
                                                 'group flex cursor-pointer items-start gap-3 p-3.5 transition-colors hover:bg-accent/10 sm:items-center',
                                                 unread && 'bg-primary/[0.03]',
@@ -424,7 +429,12 @@ export default function NotificationsPage() {
                                                 )}
                                             </span>
 
-                                            <div className="flex shrink-0 items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                            <div
+                                                className="flex shrink-0 items-center gap-1.5"
+                                                onClick={(e) =>
+                                                    e.stopPropagation()
+                                                }
+                                            >
                                                 {unread && (
                                                     <Button
                                                         type="button"

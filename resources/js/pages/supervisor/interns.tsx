@@ -46,7 +46,6 @@ import {
 } from '@/components/ui/table';
 import { dashboard } from '@/routes';
 
-
 interface AttendanceLogRow {
     date: string;
     day: string;
@@ -310,7 +309,8 @@ export default function MyInterns({
                             My Interns
                         </h1>
                         <p className="mt-1 ml-[3.25rem] text-sm text-muted-foreground">
-                            {internCount} {internCount === 1 ? 'intern' : 'interns'}
+                            {internCount}{' '}
+                            {internCount === 1 ? 'intern' : 'interns'}
                             {scopeName ? ` • ${scopeName}` : ''}
                         </p>
                     </div>
@@ -435,7 +435,10 @@ export default function MyInterns({
 
                         {/* View toggle — desktop only */}
                         <div className="hidden sm:block">
-                            <Tabs value={view} onValueChange={(v) => setView(v as ViewMode)}>
+                            <Tabs
+                                value={view}
+                                onValueChange={(v) => setView(v as ViewMode)}
+                            >
                                 <TabsList>
                                     <TabsTrigger value="table">
                                         <TableIcon className="size-4" />
@@ -456,7 +459,7 @@ export default function MyInterns({
                             applySearch(e);
                             setMobileSearchOpen(false);
                         }}
-                        className="flex items-center gap-2 sm:hidden w-full"
+                        className="flex w-full items-center gap-2 sm:hidden"
                     >
                         <div className="relative flex-1">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -491,13 +494,13 @@ export default function MyInterns({
                 <div className="flex flex-col gap-3 rounded-lg border bg-card p-3 shadow-xs lg:flex-row lg:items-center lg:justify-between">
                     <form
                         onSubmit={applyRange}
-                        className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full lg:w-auto"
+                        className="flex w-full flex-wrap items-center gap-2 sm:gap-2.5 lg:w-auto"
                     >
                         <span className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-muted-foreground">
                             <Calendar className="size-3.5" /> Date range:
                         </span>
-                        <div className="flex items-center gap-1.5 flex-1 min-w-0 w-full sm:w-auto sm:flex-initial">
-                            <div className="flex-1 min-w-0 sm:w-44 sm:flex-initial">
+                        <div className="flex w-full min-w-0 flex-1 items-center gap-1.5 sm:w-auto sm:flex-initial">
+                            <div className="min-w-0 flex-1 sm:w-44 sm:flex-initial">
                                 <DatePicker
                                     date={fromDraft}
                                     onDateChange={(d) => setFromDraft(d)}
@@ -508,9 +511,9 @@ export default function MyInterns({
                                 />
                             </div>
                             <span className="shrink-0 text-xs text-muted-foreground">
-                            to
-                        </span>
-                            <div className="flex-1 min-w-0 sm:w-44 sm:flex-initial">
+                                to
+                            </span>
+                            <div className="min-w-0 flex-1 sm:w-44 sm:flex-initial">
                                 <DatePicker
                                     date={toDraft}
                                     onDateChange={(d) => setToDraft(d)}
@@ -522,13 +525,13 @@ export default function MyInterns({
                                 />
                             </div>
                         </div>
-                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <div className="flex w-full items-center gap-2 sm:w-auto">
                             <Button
                                 type="submit"
                                 size="sm"
                                 variant="secondary"
                                 disabled={!fromDraft || !toDraft}
-                                className="h-9 px-3 text-xs sm:text-sm flex-1 sm:flex-initial"
+                                className="h-9 flex-1 px-3 text-xs sm:flex-initial sm:text-sm"
                             >
                                 Apply Range
                             </Button>
@@ -538,7 +541,7 @@ export default function MyInterns({
                                     variant="ghost"
                                     size="sm"
                                     onClick={clearRange}
-                                    className="h-9 px-3 text-xs text-muted-foreground hover:text-foreground sm:text-sm flex-1 sm:flex-initial"
+                                    className="h-9 flex-1 px-3 text-xs text-muted-foreground hover:text-foreground sm:flex-initial sm:text-sm"
                                 >
                                     Switch to Month
                                 </Button>
@@ -547,8 +550,8 @@ export default function MyInterns({
                     </form>
 
                     {hasActiveFilters && (
-                        <div className="flex flex-wrap items-center gap-2 pt-2 lg:pt-0 border-t lg:border-t-0">
-                            <span className="text-xs text-muted-foreground shrink-0">
+                        <div className="flex flex-wrap items-center gap-2 border-t pt-2 lg:border-t-0 lg:pt-0">
+                            <span className="shrink-0 text-xs text-muted-foreground">
                                 Active:
                             </span>
                             {filters.search !== '' && (
@@ -667,7 +670,9 @@ export default function MyInterns({
                                                         <button
                                                             type="button"
                                                             onClick={() =>
-                                                                toggleSort('date')
+                                                                toggleSort(
+                                                                    'date',
+                                                                )
                                                             }
                                                             className="inline-flex items-center font-semibold hover:text-foreground"
                                                         >
@@ -679,7 +684,9 @@ export default function MyInterns({
                                                         <button
                                                             type="button"
                                                             onClick={() =>
-                                                                toggleSort('name')
+                                                                toggleSort(
+                                                                    'name',
+                                                                )
                                                             }
                                                             className="inline-flex items-center font-semibold hover:text-foreground"
                                                         >
@@ -756,7 +763,7 @@ export default function MyInterns({
 
                         {/* Grid View — desktop */}
                         {view === 'grid' && (
-                            <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3">
                                 {logs.data.map((log) => (
                                     <Card
                                         key={`${log.intern_user_id}-${log.date}`}
@@ -765,7 +772,7 @@ export default function MyInterns({
                                         <CardHeader className="pb-3">
                                             <div className="flex items-start justify-between gap-2">
                                                 <div className="min-w-0">
-                                                    <CardTitle className="text-base font-semibold truncate">
+                                                    <CardTitle className="truncate text-base font-semibold">
                                                         {log.intern_name}
                                                     </CardTitle>
                                                     <p className="mt-0.5 text-xs text-muted-foreground">
@@ -793,13 +800,17 @@ export default function MyInterns({
                                             <div className="flex items-center justify-between border-t pt-2">
                                                 <span>Time In:</span>
                                                 <span className="font-medium text-foreground">
-                                                    {formatLongTime(log.time_in)}
+                                                    {formatLongTime(
+                                                        log.time_in,
+                                                    )}
                                                 </span>
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <span>Time Out:</span>
                                                 <span className="font-medium text-foreground">
-                                                    {formatLongTime(log.time_out)}
+                                                    {formatLongTime(
+                                                        log.time_out,
+                                                    )}
                                                 </span>
                                             </div>
                                             <div className="flex items-center justify-between">

@@ -35,4 +35,3 @@ VerifyEmail.layout = {
     title: 'Verify Your Email',
     description: 'Please verify your email address to proceed',
 };
-

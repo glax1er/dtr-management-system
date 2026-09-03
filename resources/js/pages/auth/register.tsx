@@ -100,7 +100,8 @@ export default function Register({
             id_number: formData.get('id_number') ?? '',
             contact_number: formData.get('contact_number') ?? '',
             sex: selectedSex || (formData.get('sex') as string) || '',
-            program_id: selectedProgram || (formData.get('program_id') as string) || '',
+            program_id:
+                selectedProgram || (formData.get('program_id') as string) || '',
             hte_id: selectedHte || (formData.get('hte_id') as string) || '',
             password: formData.get('password') ?? '',
             password_confirmation: formData.get('password_confirmation') ?? '',
@@ -112,7 +113,7 @@ export default function Register({
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json',
+                    Accept: 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                     'X-XSRF-TOKEN': getCsrfToken(),
                 },
@@ -136,7 +137,9 @@ export default function Register({
             } else {
                 const data = await response.json().catch(() => ({}));
                 setFormErrors({
-                    email: data.message || 'Registration could not be completed. Please try again.',
+                    email:
+                        data.message ||
+                        'Registration could not be completed. Please try again.',
                 });
             }
         } catch {
@@ -151,10 +154,7 @@ export default function Register({
     return (
         <>
             <Head title="Register" />
-            <form
-                onSubmit={handleSubmit}
-                className="flex flex-col gap-6"
-            >
+            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
                 <div className="grid gap-4">
                     {/* Name / Email */}
                     <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
@@ -229,9 +229,7 @@ export default function Register({
                                 placeholder="09XXXXXXXXX"
                                 disabled={isSubmitting}
                             />
-                            <InputError
-                                message={formErrors.contact_number}
-                            />
+                            <InputError message={formErrors.contact_number} />
                         </div>
                     </div>
 
@@ -239,8 +237,7 @@ export default function Register({
                     <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
                         <div className="grid gap-2">
                             <Label htmlFor="sex">
-                                Sex{' '}
-                                <span className="text-red-500">*</span>
+                                Sex <span className="text-red-500">*</span>
                             </Label>
                             <Select
                                 name="sex"
@@ -257,9 +254,7 @@ export default function Register({
                                     <SelectValue placeholder="Select sex" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="male">
-                                        Male
-                                    </SelectItem>
+                                    <SelectItem value="male">Male</SelectItem>
                                     <SelectItem value="female">
                                         Female
                                     </SelectItem>
@@ -270,8 +265,7 @@ export default function Register({
 
                         <div className="grid gap-2">
                             <Label htmlFor="program_id">
-                                Program{' '}
-                                <span className="text-red-500">*</span>
+                                Program <span className="text-red-500">*</span>
                             </Label>
                             <Select
                                 name="program_id"
@@ -291,9 +285,7 @@ export default function Register({
                                     {programs.map((program) => (
                                         <SelectItem
                                             key={program.program_id}
-                                            value={String(
-                                                program.program_id,
-                                            )}
+                                            value={String(program.program_id)}
                                         >
                                             {program.program_name}
                                         </SelectItem>
@@ -342,8 +334,7 @@ export default function Register({
                     <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
                         <div className="grid gap-2">
                             <Label htmlFor="password">
-                                Password{' '}
-                                <span className="text-red-500">*</span>
+                                Password <span className="text-red-500">*</span>
                             </Label>
                             <PasswordInput
                                 id="password"
@@ -402,9 +393,7 @@ export default function Register({
                             <button
                                 type="button"
                                 className="cursor-pointer text-foreground underline underline-offset-2 hover:text-blue-800 dark:text-white"
-                                onClick={() =>
-                                    setShowPrivacyDialog(true)
-                                }
+                                onClick={() => setShowPrivacyDialog(true)}
                             >
                                 Privacy Policy
                             </button>

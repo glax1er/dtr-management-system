@@ -1,4 +1,13 @@
-import { AlertTriangle, Bell, Calendar, CheckCircle2, Clock3, Trophy, UserPlus, XCircle } from 'lucide-react';
+import {
+    AlertTriangle,
+    Bell,
+    Calendar,
+    CheckCircle2,
+    Clock3,
+    Trophy,
+    UserPlus,
+    XCircle,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Notification } from '@/types/auth';
 
@@ -196,8 +205,10 @@ export function isRejectedResolutionNotification(
     notification: Notification,
 ): boolean {
     const title = notification.title.toLowerCase();
-    const type = String(notification.type || notification.data?.type || '').toLowerCase();
-    const event = (String(notification.data?.event || '')).toLowerCase();
+    const type = String(
+        notification.type || notification.data?.type || '',
+    ).toLowerCase();
+    const event = String(notification.data?.event || '').toLowerCase();
     const hasRejectionReason = Boolean(notification.data?.rejection_reason);
     const isResolution =
         type === 'resolution_ticket' ||
