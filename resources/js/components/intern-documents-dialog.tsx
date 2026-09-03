@@ -1,6 +1,9 @@
 import { router } from '@inertiajs/react';
 import {
+    AlertCircle,
     Check,
+    CheckCircle2,
+    Clock,
     Download,
     Eye,
     FileCheck2,
@@ -9,9 +12,9 @@ import {
     Sparkles,
     X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
@@ -57,12 +60,32 @@ export function InternDocumentsDialog({
     const [checklist, setChecklist] = useState<DocumentItem[]>([]);
     const [previewDoc, setPreviewDoc] = useState<DocumentItem | null>(null);
 
+    const fetchDocuments = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const res = await fetch(`/documents/intern/${internUserId}`, {
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+            if (!res.ok) throw new Error('Failed to load documents');
+            const data = await res.json();
+            setIntern(data.intern);
+            setChecklist(data.checklist);
+        } catch {
+            toast.error('Unable to fetch intern documents.');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [internUserId]);
+
     // Auto-fetch if defaultOpen
     useEffect(() => {
         if (defaultOpen) {
             fetchDocuments();
         }
-    }, [defaultOpen]);
+    }, [defaultOpen, fetchDocuments]);
 
     // Scroll to highlighted doc when checklist loads
     useEffect(() => {
@@ -90,26 +113,6 @@ export function InternDocumentsDialog({
     // DTR Report date filter state
     const [dtrStartDate, setDtrStartDate] = useState('');
     const [dtrEndDate, setDtrEndDate] = useState('');
-
-    const fetchDocuments = async () => {
-        setIsLoading(true);
-        try {
-            const res = await fetch(`/documents/intern/${internUserId}`, {
-                headers: {
-                    Accept: 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-            });
-            if (!res.ok) throw new Error('Failed to load documents');
-            const data = await res.json();
-            setIntern(data.intern);
-            setChecklist(data.checklist);
-        } catch {
-            toast.error('Unable to fetch intern documents.');
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     const handleOpenChange = (open: boolean) => {
         setIsOpen(open);

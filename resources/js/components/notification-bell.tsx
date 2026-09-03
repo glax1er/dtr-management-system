@@ -1,6 +1,6 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { Bell, BellOff, CheckCheck, ChevronRight, Trash2 } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { toast as sonnerToast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,25 @@ export function NotificationBell() {
     );
     const isInitialMount = useRef(true);
 
+    // `items` is a fresh array reference on every Inertia response (the 15s
+    // poll below included), even when its content hasn't changed, so
+    // depending on the array itself would re-run the toast effect on every
+    // poll/navigation. Depend on this derived id list instead — its value
+    // (not reference) only changes when the actual set of notifications does.
+    const itemsKey = useMemo(
+        () => items.map((n: Notification) => n.id).join(','),
+        [items],
+    );
+
+    // Mirrors the latest `items` into a ref so the toast effect below can
+    // read the current list without needing `items` itself in its deps
+    // (which would reintroduce the reference-identity problem `itemsKey`
+    // exists to avoid).
+    const itemsRef = useRef(items);
+    useEffect(() => {
+        itemsRef.current = items;
+    });
+
     useEffect(() => {
         const interval = window.setInterval(() => {
             router.reload({
@@ -45,7 +64,7 @@ export function NotificationBell() {
             return;
         }
 
-        for (const item of items) {
+        for (const item of itemsRef.current) {
             if (!seenIds.current.has(item.id)) {
                 seenIds.current.add(item.id);
 
@@ -60,7 +79,7 @@ export function NotificationBell() {
                 }
             }
         }
-    }, [items]);
+    }, [itemsKey]);
 
     const markAsRead = (notification: Notification) => {
         router.post(

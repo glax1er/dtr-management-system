@@ -196,7 +196,7 @@ export function isRejectedResolutionNotification(
     notification: Notification,
 ): boolean {
     const title = notification.title.toLowerCase();
-    const type = (notification.type || notification.data?.type || '').toLowerCase();
+    const type = String(notification.type || notification.data?.type || '').toLowerCase();
     const event = (String(notification.data?.event || '')).toLowerCase();
     const hasRejectionReason = Boolean(notification.data?.rejection_reason);
     const isResolution =

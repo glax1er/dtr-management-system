@@ -1,6 +1,6 @@
 import { useForm, usePage } from '@inertiajs/react';
 import { CheckCircle2, KeyRound } from 'lucide-react';
-import { FormEventHandler, useEffect, useState } from 'react';
+import { FormEventHandler, useEffect, useRef, useState } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,10 +30,21 @@ export default function ForgotPasswordDialog({
         email: '',
     });
 
+    // useForm's reset/clearErrors aren't guaranteed to keep a stable identity
+    // across renders, so we route through a ref instead of listing them
+    // directly in the deps array below — that would either be a lie (if they
+    // are in fact stable) or re-run this effect on every render (if they're
+    // not), re-firing reset()/clearErrors() in a loop while the dialog is
+    // closed. The ref always holds the latest versions without either risk.
+    const formActionsRef = useRef({ reset, clearErrors });
+    useEffect(() => {
+        formActionsRef.current = { reset, clearErrors };
+    });
+
     useEffect(() => {
         if (!open) {
-            reset();
-            clearErrors();
+            formActionsRef.current.reset();
+            formActionsRef.current.clearErrors();
             setSentStatus(null);
         }
     }, [open]);

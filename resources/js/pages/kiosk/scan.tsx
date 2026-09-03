@@ -1,7 +1,7 @@
 import { Head } from '@inertiajs/react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { User as UserIcon } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 const SCANNER_ELEMENT_ID = 'qr-scanner-viewport';
 const FLASH_DURATION_MS = 5000;
@@ -62,6 +62,108 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
             ? (window.location.pathname.split('/').filter(Boolean).pop() ?? '')
             : '';
 
+    const playSound = useCallback((src: string) => {
+        const audio = audioRef.current[src];
+        if (!audio) {
+            console.warn(`Audio not found: ${src}`);
+            return;
+        }
+        audio.currentTime = 0;
+        audio.play().catch((err) => {
+            console.warn(`Could not play sound ${src}:`, err);
+        });
+    }, []);
+
+    const submitScan = useCallback(
+        (qrCodeValue: string) => {
+            const now = Date.now();
+
+            if (inFlightRef.current) return;
+
+            if (
+                lastProcessedRef.current &&
+                lastProcessedRef.current.value === qrCodeValue &&
+                now - lastProcessedRef.current.at < REPROCESS_COOLDOWN_MS
+            ) {
+                return;
+            }
+
+            inFlightRef.current = true;
+            lastProcessedRef.current = { value: qrCodeValue, at: now };
+
+            // this request's own sequence number, captured at send time
+            const mySeq = ++requestSeqRef.current;
+
+            fetch(`/kiosk/${token}/scan`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify({ qr_code_value: qrCodeValue }),
+            })
+                .then(async (response) => {
+                    const data = await response.json();
+
+                    // a newer scan has already started since this one was
+                    // sent; this response is stale, ignore it entirely
+                    if (mySeq !== requestSeqRef.current) return;
+
+                    if (!response.ok) {
+                        setFlash({ kind: 'error', message: data.message ?? 'Scan rejected.' });
+                        playSound('/sounds/scan-error.mp3');
+                        return;
+                    }
+
+                    const internData: ScannedIntern = {
+                        internName: data.intern_name,
+                        idNumber: data.id_number,
+                        programName: data.program_name,
+                        hteName: data.hte_name,
+                        photoUrl: data.photo_url,
+                        label: data.label,
+                        timestamp: data.timestamp,
+                        isDuplicate: data.is_duplicate,
+                    };
+
+                    setLastIntern(internData);
+                    setFlash({ kind: 'success' });
+
+                    if (internData.isDuplicate) {
+                        playSound('/sounds/scan-duplicate.mp3');
+                    } else {
+                        playSound(
+                            internData.label === 'time_in'
+                                ? '/sounds/time-in.mp3'
+                                : '/sounds/time-out.mp3',
+                        );
+                    }
+                    speakAnnouncement(internData);
+                })
+                .catch(() => {
+                    // same staleness check for the error path
+                    if (mySeq !== requestSeqRef.current) return;
+
+                    setFlash({
+                        kind: 'error',
+                        message: 'Could not reach the server. Check your connection and try again.',
+                    });
+                })
+                .finally(() => {
+                    inFlightRef.current = false;
+
+                    // only this (still-latest) request gets to manage the
+                    // auto-clear timer; a stale one shouldn't reset it
+                    if (mySeq !== requestSeqRef.current) return;
+
+                    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+                    flashTimerRef.current = setTimeout(() => {
+                        setFlash(null);
+                        setLastIntern(null);
+                    }, FLASH_DURATION_MS);
+                });
+        },
+        [token, playSound],
+    );
+
     useEffect(() => {
         const scanner = new Html5Qrcode(SCANNER_ELEMENT_ID);
         scannerRef.current = scanner;
@@ -110,106 +212,7 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                 scanner.stop().catch(() => {});
             });
         };
-    }, []);
-
-    function playSound(src: string) {
-        const audio = audioRef.current[src];
-        if (!audio) {
-            console.warn(`Audio not found: ${src}`);
-            return;
-        }
-        audio.currentTime = 0;
-        audio.play().catch((err) => {
-            console.warn(`Could not play sound ${src}:`, err);
-        });
-    }
-
-    function submitScan(qrCodeValue: string) {
-        const now = Date.now();
-
-        if (inFlightRef.current) return;
-
-        if (
-            lastProcessedRef.current &&
-            lastProcessedRef.current.value === qrCodeValue &&
-            now - lastProcessedRef.current.at < REPROCESS_COOLDOWN_MS
-        ) {
-            return;
-        }
-
-inFlightRef.current = true;
-        lastProcessedRef.current = { value: qrCodeValue, at: now };
-
-        // ADDED — this request's own sequence number, captured at send time
-        const mySeq = ++requestSeqRef.current;
-
-        fetch(`/kiosk/${token}/scan`, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-            body: JSON.stringify({ qr_code_value: qrCodeValue }),
-        })
-            .then(async (response) => {
-                const data = await response.json();
-
-                // ADDED — a newer scan has already started since this one
-                // was sent; this response is stale, ignore it entirely
-                if (mySeq !== requestSeqRef.current) return;
-
-                if (!response.ok) {
-                    setFlash({ kind: 'error', message: data.message ?? 'Scan rejected.' });
-                    playSound('/sounds/scan-error.mp3');
-                    return;
-                }
-
-                const internData: ScannedIntern = {
-                    internName: data.intern_name,
-                    idNumber: data.id_number,
-                    programName: data.program_name,
-                    hteName: data.hte_name,
-                    photoUrl: data.photo_url,
-                    label: data.label,
-                    timestamp: data.timestamp,
-                    isDuplicate: data.is_duplicate,
-                };
-
-                setLastIntern(internData);
-                setFlash({ kind: 'success' });
-
-                if (internData.isDuplicate) {
-                    playSound('/sounds/scan-duplicate.mp3');
-                } else {
-                    playSound(
-                        internData.label === 'time_in'
-                            ? '/sounds/time-in.mp3'
-                            : '/sounds/time-out.mp3',
-                    );
-                }
-                speakAnnouncement(internData);
-            })
-            .catch(() => {
-                // ADDED — same staleness check for the error path
-                if (mySeq !== requestSeqRef.current) return;
-
-                setFlash({
-                    kind: 'error',
-                    message: 'Could not reach the server. Check your connection and try again.',
-                });
-            })
-            .finally(() => {
-                inFlightRef.current = false;
-
-                // ADDED — only this (still-latest) request gets to manage
-                // the auto-clear timer; a stale one shouldn't reset it
-                if (mySeq !== requestSeqRef.current) return;
-
-                if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-                flashTimerRef.current = setTimeout(() => {
-                    setFlash(null);
-                    setLastIntern(null);
-                }, FLASH_DURATION_MS);
-            });
-    }
+    }, [submitScan]);
 
     return (
         <>

@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
     AlertCircle,
     Award,
     Building2,
     Calendar,
+    CheckCircle2,
     Clock,
     Download,
     Eye,
@@ -14,6 +15,7 @@ import {
     Printer,
     ShieldCheck,
     UserCheck,
+    XCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +31,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface InternInfo {
@@ -120,13 +123,7 @@ export function CompletionSummaryDialog({
     const [dtrStartDate, setDtrStartDate] = useState('');
     const [dtrEndDate, setDtrEndDate] = useState('');
 
-    useEffect(() => {
-        if (defaultOpen) {
-            fetchSummary();
-        }
-    }, [defaultOpen]);
-
-    const fetchSummary = async () => {
+    const fetchSummary = useCallback(async () => {
         setIsLoading(true);
         try {
             const res = await fetch(`/supervisor/interns/${internUserId}/completion-summary`, {
@@ -143,7 +140,13 @@ export function CompletionSummaryDialog({
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [internUserId]);
+
+    useEffect(() => {
+        if (defaultOpen) {
+            fetchSummary();
+        }
+    }, [defaultOpen, fetchSummary]);
 
     const handleOpenChange = (open: boolean) => {
         setIsOpen(open);
