@@ -1,5 +1,5 @@
-import { useForm, usePage } from '@inertiajs/react';
-import { CheckCircle2, KeyRound } from 'lucide-react';
+import { router, useForm } from '@inertiajs/react';
+import { CheckCircle2, RefreshCw, ShieldCheck } from 'lucide-react';
 import { FormEventHandler, useEffect, useRef, useState } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -10,143 +10,210 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import {
+    InputOTP,
+    InputOTPGroup,
+    InputOTPSlot,
+} from '@/components/ui/input-otp';
 import { Spinner } from '@/components/ui/spinner';
+import { login } from '@/routes';
 
-interface ForgotPasswordDialogProps {
+interface VerifyEmailDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    email?: string;
+    status?: string;
 }
 
-export default function ForgotPasswordDialog({
+export default function VerifyEmailDialog({
     open,
     onOpenChange,
-}: ForgotPasswordDialogProps) {
-    const page = usePage<{ status?: string }>();
-    const [sentStatus, setSentStatus] = useState<string | null>(null);
+    email,
+    status,
+}: VerifyEmailDialogProps) {
+    const [cooldown, setCooldown] = useState(0);
+    const [isResending, setIsResending] = useState(false);
+    const [resendStatus, setResendStatus] = useState<string | null>(null);
 
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
-        email: '',
+        code: '',
+        email: email || '',
     });
 
-    // useForm's reset/clearErrors aren't guaranteed to keep a stable identity
-    // across renders, so we route through a ref instead of listing them
-    // directly in the deps array below — that would either be a lie (if they
-    // are in fact stable) or re-run this effect on every render (if they're
-    // not), re-firing reset()/clearErrors() in a loop while the dialog is
-    // closed. The ref always holds the latest versions without either risk.
-    const formActionsRef = useRef({ reset, clearErrors });
+    // useForm's setData/reset/clearErrors aren't guaranteed to keep a stable
+    // identity across renders, so both effects below read through this ref
+    // instead of listing them directly as deps — that would either be a lie
+    // (if they are in fact stable) or re-run the effects on every render (if
+    // they're not). The ref always holds the latest versions without either
+    // risk. See forgot-password-dialog.tsx for the same pattern.
+    const formActionsRef = useRef({ setData, reset, clearErrors });
     useEffect(() => {
-        formActionsRef.current = { reset, clearErrors };
+        formActionsRef.current = { setData, reset, clearErrors };
     });
+
+    useEffect(() => {
+        if (email) {
+            formActionsRef.current.setData('email', email);
+        }
+    }, [email]);
 
     useEffect(() => {
         if (!open) {
             formActionsRef.current.reset();
             formActionsRef.current.clearErrors();
-            setSentStatus(null);
+            setResendStatus(null);
         }
     }, [open]);
 
-    // Track status from session or direct response
+    // Countdown timer for resend button
     useEffect(() => {
-        if (page.props.status && open) {
-            setSentStatus(page.props.status);
+        if (cooldown > 0) {
+            const timer = setTimeout(() => setCooldown((prev) => prev - 1), 1000);
+            return () => clearTimeout(timer);
         }
-    }, [page.props.status, open]);
+    }, [cooldown]);
 
     const handleSubmit: FormEventHandler = (e) => {
         e.preventDefault();
-        setSentStatus(null);
+        if (data.code.length !== 6) return;
 
-        post('/forgot-password', {
+        post('/email/verify/code', {
             preserveScroll: true,
-            onSuccess: (pageResponse) => {
-                const responseStatus = (pageResponse.props as { status?: string }).status;
-                if (responseStatus) {
-                    setSentStatus(responseStatus);
-                } else {
-                    setSentStatus('We have emailed your password reset link.');
-                }
-                reset('email');
+            onError: () => {
+                reset('code');
             },
         });
     };
+
+    const handleResend = () => {
+        if (cooldown > 0 || isResending) return;
+
+        setIsResending(true);
+        setResendStatus(null);
+
+        router.post(
+            '/email/verification-notification',
+            { email: email || data.email },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setResendStatus('A new verification code has been sent to your email.');
+                },
+                onFinish: () => {
+                    setIsResending(false);
+                    setCooldown(60); // 60s cooldown
+                },
+            },
+        );
+    };
+
+    const handleClose = () => {
+        onOpenChange(false);
+        router.visit(login());
+    };
+
+    const activeStatus = resendStatus || status;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md p-6">
                 <DialogHeader className="flex flex-col items-center text-center space-y-3">
                     <div className="rounded-full bg-primary/10 p-3 text-primary ring-8 ring-primary/5">
-                        <KeyRound className="h-7 w-7" />
+                        <ShieldCheck className="h-7 w-7" />
                     </div>
 
                     <div className="space-y-1 text-center">
                         <DialogTitle className="text-lg font-semibold tracking-tight text-foreground text-center">
-                            Forgot your password?
+                            Verify your email address
                         </DialogTitle>
-                        <DialogDescription className="text-xs text-muted-foreground text-center max-w-xs mx-auto">
-                            Enter your email address below and we'll send you a link to reset your password.
+                        <DialogDescription className="text-xs text-muted-foreground text-center">
+                            We sent a 6-digit verification code to
                         </DialogDescription>
+                        {(email || data.email) && (
+                            <p className="font-medium text-xs text-foreground bg-muted/60 py-1 px-3 rounded-md inline-block border border-border/50 mt-1 max-w-[280px] truncate">
+                                {email || data.email}
+                            </p>
+                        )}
                     </div>
                 </DialogHeader>
 
-                {sentStatus && (
+                {activeStatus && (
                     <div className="w-full flex items-center justify-center gap-2 p-3 text-xs font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 rounded-lg animate-in fade-in-50 duration-300">
                         <CheckCircle2 className="h-4 w-4 shrink-0" />
-                        <span>{sentStatus}</span>
+                        <span>{activeStatus}</span>
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="w-full space-y-4 pt-1">
-                    <div className="grid gap-2">
-                        <Label htmlFor="forgot-password-email" className="text-xs font-medium">
-                            Email address
-                        </Label>
-                        <Input
-                            id="forgot-password-email"
-                            type="email"
-                            name="email"
-                            value={data.email}
-                            onChange={(e) => setData('email', e.target.value)}
-                            autoComplete="email"
-                            autoFocus
-                            required
-                            placeholder="email@usep.edu.ph"
-                            className="h-10"
+                <form onSubmit={handleSubmit} className="w-full space-y-5 pt-1">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                        <InputOTP
+                            maxLength={6}
+                            value={data.code}
+                            onChange={(val) => setData('code', val)}
                             disabled={processing}
-                        />
-                        <InputError message={errors.email} />
+                            autoFocus
+                        >
+                            <InputOTPGroup className="gap-1.5 sm:gap-2">
+                                <InputOTPSlot index={0} className="h-11 w-10 sm:h-12 sm:w-11 text-base font-semibold border-input" />
+                                <InputOTPSlot index={1} className="h-11 w-10 sm:h-12 sm:w-11 text-base font-semibold border-input" />
+                                <InputOTPSlot index={2} className="h-11 w-10 sm:h-12 sm:w-11 text-base font-semibold border-input" />
+                                <InputOTPSlot index={3} className="h-11 w-10 sm:h-12 sm:w-11 text-base font-semibold border-input" />
+                                <InputOTPSlot index={4} className="h-11 w-10 sm:h-12 sm:w-11 text-base font-semibold border-input" />
+                                <InputOTPSlot index={5} className="h-11 w-10 sm:h-12 sm:w-11 text-base font-semibold border-input" />
+                            </InputOTPGroup>
+                        </InputOTP>
+
+                        <InputError message={errors.code} className="text-xs mt-1" />
                     </div>
 
-                    <div className="flex flex-col gap-2 pt-2">
-                        <Button
-                            type="submit"
-                            className="w-full h-10 font-medium"
-                            disabled={processing || !data.email}
-                        >
-                            {processing ? (
-                                <>
-                                    <Spinner className="mr-2 h-4 w-4" />
-                                    Sending reset link...
-                                </>
-                            ) : (
-                                'Send Password Reset Link'
-                            )}
-                        </Button>
-
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onOpenChange(false)}
-                            className="text-xs text-muted-foreground hover:text-foreground h-8"
-                        >
-                            Back to log in
-                        </Button>
-                    </div>
+                    <Button
+                        type="submit"
+                        disabled={processing || data.code.length !== 6}
+                        className="w-full h-10 font-medium"
+                    >
+                        {processing ? (
+                            <>
+                                <Spinner className="mr-2 h-4 w-4" />
+                                Verifying...
+                            </>
+                        ) : (
+                            'Verify Email'
+                        )}
+                    </Button>
                 </form>
+
+                <div className="flex flex-col items-center gap-2.5 pt-3 text-xs w-full border-t border-border/60">
+                    <div className="flex items-center justify-center gap-1 text-muted-foreground">
+                        <span>Didn't receive the code?</span>
+                        <button
+                            type="button"
+                            onClick={handleResend}
+                            disabled={cooldown > 0 || isResending}
+                            className="font-medium text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1 ml-1"
+                        >
+                            {isResending ? (
+                                <>
+                                    <RefreshCw className="h-3 w-3 animate-spin" />
+                                    Sending...
+                                </>
+                            ) : cooldown > 0 ? (
+                                `Resend in ${cooldown}s`
+                            ) : (
+                                'Resend Code'
+                            )}
+                        </button>
+                    </div>
+
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleClose}
+                        className="text-xs text-muted-foreground hover:text-foreground h-8"
+                    >
+                        Cancel / Back to log in
+                    </Button>
+                </div>
             </DialogContent>
         </Dialog>
     );

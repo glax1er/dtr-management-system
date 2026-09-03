@@ -4,7 +4,6 @@ import {
     Award,
     Building2,
     Calendar,
-    CheckCircle2,
     Clock,
     Download,
     Eye,
@@ -15,7 +14,6 @@ import {
     Printer,
     ShieldCheck,
     UserCheck,
-    XCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +29,6 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface InternInfo {
