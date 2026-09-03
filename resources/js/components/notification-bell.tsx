@@ -1,6 +1,6 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { Bell, BellOff, CheckCheck, ChevronRight, Trash2 } from 'lucide-react';
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { toast as sonnerToast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -58,6 +58,28 @@ export function NotificationBell() {
         };
     }, []);
 
+    // Defined above the toast effect below (which calls it from inside a
+    // "View" action) rather than further down the component — referencing
+    // a const before its declaration only works at runtime because effects
+    // and click handlers fire after the whole component body has run, but
+    // eslint's exhaustive-deps check is purely lexical and flags it
+    // regardless. Wrapped in useCallback (stable, since it only closes
+    // over the imported `router` singleton) so it can be listed as a real
+    // effect dependency below without changing identity on every render.
+    const markAsRead = useCallback((notification: Notification) => {
+        router.post(
+            `/notifications/${notification.id}/read`,
+            {},
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => {
+                    router.visit(notification.href);
+                },
+            },
+        );
+    }, []);
+
     useEffect(() => {
         if (isInitialMount.current) {
             isInitialMount.current = false;
@@ -79,21 +101,7 @@ export function NotificationBell() {
                 }
             }
         }
-    }, [itemsKey]);
-
-    const markAsRead = (notification: Notification) => {
-        router.post(
-            `/notifications/${notification.id}/read`,
-            {},
-            {
-                preserveScroll: true,
-                preserveState: true,
-                onSuccess: () => {
-                    router.visit(notification.href);
-                },
-            },
-        );
-    };
+    }, [itemsKey, markAsRead]);
 
     const markAllAsRead = () => {
         router.post(
