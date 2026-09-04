@@ -31,13 +31,6 @@ class DashboardController extends Controller
         $supervisor = auth()->user();
         $supervisorProfile = $supervisor->supervisorProfile;
 
-        // OJT Supervisors don't have a dashboard of their own — login and
-        // the generic /dashboard route already send them straight to their
-        // roster, but this catches a direct hit or stale bookmark too.
-        if ($supervisorProfile->isOjtSupervisor()) {
-            return redirect()->route('supervisor.interns.index');
-        }
-
         $validated = $request->validate([
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:' . self::MAX_PER_PAGE],

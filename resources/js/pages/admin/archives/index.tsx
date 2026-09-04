@@ -8,7 +8,7 @@ import {
     Trash2,
     X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useDebounce } from '@/hooks/use-debounce';
 import {
     Table,
     TableBody,
@@ -60,6 +61,8 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
     const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters?.search ?? '');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+    const debouncedSearch = useDebounce(search, 300);
+    const isFirstRender = useRef(true);
 
     // Confirmation dialog state
     const [restoreOpen, setRestoreOpen] = useState(false);
@@ -70,6 +73,10 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
 
     const activeTab = TABS.find((t) => t.value === currentType) ?? TABS[0];
 
+    useEffect(() => {
+        setSearch(filters?.search ?? '');
+    }, [filters?.search]);
+
     // ── Navigation & Query Handling ──────────────────────────────────────────
     const baseParams = () => ({
         type: currentType,
@@ -77,9 +84,25 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
         per_page: filters?.per_page ? String(filters.per_page) : undefined,
     });
 
-    const visit = (params: Record<string, string | undefined>) => {
-        router.get('/admin/archives', params, { preserveState: true, preserveScroll: true });
+    const visit = (params: Record<string, string | undefined>, replace = true) => {
+        router.get('/admin/archives', params, { preserveState: true, preserveScroll: true, replace });
     };
+
+    // Automatically trigger search as user types
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        if (debouncedSearch !== (filters?.search ?? '')) {
+            visit({
+                ...baseParams(),
+                search: debouncedSearch || undefined,
+                page: undefined,
+            });
+        }
+    }, [debouncedSearch]);
 
     const switchTab = (type: string) => {
         setSearch('');
@@ -96,7 +119,7 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
         visit({ ...baseParams(), search: undefined, page: undefined });
     };
 
-    const goToPage = (page: number) => visit({ ...baseParams(), page: String(page) });
+    const goToPage = (page: number) => visit({ ...baseParams(), page: String(page) }, false);
     const changePerPage = (perPage: number) =>
         visit({ ...baseParams(), per_page: String(perPage), page: undefined });
 

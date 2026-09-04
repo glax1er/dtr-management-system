@@ -12,9 +12,10 @@ import {
     Users,
     X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import InputError from '@/components/input-error';
+import { useDebounce } from '@/hooks/use-debounce';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
@@ -84,8 +85,10 @@ type ViewMode = 'table' | 'grid';
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function SupervisorsIndex({ supervisors, htes, programs, filters }: SupervisorsIndexProps) {
     const [view, setView] = useState<ViewMode>('table');
-    const [search, setSearch] = useState(filters.search);
+    const [search, setSearch] = useState(filters.search || '');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+    const debouncedSearch = useDebounce(search, 300);
+    const isFirstRender = useRef(true);
 
     const [addOpen, setAddOpen] = useState(false);
     const [editingSupervisor, setEditingSupervisor] = useState<Supervisor | null>(null);
@@ -109,15 +112,40 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
         program_id: '',
     });
 
+    // Keep local search in sync with filter props
+    useEffect(() => {
+        setSearch(filters.search || '');
+    }, [filters.search]);
+
     // ── Navigation ─────────────────────────────────────────────────────────
-    const visit = (params: Record<string, string | undefined>) =>
-        router.get('/admin/supervisors', params, { preserveState: true, preserveScroll: true });
+    const visit = (params: Record<string, string | undefined>, replace = true) =>
+        router.get('/admin/supervisors', params, {
+            preserveState: true,
+            preserveScroll: true,
+            replace,
+        });
 
     const baseParams = () => ({
         search: search || undefined,
         type: filters.type ?? undefined,
         per_page: String(filters.per_page),
     });
+
+    // Automatically trigger search as user types
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        if (debouncedSearch !== (filters.search || '')) {
+            visit({
+                ...baseParams(),
+                search: debouncedSearch || undefined,
+                page: undefined,
+            });
+        }
+    }, [debouncedSearch]);
 
     const applySearch = (e: FormEvent) => {
         e.preventDefault();
@@ -133,7 +161,7 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
         visit({ ...baseParams(), type: value === 'all' ? undefined : value, page: undefined });
     };
 
-    const goToPage = (page: number) => visit({ ...baseParams(), page: String(page) });
+    const goToPage = (page: number) => visit({ ...baseParams(), page: String(page) }, false);
     const changePerPage = (perPage: number) =>
         visit({ ...baseParams(), per_page: String(perPage), page: undefined });
 
@@ -505,6 +533,7 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                                     type="email"
                                     value={addForm.data.email}
                                     onChange={(e) => addForm.setData('email', e.target.value)}
+                                    placeholder="supervisor@example.com"
                                     required
                                 />
                                 <InputError message={addForm.errors.email} />
@@ -587,6 +616,7 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                                     type="email"
                                     value={editForm.data.email}
                                     onChange={(e) => editForm.setData('email', e.target.value)}
+                                    placeholder="supervisor@example.com"
                                     required
                                 />
                                 <InputError message={editForm.errors.email} />

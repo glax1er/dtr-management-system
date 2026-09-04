@@ -30,22 +30,17 @@ export default function AuthCardLayout({
                                 <img
                                     src="/images/usep-logo.png"
                                     alt="USEP logo"
-                                    className="h-12 w-auto object-contain mb-2"
+                                    className="h-12 w-auto object-contain mb-5"
                                 />
                                 <img
                                     src="/images/cims-logo-light.png"
                                     alt="CIC logo"
-                                    className="h-27 w-auto object-contain dark:hidden"
-                                />
-                                <img
-                                    src="/images/cims-logo-dark.png"
-                                    className="hidden h-27 w-auto object-contain dark:block"
-                                    alt="CIC logo dark"
+                                    className="h-27 w-auto object-contain mx-2"
                                 />
                                 <img
                                     src="/images/cic-logo.png"
                                     alt="App logo"
-                                    className="h-12 w-auto rounded-full object-contain mb-2"
+                                    className="h-12 w-auto rounded-full object-contain mb-5"
                                 />
                             </div>
                             <CardTitle className="text-xl">{title}</CardTitle>

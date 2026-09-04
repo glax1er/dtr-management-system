@@ -65,30 +65,40 @@ class FortifyServiceProvider extends ServiceProvider
      * even with correct credentials.
      */
     private function configureAuthentication(): void
-    {
-        Fortify::authenticateUsing(function (Request $request) {
-            $user = User::where('email', $request->email)->first();
+{
+    Fortify::authenticateUsing(function (Request $request) {
+        $user = User::where('email', $request->email)->first();
 
-            if (! $user || ! Hash::check((string) $request->password, $user->password)) {
-                return null;
+        if (! $user || ! Hash::check((string) $request->password, $user->password)) {
+            return null;
+        }
+
+        if ($user->isIntern()) {
+            $status = $user->internProfile?->status;
+
+            if ($status !== 'approved') {
+                throw ValidationException::withMessages([
+                    Fortify::username() => match ($status) {
+                        'rejected' => 'Your registration was not approved. Please contact your program coordinator.',
+                        default => 'Your registration is still pending admin approval. Please check back later.',
+                    },
+                ]);
             }
+        }
 
-            if ($user->isIntern()) {
-                $status = $user->internProfile?->status;
+        if ($user->isSupervisor()) {
+            $profile = $user->supervisorProfile;
 
-                if ($status !== 'approved') {
-                    throw ValidationException::withMessages([
-                        Fortify::username() => match ($status) {
-                            'rejected' => 'Your registration was not approved. Please contact your program coordinator.',
-                            default => 'Your registration is still pending admin approval. Please check back later.',
-                        },
-                    ]);
-                }
+            if (! $profile || $profile->status !== 'active') {
+                throw ValidationException::withMessages([
+                    Fortify::username() => 'Your supervisor account has been deactivated or archived. Please contact the administrator.',
+                ]);
             }
+        }
 
-            return $user;
-        });
-    }
+        return $user;
+    });
+}
 
     /**
      * Configure Fortify views.

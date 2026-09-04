@@ -13,8 +13,9 @@ import {
     Table as TableIcon,
     X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
+import { useDebounce } from '@/hooks/use-debounce';
 
 import { CompletionSummaryDialog } from '@/components/completion-summary-dialog';
 import { InternDocumentsDialog } from '@/components/intern-documents-dialog';
@@ -115,13 +116,15 @@ export default function MyStudents({
         }
         return 'table';
     });
+    const debouncedSearch = useDebounce(search, 300);
+    const isFirstRender = useRef(true);
 
     useEffect(() => {
         localStorage.setItem('supervisor_students_view', view);
     }, [view]);
 
     const baseParams = () => ({
-        search: filters.search || undefined,
+        search: search || undefined,
         hte_id: filters.hte_id ? String(filters.hte_id) : undefined,
         completion_status:
             filters.completion_status && filters.completion_status !== 'all'
@@ -130,16 +133,37 @@ export default function MyStudents({
         per_page: filters.per_page ? String(filters.per_page) : undefined,
     });
 
-    const visit = (params: Record<string, string | undefined>) => {
+    const visit = (params: Record<string, string | undefined>, replace = true) => {
         router.get('/supervisor/interns', params, {
             preserveState: true,
             preserveScroll: true,
+            replace,
         });
     };
 
+    // Automatically trigger search as user types
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        if (debouncedSearch !== (filters.search || '')) {
+            visit({
+                ...baseParams(),
+                search: debouncedSearch || undefined,
+                page: undefined,
+            });
+        }
+    }, [debouncedSearch]);
+
     const applySearch = (e: FormEvent) => {
         e.preventDefault();
-        visit({ ...baseParams(), search: search || undefined, page: undefined });
+        visit({
+            ...baseParams(),
+            search: search || undefined,
+            page: undefined,
+        });
     };
 
     const clearSearch = () => {
@@ -164,7 +188,7 @@ export default function MyStudents({
     };
 
     const goToPage = (page: number) => {
-        visit({ ...baseParams(), page: String(page) });
+        visit({ ...baseParams(), page: String(page) }, false);
     };
 
     const changePerPage = (perPage: number) => {
@@ -188,7 +212,10 @@ export default function MyStudents({
 
                     <div className="flex flex-wrap items-center gap-2">
                         {/* Desktop search */}
-                        <form onSubmit={applySearch} className="relative hidden sm:block">
+                        <form
+                            onSubmit={applySearch}
+                            className="relative hidden sm:block"
+                        >
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                             <input
                                 type="text"
@@ -215,13 +242,21 @@ export default function MyStudents({
                             className="inline-flex size-9 items-center justify-center rounded-md border bg-background text-muted-foreground hover:text-foreground sm:hidden"
                             aria-label="Toggle search"
                         >
-                            {mobileSearchOpen ? <X className="size-4" /> : <Search className="size-4" />}
+                            {mobileSearchOpen ? (
+                                <X className="size-4" />
+                            ) : (
+                                <Search className="size-4" />
+                            )}
                         </button>
 
                         {/* HTE filter dropdown */}
                         <div className="hidden sm:block">
                             <Select
-                                value={filters.hte_id ? String(filters.hte_id) : ALL_HTES}
+                                value={
+                                    filters.hte_id
+                                        ? String(filters.hte_id)
+                                        : ALL_HTES
+                                }
                                 onValueChange={changeHte}
                             >
                                 <SelectTrigger className="h-9 w-44">
@@ -229,9 +264,14 @@ export default function MyStudents({
                                     <SelectValue placeholder="All HTEs" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value={ALL_HTES}>All HTEs</SelectItem>
+                                    <SelectItem value={ALL_HTES}>
+                                        All HTEs
+                                    </SelectItem>
                                     {hteOptions.map((hte) => (
-                                        <SelectItem key={hte.hte_id} value={String(hte.hte_id)}>
+                                        <SelectItem
+                                            key={hte.hte_id}
+                                            value={String(hte.hte_id)}
+                                        >
                                             {hte.hte_name}
                                         </SelectItem>
                                     ))}
@@ -242,7 +282,9 @@ export default function MyStudents({
                         {/* Completion Status filter */}
                         <div className="hidden sm:block">
                             <Select
-                                value={filters.completion_status || ALL_STATUSES}
+                                value={
+                                    filters.completion_status || ALL_STATUSES
+                                }
                                 onValueChange={changeCompletionStatus}
                             >
                                 <SelectTrigger className="h-9 w-48">
@@ -250,9 +292,12 @@ export default function MyStudents({
                                     <SelectValue placeholder="All Status" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value={ALL_STATUSES}>All Students</SelectItem>
+                                    <SelectItem value={ALL_STATUSES}>
+                                        All Students
+                                    </SelectItem>
                                     <SelectItem value="completed">
-                                        Completed Requirements ({completedCount})
+                                        Completed Requirements ({completedCount}
+                                        )
                                     </SelectItem>
                                     <SelectItem value="in_progress">
                                         In Progress ({inProgressCount})
@@ -261,9 +306,12 @@ export default function MyStudents({
                             </Select>
                         </div>
 
-                        {/* View Switcher (At the very edge on the right side) */}
+                        {/* View Switcher */}
                         <div className="hidden sm:block">
-                            <Tabs value={view} onValueChange={(v) => setView(v as ViewMode)}>
+                            <Tabs
+                                value={view}
+                                onValueChange={(v) => setView(v as ViewMode)}
+                            >
                                 <TabsList>
                                     <TabsTrigger value="table">
                                         <TableIcon className="size-4" />
@@ -296,7 +344,10 @@ export default function MyStudents({
                     <Card>
                         <CardContent className="py-12 text-center text-sm text-muted-foreground">
                             No interns match{' '}
-                            {filters.search !== '' || filters.hte_id || (filters.completion_status && filters.completion_status !== 'all')
+                            {filters.search !== '' ||
+                            filters.hte_id ||
+                            (filters.completion_status &&
+                                filters.completion_status !== 'all')
                                 ? 'these filters.'
                                 : 'your program yet.'}
                         </CardContent>
@@ -391,7 +442,7 @@ export default function MyStudents({
 
                         {/* Grid view */}
                         {view === 'grid' && (
-                            <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3">
                                 {students.data.map((student) => (
                                     <Card key={student.intern_user_id} className="flex flex-col justify-between hover:border-primary/30 transition-all duration-200 shadow-2xs">
                                         <CardHeader className="pb-3">
@@ -400,16 +451,23 @@ export default function MyStudents({
                                                     <CardTitle className="text-base font-semibold truncate text-foreground">
                                                         {student.name}
                                                     </CardTitle>
-                                                    <p className="text-xs text-muted-foreground truncate mt-0.5" title={student.email}>
+                                                    <p
+                                                        className="mt-0.5 truncate text-xs text-muted-foreground"
+                                                        title={student.email}
+                                                    >
                                                         {student.email}
                                                     </p>
                                                 </div>
-                                                <Badge variant="outline" className="shrink-0 text-xs font-mono">
-                                                    {student.id_number ?? 'No ID'}
+                                                <Badge
+                                                    variant="outline"
+                                                    className="shrink-0 font-mono text-xs"
+                                                >
+                                                    {student.id_number ??
+                                                        'No ID'}
                                                 </Badge>
                                             </div>
                                         </CardHeader>
-                                        <CardContent className="flex flex-col gap-2.5 text-xs text-muted-foreground pt-0">
+                                        <CardContent className="flex flex-col gap-2.5 pt-0 text-xs text-muted-foreground">
                                             {student.contact_number && (
                                                 <div className="flex items-center gap-2">
                                                     <Phone className="size-3.5 shrink-0 text-muted-foreground/70" />
@@ -466,16 +524,23 @@ export default function MyStudents({
                         )}
 
                         {/* Mobile list view */}
-                        <div className="sm:hidden flex flex-col gap-3">
+                        <div className="flex flex-col gap-3 sm:hidden">
                             {students.data.map((student) => (
                                 <Card key={student.intern_user_id} className="shadow-2xs">
                                     <CardContent className="p-4 flex flex-col gap-2.5">
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="min-w-0">
-                                                <p className="font-semibold text-sm text-foreground truncate">{student.name}</p>
-                                                <p className="text-xs text-muted-foreground truncate">{student.email}</p>
+                                                <p className="truncate text-sm font-semibold text-foreground">
+                                                    {student.name}
+                                                </p>
+                                                <p className="truncate text-xs text-muted-foreground">
+                                                    {student.email}
+                                                </p>
                                             </div>
-                                            <Badge variant="outline" className="text-xs shrink-0 font-mono">
+                                            <Badge
+                                                variant="outline"
+                                                className="shrink-0 font-mono text-xs"
+                                            >
                                                 {student.id_number ?? 'No ID'}
                                             </Badge>
                                         </div>
