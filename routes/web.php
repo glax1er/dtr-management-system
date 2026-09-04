@@ -98,10 +98,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::middleware('role:' . User::ROLE_SUPERVISOR)->prefix('supervisor')->name('supervisor.')->group(function () {
-<<<<<<< HEAD
-    // Shared between both supervisor types
-    Route::get('interns', [InternsController::class, 'index'])->name('interns.index');
-=======
         Route::get('dashboard', [\App\Http\Controllers\Supervisor\DashboardController::class, 'index'])->name('dashboard');
         Route::get('interns', [InternsController::class, 'index'])->name('interns.index');
         Route::get('interns/{internUserId}/completion-summary', [InternsController::class, 'completionSummary'])->name('interns.completion-summary');
@@ -141,7 +137,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('schedule/{schedulePeriod}', [SupervisorScheduleController::class, 'destroy'])->name('schedule.destroy');
             Route::patch('schedule/{schedulePeriod}', [SupervisorScheduleController::class, 'update'])->name('schedule.update');
         });
->>>>>>> origin
 
     // Only OJT Supervisors
     Route::middleware('ojt-supervisor')->group(function () {
