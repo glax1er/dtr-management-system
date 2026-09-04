@@ -18,6 +18,10 @@ use Inertia\Response;
 
 class ResolutionTicketController extends Controller
 {
+    public const DEFAULT_PER_PAGE = 20;
+
+    public const MAX_PER_PAGE = 100;
+
     public function __construct(
         private readonly DailyAttendanceCalculator $calculator,
     ) {}
@@ -34,20 +38,59 @@ class ResolutionTicketController extends Controller
             abort(403, 'OJT Supervisors cannot resolve time conflicts.');
         }
 
+        $validated = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'type' => ['nullable', 'string', 'in:all,missing_time_in,open,no_record'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_PER_PAGE],
+        ]);
+
+        $search = trim($validated['search'] ?? '');
+        $type = $validated['type'] ?? 'all';
+        $perPage = (int) ($validated['per_page'] ?? self::DEFAULT_PER_PAGE);
+
         $internUserIds = InternProfile::query()
             ->where('hte_id', $supervisorProfile->hte_id)
             ->pluck('user_id');
 
         $timezone = config('dtr.timezone');
 
-        $tickets = ResolutionTicket::query()
+        $baseQuery = ResolutionTicket::query()
             ->whereIn('intern_user_id', $internUserIds)
-            ->where('status', ResolutionTicket::STATUS_PENDING)
-            ->with('intern')
+            ->where('status', ResolutionTicket::STATUS_PENDING);
+
+        $totalPending = (clone $baseQuery)->count();
+
+        $query = (clone $baseQuery)->with('intern');
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('intern', function ($internQuery) use ($search) {
+                    $internQuery->where('name', 'like', "%{$search}%");
+                })
+                    ->orWhere('reason', 'like', "%{$search}%")
+                    ->orWhere('date', 'like', "%{$search}%");
+            });
+        }
+
+        if ($type !== 'all') {
+            if ($type === 'no_record') {
+                $query->whereNotNull('proposed_time_in')
+                    ->whereNotNull('proposed_time_out');
+            } elseif ($type === 'missing_time_in') {
+                $query->whereNotNull('proposed_time_in')
+                    ->whereNull('proposed_time_out');
+            } elseif ($type === 'open') {
+                $query->whereNull('proposed_time_in');
+            }
+        }
+
+        $tickets = $query
             ->orderByDesc('date')
             ->orderByDesc('created_at')
-            ->get()
-            ->map(fn (ResolutionTicket $ticket) => [
+            ->paginate($perPage, ['*'], 'page', $validated['page'] ?? 1)
+            ->withQueryString()
+            ->through(fn (ResolutionTicket $ticket) => [
                 'id' => $ticket->id,
                 'intern_name' => $ticket->intern->name,
                 'date' => $ticket->date->toDateString(),
@@ -77,6 +120,12 @@ class ResolutionTicketController extends Controller
 
         return Inertia::render('supervisor/resolution-tickets', [
             'tickets' => $tickets,
+            'totalPending' => $totalPending,
+            'filters' => [
+                'search' => $search,
+                'type' => $type,
+                'per_page' => $perPage,
+            ],
         ]);
     }
 
@@ -133,7 +182,7 @@ class ResolutionTicketController extends Controller
 
                 $finalTimeIn = Carbon::createFromFormat(
                     'Y-m-d H:i',
-                    $date . ' ' . $timeString,
+                    $date.' '.$timeString,
                     $timezone
                 );
             }
@@ -152,7 +201,7 @@ class ResolutionTicketController extends Controller
 
                 $finalTimeOut = Carbon::createFromFormat(
                     'Y-m-d H:i',
-                    $date . ' ' . $timeString,
+                    $date.' '.$timeString,
                     $timezone
                 );
             }
@@ -185,15 +234,14 @@ class ResolutionTicketController extends Controller
             if ($finalTimeIn !== null) {
                 $cutoff = Carbon::createFromFormat(
                     'Y-m-d H:i',
-                    $date . ' ' . config('dtr.time_out_cutoff'),
+                    $date.' '.config('dtr.time_out_cutoff'),
                     $timezone
                 );
 
                 if ($finalTimeIn->gt($cutoff)) {
                     throw ValidationException::withMessages([
-                        'final_time_in' =>
-                            'Time In must be before the ' .
-                            config('dtr.time_out_cutoff') .
+                        'final_time_in' => 'Time In must be before the '.
+                            config('dtr.time_out_cutoff').
                             ' cutoff, or the day will still look missing after approval.',
                     ]);
                 }
@@ -211,8 +259,7 @@ class ResolutionTicketController extends Controller
                     ! $finalTimeIn->lt($compareTimeOut)
                 ) {
                     throw ValidationException::withMessages([
-                        'final_time_in' =>
-                            'Time In must be earlier than Time Out.',
+                        'final_time_in' => 'Time In must be earlier than Time Out.',
                     ]);
                 }
             }
@@ -234,8 +281,7 @@ class ResolutionTicketController extends Controller
                     ! $finalTimeOut->gt($compareTimeIn)
                 ) {
                     throw ValidationException::withMessages([
-                        'final_time_out' =>
-                            'Time Out must be later than Time In.',
+                        'final_time_out' => 'Time Out must be later than Time In.',
                     ]);
                 }
             }
@@ -325,8 +371,7 @@ class ResolutionTicketController extends Controller
 
             if (! $ticket->isPending()) {
                 throw ValidationException::withMessages([
-                    'status' =>
-                        'This ticket is no longer pending — it may have been cancelled or already resolved.',
+                    'status' => 'This ticket is no longer pending — it may have been cancelled or already resolved.',
                 ]);
             }
 

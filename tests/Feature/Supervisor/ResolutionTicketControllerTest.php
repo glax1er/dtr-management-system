@@ -111,8 +111,9 @@ test('an HTE supervisor can view resolution tickets from their own HTE', functio
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('supervisor/resolution-tickets')
-            ->has('tickets', 1)
-            ->where('tickets.0.proposed_time_in', '7:45 AM')
+            ->has('tickets.data', 1)
+            ->where('tickets.data.0.proposed_time_in', '7:45 AM')
+            ->where('tickets.total', 1)
         );
 });
 
@@ -160,10 +161,118 @@ test('resolution tickets are sorted with most recent date on top', function () {
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('supervisor/resolution-tickets')
-            ->has('tickets', 3)
-            ->where('tickets.0.date', '2026-08-27')
-            ->where('tickets.1.date', '2026-08-25')
-            ->where('tickets.2.date', '2026-08-20')
+            ->has('tickets.data', 3)
+            ->where('tickets.data.0.date', '2026-08-27')
+            ->where('tickets.data.1.date', '2026-08-25')
+            ->where('tickets.data.2.date', '2026-08-20')
+        );
+});
+
+test('resolution tickets can be filtered by search query and type', function () {
+    [$supervisor, $hte] = makeHteSupervisor();
+    $program = Program::create(['program_name' => 'BSIT-'.uniqid()]);
+
+    $internA = User::factory()->create(['name' => 'Alice Johnson', 'role' => User::ROLE_INTERN]);
+    InternProfile::create([
+        'user_id' => $internA->id,
+        'id_number' => '2026-'.$internA->id,
+        'sex' => 'female',
+        'hte_id' => $hte->hte_id,
+        'program_id' => $program->program_id,
+        'status' => 'approved',
+        'privacy_accepted_at' => now(),
+    ]);
+
+    $internB = User::factory()->create(['name' => 'Bob Smith', 'role' => User::ROLE_INTERN]);
+    InternProfile::create([
+        'user_id' => $internB->id,
+        'id_number' => '2026-'.$internB->id,
+        'sex' => 'male',
+        'hte_id' => $hte->hte_id,
+        'program_id' => $program->program_id,
+        'status' => 'approved',
+        'privacy_accepted_at' => now(),
+    ]);
+
+    ResolutionTicket::create([
+        'intern_user_id' => $internA->id,
+        'date' => Carbon::parse('2026-08-20'),
+        'proposed_time_in' => Carbon::parse('2026-08-20 08:00:00', 'Asia/Manila'),
+        'proposed_time_out' => null,
+        'reason' => 'Forgot time in',
+        'status' => ResolutionTicket::STATUS_PENDING,
+    ]);
+
+    ResolutionTicket::create([
+        'intern_user_id' => $internB->id,
+        'date' => Carbon::parse('2026-08-21'),
+        'proposed_time_in' => Carbon::parse('2026-08-21 08:00:00', 'Asia/Manila'),
+        'proposed_time_out' => Carbon::parse('2026-08-21 17:00:00', 'Asia/Manila'),
+        'reason' => 'Kiosk was down',
+        'status' => ResolutionTicket::STATUS_PENDING,
+    ]);
+
+    // Search by name
+    $this->actingAs($supervisor)
+        ->get(route('supervisor.resolution-tickets.index', ['search' => 'Alice']))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('tickets.data', 1)
+            ->where('tickets.data.0.intern_name', 'Alice Johnson')
+        );
+
+    // Filter by type
+    $this->actingAs($supervisor)
+        ->get(route('supervisor.resolution-tickets.index', ['type' => 'no_record']))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('tickets.data', 1)
+            ->where('tickets.data.0.intern_name', 'Bob Smith')
+            ->where('tickets.data.0.type', 'no_record')
+        );
+});
+
+test('resolution tickets pagination works properly', function () {
+    [$supervisor, $hte] = makeHteSupervisor();
+    $program = Program::create(['program_name' => 'BSIT-'.uniqid()]);
+    $intern = User::factory()->create(['role' => User::ROLE_INTERN]);
+
+    InternProfile::create([
+        'user_id' => $intern->id,
+        'id_number' => '2026-'.$intern->id,
+        'sex' => 'male',
+        'hte_id' => $hte->hte_id,
+        'program_id' => $program->program_id,
+        'status' => 'approved',
+        'privacy_accepted_at' => now(),
+    ]);
+
+    for ($i = 1; $i <= 5; $i++) {
+        ResolutionTicket::create([
+            'intern_user_id' => $intern->id,
+            'date' => Carbon::parse("2026-08-0{$i}"),
+            'proposed_time_in' => Carbon::parse("2026-08-0{$i} 08:00:00", 'Asia/Manila'),
+            'reason' => "Ticket {$i}",
+            'status' => ResolutionTicket::STATUS_PENDING,
+        ]);
+    }
+
+    $this->actingAs($supervisor)
+        ->get(route('supervisor.resolution-tickets.index', ['per_page' => 2, 'page' => 1]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('tickets.data', 2)
+            ->where('tickets.current_page', 1)
+            ->where('tickets.last_page', 3)
+            ->where('tickets.total', 5)
+        );
+
+    $this->actingAs($supervisor)
+        ->get(route('supervisor.resolution-tickets.index', ['per_page' => 2, 'page' => 2]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('tickets.data', 2)
+            ->where('tickets.current_page', 2)
         );
 });
 

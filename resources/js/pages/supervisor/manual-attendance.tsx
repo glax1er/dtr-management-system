@@ -1,11 +1,13 @@
-import { Head, router } from '@inertiajs/react';
+﻿import { Head, router } from '@inertiajs/react';
 import {
     AlertTriangle,
     Check,
     ChevronsUpDown,
+    GraduationCap,
     History,
     Info,
     LoaderCircle,
+    Mail,
     PenLine,
     Plus,
     Search,
@@ -15,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,14 +43,17 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
+import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 
 interface Intern {
     user_id: number;
     name: string;
+    email?: string | null;
     id_number?: string | null;
     program_name?: string | null;
+    photo_url?: string | null;
 }
 
 interface Entry {
@@ -73,6 +79,7 @@ const emptyEntry = (): Entry => ({
 });
 
 export default function ManualAttendance({ interns }: ManualAttendanceProps) {
+    const getInitials = useInitials();
     const [internId, setInternId] = useState('');
     const [searchOpen, setSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -115,7 +122,7 @@ return interns;
     }, [interns, searchQuery]);
 
     // A row only needs a date plus *either* a time in or a time out (or
-    // both) â€” a supervisor might only know one side of the shift, e.g.
+    // both) — a supervisor might only know one side of the shift, e.g.
     // the intern forgot to scan in and only has a time-out on record.
     const isRowValid = (entry: Entry) =>
         Boolean(entry.date) && Boolean(entry.time_in || entry.time_out);
@@ -163,7 +170,7 @@ return interns;
             ),
         );
 
-        // Any manual edit â€” including picking a new date â€” means whatever
+        // Any manual edit — including picking a new date — means whatever
         // was pre-filled no longer necessarily reflects the saved record,
         // so clear the hint until a fresh lookup (if any) confirms it.
         setRowNotices((current) =>
@@ -182,7 +189,7 @@ return interns;
     // When a supervisor picks a date that already has attendance on file
     // (a kiosk scan or an earlier manual entry), pre-fill that row's time
     // in / time out from what's already there instead of leaving them to
-    // retype â€” and re-check whenever they switch interns too, since the
+    // retype — and re-check whenever they switch interns too, since the
     // same date can carry a different record per intern.
     const lookupExisting = async (
         index: number,
@@ -224,7 +231,7 @@ return interns;
                 time_out?: string | null;
             } = await response.json();
 
-            // Resolve the row either way â€” when nothing is found we still
+            // Resolve the row either way — when nothing is found we still
             // need to clear out whatever a previous lookup pre-filled,
             // otherwise switching to a blank date/intern just leaves the
             // old values sitting there looking "stuck".
@@ -244,13 +251,13 @@ return interns;
                 current.map((notice, currentIndex) =>
                     currentIndex === index
                         ? data.found
-                            ? 'Existing record found for this date â€” time in / time out pre-filled below.'
+                            ? 'Existing record found for this date — time in / time out pre-filled below.'
                             : null
                         : notice,
                 ),
             );
         } catch {
-            // Prefill is a convenience, not a requirement for saving â€”
+            // Prefill is a convenience, not a requirement for saving —
             // fail silently and let the supervisor type it in manually.
         }
     };
@@ -391,8 +398,8 @@ return interns;
         <>
             <Head title="Manual Attendance" />
 
-            <div className="flex w-full flex-1 flex-col gap-4 p-4 sm:gap-5 sm:p-5 lg:h-[calc(100dvh-4rem)] lg:overflow-hidden lg:p-6">
-                <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
+            <div className="flex w-full flex-1 flex-col gap-4 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
                             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
@@ -442,8 +449,24 @@ return interns;
                                             className="h-10 w-full justify-between border-border bg-background px-3 text-left font-normal shadow-xs hover:bg-accent/40"
                                         >
                                             {selectedIntern ? (
-                                                <div className="flex min-w-0 flex-1 items-center gap-2">
-                                                    <UserRound className="size-4 shrink-0 text-primary" />
+                                                <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                                                    <Avatar className="size-6 shrink-0 overflow-hidden rounded-full border border-border/60">
+                                                        <AvatarImage
+                                                            src={
+                                                                selectedIntern.photo_url ||
+                                                                undefined
+                                                            }
+                                                            alt={
+                                                                selectedIntern.name
+                                                            }
+                                                            className="size-full object-cover"
+                                                        />
+                                                        <AvatarFallback className="rounded-full bg-neutral-200 text-[10px] font-medium text-black dark:bg-neutral-700 dark:text-white">
+                                                            {getInitials(
+                                                                selectedIntern.name,
+                                                            )}
+                                                        </AvatarFallback>
+                                                    </Avatar>
                                                     <span className="truncate text-sm font-medium text-foreground">
                                                         {selectedIntern.name}
                                                     </span>
@@ -535,12 +558,29 @@ return interns;
                                                                     );
                                                                 }}
                                                                 className={cn(
-                                                                    'flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors',
+                                                                    'flex w-full items-center justify-between gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors',
                                                                     isSelected
                                                                         ? 'bg-primary/10 font-medium text-primary'
                                                                         : 'text-foreground hover:bg-accent hover:text-accent-foreground',
                                                                 )}
                                                             >
+                                                                <Avatar className="size-7 shrink-0 overflow-hidden rounded-full border border-border/50">
+                                                                    <AvatarImage
+                                                                        src={
+                                                                            intern.photo_url ||
+                                                                            undefined
+                                                                        }
+                                                                        alt={
+                                                                            intern.name
+                                                                        }
+                                                                        className="size-full object-cover"
+                                                                    />
+                                                                    <AvatarFallback className="rounded-full bg-neutral-200 text-[10px] font-medium text-black dark:bg-neutral-700 dark:text-white">
+                                                                        {getInitials(
+                                                                            intern.name,
+                                                                        )}
+                                                                    </AvatarFallback>
+                                                                </Avatar>
                                                                 <div className="min-w-0 flex-1">
                                                                     <p className="truncate text-sm font-medium">
                                                                         {
@@ -559,7 +599,7 @@ return interns;
                                                                         {intern.id_number &&
                                                                             intern.program_name && (
                                                                                 <span>
-                                                                                    â€¢
+                                                                                    •
                                                                                 </span>
                                                                             )}
                                                                         {intern.program_name && (
@@ -585,11 +625,91 @@ return interns;
                             </div>
 
                             {selectedIntern ? (
-                                <div className="rounded-lg border bg-muted/40 px-3 py-2 text-sm">
-                                    Adding records for{' '}
-                                    <span className="font-medium text-foreground">
-                                        {selectedIntern.name}
-                                    </span>
+                                <div className="space-y-3 rounded-xl border border-border/80 bg-card p-3.5 shadow-2xs">
+                                    <div className="flex items-start gap-3">
+                                        <Avatar className="size-12 shrink-0 overflow-hidden rounded-full border border-border shadow-xs">
+                                            <AvatarImage
+                                                src={
+                                                    selectedIntern.photo_url ||
+                                                    undefined
+                                                }
+                                                alt={selectedIntern.name}
+                                                className="size-full object-cover"
+                                            />
+                                            <AvatarFallback className="rounded-full bg-neutral-200 text-sm font-semibold text-black dark:bg-neutral-700 dark:text-white">
+                                                {getInitials(
+                                                    selectedIntern.name,
+                                                )}
+                                            </AvatarFallback>
+                                        </Avatar>
+
+                                        <div className="min-w-0 flex-1 space-y-1">
+                                            <p
+                                                className="truncate text-sm font-semibold text-foreground"
+                                                title={selectedIntern.name}
+                                            >
+                                                {selectedIntern.name}
+                                            </p>
+
+                                            {selectedIntern.id_number && (
+                                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                                    <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] font-medium text-foreground/80">
+                                                        ID:{' '}
+                                                        {
+                                                            selectedIntern.id_number
+                                                        }
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                            {selectedIntern.program_name && (
+                                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                                    <GraduationCap className="size-3.5 shrink-0 text-muted-foreground/70" />
+                                                    <span
+                                                        className="truncate"
+                                                        title={
+                                                            selectedIntern.program_name
+                                                        }
+                                                    >
+                                                        {
+                                                            selectedIntern.program_name
+                                                        }
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                            {selectedIntern.email && (
+                                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                                    <Mail className="size-3.5 shrink-0 text-muted-foreground/70" />
+                                                    <span
+                                                        className="truncate"
+                                                        title={
+                                                            selectedIntern.email
+                                                        }
+                                                    >
+                                                        {selectedIntern.email}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between border-t border-border/60 pt-2.5 text-xs">
+                                        <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                                            <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
+                                            Selected for logging
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                handleSelectIntern('');
+                                                setSearchQuery('');
+                                            }}
+                                            className="cursor-pointer text-[11px] text-muted-foreground transition-colors hover:text-foreground hover:underline"
+                                        >
+                                            Change
+                                        </button>
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="flex gap-2 rounded-lg bg-muted/50 p-2.5 text-xs leading-5 text-muted-foreground">
@@ -609,7 +729,7 @@ return interns;
                                         Attendance records
                                     </CardTitle>
                                     <CardDescription className="mt-0.5">
-                                        Time in and time out are each optional â€”
+                                        Time in and time out are each optional —
                                         enter whichever was actually recorded.
                                     </CardDescription>
                                 </div>

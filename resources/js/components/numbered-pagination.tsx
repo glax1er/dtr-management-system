@@ -10,6 +10,7 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from '@/components/ui/pagination';
+import { cn } from '@/lib/utils';
 
 interface NumberedPaginationProps {
     meta: PaginationMeta;
@@ -21,6 +22,7 @@ interface NumberedPaginationProps {
     /** Unique id for the "rows per page" input — needed if a page ever
      * renders more than one of these footers. */
     idPrefix?: string;
+    className?: string;
 }
 
 /** Pagination footer with numbered page links (and ellipsis for long
@@ -34,6 +36,7 @@ export function NumberedPagination({
     onPageChange,
     onPerPageChange,
     idPrefix = 'per-page',
+    className,
 }: NumberedPaginationProps) {
     const {
         current_page: currentPage,
@@ -100,7 +103,12 @@ return null;
     }
 
     return (
-        <div className="grid w-full gap-3 border-t px-4 pt-4 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center sm:px-6">
+        <div
+            className={cn(
+                'grid w-full gap-3 border-t px-4 py-4 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center sm:px-6',
+                className,
+            )}
+        >
             {/* Left */}
             <div className="order-2 flex justify-center sm:order-1 sm:justify-start">
                 <form

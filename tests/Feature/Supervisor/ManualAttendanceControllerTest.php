@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 use App\Models\AttendanceLog;
 use App\Models\Hte;
@@ -209,3 +209,19 @@ test('checkConflicts and store correctly detect and replace early morning scans 
     expect($logs->pluck('kiosk_id')->filter()->count())->toBe(0);
 });
 
+test('supervisor can view manual attendance page with approved interns including photo url and email', function () {
+    [$supervisor, $hte] = makeHteSupervisorForManualAttendanceTest();
+    $intern = makeApprovedInternForManualAttendanceTest($hte);
+
+    $this->actingAs($supervisor)
+        ->get('/supervisor/manual-attendance')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('supervisor/manual-attendance')
+            ->has('interns', 1)
+            ->where('interns.0.user_id', $intern->id)
+            ->where('interns.0.name', $intern->name)
+            ->where('interns.0.email', $intern->email)
+            ->where('interns.0.photo_url', null)
+        );
+});

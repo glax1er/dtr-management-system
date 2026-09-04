@@ -24,13 +24,15 @@ class ManualAttendanceController extends Controller
         $interns = InternProfile::query()
             ->where('hte_id', $supervisorProfile->hte_id)
             ->where('status', 'approved')
-            ->with(['user:id,name', 'program:program_id,program_name'])
+            ->with(['user:id,name,email', 'program:program_id,program_name'])
             ->get()
             ->map(fn (InternProfile $profile) => [
                 'user_id' => $profile->user_id,
                 'name' => $profile->user->name,
+                'email' => $profile->user->email,
                 'id_number' => $profile->id_number,
                 'program_name' => $profile->program?->program_name,
+                'photo_url' => $profile->profile_photo_url,
             ])
             ->sortBy('name')
             ->values();
@@ -96,7 +98,7 @@ class ManualAttendanceController extends Controller
         $day = Carbon::createFromFormat('Y-m-d', $validated['date'], $timezone)->startOfDay();
         $hteId = InternProfile::where('user_id', $validated['intern_user_id'])->value('hte_id');
 
-        $existingDay = (new DailyAttendanceCalculator())
+        $existingDay = (new DailyAttendanceCalculator)
             ->forIntern($validated['intern_user_id'], $hteId, $day->clone(), $day->clone()->endOfDay())
             ->first();
 
@@ -196,6 +198,7 @@ class ManualAttendanceController extends Controller
         app(\App\Services\Attendance\CheckHoursMilestones::class)->check($validated['intern_user_id']);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Attendance records saved.']);
+
         return back();
     }
 

@@ -1,4 +1,5 @@
-import { router } from '@inertiajs/react';
+﻿import { router } from '@inertiajs/react';
+import { CheckCircle2, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
@@ -10,17 +11,22 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from '@/components/ui/dialog';
-
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 type TicketActionsProps = {
     ticketId: number;
     type: 'missing_time_in' | 'open' | 'no_record';
     proposedTimeIn: string | null;
     proposedTimeOut: string | null;
+    className?: string;
 };
 
 export const badgeStyles: Record<TicketActionsProps['type'], string> = {
@@ -33,21 +39,21 @@ export const badgeStyles: Record<TicketActionsProps['type'], string> = {
 
 export function formatTo12Hour(timeStr: string | null): string {
     if (!timeStr) {
-return '—';
-}
+        return '—';
+    }
 
     try {
         const cleanTime = timeStr.trim();
 
         if (/am|pm/i.test(cleanTime)) {
-return cleanTime;
-}
+            return cleanTime;
+        }
 
         const date = new Date(`2000-01-01T${cleanTime}`);
 
         if (isNaN(date.getTime())) {
-return cleanTime;
-}
+            return cleanTime;
+        }
 
         return date.toLocaleTimeString('en-US', {
             hour: 'numeric',
@@ -66,14 +72,14 @@ return cleanTime;
 // AM equivalent (1:35 PM -> wrongly sent as 01:35).
 function to24Hour(timeStr: string | null): string | null {
     if (!timeStr) {
-return null;
-}
+        return null;
+    }
 
     const match = timeStr.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
 
     if (!match) {
-return timeStr;
-} // already 24-hour, or unrecognized — pass through
+        return timeStr; // already 24-hour, or unrecognized — pass through
+    }
 
     const [, hoursStr, minutes, meridiem] = match;
     let hours = parseInt(hoursStr, 10);
@@ -82,12 +88,12 @@ return timeStr;
         const isPM = meridiem.toUpperCase() === 'PM';
 
         if (isPM && hours !== 12) {
-hours += 12;
-}
+            hours += 12;
+        }
 
         if (!isPM && hours === 12) {
-hours = 0;
-}
+            hours = 0;
+        }
     }
 
     return `${String(hours).padStart(2, '0')}:${minutes}`;
@@ -98,6 +104,7 @@ export function TicketActions({
     type,
     proposedTimeIn,
     proposedTimeOut,
+    className,
 }: TicketActionsProps) {
     const needsTimeIn = type === 'missing_time_in' || type === 'no_record';
     const needsTimeOut = type === 'open' || type === 'no_record';
@@ -183,17 +190,26 @@ export function TicketActions({
     };
 
     return (
-        <div className="flex items-center gap-2">
+        <div
+            className={cn('flex items-center justify-center gap-1', className)}
+        >
             {/* APPROVE MODAL */}
-            <Dialog open={openApprove} onOpenChange={setOpenApprove}>
-                <DialogTrigger asChild>
+            <Tooltip>
+                <TooltipTrigger asChild>
                     <Button
-                        size="sm"
-                        className="bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setOpenApprove(true)}
+                        disabled={processing}
+                        aria-label="Approve"
                     >
-                        Approve
+                        <CheckCircle2 className="size-4 text-emerald-600" />
                     </Button>
-                </DialogTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Approve</TooltipContent>
+            </Tooltip>
+
+            <Dialog open={openApprove} onOpenChange={setOpenApprove}>
                 <DialogContent className="max-h-[90vh] w-[calc(100vw-2rem)] max-w-lg overflow-y-auto sm:w-full">
                     <DialogHeader className="space-y-2">
                         <div className="flex items-center gap-2">
@@ -252,15 +268,22 @@ export function TicketActions({
             </Dialog>
 
             {/* REJECT MODAL */}
-            <Dialog open={openReject} onOpenChange={handleOpenRejectChange}>
-                <DialogTrigger asChild>
+            <Tooltip>
+                <TooltipTrigger asChild>
                     <Button
-                        size="sm"
-                        className="bg-rose-600 text-white hover:bg-rose-700 dark:bg-rose-700 dark:hover:bg-rose-600"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setOpenReject(true)}
+                        disabled={processing}
+                        aria-label="Reject"
                     >
-                        Reject
+                        <XCircle className="size-4 text-destructive" />
                     </Button>
-                </DialogTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Reject</TooltipContent>
+            </Tooltip>
+
+            <Dialog open={openReject} onOpenChange={handleOpenRejectChange}>
                 <DialogContent className="max-h-[90vh] w-[calc(100vw-2rem)] max-w-lg overflow-y-auto sm:w-full">
                     <DialogHeader className="space-y-2">
                         <div className="flex items-center gap-2">
