@@ -4,6 +4,8 @@ use App\Models\Hte;
 use App\Models\InternProfile;
 use App\Models\Program;
 use App\Models\User;
+use App\Notifications\EmailVerificationCodeNotification;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Fortify\Features;
 
@@ -103,7 +105,7 @@ test('users are rate limited', function () {
 });
 
 test('logging in with an unverified intern account sends a fresh code and reports unverified_email instead of authenticating', function () {
-    \Illuminate\Support\Facades\Notification::fake();
+    Notification::fake();
 
     $hte = Hte::create(['hte_name' => 'Test HTE']);
     $program = Program::create(['program_name' => 'BSIT']);
@@ -125,8 +127,8 @@ test('logging in with an unverified intern account sends a fresh code and report
 
     $this->assertGuest();
     $response->assertSessionHasErrors('unverified_email');
-    \Illuminate\Support\Facades\Notification::assertSentTo(
+    Notification::assertSentTo(
         $user,
-        \App\Notifications\EmailVerificationCodeNotification::class,
+        EmailVerificationCodeNotification::class,
     );
 });

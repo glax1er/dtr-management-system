@@ -169,7 +169,10 @@ export default function MyStudents({
         per_page: String(filters.per_page),
     });
 
-    const visit = (params: Record<string, string | undefined>, replace = true) => {
+    const visit = (
+        params: Record<string, string | undefined>,
+        replace = true,
+    ) => {
         router.get('/supervisor/interns', params, {
             preserveState: true,
             preserveScroll: true,
@@ -192,8 +195,8 @@ export default function MyStudents({
                 page: undefined,
             });
         }
-    // Navigation helpers intentionally remain local to preserve current filters.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // Navigation helpers intentionally remain local to preserve current filters.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch]);
 
     const applySearch = (e: FormEvent) => {

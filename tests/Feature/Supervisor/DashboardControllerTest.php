@@ -4,7 +4,6 @@ use App\Models\AttendanceLog;
 use App\Models\Hte;
 use App\Models\InternProfile;
 use App\Models\Program;
-use App\Models\ResolutionTicket;
 use App\Models\SupervisorProfile;
 use App\Models\User;
 use Illuminate\Support\Carbon;

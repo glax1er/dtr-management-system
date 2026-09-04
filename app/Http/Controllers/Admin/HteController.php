@@ -10,7 +10,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
-use App\Http\Requests\Admin\UpdateSupervisorRequest;
 
 class HteController extends Controller
 {
@@ -21,15 +20,15 @@ class HteController extends Controller
     public function index(Request $request): Response
     {
         $validated = $request->validate([
-            'search'   => ['nullable', 'string', 'max:255'],
-            'status'   => ['nullable', 'string', 'in:active,inactive'],
-            'page'     => ['nullable', 'integer', 'min:1'],
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:' . self::MAX_PER_PAGE],
+            'search' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', 'string', 'in:active,inactive'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_PER_PAGE],
         ]);
 
-        $search   = trim($validated['search'] ?? '');
-        $status   = $validated['status'] ?? '';
-        $perPage  = (int) ($validated['per_page'] ?? self::DEFAULT_PER_PAGE);
+        $search = trim($validated['search'] ?? '');
+        $status = $validated['status'] ?? '';
+        $perPage = (int) ($validated['per_page'] ?? self::DEFAULT_PER_PAGE);
 
         $query = Hte::query()
             ->withCount([
@@ -52,21 +51,21 @@ class HteController extends Controller
             ->paginate($perPage, ['*'], 'page', $validated['page'] ?? 1)
             ->withQueryString()
             ->through(fn (Hte $hte) => [
-                'hte_id'           => $hte->hte_id,
-                'hte_name'         => $hte->hte_name,
-                'address'          => $hte->address,
-                'contact_person'   => $hte->contact_person,
-                'contact_number'   => $hte->contact_number,
-                'status'           => $hte->status,
-                'interns_count'    => $hte->interns_count,
-                'supervisors_count'=> $hte->supervisor_profiles_count,
+                'hte_id' => $hte->hte_id,
+                'hte_name' => $hte->hte_name,
+                'address' => $hte->address,
+                'contact_person' => $hte->contact_person,
+                'contact_number' => $hte->contact_number,
+                'status' => $hte->status,
+                'interns_count' => $hte->interns_count,
+                'supervisors_count' => $hte->supervisor_profiles_count,
             ]);
 
         return Inertia::render('admin/htes/index', [
-            'htes'    => $htes,
+            'htes' => $htes,
             'filters' => [
-                'search'   => $search,
-                'status'   => $status,
+                'search' => $search,
+                'status' => $status,
                 'per_page' => $perPage,
             ],
         ]);
@@ -80,6 +79,7 @@ class HteController extends Controller
         ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'HTE added.']);
+
         return back();
     }
 
@@ -88,6 +88,7 @@ class HteController extends Controller
         $hte->update($request->validated());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'HTE updated.']);
+
         return back();
     }
 
@@ -100,6 +101,7 @@ class HteController extends Controller
         $hte->update(['status' => $validated['status']]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'HTE status updated.']);
+
         return back();
     }
 
@@ -112,6 +114,7 @@ class HteController extends Controller
         $hte->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'HTE archived.']);
+
         return back();
     }
 }

@@ -104,8 +104,8 @@ export default function InternDashboard({
         }
 
         if (!highlightDate && !highlightTicket) {
-return;
-}
+            return;
+        }
 
         let el: HTMLElement | null = null;
 

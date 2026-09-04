@@ -7,10 +7,8 @@ import {
     Clock,
     Coffee,
     LayoutGrid,
-    Search,
     Sparkles,
     Table as TableIcon,
-    X,
 } from 'lucide-react';
 import { useMemo, useEffect, useState } from 'react';
 import { NumberedPagination } from '@/components/numbered-pagination';
@@ -137,7 +135,7 @@ export default function InternSchedule({
     const [view, setView] = useState<ViewMode>('grid');
     const [selectedDay, setSelectedDay] = useState<CalendarDay | null>(null);
     const [dayModalOpen, setDayModalOpen] = useState(false);
-    const [search, setSearch] = useState('');
+    const [search] = useState('');
 
     // Checkbox Filters for Schedule Types (HTE, Global, Standard, Rest Days)
     const [showHteSchedule, setShowHteSchedule] = useState(true);
@@ -163,8 +161,8 @@ export default function InternSchedule({
     // Scroll to highlighted day or period
     useEffect(() => {
         if (!highlightDate && !highlightPeriod) {
-return;
-}
+            return;
+        }
 
         const targetDate =
             highlightDate ||
@@ -271,24 +269,24 @@ return;
     const filteredTableDays = useMemo(() => {
         return paginatedDays.data.filter((day) => {
             if (!showHteSchedule && day.source_type === 'hte_override') {
-return false;
-}
+                return false;
+            }
 
             if (!showGlobalSchedule && day.source_type === 'global_schedule') {
-return false;
-}
+                return false;
+            }
 
             if (
                 !showStandardSchedule &&
                 day.source_type === 'default_schedule' &&
                 day.is_workday
             ) {
-return false;
-}
+                return false;
+            }
 
             if (!showRestDays && !day.is_workday) {
-return false;
-}
+                return false;
+            }
 
             if (search.trim()) {
                 const q = search.toLowerCase();
@@ -334,27 +332,6 @@ return false;
 
                     {/* Header Controls */}
                     <div className="flex flex-wrap items-center gap-2">
-                        {/* Search Input */}
-                        <div className="relative hidden sm:block">
-                            <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-                            <input
-                                type="text"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search schedule…"
-                                className="h-9 w-44 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none lg:w-56"
-                            />
-                            {search && (
-                                <button
-                                    type="button"
-                                    onClick={() => setSearch('')}
-                                    className="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground"
-                                >
-                                    <X className="size-3.5" />
-                                </button>
-                            )}
-                        </div>
-
                         {/* Month Navigator */}
                         <div className="flex items-center rounded-lg border bg-card shadow-2xs">
                             <Button
@@ -609,24 +586,24 @@ return false;
                                                 !showRestDays &&
                                                 !day.is_workday
                                             ) {
-isVisible = false;
-}
+                                                isVisible = false;
+                                            }
 
                                             if (
                                                 !showHteSchedule &&
                                                 day.source_type ===
                                                     'hte_override'
                                             ) {
-isVisible = false;
-}
+                                                isVisible = false;
+                                            }
 
                                             if (
                                                 !showGlobalSchedule &&
                                                 day.source_type ===
                                                     'global_schedule'
                                             ) {
-isVisible = false;
-}
+                                                isVisible = false;
+                                            }
 
                                             if (
                                                 !showStandardSchedule &&
@@ -634,8 +611,8 @@ isVisible = false;
                                                     'default_schedule' &&
                                                 day.is_workday
                                             ) {
-isVisible = false;
-}
+                                                isVisible = false;
+                                            }
 
                                             const isDayHighlighted =
                                                 highlightDate === day.date ||

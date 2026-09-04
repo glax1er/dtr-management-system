@@ -3,7 +3,6 @@
 namespace App\Notifications;
 
 use App\Models\InternProfile;
-use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
@@ -12,8 +11,11 @@ class HoursMilestoneNotification extends Notification
     use Queueable;
 
     public const MILESTONE_50 = 'milestone_50';
+
     public const MILESTONE_80 = 'milestone_80';
+
     public const MILESTONE_100 = 'milestone_100';
+
     public const SUPERVISOR_INTERN_COMPLETED = 'supervisor_intern_completed';
 
     public function __construct(

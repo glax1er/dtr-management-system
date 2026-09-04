@@ -114,7 +114,7 @@ class DocumentReviewController extends Controller
 
         return response()->file($fullPath, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="' . addslashes($internDocument->original_filename) . '"',
+            'Content-Disposition' => 'inline; filename="'.addslashes($internDocument->original_filename).'"',
         ]);
     }
 

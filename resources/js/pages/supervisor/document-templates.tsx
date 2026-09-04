@@ -143,8 +143,8 @@ export default function DocumentTemplates({
         const set = new Set<string>([...DEFAULT_CATEGORIES, ...categories]);
         checklist.forEach((item) => {
             if (item.category) {
-set.add(item.category);
-}
+                set.add(item.category);
+            }
         });
 
         return Array.from(set);
@@ -173,8 +173,8 @@ set.add(item.category);
     // ── Unified Confirm Execution Handler ────────────────────────────────────
     const handleConfirm = () => {
         if (!confirmAction) {
-return;
-}
+            return;
+        }
 
         if (confirmAction.type === 'archive') {
             const { target } = confirmAction;
@@ -228,8 +228,8 @@ return;
     // ── Confirmation Modal Configuration ─────────────────────────────────────
     const confirmConfig = useMemo(() => {
         if (!confirmAction) {
-return null;
-}
+            return null;
+        }
 
         switch (confirmAction.type) {
             case 'archive':
@@ -262,26 +262,26 @@ return null;
             // Folder category filter
             if (activeFolder !== 'all' && activeFolder !== 'trash') {
                 if (item.category !== activeFolder) {
-return false;
-}
+                    return false;
+                }
             }
 
             // Status filter
             if (statusFilter === 'configured' && !item.has_template) {
-return false;
-}
+                return false;
+            }
 
             if (statusFilter === 'missing' && item.has_template) {
-return false;
-}
+                return false;
+            }
 
             if (statusFilter === 'required' && !item.required) {
-return false;
-}
+                return false;
+            }
 
             if (statusFilter === 'optional' && item.required) {
-return false;
-}
+                return false;
+            }
 
             // Search filter
             if (search.trim()) {
@@ -298,8 +298,8 @@ return false;
                     .includes(query);
 
                 if (!matchName && !matchDesc && !matchCategory && !matchFile) {
-return false;
-}
+                    return false;
+                }
             }
 
             return true;
@@ -308,8 +308,8 @@ return false;
 
     const filteredArchived = useMemo(() => {
         if (!search.trim()) {
-return archived;
-}
+            return archived;
+        }
 
         const query = search.toLowerCase();
 
@@ -1450,8 +1450,8 @@ return archived;
                 programName={program.program_name}
                 onEditClick={() => {
                     if (instructionsModalItem) {
-openEditModal(instructionsModalItem);
-}
+                        openEditModal(instructionsModalItem);
+                    }
                 }}
             />
 

@@ -7,6 +7,7 @@ use App\Models\AttendanceLog;
 use App\Models\InternProfile;
 use App\Models\ResolutionTicket;
 use App\Notifications\ResolutionTicketNotification;
+use App\Services\Attendance\CheckHoursMilestones;
 use App\Services\Attendance\DailyAttendanceCalculator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -334,7 +335,7 @@ class ResolutionTicketController extends Controller
         }
 
         if ($ticket?->intern) {
-            app(\App\Services\Attendance\CheckHoursMilestones::class)->check($ticket->intern_user_id);
+            app(CheckHoursMilestones::class)->check($ticket->intern_user_id);
         }
 
         Inertia::flash('toast', [

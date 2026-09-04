@@ -2,10 +2,9 @@
 
 namespace App\Models;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Carbon\CarbonInterface;
-use Illuminate\Support\Carbon;
 
 class SchedulePeriod extends Model
 {

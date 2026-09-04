@@ -1,4 +1,5 @@
 <?php
+
 // app/Http/Controllers/Supervisor/DashboardController.php
 
 namespace App\Http\Controllers\Supervisor;
@@ -7,8 +8,8 @@ use App\Http\Controllers\Controller;
 use App\Models\AttendanceLog;
 use App\Models\ResolutionTicket;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
@@ -37,7 +38,7 @@ class DashboardController extends Controller
 
         $validated = $request->validate([
             'page' => ['nullable', 'integer', 'min:1'],
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:' . self::MAX_PER_PAGE],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_PER_PAGE],
         ]);
 
         $perPage = (int) ($validated['per_page'] ?? self::DEFAULT_PER_PAGE);
@@ -77,7 +78,7 @@ class DashboardController extends Controller
                 $localTimestamp = $log->scan_timestamp->clone()->setTimezone($timezone);
                 $dayStart = $localTimestamp->clone()->startOfDay();
                 $dayEnd = $localTimestamp->clone()->endOfDay();
-                $cutoff = Carbon::parse($localTimestamp->toDateString() . ' ' . config('dtr.time_out_cutoff'), $timezone);
+                $cutoff = Carbon::parse($localTimestamp->toDateString().' '.config('dtr.time_out_cutoff'), $timezone);
 
                 $earliestScanToday = AttendanceLog::where('intern_user_id', $log->intern_user_id)
                     ->whereBetween('scan_timestamp', [$dayStart, $dayEnd])
@@ -89,7 +90,7 @@ class DashboardController extends Controller
 
                 $label = ($isEarliestScan && ! $earliestIsAfterCutoff) ? 'time_in' : 'time_out';
 
-                return [    
+                return [
                     'id' => $log->log_id,
                     'intern_name' => $log->intern->name,
                     'id_number' => $log->intern->internProfile?->id_number,

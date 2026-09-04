@@ -86,16 +86,16 @@ export default function InternsIndex({
 
     useEffect(() => {
         if (!highlightId) {
-return;
-}
+            return;
+        }
 
         const el =
             document.getElementById(`intern-row-${highlightId}`) ||
             document.getElementById(`intern-card-${highlightId}`);
 
         if (!el) {
-return;
-}
+            return;
+        }
 
         const timer = setTimeout(() => {
             el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -110,7 +110,10 @@ return;
         per_page: String(filters.per_page),
     });
 
-    const visit = (params: Record<string, string | undefined>, replace = true) => {
+    const visit = (
+        params: Record<string, string | undefined>,
+        replace = true,
+    ) => {
         router.get('/admin/interns', params, {
             preserveState: true,
             preserveScroll: true,
@@ -133,8 +136,8 @@ return;
                 page: undefined,
             });
         }
-    // Navigation helpers intentionally remain local to preserve current filters.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // Navigation helpers intentionally remain local to preserve current filters.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch]);
 
     const switchTab = (status: string) => {
@@ -184,8 +187,8 @@ return;
 
     const submitUndo = () => {
         if (!undoTarget) {
-return;
-}
+            return;
+        }
 
         router.post(
             `/admin/interns/${undoTarget.user_id}/undo`,
@@ -203,8 +206,8 @@ return;
 
     const submitDelete = () => {
         if (!deleteTarget) {
-return;
-}
+            return;
+        }
 
         router.delete(`/admin/interns/${deleteTarget.user_id}`, {
             preserveScroll: true,
@@ -236,7 +239,7 @@ return;
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search internsâ€¦"
+                                placeholder="Search interns"
                                 className="h-9 w-48 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
                             {search && (

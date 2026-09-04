@@ -1,4 +1,5 @@
 <?php
+
 // app/Http/Requests/Intern/UpdateProfilePhotoRequest.php
 
 namespace App\Http\Requests\Intern;

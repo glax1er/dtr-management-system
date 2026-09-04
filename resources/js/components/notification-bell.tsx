@@ -19,7 +19,10 @@ import type { Notification, PageProps } from '@/types';
 export function NotificationBell() {
     const { notifications } = usePage<PageProps>().props;
 
-    const count = useMemo(() => notifications?.count ?? 0, [notifications?.count]);
+    const count = useMemo(
+        () => notifications?.count ?? 0,
+        [notifications?.count],
+    );
     const items = useMemo(
         () => notifications?.items ?? [],
         [notifications?.items],

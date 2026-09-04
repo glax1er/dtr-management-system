@@ -1,6 +1,6 @@
 import { useForm, usePage } from '@inertiajs/react';
 import { CheckCircle2, KeyRound } from 'lucide-react';
-import type { FormEventHandler} from 'react';
+import type { FormEventHandler } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';

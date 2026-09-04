@@ -7,8 +7,8 @@ use App\Models\AttendanceLog;
 use App\Models\Hte;
 use App\Models\InternDocument;
 use App\Models\InternProfile;
-use App\Models\SupervisorProfile;
 use App\Models\SchedulePeriod;
+use App\Models\SupervisorProfile;
 use App\Services\Attendance\DailyAttendance;
 use App\Services\Attendance\DailyAttendanceCalculator;
 use Illuminate\Http\JsonResponse;
@@ -447,7 +447,7 @@ class InternsController extends Controller
             $rangeEnd = Carbon::createFromFormat('Y-m-d', $validated['to'], $timezone)->endOfDay();
         } else {
             $month = isset($validated['month'])
-                ? Carbon::createFromFormat('Y-m-d', $validated['month'] . '-01', $timezone)->startOfMonth()
+                ? Carbon::createFromFormat('Y-m-d', $validated['month'].'-01', $timezone)->startOfMonth()
                 : $today->clone()->startOfMonth();
 
             $rangeStart = $month->clone()->startOfMonth();
@@ -464,7 +464,7 @@ class InternsController extends Controller
             ->with('user', 'hte', 'program');
 
         if ($search !== '') {
-            $internsQuery->whereHas('user', fn($query) => $query->where('name', 'like', "%{$search}%"));
+            $internsQuery->whereHas('user', fn ($query) => $query->where('name', 'like', "%{$search}%"));
         }
 
         $interns = $internsQuery->get();
@@ -479,13 +479,13 @@ class InternsController extends Controller
                     approvedAt: $intern->approved_at,
                 );
 
-                return $days->map(fn(DailyAttendance $day) => array_merge(
+                return $days->map(fn (DailyAttendance $day) => array_merge(
                     $day->toArray(),
                     [
                         'intern_user_id' => $intern->user_id,
                         'intern_name' => $intern->user->name,
                         'hte_name' => $intern->hte?->hte_name ?? 'Deleted HTE',
-                        'program_name' => $intern->program?->program_name ?? 'Deleted Program', 
+                        'program_name' => $intern->program?->program_name ?? 'Deleted Program',
                         'punctuality' => $this->computePunctuality($day, $intern->hte_id),
                     ],
                 ));
@@ -495,7 +495,7 @@ class InternsController extends Controller
         // filter narrows $rows — the summary card should always reflect the
         // whole date range, independent of which remarks the table is filtered to.
         $accumulatedHours = $interns
-            ->map(fn(InternProfile $intern) => [
+            ->map(fn (InternProfile $intern) => [
                 'intern_user_id' => $intern->user_id,
                 'intern_name' => $intern->user->name,
                 'total_hours' => round((float) $rows->where('intern_user_id', $intern->user_id)->sum('hours_rendered'), 2),
@@ -607,7 +607,7 @@ class InternsController extends Controller
 
         $graceMinutes = config('dtr.grace_period_minutes', 30);
 
-        $cutoff = Carbon::parse($day->date . ' ' . $expectedStart, $timezone)
+        $cutoff = Carbon::parse($day->date.' '.$expectedStart, $timezone)
             ->addMinutes($graceMinutes);
 
         $localTimeIn = $day->timeIn->clone()->setTimezone($timezone);

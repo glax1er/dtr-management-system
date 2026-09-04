@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Intern;
 
-use App\Models\User;
-use App\Notifications\ResolutionTicketNotification;
 use App\Http\Controllers\Controller;
 use App\Models\ResolutionTicket;
+use App\Models\User;
+use App\Notifications\ResolutionTicketNotification;
 use App\Services\Attendance\DailyAttendanceCalculator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;

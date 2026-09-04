@@ -1,12 +1,21 @@
 <?php
 
+use App\Models\AttendanceLog;
 use App\Models\Hte;
 use App\Models\InternDocument;
 use App\Models\InternProfile;
 use App\Models\Program;
+use App\Models\SchedulePeriod;
 use App\Models\SupervisorProfile;
 use App\Models\User;
+use App\Notifications\EmailVerificationCodeNotification;
+use App\Notifications\HoursMilestoneNotification;
 use App\Notifications\InternDocumentNotification;
+use App\Notifications\MissedTimeOutNotification;
+use App\Notifications\ResetPasswordNotification;
+use App\Notifications\ScheduleUpdatedNotification;
+use App\Services\Attendance\CheckHoursMilestones;
+use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
@@ -23,7 +32,7 @@ function createTestInternProfile(): array
 
     $profile = InternProfile::create([
         'user_id' => $user->id,
-        'id_number' => 'IT-2026-' . rand(100, 999),
+        'id_number' => 'IT-2026-'.rand(100, 999),
         'sex' => 'male',
         'hte_id' => $hte->hte_id,
         'program_id' => $program->program_id,
@@ -251,22 +260,22 @@ test('check hours milestones dispatches notification when intern reaches milesto
     ]);
 
     // Render 5 hours net (6 hrs minus 1 hr lunch deduction = 5 hrs = 50% of 10 hrs)
-    \App\Models\AttendanceLog::create([
+    AttendanceLog::create([
         'intern_user_id' => $internUser->id,
-        'scan_timestamp' => \Carbon\Carbon::parse('2026-08-01 08:00:00', config('dtr.timezone')),
+        'scan_timestamp' => Carbon::parse('2026-08-01 08:00:00', config('dtr.timezone')),
     ]);
-    \App\Models\AttendanceLog::create([
+    AttendanceLog::create([
         'intern_user_id' => $internUser->id,
-        'scan_timestamp' => \Carbon\Carbon::parse('2026-08-01 14:00:00', config('dtr.timezone')),
+        'scan_timestamp' => Carbon::parse('2026-08-01 14:00:00', config('dtr.timezone')),
     ]);
 
-    app(\App\Services\Attendance\CheckHoursMilestones::class)->check($internProfile);
+    app(CheckHoursMilestones::class)->check($internProfile);
 
     Notification::assertSentTo(
         $internUser,
-        \App\Notifications\HoursMilestoneNotification::class,
-        function (\App\Notifications\HoursMilestoneNotification $notification) {
-            return $notification->milestone === \App\Notifications\HoursMilestoneNotification::MILESTONE_50;
+        HoursMilestoneNotification::class,
+        function (HoursMilestoneNotification $notification) {
+            return $notification->milestone === HoursMilestoneNotification::MILESTONE_50;
         }
     );
 });
@@ -279,9 +288,9 @@ test('console command dtr:check-missed-timeouts detects and notifies interns wit
     $targetDate = '2026-08-05';
 
     // Only time-in recorded, no time-out
-    \App\Models\AttendanceLog::create([
+    AttendanceLog::create([
         'intern_user_id' => $internUser->id,
-        'scan_timestamp' => \Carbon\Carbon::parse("{$targetDate} 08:00:00", config('dtr.timezone')),
+        'scan_timestamp' => Carbon::parse("{$targetDate} 08:00:00", config('dtr.timezone')),
     ]);
 
     $this->artisan("dtr:check-missed-timeouts --date={$targetDate}")
@@ -289,8 +298,8 @@ test('console command dtr:check-missed-timeouts detects and notifies interns wit
 
     Notification::assertSentTo(
         $internUser,
-        \App\Notifications\MissedTimeOutNotification::class,
-        function (\App\Notifications\MissedTimeOutNotification $notification) use ($targetDate) {
+        MissedTimeOutNotification::class,
+        function (MissedTimeOutNotification $notification) use ($targetDate) {
             return $notification->date === $targetDate;
         }
     );
@@ -341,20 +350,20 @@ test('opted out user does not receive disabled notifications', function () {
     ]);
 
     // Render 5 hours
-    \App\Models\AttendanceLog::create([
+    AttendanceLog::create([
         'intern_user_id' => $internUser->id,
-        'scan_timestamp' => \Carbon\Carbon::parse('2026-08-01 08:00:00', config('dtr.timezone')),
+        'scan_timestamp' => Carbon::parse('2026-08-01 08:00:00', config('dtr.timezone')),
     ]);
-    \App\Models\AttendanceLog::create([
+    AttendanceLog::create([
         'intern_user_id' => $internUser->id,
-        'scan_timestamp' => \Carbon\Carbon::parse('2026-08-01 14:00:00', config('dtr.timezone')),
+        'scan_timestamp' => Carbon::parse('2026-08-01 14:00:00', config('dtr.timezone')),
     ]);
 
-    app(\App\Services\Attendance\CheckHoursMilestones::class)->check($internProfile);
+    app(CheckHoursMilestones::class)->check($internProfile);
 
     Notification::assertNotSentTo(
         $internUser,
-        \App\Notifications\HoursMilestoneNotification::class
+        HoursMilestoneNotification::class
     );
 });
 
@@ -504,15 +513,15 @@ test('admin creating, updating, or deleting global schedule notifies interns and
 
     Notification::assertSentTo(
         [$internUser, $hteSupervisor],
-        \App\Notifications\ScheduleUpdatedNotification::class,
-        function (\App\Notifications\ScheduleUpdatedNotification $notification) {
-            return $notification->action === \App\Notifications\ScheduleUpdatedNotification::ACTION_CREATED
-                && $notification->scope === \App\Notifications\ScheduleUpdatedNotification::SCOPE_GLOBAL;
+        ScheduleUpdatedNotification::class,
+        function (ScheduleUpdatedNotification $notification) {
+            return $notification->action === ScheduleUpdatedNotification::ACTION_CREATED
+                && $notification->scope === ScheduleUpdatedNotification::SCOPE_GLOBAL;
         }
     );
-    Notification::assertNotSentTo($ojtSupervisor, \App\Notifications\ScheduleUpdatedNotification::class);
+    Notification::assertNotSentTo($ojtSupervisor, ScheduleUpdatedNotification::class);
 
-    $schedulePeriod = \App\Models\SchedulePeriod::whereNull('hte_id')->first();
+    $schedulePeriod = SchedulePeriod::whereNull('hte_id')->first();
 
     // 2. Update schedule
     $response = $this->actingAs($admin)->patch(route('admin.schedule.update', $schedulePeriod->id), [
@@ -533,13 +542,13 @@ test('admin creating, updating, or deleting global schedule notifies interns and
 
     Notification::assertSentTo(
         [$internUser, $hteSupervisor],
-        \App\Notifications\ScheduleUpdatedNotification::class,
-        function (\App\Notifications\ScheduleUpdatedNotification $notification) {
-            return $notification->action === \App\Notifications\ScheduleUpdatedNotification::ACTION_UPDATED
-                && $notification->scope === \App\Notifications\ScheduleUpdatedNotification::SCOPE_GLOBAL;
+        ScheduleUpdatedNotification::class,
+        function (ScheduleUpdatedNotification $notification) {
+            return $notification->action === ScheduleUpdatedNotification::ACTION_UPDATED
+                && $notification->scope === ScheduleUpdatedNotification::SCOPE_GLOBAL;
         }
     );
-    Notification::assertNotSentTo($ojtSupervisor, \App\Notifications\ScheduleUpdatedNotification::class);
+    Notification::assertNotSentTo($ojtSupervisor, ScheduleUpdatedNotification::class);
 
     // 3. Delete schedule
     $response = $this->actingAs($admin)->delete(route('admin.schedule.destroy', $schedulePeriod->id));
@@ -547,13 +556,13 @@ test('admin creating, updating, or deleting global schedule notifies interns and
 
     Notification::assertSentTo(
         [$internUser, $hteSupervisor],
-        \App\Notifications\ScheduleUpdatedNotification::class,
-        function (\App\Notifications\ScheduleUpdatedNotification $notification) {
-            return $notification->action === \App\Notifications\ScheduleUpdatedNotification::ACTION_DELETED
-                && $notification->scope === \App\Notifications\ScheduleUpdatedNotification::SCOPE_GLOBAL;
+        ScheduleUpdatedNotification::class,
+        function (ScheduleUpdatedNotification $notification) {
+            return $notification->action === ScheduleUpdatedNotification::ACTION_DELETED
+                && $notification->scope === ScheduleUpdatedNotification::SCOPE_GLOBAL;
         }
     );
-    Notification::assertNotSentTo($ojtSupervisor, \App\Notifications\ScheduleUpdatedNotification::class);
+    Notification::assertNotSentTo($ojtSupervisor, ScheduleUpdatedNotification::class);
 });
 
 test('hte supervisor creating, updating, or deleting schedule override notifies interns in their hte only', function () {
@@ -600,16 +609,16 @@ test('hte supervisor creating, updating, or deleting schedule override notifies 
 
     Notification::assertSentTo(
         $internUserInHte,
-        \App\Notifications\ScheduleUpdatedNotification::class,
-        function (\App\Notifications\ScheduleUpdatedNotification $notification) {
-            return $notification->action === \App\Notifications\ScheduleUpdatedNotification::ACTION_CREATED
-                && $notification->scope === \App\Notifications\ScheduleUpdatedNotification::SCOPE_HTE;
+        ScheduleUpdatedNotification::class,
+        function (ScheduleUpdatedNotification $notification) {
+            return $notification->action === ScheduleUpdatedNotification::ACTION_CREATED
+                && $notification->scope === ScheduleUpdatedNotification::SCOPE_HTE;
         }
     );
 
-    Notification::assertNotSentTo($otherInternUser, \App\Notifications\ScheduleUpdatedNotification::class);
+    Notification::assertNotSentTo($otherInternUser, ScheduleUpdatedNotification::class);
 
-    $overridePeriod = \App\Models\SchedulePeriod::where('hte_id', $hte->hte_id)->first();
+    $overridePeriod = SchedulePeriod::where('hte_id', $hte->hte_id)->first();
 
     // 2. Update HTE override
     $response = $this->actingAs($hteSupervisor)->patch(route('supervisor.schedule.update', $overridePeriod->id), [
@@ -630,10 +639,10 @@ test('hte supervisor creating, updating, or deleting schedule override notifies 
 
     Notification::assertSentTo(
         $internUserInHte,
-        \App\Notifications\ScheduleUpdatedNotification::class,
-        function (\App\Notifications\ScheduleUpdatedNotification $notification) {
-            return $notification->action === \App\Notifications\ScheduleUpdatedNotification::ACTION_UPDATED
-                && $notification->scope === \App\Notifications\ScheduleUpdatedNotification::SCOPE_HTE;
+        ScheduleUpdatedNotification::class,
+        function (ScheduleUpdatedNotification $notification) {
+            return $notification->action === ScheduleUpdatedNotification::ACTION_UPDATED
+                && $notification->scope === ScheduleUpdatedNotification::SCOPE_HTE;
         }
     );
 
@@ -643,17 +652,17 @@ test('hte supervisor creating, updating, or deleting schedule override notifies 
 
     Notification::assertSentTo(
         $internUserInHte,
-        \App\Notifications\ScheduleUpdatedNotification::class,
-        function (\App\Notifications\ScheduleUpdatedNotification $notification) {
-            return $notification->action === \App\Notifications\ScheduleUpdatedNotification::ACTION_DELETED
-                && $notification->scope === \App\Notifications\ScheduleUpdatedNotification::SCOPE_HTE;
+        ScheduleUpdatedNotification::class,
+        function (ScheduleUpdatedNotification $notification) {
+            return $notification->action === ScheduleUpdatedNotification::ACTION_DELETED
+                && $notification->scope === ScheduleUpdatedNotification::SCOPE_HTE;
         }
     );
 });
 
 test('email verification notification renders custom HTML email correctly', function () {
     $user = User::factory()->make(['name' => 'John Doe', 'email' => 'john@usep.edu.ph']);
-    $notification = new \App\Notifications\EmailVerificationCodeNotification('123456');
+    $notification = new EmailVerificationCodeNotification('123456');
 
     $mailMessage = $notification->toMail($user);
 
@@ -669,7 +678,7 @@ test('email verification notification renders custom HTML email correctly', func
 
 test('reset password notification renders custom HTML email correctly', function () {
     $user = User::factory()->make(['name' => 'Jane Doe', 'email' => 'jane@usep.edu.ph']);
-    $notification = new \App\Notifications\ResetPasswordNotification('test-token-123');
+    $notification = new ResetPasswordNotification('test-token-123');
 
     $mailMessage = $notification->toMail($user);
 

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Notifications\EmailVerificationCodeNotification;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -15,8 +16,6 @@ use Illuminate\Support\Carbon;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
-use App\Models\EmailVerificationCode;
-use App\Notifications\EmailVerificationCodeNotification;
 
 /**
  * @property int $id
@@ -56,7 +55,9 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     // Role constants so the rest of the app never has to type the
     // raw strings 'admin' / 'supervisor' / 'intern' directly.
     public const ROLE_ADMIN = 'admin';
+
     public const ROLE_SUPERVISOR = 'supervisor';
+
     public const ROLE_INTERN = 'intern';
 
     /**
@@ -293,6 +294,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     {
         return $this->role === self::ROLE_INTERN;
     }
+
     /**
      * Determine if the user has verified their email address.
      * Email verification is intern-only: admins are hard-coded/seeded

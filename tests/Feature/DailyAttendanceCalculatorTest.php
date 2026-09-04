@@ -1,12 +1,13 @@
 <?php
 
 use App\Models\AttendanceLog;
-use App\Services\Attendance\DailyAttendanceCalculator;
-use Illuminate\Support\Carbon;
 use App\Models\Hte;
 use App\Models\InternProfile;
+use App\Models\Kiosk;
 use App\Models\Program;
 use App\Models\User;
+use App\Services\Attendance\DailyAttendanceCalculator;
+use Illuminate\Support\Carbon;
 
 function makeApprovedIntern(): User
 {
@@ -85,7 +86,7 @@ test('an intern can download their DTR report as a PDF and empty dates are exclu
     $profile = $intern->internProfile;
     $profile->update(['approved_at' => Carbon::parse('2026-07-01 08:00:00')]);
 
-    $kiosk = \App\Models\Kiosk::create([
+    $kiosk = Kiosk::create([
         'name' => 'Main Gate Kiosk',
         'device_token' => 'kiosk-test-token',
         'is_active' => true,

@@ -12,7 +12,9 @@ class InternDocumentNotification extends Notification
     use Queueable;
 
     public const DOCUMENT_SUBMITTED = 'document_submitted';
+
     public const DOCUMENT_APPROVED = 'document_approved';
+
     public const DOCUMENT_REJECTED = 'document_rejected';
 
     public function __construct(

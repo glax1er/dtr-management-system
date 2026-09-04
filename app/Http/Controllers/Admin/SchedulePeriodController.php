@@ -41,6 +41,7 @@ class SchedulePeriodController extends Controller
         $this->notifyScheduleChange($schedulePeriod, ScheduleUpdatedNotification::ACTION_CREATED, $request->user());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Global schedule period created.']);
+
         return back();
     }
 
@@ -60,6 +61,7 @@ class SchedulePeriodController extends Controller
         $this->notifyScheduleChange($schedulePeriod, ScheduleUpdatedNotification::ACTION_UPDATED, $request->user());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Global schedule period updated.']);
+
         return back();
     }
 
@@ -75,6 +77,7 @@ class SchedulePeriodController extends Controller
         $this->notifyScheduleChangeDeleted($scheduleName, $periodId, $request->user());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Schedule period deleted.']);
+
         return back();
     }
 

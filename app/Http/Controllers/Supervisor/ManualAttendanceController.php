@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Supervisor;
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceLog;
 use App\Models\InternProfile;
+use App\Services\Attendance\CheckHoursMilestones;
 use App\Services\Attendance\DailyAttendanceCalculator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -195,7 +196,7 @@ class ManualAttendanceController extends Controller
             }
         });
 
-        app(\App\Services\Attendance\CheckHoursMilestones::class)->check($validated['intern_user_id']);
+        app(CheckHoursMilestones::class)->check($validated['intern_user_id']);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Attendance records saved.']);
 

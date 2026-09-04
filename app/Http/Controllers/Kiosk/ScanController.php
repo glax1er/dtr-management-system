@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Kiosk;
 
 use App\Actions\Attendance\RecordScan;
 use App\Exceptions\Attendance\InvalidScanException;
-use App\Models\Kiosk;
 use App\Http\Controllers\Controller;
+use App\Models\Kiosk;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -59,9 +59,9 @@ class ScanController extends Controller
         return response()->json([
             'intern_name' => $result->internName,
             'id_number' => $result->idNumber,
-            'program_name' => $result->programName, 
+            'program_name' => $result->programName,
             'hte_name' => $result->hteName,
-            'photo_url' => $result->photoUrl,         
+            'photo_url' => $result->photoUrl,
             'label' => $result->label->value,
             'timestamp' => $result->timestamp->toIso8601String(),
             'is_duplicate' => $result->isDuplicate,

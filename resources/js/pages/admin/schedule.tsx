@@ -93,8 +93,8 @@ const buildPayload = (form: FormState) =>
 
 function formatTime12(time: string | null): string {
     if (!time) {
-return '—';
-}
+        return '—';
+    }
 
     const [h, m] = time.split(':').map(Number);
     const period = h >= 12 ? 'PM' : 'AM';
@@ -344,14 +344,14 @@ export default function AdminSchedule({
     // Scroll to and briefly highlight the period indicated by the notification
     useEffect(() => {
         if (!highlightId) {
-return;
-}
+            return;
+        }
 
         const el = document.getElementById(`schedule-period-${highlightId}`);
 
         if (!el) {
-return;
-}
+            return;
+        }
 
         // Wait one tick so the DOM has finished rendering
         const raf = requestAnimationFrame(() => {
@@ -426,8 +426,8 @@ return;
 
     const submitDelete = () => {
         if (deleteId === null) {
-return;
-}
+            return;
+        }
 
         router.delete(`/admin/schedule/${deleteId}`, { preserveScroll: true });
         setDeleteOpen(false);

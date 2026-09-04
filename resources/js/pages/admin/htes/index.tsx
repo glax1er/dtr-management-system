@@ -202,7 +202,10 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
     });
 
     // â”€â”€ Navigation helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    const visit = (params: Record<string, string | undefined>, replace = true) => {
+    const visit = (
+        params: Record<string, string | undefined>,
+        replace = true,
+    ) => {
         router.get('/admin/htes', params, {
             preserveState: true,
             preserveScroll: true,
@@ -231,13 +234,17 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                 page: undefined,
             });
         }
-    // Navigation helpers intentionally remain local to preserve current filters.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // Navigation helpers intentionally remain local to preserve current filters.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch]);
 
     const applySearch = (event: FormEvent) => {
         event.preventDefault();
-        visit({ ...baseParams(), search: search || undefined, page: undefined });
+        visit({
+            ...baseParams(),
+            search: search || undefined,
+            page: undefined,
+        });
     };
 
     const clearSearch = () => {
@@ -575,7 +582,8 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                                                 undefined
                                                             }
                                                         >
-                                                            {hte.address ?? 'â€”'}
+                                                            {hte.address ??
+                                                                'â€”'}
                                                         </TableCell>
                                                         <TableCell className="px-6 text-center">
                                                             <p
@@ -691,7 +699,8 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                                     Contact Person
                                                 </span>
                                                 <span className="text-right">
-                                                    {hte.contact_person ?? 'â€”'}
+                                                    {hte.contact_person ??
+                                                        'â€”'}
                                                 </span>
                                             </div>
                                             <div className="flex justify-between gap-2">
@@ -699,7 +708,8 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                                     Contact Number
                                                 </span>
                                                 <span className="text-right">
-                                                    {hte.contact_number ?? 'â€”'}
+                                                    {hte.contact_number ??
+                                                        'â€”'}
                                                 </span>
                                             </div>
                                             <div className="flex justify-between gap-2">

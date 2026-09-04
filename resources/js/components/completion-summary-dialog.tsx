@@ -139,8 +139,8 @@ export function CompletionSummaryDialog({
             );
 
             if (!res.ok) {
-throw new Error('Failed to load completion summary');
-}
+                throw new Error('Failed to load completion summary');
+            }
 
             const data = await res.json();
             setSummary(data);
@@ -298,25 +298,25 @@ throw new Error('Failed to load completion summary');
                                                 new URLSearchParams();
 
                                             if (dtrStartDate) {
-params.append(
+                                                params.append(
                                                     'start',
                                                     dtrStartDate,
                                                 );
-}
+                                            }
 
                                             if (dtrEndDate) {
-params.append(
+                                                params.append(
                                                     'end',
                                                     dtrEndDate,
                                                 );
-}
+                                            }
 
                                             const queryString =
                                                 params.toString();
 
                                             if (queryString) {
-url += `?${queryString}`;
-}
+                                                url += `?${queryString}`;
+                                            }
 
                                             window.open(
                                                 url,
@@ -852,25 +852,25 @@ url += `?${queryString}`;
                                                     new URLSearchParams();
 
                                                 if (dtrStartDate) {
-params.append(
+                                                    params.append(
                                                         'start',
                                                         dtrStartDate,
                                                     );
-}
+                                                }
 
                                                 if (dtrEndDate) {
-params.append(
+                                                    params.append(
                                                         'end',
                                                         dtrEndDate,
                                                     );
-}
+                                                }
 
                                                 const queryString =
                                                     params.toString();
 
                                                 if (queryString) {
-url += `?${queryString}`;
-}
+                                                    url += `?${queryString}`;
+                                                }
 
                                                 window.open(
                                                     url,

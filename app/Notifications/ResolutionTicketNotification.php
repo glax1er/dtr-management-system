@@ -11,7 +11,9 @@ class ResolutionTicketNotification extends Notification
     use Queueable;
 
     public const REQUEST_SUBMITTED = 'request_submitted';
+
     public const REQUEST_APPROVED = 'request_approved';
+
     public const REQUEST_REJECTED = 'request_rejected';
 
     public function __construct(

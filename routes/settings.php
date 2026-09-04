@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\NotificationPreferencesController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use Illuminate\Auth\Middleware\RequirePassword;
@@ -22,9 +23,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('throttle:6,1')
         ->name('user-password.update');
 
-    Route::get('settings/notifications', [\App\Http\Controllers\Settings\NotificationPreferencesController::class, 'edit'])
+    Route::get('settings/notifications', [NotificationPreferencesController::class, 'edit'])
         ->name('notifications.edit');
-    Route::patch('settings/notifications', [\App\Http\Controllers\Settings\NotificationPreferencesController::class, 'update'])
+    Route::patch('settings/notifications', [NotificationPreferencesController::class, 'update'])
         ->name('notifications.update');
 
     Route::inertia('settings/appearance', 'settings/appearance')->name('appearance.edit');

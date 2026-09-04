@@ -138,8 +138,8 @@ export function EditDocumentRequirementDialog({
         e.preventDefault();
 
         if (!item) {
-return;
-}
+            return;
+        }
 
         const trimmedName = name.trim();
 

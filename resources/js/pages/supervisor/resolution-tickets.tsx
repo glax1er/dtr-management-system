@@ -118,7 +118,13 @@ export default function ResolutionTickets({
                 page: undefined,
             });
         }
-    }, [debouncedSearch, filters.search, filters.type, filters.per_page, search]);
+    }, [
+        debouncedSearch,
+        filters.search,
+        filters.type,
+        filters.per_page,
+        search,
+    ]);
 
     const applySearch = (e: FormEvent) => {
         e.preventDefault();
@@ -148,7 +154,10 @@ export default function ResolutionTickets({
 
     const goToPage = (page: number) => {
         visit(
-            { ...buildParams(search, filters.type, filters.per_page), page: String(page) },
+            {
+                ...buildParams(search, filters.type, filters.per_page),
+                page: String(page),
+            },
             false,
         );
     };

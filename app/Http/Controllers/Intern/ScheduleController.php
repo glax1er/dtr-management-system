@@ -13,6 +13,7 @@ use Inertia\Response;
 class ScheduleController extends Controller
 {
     private const DEFAULT_PER_PAGE = 10;
+
     private const MAX_PER_PAGE = 100;
 
     public function index(Request $request): Response
@@ -20,7 +21,7 @@ class ScheduleController extends Controller
         $validated = $request->validate([
             'month' => ['nullable', 'date_format:Y-m'],
             'page' => ['nullable', 'integer', 'min:1'],
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:' . self::MAX_PER_PAGE],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_PER_PAGE],
         ]);
 
         $user = $request->user();
@@ -36,7 +37,7 @@ class ScheduleController extends Controller
         $monthParam = $validated['month'] ?? null;
         try {
             $month = $monthParam
-                ? Carbon::createFromFormat('Y-m-d', $monthParam . '-01', $timezone)->startOfMonth()
+                ? Carbon::createFromFormat('Y-m-d', $monthParam.'-01', $timezone)->startOfMonth()
                 : $now->copy()->startOfMonth();
         } catch (\Throwable) {
             $month = $now->copy()->startOfMonth();
@@ -174,7 +175,7 @@ class ScheduleController extends Controller
         );
 
         // Map period helper
-        $mapPeriod = function (SchedulePeriod $period, string $scope) use ($formatTime12) {
+        $mapPeriod = function (SchedulePeriod $period, string $scope) {
             $isPast = $period->end_date->copy()->endOfDay()->isPast();
             $isUpcoming = $period->start_date->copy()->startOfDay()->isFuture();
             $isActive = ! $isPast && ! $isUpcoming;
@@ -187,7 +188,7 @@ class ScheduleController extends Controller
                 'hte_name' => $period->hte?->hte_name,
                 'start_date' => $period->start_date->toDateString(),
                 'end_date' => $period->end_date->toDateString(),
-                'formatted_range' => $period->start_date->format('M d, Y') . ' – ' . $period->end_date->format('M d, Y'),
+                'formatted_range' => $period->start_date->format('M d, Y').' – '.$period->end_date->format('M d, Y'),
                 'status' => $isActive ? 'active' : ($isUpcoming ? 'upcoming' : 'past'),
                 'day_schedule' => $period->day_schedule,
                 'created_at' => $period->created_at?->toIso8601String(),

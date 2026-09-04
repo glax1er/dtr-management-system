@@ -181,7 +181,10 @@ export default function MyInterns({
     const hasActiveFilters =
         filters.search !== '' || filters.remarks !== null || mode === 'range';
 
-    const visit = (params: Record<string, string | undefined>, replace = true) => {
+    const visit = (
+        params: Record<string, string | undefined>,
+        replace = true,
+    ) => {
         router.get('/supervisor/interns', params, {
             preserveState: true,
             preserveScroll: true,
@@ -215,8 +218,8 @@ export default function MyInterns({
                 page: undefined,
             });
         }
-    // Navigation helpers intentionally remain local to preserve current filters.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // Navigation helpers intentionally remain local to preserve current filters.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch]);
 
     const goToMonth = (targetMonth: string) => {
@@ -672,7 +675,7 @@ export default function MyInterns({
                         {view === 'table' && (
                             <div className="hidden sm:block">
                                 <Card className="flex-1">
-                                    <CardHeader className="flex flex-row items-center justify-between ">
+                                    <CardHeader className="flex flex-row items-center justify-between">
                                         <CardTitle className="text-base font-semibold">
                                             Attendance Logs
                                         </CardTitle>

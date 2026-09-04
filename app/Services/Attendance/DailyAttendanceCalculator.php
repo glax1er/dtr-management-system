@@ -32,7 +32,7 @@ use Illuminate\Support\Collection;
 class DailyAttendanceCalculator
 {
     /**
-     * @param int|object $intern
+     * @param  int|object  $intern
      * @return Collection<int, DailyAttendance> ordered oldest date first
      */
     public function forIntern(

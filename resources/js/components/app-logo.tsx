@@ -1,7 +1,7 @@
 export default function AppLogo() {
     return (
         <>
-            <div className="flex aspect-square size-15 -ml-3 items-center justify-center overflow-hidden rounded-md">
+            <div className="-ml-3 flex aspect-square size-15 items-center justify-center overflow-hidden rounded-md">
                 <img
                     src="/images/cims-logo-light.png"
                     alt="CIMS logo"

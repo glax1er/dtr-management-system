@@ -88,11 +88,6 @@ parameters:
             path: app/Http/Controllers/Intern/DocumentController.php
 
         -
-            identifier: closure.unusedUse
-            count: 1
-            path: app/Http/Controllers/Intern/ScheduleController.php
-
-        -
             identifier: nullsafe.neverNull
             count: 1
             path: app/Http/Controllers/Supervisor/DashboardController.php

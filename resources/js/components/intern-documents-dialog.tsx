@@ -69,8 +69,8 @@ export function InternDocumentsDialog({
             });
 
             if (!res.ok) {
-throw new Error('Failed to load documents');
-}
+                throw new Error('Failed to load documents');
+            }
 
             const data = await res.json();
             setIntern(data.intern);
@@ -89,7 +89,7 @@ throw new Error('Failed to load documents');
     // copying a prop into state on every render.
     // Deep links can open the dialog immediately after mount, so the fetch is
     // intentionally triggered from the mounted-open state.
-     
+
     /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => {
         if (defaultOpen) {
@@ -101,8 +101,8 @@ throw new Error('Failed to load documents');
     // Scroll to highlighted doc when checklist loads
     useEffect(() => {
         if (!isOpen || !highlightDoc || checklist.length === 0) {
-return;
-}
+            return;
+        }
 
         const targetDoc = checklist.find(
             (d) =>
@@ -146,8 +146,8 @@ return;
 
     const handleApprove = (doc: DocumentItem) => {
         if (!doc.id) {
-return;
-}
+            return;
+        }
 
         setIsSubmittingAction(true);
 
@@ -578,20 +578,20 @@ return;
                                                                             if (
                                                                                 dtrStartDate
                                                                             ) {
-params.append(
+                                                                                params.append(
                                                                                     'start',
                                                                                     dtrStartDate,
                                                                                 );
-}
+                                                                            }
 
                                                                             if (
                                                                                 dtrEndDate
                                                                             ) {
-params.append(
+                                                                                params.append(
                                                                                     'end',
                                                                                     dtrEndDate,
                                                                                 );
-}
+                                                                            }
 
                                                                             const queryString =
                                                                                 params.toString();
@@ -599,8 +599,8 @@ params.append(
                                                                             if (
                                                                                 queryString
                                                                             ) {
-url += `?${queryString}`;
-}
+                                                                                url += `?${queryString}`;
+                                                                            }
 
                                                                             window.open(
                                                                                 url,
@@ -698,8 +698,8 @@ url += `?${queryString}`;
                 open={previewDoc !== null}
                 onOpenChange={(open) => {
                     if (!open) {
-setPreviewDoc(null);
-}
+                        setPreviewDoc(null);
+                    }
                 }}
             >
                 <DialogContent className="z-50 flex h-[85vh] w-[95vw] max-w-4xl flex-col gap-0 overflow-hidden p-0">

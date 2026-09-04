@@ -339,8 +339,8 @@ export function TicketActions({
                                 setRejectionReason(e.target.value);
 
                                 if (rejectionError) {
-setRejectionError('');
-}
+                                    setRejectionError('');
+                                }
                             }}
                             placeholder="e.g., No supervisor confirmation on site, incorrect time indicated, etc."
                             rows={3}

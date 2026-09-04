@@ -108,8 +108,8 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
         const q = searchQuery.trim().toLowerCase();
 
         if (!q) {
-return interns;
-}
+            return interns;
+        }
 
         return interns.filter(
             (intern) =>

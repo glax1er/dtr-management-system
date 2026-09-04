@@ -55,6 +55,7 @@ class SchedulePeriodController extends Controller
         $this->notifyScheduleChange($schedulePeriod, ScheduleUpdatedNotification::ACTION_CREATED, $request->user());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'HTE schedule override created.']);
+
         return back();
     }
 
@@ -75,6 +76,7 @@ class SchedulePeriodController extends Controller
         $this->notifyScheduleChange($schedulePeriod, ScheduleUpdatedNotification::ACTION_UPDATED, $request->user());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'HTE schedule override updated.']);
+
         return back();
     }
 
@@ -92,6 +94,7 @@ class SchedulePeriodController extends Controller
         $this->notifyScheduleChangeDeleted($scheduleName, $periodId, $hteId, $hteName, $request->user());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Override removed.']);
+
         return back();
     }
 

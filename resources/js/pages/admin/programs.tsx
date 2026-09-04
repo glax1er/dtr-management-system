@@ -90,7 +90,10 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
     const [archiveId, setArchiveId] = useState<number | null>(null);
     const [archiveName, setArchiveName] = useState('');
 
-    const visit = (params: Record<string, string | undefined>, replace = true) => {
+    const visit = (
+        params: Record<string, string | undefined>,
+        replace = true,
+    ) => {
         router.get('/admin/programs', params, {
             preserveState: true,
             preserveScroll: true,
@@ -119,14 +122,18 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
                 page: undefined,
             });
         }
-    // Navigation helpers intentionally remain local to preserve the current
-    // filter state while debounced search requests are issued.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // Navigation helpers intentionally remain local to preserve the current
+        // filter state while debounced search requests are issued.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch]);
 
     const applySearch = (event: FormEvent) => {
         event.preventDefault();
-        visit({ ...baseParams(), search: search || undefined, page: undefined });
+        visit({
+            ...baseParams(),
+            search: search || undefined,
+            page: undefined,
+        });
     };
 
     const clearSearch = () => {
@@ -152,10 +159,13 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
     };
 
     const goToPage = (page: number) => {
-        visit({
-            ...baseParams(),
-            page: String(page),
-        }, false);
+        visit(
+            {
+                ...baseParams(),
+                page: String(page),
+            },
+            false,
+        );
     };
 
     const changePerPage = (perPage: number) => {
@@ -237,8 +247,8 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
 
     const submitArchive = () => {
         if (archiveId === null) {
-return;
-}
+            return;
+        }
 
         router.delete(`/admin/programs/${archiveId}`, {
             preserveScroll: true,

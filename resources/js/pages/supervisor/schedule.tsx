@@ -108,8 +108,8 @@ function formatTime12(time: string | null | undefined): string {
         const m = Number(mStr);
 
         if (isNaN(h) || isNaN(m)) {
-return time;
-}
+            return time;
+        }
 
         const period = h >= 12 ? 'PM' : 'AM';
         const displayH = h % 12 === 0 ? 12 : h % 12;
@@ -122,16 +122,16 @@ return time;
 
 const isPast = (dateStr: string | null | undefined): boolean => {
     if (!dateStr) {
-return false;
-}
+        return false;
+    }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const [y, m, d] = dateStr.split('-').map(Number);
 
     if (!y || !m || !d) {
-return false;
-}
+        return false;
+    }
 
     const date = new Date(y, m - 1, d);
 
@@ -473,14 +473,14 @@ export default function SupervisorSchedule({
     // Scroll to and briefly highlight the period indicated by the notification
     useEffect(() => {
         if (!highlightId) {
-return;
-}
+            return;
+        }
 
         const el = document.getElementById(`schedule-period-${highlightId}`);
 
         if (!el) {
-return;
-}
+            return;
+        }
 
         // Wait one tick so the DOM has finished rendering
         const raf = requestAnimationFrame(() => {

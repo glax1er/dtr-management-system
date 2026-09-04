@@ -6,14 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class InternProfile extends Model
 {
     use SoftDeletes;
+
     // user_id is the primary key here (one-to-one with users) —
     // it's not an auto-incrementing column of its own, it just
     // borrows the id assigned by the users table.
     protected $primaryKey = 'user_id';
+
     public $incrementing = false;
 
     // Only created_at (registered_at) exists, no updated_at column.
@@ -36,7 +39,7 @@ class InternProfile extends Model
 
     protected $casts = [
         'registered_at' => 'datetime',
-        'approved_at'   => 'datetime',
+        'approved_at' => 'datetime',
         'privacy_accepted_at' => 'datetime',
     ];
 
@@ -73,7 +76,7 @@ class InternProfile extends Model
     public function getProfilePhotoUrlAttribute(): ?string
     {
         return $this->profile_photo_path
-            ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->profile_photo_path)
+            ? Storage::disk('public')->url($this->profile_photo_path)
             : null;
     }
 

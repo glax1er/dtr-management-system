@@ -65,10 +65,19 @@ export default function Register({
 
     const passwordChecks = [
         { label: 'At least 8 characters', met: passwordInput.length >= 8 },
-        { label: 'At least 1 uppercase letter (A-Z)', met: /[A-Z]/.test(passwordInput) },
-        { label: 'At least 1 lowercase letter (a-z)', met: /[a-z]/.test(passwordInput) },
+        {
+            label: 'At least 1 uppercase letter (A-Z)',
+            met: /[A-Z]/.test(passwordInput),
+        },
+        {
+            label: 'At least 1 lowercase letter (a-z)',
+            met: /[a-z]/.test(passwordInput),
+        },
         { label: 'At least 1 number (0-9)', met: /\d/.test(passwordInput) },
-        { label: 'At least 1 symbol (@$!%*#?&)', met: /[^A-Za-z0-9]/.test(passwordInput) },
+        {
+            label: 'At least 1 symbol (@$!%*#?&)',
+            met: /[^A-Za-z0-9]/.test(passwordInput),
+        },
     ];
 
     const [selectedSex, setSelectedSex] = useState<string>('');
@@ -362,7 +371,9 @@ export default function Register({
                                 placeholder="Password"
                                 passwordrules={passwordRules}
                                 value={passwordInput}
-                                onChange={(e) => setPasswordInput(e.target.value)}
+                                onChange={(e) =>
+                                    setPasswordInput(e.target.value)
+                                }
                                 disabled={isSubmitting}
                             />
                             {passwordInput.length > 0 && (

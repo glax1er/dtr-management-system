@@ -50,6 +50,7 @@ class CheckHoursMilestones
 
             // Also notify assigned supervisors about 100% completion
             $this->notifySupervisorsAboutCompletion($profile, $totalHours, $requiredHours);
+
             return;
         }
 
@@ -63,6 +64,7 @@ class CheckHoursMilestones
                     internProfile: $profile,
                 ));
             }
+
             return;
         }
 

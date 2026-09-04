@@ -27,8 +27,8 @@ type RejectedResolutionDialogProps = {
 
 function formatDisplayDate(dateStr?: string | null): string {
     if (!dateStr) {
-return '—';
-}
+        return '—';
+    }
 
     try {
         const date = new Date(
@@ -36,8 +36,8 @@ return '—';
         );
 
         if (Number.isNaN(date.getTime())) {
-return dateStr;
-}
+            return dateStr;
+        }
 
         return date.toLocaleDateString('en-US', {
             weekday: 'short',
@@ -52,15 +52,15 @@ return dateStr;
 
 function formatDisplayDateTime(dateStr?: string | null): string {
     if (!dateStr) {
-return '';
-}
+        return '';
+    }
 
     try {
         const date = new Date(dateStr);
 
         if (Number.isNaN(date.getTime())) {
-return dateStr;
-}
+            return dateStr;
+        }
 
         return date.toLocaleString('en-US', {
             month: 'short',

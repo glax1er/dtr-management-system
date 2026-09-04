@@ -33,8 +33,8 @@ function speakAnnouncement(intern: ScannedIntern) {
     }
 
     if (intern.isDuplicate) {
-return;
-}
+        return;
+    }
 
     const statusText = intern.label === 'time_in' ? 'Timed In' : 'Timed Out';
     const utterance = new SpeechSynthesisUtterance(
@@ -90,8 +90,8 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
             const now = Date.now();
 
             if (inFlightRef.current) {
-return;
-}
+                return;
+            }
 
             if (
                 lastProcessedRef.current &&
@@ -122,8 +122,8 @@ return;
                     // a newer scan has already started since this one was
                     // sent; this response is stale, ignore it entirely
                     if (mySeq !== requestSeqRef.current) {
-return;
-}
+                        return;
+                    }
 
                     if (!response.ok) {
                         setFlash({
@@ -164,8 +164,8 @@ return;
                 .catch(() => {
                     // same staleness check for the error path
                     if (mySeq !== requestSeqRef.current) {
-return;
-}
+                        return;
+                    }
 
                     setFlash({
                         kind: 'error',
@@ -179,12 +179,12 @@ return;
                     // only this (still-latest) request gets to manage the
                     // auto-clear timer; a stale one shouldn't reset it
                     if (mySeq !== requestSeqRef.current) {
-return;
-}
+                        return;
+                    }
 
                     if (flashTimerRef.current) {
-clearTimeout(flashTimerRef.current);
-}
+                        clearTimeout(flashTimerRef.current);
+                    }
 
                     flashTimerRef.current = setTimeout(() => {
                         setFlash(null);
@@ -232,8 +232,8 @@ clearTimeout(flashTimerRef.current);
                 },
                 (decodedText) => {
                     if (!cancelled) {
-submitScan(decodedText);
-}
+                        submitScan(decodedText);
+                    }
                 },
                 () => {},
             )
@@ -250,8 +250,8 @@ submitScan(decodedText);
             cancelled = true;
 
             if (flashTimerRef.current) {
-clearTimeout(flashTimerRef.current);
-}
+                clearTimeout(flashTimerRef.current);
+            }
 
             startPromise.finally(() => {
                 scanner.stop().catch(() => {});

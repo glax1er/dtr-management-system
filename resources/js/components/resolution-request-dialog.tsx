@@ -47,8 +47,8 @@ export function ResolutionRequestDialog({
     // Helper inside the file to format 24h ("17:00") into 12h without leading zeros ("5:00 PM")
     const formatTo12Hour = (time24: string | null) => {
         if (!time24) {
-return '—';
-}
+            return '—';
+        }
 
         const [h, m] = time24.split(':');
         const hours = parseInt(h, 10);

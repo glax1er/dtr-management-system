@@ -71,8 +71,8 @@ export function NumberedPagination({
     };
 
     if (total === 0) {
-return null;
-}
+        return null;
+    }
 
     const pages: (number | 'ellipsis')[] = [];
 

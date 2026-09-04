@@ -80,7 +80,7 @@ class CreateNewUser implements CreatesNewUsers
                 'hte_id' => $input['hte_id'],
                 'program_id' => $input['program_id'],
                 'status' => 'pending',
-                'privacy_accepted_at' => now(), 
+                'privacy_accepted_at' => now(),
                 'registered_at' => now(),
             ]);
 

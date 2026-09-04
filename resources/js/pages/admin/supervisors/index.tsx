@@ -129,7 +129,10 @@ export default function SupervisorsIndex({
     });
 
     // â”€â”€ Navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    const visit = (params: Record<string, string | undefined>, replace = true) =>
+    const visit = (
+        params: Record<string, string | undefined>,
+        replace = true,
+    ) =>
         router.get('/admin/supervisors', params, {
             preserveState: true,
             preserveScroll: true,
@@ -157,8 +160,8 @@ export default function SupervisorsIndex({
                 page: undefined,
             });
         }
-    // Navigation helpers intentionally remain local to preserve current filters.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // Navigation helpers intentionally remain local to preserve current filters.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch]);
 
     const applySearch = (e: FormEvent) => {
@@ -220,8 +223,8 @@ export default function SupervisorsIndex({
         e.preventDefault();
 
         if (!editingSupervisor) {
-return;
-}
+            return;
+        }
 
         editForm.patch(`/admin/supervisors/${editingSupervisor.user_id}`, {
             preserveScroll: true,
@@ -246,8 +249,8 @@ return;
 
     const submitArchive = () => {
         if (archiveId === null) {
-return;
-}
+            return;
+        }
 
         router.delete(`/admin/supervisors/${archiveId}`, {
             preserveScroll: true,
@@ -345,7 +348,7 @@ return;
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search supervisorsâ€¦"
+                                placeholder="Search supervisors"
                                 className="h-9 w-48 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
                             {search && (

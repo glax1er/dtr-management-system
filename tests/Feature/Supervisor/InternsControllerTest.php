@@ -7,6 +7,7 @@ use App\Models\Program;
 use App\Models\SupervisorProfile;
 use App\Models\User;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @return array{0: User, 1: Hte}
@@ -457,7 +458,7 @@ test('the student roster batch queries attendance logs to prevent N+1 queries', 
         $interns[] = $intern;
     }
 
-    \Illuminate\Support\Facades\DB::enableQueryLog();
+    DB::enableQueryLog();
 
     $this->actingAs($supervisor)
         ->get(route('supervisor.interns.index'))
@@ -467,91 +468,91 @@ test('the student roster batch queries attendance logs to prevent N+1 queries', 
             ->where('studentCount', 10)
         );
 
-    $queries = collect(\Illuminate\Support\Facades\DB::getQueryLog());
+    $queries = collect(DB::getQueryLog());
     $attendanceLogQueries = $queries->filter(fn ($q) => str_contains($q['query'], 'attendance_logs'));
 
     // Should only be 1 attendance_logs batch query, not 10+
     expect($attendanceLogQueries->count())->toBe(1);
-    });
+});
 
-    test('accumulated hours reflects each intern\'s actual hours worked in the range, not zero', function () {
-        [$supervisor, $hte] = makeSupervisorWithHte();
-        $intern = makeApprovedInternForHte($hte);
+test('accumulated hours reflects each intern\'s actual hours worked in the range, not zero', function () {
+    [$supervisor, $hte] = makeSupervisorWithHte();
+    $intern = makeApprovedInternForHte($hte);
 
-        // 8:00 AM to 5:00 PM, minus lunch, should be well above 0 hours.
-        AttendanceLog::create([
-            'intern_user_id' => $intern->id,
-            'supervisor_user_id' => $supervisor->id,
-            'scan_timestamp' => Carbon::parse('2026-07-20 08:00:00', 'Asia/Manila'),
-        ]);
-        AttendanceLog::create([
-            'intern_user_id' => $intern->id,
-            'supervisor_user_id' => $supervisor->id,
-            'scan_timestamp' => Carbon::parse('2026-07-20 17:00:00', 'Asia/Manila'),
-        ]);
+    // 8:00 AM to 5:00 PM, minus lunch, should be well above 0 hours.
+    AttendanceLog::create([
+        'intern_user_id' => $intern->id,
+        'supervisor_user_id' => $supervisor->id,
+        'scan_timestamp' => Carbon::parse('2026-07-20 08:00:00', 'Asia/Manila'),
+    ]);
+    AttendanceLog::create([
+        'intern_user_id' => $intern->id,
+        'supervisor_user_id' => $supervisor->id,
+        'scan_timestamp' => Carbon::parse('2026-07-20 17:00:00', 'Asia/Manila'),
+    ]);
 
-        $this->actingAs($supervisor)
-            ->get(route('supervisor.interns.index', [
-                'from' => '2026-07-01',
-                'to' => '2026-07-31',
-            ]))
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->component('supervisor/interns')
-                ->has('accumulatedHours', 1, fn ($row) => $row
-                    ->where('intern_user_id', $intern->id)
-                    ->where('total_hours', fn ($hours) => $hours > 0)
-                    ->etc()
-                )
-            );
-    });
+    $this->actingAs($supervisor)
+        ->get(route('supervisor.interns.index', [
+            'from' => '2026-07-01',
+            'to' => '2026-07-31',
+        ]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('supervisor/interns')
+            ->has('accumulatedHours', 1, fn ($row) => $row
+                ->where('intern_user_id', $intern->id)
+                ->where('total_hours', fn ($hours) => $hours > 0)
+                ->etc()
+            )
+        );
+});
 
-    test('accumulated hours totals stay the same regardless of the remarks filter', function () {
-        [$supervisor, $hte] = makeSupervisorWithHte();
-        $intern = makeApprovedInternForHte($hte);
+test('accumulated hours totals stay the same regardless of the remarks filter', function () {
+    [$supervisor, $hte] = makeSupervisorWithHte();
+    $intern = makeApprovedInternForHte($hte);
 
-        // An on-time day.
-        AttendanceLog::create([
-            'intern_user_id' => $intern->id,
-            'supervisor_user_id' => $supervisor->id,
-            'scan_timestamp' => Carbon::parse('2026-07-20 07:45:00', 'Asia/Manila'),
-        ]);
-        AttendanceLog::create([
-            'intern_user_id' => $intern->id,
-            'supervisor_user_id' => $supervisor->id,
-            'scan_timestamp' => Carbon::parse('2026-07-20 17:00:00', 'Asia/Manila'),
-        ]);
+    // An on-time day.
+    AttendanceLog::create([
+        'intern_user_id' => $intern->id,
+        'supervisor_user_id' => $supervisor->id,
+        'scan_timestamp' => Carbon::parse('2026-07-20 07:45:00', 'Asia/Manila'),
+    ]);
+    AttendanceLog::create([
+        'intern_user_id' => $intern->id,
+        'supervisor_user_id' => $supervisor->id,
+        'scan_timestamp' => Carbon::parse('2026-07-20 17:00:00', 'Asia/Manila'),
+    ]);
 
-        // A late day.
-        AttendanceLog::create([
-            'intern_user_id' => $intern->id,
-            'supervisor_user_id' => $supervisor->id,
-            'scan_timestamp' => Carbon::parse('2026-07-21 09:30:00', 'Asia/Manila'),
-        ]);
-        AttendanceLog::create([
-            'intern_user_id' => $intern->id,
-            'supervisor_user_id' => $supervisor->id,
-            'scan_timestamp' => Carbon::parse('2026-07-21 17:00:00', 'Asia/Manila'),
-        ]);
+    // A late day.
+    AttendanceLog::create([
+        'intern_user_id' => $intern->id,
+        'supervisor_user_id' => $supervisor->id,
+        'scan_timestamp' => Carbon::parse('2026-07-21 09:30:00', 'Asia/Manila'),
+    ]);
+    AttendanceLog::create([
+        'intern_user_id' => $intern->id,
+        'supervisor_user_id' => $supervisor->id,
+        'scan_timestamp' => Carbon::parse('2026-07-21 17:00:00', 'Asia/Manila'),
+    ]);
 
-        $params = ['from' => '2026-07-01', 'to' => '2026-07-31'];
+    $params = ['from' => '2026-07-01', 'to' => '2026-07-31'];
 
-        $unfiltered = $this->actingAs($supervisor)
-            ->get(route('supervisor.interns.index', $params))
-            ->assertOk();
+    $unfiltered = $this->actingAs($supervisor)
+        ->get(route('supervisor.interns.index', $params))
+        ->assertOk();
 
-        $filteredByLate = $this->actingAs($supervisor)
-            ->get(route('supervisor.interns.index', [...$params, 'remarks' => 'late']))
-            ->assertOk();
+    $filteredByLate = $this->actingAs($supervisor)
+        ->get(route('supervisor.interns.index', [...$params, 'remarks' => 'late']))
+        ->assertOk();
 
-        $unfilteredTotal = collect($unfiltered->viewData('page')['props']['accumulatedHours'])
-            ->firstWhere('intern_user_id', $intern->id)['total_hours'];
+    $unfilteredTotal = collect($unfiltered->viewData('page')['props']['accumulatedHours'])
+        ->firstWhere('intern_user_id', $intern->id)['total_hours'];
 
-        $filteredTotal = collect($filteredByLate->viewData('page')['props']['accumulatedHours'])
-            ->firstWhere('intern_user_id', $intern->id)['total_hours'];
+    $filteredTotal = collect($filteredByLate->viewData('page')['props']['accumulatedHours'])
+        ->firstWhere('intern_user_id', $intern->id)['total_hours'];
 
-        // The remarks filter should only narrow the log table, never the
-        // accumulated-hours summary — both days' hours should still be counted.
-        expect($filteredTotal)->toBe($unfilteredTotal)
-            ->and($filteredTotal)->toBeGreaterThan(0.0);
-    });
+    // The remarks filter should only narrow the log table, never the
+    // accumulated-hours summary — both days' hours should still be counted.
+    expect($filteredTotal)->toBe($unfilteredTotal)
+        ->and($filteredTotal)->toBeGreaterThan(0.0);
+});

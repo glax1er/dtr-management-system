@@ -100,4 +100,3 @@ test('reassigning an HTE supervisor refreshes contact person on both old and new
     expect($oldHte->fresh()->contact_person)->toBeNull();
     expect($newHte->fresh()->contact_person)->toBe('Jane Supervisor');
 });
-

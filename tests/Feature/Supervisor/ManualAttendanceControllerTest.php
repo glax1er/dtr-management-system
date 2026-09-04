@@ -1,8 +1,9 @@
-﻿<?php
+<?php
 
 use App\Models\AttendanceLog;
 use App\Models\Hte;
 use App\Models\InternProfile;
+use App\Models\Kiosk;
 use App\Models\Program;
 use App\Models\SupervisorProfile;
 use App\Models\User;
@@ -169,7 +170,7 @@ test('checkConflicts and store correctly detect and replace early morning scans 
     [$supervisor, $hte] = makeHteSupervisorForManualAttendanceTest();
     $intern = makeApprovedInternForManualAttendanceTest($hte);
 
-    $kiosk = \App\Models\Kiosk::create([
+    $kiosk = Kiosk::create([
         'name' => 'Main Gate',
         'device_token' => 'test-token',
         'is_active' => true,

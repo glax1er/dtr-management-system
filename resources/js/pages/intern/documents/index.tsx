@@ -165,35 +165,35 @@ export default function InternDocuments({
               null
             : null;
 
-/* eslint-disable react-hooks/set-state-in-effect */
-useEffect(() => {
-if (!highlightType) {
-    return;
-}
+    /* eslint-disable react-hooks/set-state-in-effect */
+    useEffect(() => {
+        if (!highlightType) {
+            return;
+        }
 
-const targetDoc = checklist.find(
-    (d) =>
-        d.document_type === highlightType ||
-        String(d.id) === highlightType,
-);
+        const targetDoc = checklist.find(
+            (d) =>
+                d.document_type === highlightType ||
+                String(d.id) === highlightType,
+        );
 
-if (
-    targetDoc &&
-    activeFolder !== 'all' &&
-    activeFolder !== targetDoc.category
-) {
-    // Auto-switch to the folder containing the highlighted document; the
-    // state is intentionally synced from the URL-driven highlight filter.
-    setActiveFolder(targetDoc.category);
-}
-}, [highlightType, checklist, activeFolder]);
-/* eslint-enable react-hooks/set-state-in-effect */
+        if (
+            targetDoc &&
+            activeFolder !== 'all' &&
+            activeFolder !== targetDoc.category
+        ) {
+            // Auto-switch to the folder containing the highlighted document; the
+            // state is intentionally synced from the URL-driven highlight filter.
+            setActiveFolder(targetDoc.category);
+        }
+    }, [highlightType, checklist, activeFolder]);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     // Scroll to highlighted document card or row
     useEffect(() => {
         if (!highlightType) {
-return;
-}
+            return;
+        }
 
         const targetDoc = checklist.find(
             (d) =>
@@ -207,8 +207,8 @@ return;
             document.getElementById(`doc-card-${typeKey}`);
 
         if (!el) {
-return;
-}
+            return;
+        }
 
         const timer = setTimeout(() => {
             el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -234,12 +234,12 @@ return;
             f.total_items += 1;
 
             if (item.status !== 'missing') {
-f.submitted_count += 1;
-}
+                f.submitted_count += 1;
+            }
 
             if (item.status === 'approved') {
-f.approved_count += 1;
-}
+                f.approved_count += 1;
+            }
         });
 
         return Array.from(map.values());
@@ -249,8 +249,8 @@ f.approved_count += 1;
     const filteredChecklist = useMemo(() => {
         return checklist.filter((item) => {
             if (activeFolder !== 'all' && item.category !== activeFolder) {
-return false;
-}
+                return false;
+            }
 
             if (search.trim()) {
                 const q = search.toLowerCase();
@@ -260,8 +260,8 @@ return false;
                     !item.description?.toLowerCase().includes(q) &&
                     !item.category?.toLowerCase().includes(q)
                 ) {
-return false;
-}
+                    return false;
+                }
             }
 
             return true;
@@ -276,8 +276,8 @@ return false;
         const file = e.target.files?.[0];
 
         if (!file) {
-return;
-}
+            return;
+        }
 
         if (
             file.type !== 'application/pdf' &&
@@ -332,8 +332,8 @@ return;
 
     const handleDelete = (doc: DocumentItem) => {
         if (!doc.id) {
-return;
-}
+            return;
+        }
 
         if (confirm(`Remove your upload for "${doc.name}"?`)) {
             router.delete(`/intern/documents/${doc.id}`, {
@@ -1323,8 +1323,8 @@ return;
                 open={previewDoc !== null}
                 onOpenChange={(open) => {
                     if (!open) {
-setPreviewDoc(null);
-}
+                        setPreviewDoc(null);
+                    }
                 }}
             >
                 <DialogContent className="flex h-[85vh] w-[95vw] max-w-4xl flex-col gap-0 overflow-hidden p-0">

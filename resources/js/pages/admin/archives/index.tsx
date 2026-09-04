@@ -98,7 +98,10 @@ export default function ArchivesIndex({
         per_page: filters?.per_page ? String(filters.per_page) : undefined,
     });
 
-    const visit = (params: Record<string, string | undefined>, replace = true) => {
+    const visit = (
+        params: Record<string, string | undefined>,
+        replace = true,
+    ) => {
         router.get('/admin/archives', params, {
             preserveState: true,
             preserveScroll: true,
@@ -121,9 +124,9 @@ export default function ArchivesIndex({
                 page: undefined,
             });
         }
-    // Navigation helpers intentionally remain local to preserve the current
-    // filter state while debounced search requests are issued.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // Navigation helpers intentionally remain local to preserve the current
+        // filter state while debounced search requests are issued.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch]);
 
     const switchTab = (type: string) => {
@@ -162,8 +165,8 @@ export default function ArchivesIndex({
 
     const submitRestore = () => {
         if (!restoreTarget) {
-return;
-}
+            return;
+        }
 
         router.post(
             `/admin/archives/${currentType}/${restoreTarget.id}/restore`,
@@ -185,8 +188,8 @@ return;
 
     const submitForceDelete = () => {
         if (!forceDeleteTarget) {
-return;
-}
+            return;
+        }
 
         router.delete(
             `/admin/archives/${currentType}/${forceDeleteTarget.id}`,
@@ -204,8 +207,8 @@ return;
                     ).flash;
 
                     if (flash?.error) {
-return;
-}
+                        return;
+                    }
 
                     setForceDeleteOpen(false);
                     setForceDeleteTarget(null);

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\InternProfile;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -14,7 +15,7 @@ class UpdateInternRequest extends FormRequest
 
     public function rules(): array
     {
-        /** @var \App\Models\InternProfile $internProfile */
+        /** @var InternProfile $internProfile */
         $internProfile = $this->route('internProfile');
 
         return [

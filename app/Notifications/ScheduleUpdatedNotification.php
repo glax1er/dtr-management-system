@@ -11,10 +11,13 @@ class ScheduleUpdatedNotification extends Notification
     use Queueable;
 
     public const ACTION_CREATED = 'created';
+
     public const ACTION_UPDATED = 'updated';
+
     public const ACTION_DELETED = 'deleted';
 
     public const SCOPE_GLOBAL = 'global';
+
     public const SCOPE_HTE = 'hte';
 
     public function __construct(
@@ -54,8 +57,8 @@ class ScheduleUpdatedNotification extends Notification
             $message = trim("The schedule override {$hteLabel} has been {$actionVerb} by your supervisor.");
             // HTE notifications are only ever sent to interns — supervisors do not
             // notify themselves — so the href always points to the intern schedule.
-            $href = '/intern/schedule' . ($this->startDate && $this->action !== self::ACTION_DELETED
-                ? '?month=' . substr($this->startDate, 0, 7) . '&highlight_date=' . $this->startDate
+            $href = '/intern/schedule'.($this->startDate && $this->action !== self::ACTION_DELETED
+                ? '?month='.substr($this->startDate, 0, 7).'&highlight_date='.$this->startDate
                 : '');
         } else {
             $title = match ($this->action) {
@@ -66,8 +69,8 @@ class ScheduleUpdatedNotification extends Notification
             $message = "The official OJT schedule ({$name}) has been {$actionVerb} by the administrator.";
 
             $href = $isSupervisor
-                ? ('/supervisor/schedule' . ($this->schedulePeriodId && $this->action !== self::ACTION_DELETED ? '?highlight=' . $this->schedulePeriodId : ''))
-                : ('/intern/schedule' . ($this->startDate && $this->action !== self::ACTION_DELETED ? '?month=' . substr($this->startDate, 0, 7) . '&highlight_date=' . $this->startDate : ''));
+                ? ('/supervisor/schedule'.($this->schedulePeriodId && $this->action !== self::ACTION_DELETED ? '?highlight='.$this->schedulePeriodId : ''))
+                : ('/intern/schedule'.($this->startDate && $this->action !== self::ACTION_DELETED ? '?month='.substr($this->startDate, 0, 7).'&highlight_date='.$this->startDate : ''));
         }
 
         return [
