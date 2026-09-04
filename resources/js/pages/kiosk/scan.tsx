@@ -59,7 +59,7 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
     const scannerRef = useRef<Html5Qrcode | null>(null);
     const inFlightRef = useRef(false);
     const lastProcessedRef = useRef<{ value: string; at: number } | null>(null);
-    // ADDED â€” monotonically increasing ID; only the response matching the
+    // ADDED — monotonically increasing ID; only the response matching the
     // most recent request is ever allowed to update the screen
     const requestSeqRef = useRef(0);
     const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -334,7 +334,7 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                             )}
                         </div>
 
-                        {/* ID card â€” persists until the next scan */}
+                        {/* ID card — persists until the next scan */}
                         <div
                             className={`mx-auto w-full max-w-sm rounded-lg border-4 p-6 text-white backdrop-blur-sm transition-colors duration-300 ${
                                 !lastIntern
@@ -355,7 +355,7 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                                 </div>
                             ) : (
                                 <div className="flex flex-col gap-4">
-                                    {/* Photo â€” falls back to the generic icon if the
+                                    {/* Photo — falls back to the generic icon if the
                                     intern hasn't uploaded one */}
                                     <div className="mx-auto flex size-28 items-center justify-center overflow-hidden rounded-full bg-white/10">
                                         {lastIntern.photoUrl ? (

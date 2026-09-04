@@ -201,7 +201,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
         contact_number: '',
     });
 
-    // â”€â”€ Navigation helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Navigation helpers ------------------------------------------
     const visit = (
         params: Record<string, string | undefined>,
         replace = true,
@@ -280,7 +280,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
         });
     };
 
-    // â”€â”€ CRUD helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- CRUD helpers ------------------------------------------------
     const openAddDialog = () => {
         addForm.reset();
         addForm.clearErrors();
@@ -361,7 +361,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
             <Head title="HTEs" />
 
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
-                {/* â”€â”€ Header toolbar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+                {/* -- Header toolbar -------------------------------------- */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
                         <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
@@ -410,7 +410,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                             )}
                         </button>
 
-                        {/* Status filter â€” full on sm+, icon-only on mobile */}
+                        {/* Status filter — full on sm+, icon-only on mobile */}
                         <div className="hidden sm:block">
                             <Select
                                 value={status || 'all'}
@@ -455,7 +455,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                             </Select>
                         </div>
 
-                        {/* View toggle â€” desktop only */}
+                        {/* View toggle — desktop only */}
                         <div className="hidden sm:block">
                             <Tabs
                                 value={view}
@@ -478,7 +478,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                             </Tabs>
                         </div>
 
-                        {/* Add HTE â€” icon+text on desktop, icon-only on mobile */}
+                        {/* Add HTE — icon+text on desktop, icon-only on mobile */}
                         <Button onClick={openAddDialog}>
                             <Plus className="size-4" />
                             <span className="hidden sm:inline">Add HTE</span>
@@ -525,7 +525,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                     </form>
                 )}
 
-                {/* â”€â”€ Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+                {/* -- Content --------------------------------------------- */}
                 {htes.data.length === 0 ? (
                     <Card>
                         <CardContent className="py-8 text-center text-sm text-muted-foreground">
@@ -537,7 +537,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                     </Card>
                 ) : (
                     <>
-                        {/* Table view â€” desktop only */}
+                        {/* Table view — desktop only */}
                         {view === 'table' && (
                             <div className="hidden sm:block">
                                 <Card>
@@ -582,8 +582,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                                                 undefined
                                                             }
                                                         >
-                                                            {hte.address ??
-                                                                'â€”'}
+                                                            {hte.address ?? '—'}
                                                         </TableCell>
                                                         <TableCell className="px-6 text-center">
                                                             <p
@@ -594,7 +593,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                                                 }
                                                             >
                                                                 {hte.contact_person ??
-                                                                    'â€”'}
+                                                                    '—'}
                                                             </p>
                                                             {hte.contact_number && (
                                                                 <p className="truncate text-xs text-muted-foreground">
@@ -649,7 +648,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                             </div>
                         )}
 
-                        {/* Grid view â€” always on mobile, desktop only when grid tab selected */}
+                        {/* Grid view — always on mobile, desktop only when grid tab selected */}
                         <div className={view === 'table' ? 'sm:hidden' : ''}>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {htes.data.map((hte) => (
@@ -691,7 +690,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                                         hte.address ?? undefined
                                                     }
                                                 >
-                                                    {hte.address ?? 'â€”'}
+                                                    {hte.address ?? '—'}
                                                 </span>
                                             </div>
                                             <div className="flex justify-between gap-2">
@@ -699,8 +698,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                                     Contact Person
                                                 </span>
                                                 <span className="text-right">
-                                                    {hte.contact_person ??
-                                                        'â€”'}
+                                                    {hte.contact_person ?? '—'}
                                                 </span>
                                             </div>
                                             <div className="flex justify-between gap-2">
@@ -708,8 +706,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                                     Contact Number
                                                 </span>
                                                 <span className="text-right">
-                                                    {hte.contact_number ??
-                                                        'â€”'}
+                                                    {hte.contact_number ?? '—'}
                                                 </span>
                                             </div>
                                             <div className="flex justify-between gap-2">
@@ -745,7 +742,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                 )}
             </div>
 
-            {/* â”€â”€ Edit dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* -- Edit dialog ----------------------------------------- */}
             <Dialog
                 open={editingHte !== null}
                 onOpenChange={(open) => !open && closeEditDialog()}
@@ -835,7 +832,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                 </DialogContent>
             </Dialog>
 
-            {/* â”€â”€ Add dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* -- Add dialog ------------------------------------------ */}
             <Dialog
                 open={addOpen}
                 onOpenChange={(open) =>
@@ -915,7 +912,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                 </DialogContent>
             </Dialog>
 
-            {/* â”€â”€ Archive confirmation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* -- Archive confirmation -------------------------------- */}
             <ConfirmationDialog
                 open={archiveOpen}
                 onOpenChange={setArchiveOpen}

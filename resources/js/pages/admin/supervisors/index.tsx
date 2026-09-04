@@ -56,7 +56,7 @@ import {
 import { useDebounce } from '@/hooks/use-debounce';
 import { dashboard } from '@/routes';
 
-// â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Types --------------------------------------------------------------------
 interface Hte {
     hte_id: number;
     hte_name: string;
@@ -92,7 +92,7 @@ interface SupervisorsIndexProps {
 
 type ViewMode = 'table' | 'grid';
 
-// â”€â”€ Main page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Main page -----------------------------------------------------------------
 export default function SupervisorsIndex({
     supervisors,
     htes,
@@ -128,7 +128,7 @@ export default function SupervisorsIndex({
         program_id: '',
     });
 
-    // â”€â”€ Navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Navigation ---------------------------------------------------------
     const visit = (
         params: Record<string, string | undefined>,
         replace = true,
@@ -191,7 +191,7 @@ export default function SupervisorsIndex({
     const changePerPage = (perPage: number) =>
         visit({ ...baseParams(), per_page: String(perPage), page: undefined });
 
-    // â”€â”€ CRUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- CRUD ---------------------------------------------------------------
     const handleAddSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const url =
@@ -260,7 +260,7 @@ export default function SupervisorsIndex({
         setArchiveName('');
     };
 
-    // â”€â”€ Per-row actions (shared between table and grid) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Per-row actions (shared between table and grid) --------------------
     const SupervisorActions = ({ supervisor }: { supervisor: Supervisor }) => (
         <div className="flex justify-center gap-1">
             <Tooltip>
@@ -322,7 +322,7 @@ export default function SupervisorsIndex({
         </div>
     );
 
-    // â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Render -------------------------------------------------------------
     return (
         <>
             <Head title="Supervisors" />
@@ -376,7 +376,7 @@ export default function SupervisorsIndex({
                             )}
                         </button>
 
-                        {/* Type filter â€” full on desktop, icon-only on mobile */}
+                        {/* Type filter — full on desktop, icon-only on mobile */}
                         <div className="hidden sm:block">
                             <Select
                                 value={filters.type ?? 'all'}
@@ -421,7 +421,7 @@ export default function SupervisorsIndex({
                             </Select>
                         </div>
 
-                        {/* View toggle â€” desktop only */}
+                        {/* View toggle — desktop only */}
                         <div className="hidden sm:block">
                             <Tabs
                                 value={view}
@@ -464,7 +464,7 @@ export default function SupervisorsIndex({
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search supervisorsâ€¦"
+                                placeholder="Search supervisors…"
                                 className="h-9 w-full rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
                             {search && (
@@ -498,7 +498,7 @@ export default function SupervisorsIndex({
                     </Card>
                 ) : (
                     <>
-                        {/* Table â€” desktop only */}
+                        {/* Table — desktop only */}
                         {view === 'table' && (
                             <div className="hidden sm:block">
                                 <Card>
@@ -597,7 +597,7 @@ export default function SupervisorsIndex({
                             </div>
                         )}
 
-                        {/* Grid â€” always on mobile, desktop when grid tab selected */}
+                        {/* Grid — always on mobile, desktop when grid tab selected */}
                         <div className={view === 'table' ? 'sm:hidden' : ''}>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {supervisors.data.map((supervisor) => (
@@ -658,7 +658,7 @@ export default function SupervisorsIndex({
                 )}
             </div>
 
-            {/* â”€â”€ Add dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* -- Add dialog ------------------------------------------------- */}
             <Dialog open={addOpen} onOpenChange={setAddOpen}>
                 <DialogContent>
                     <form
@@ -817,7 +817,7 @@ export default function SupervisorsIndex({
                 </DialogContent>
             </Dialog>
 
-            {/* â”€â”€ Edit dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* -- Edit dialog ------------------------------------------------ */}
             <Dialog
                 open={editingSupervisor !== null}
                 onOpenChange={(open) => !open && setEditingSupervisor(null)}
@@ -953,7 +953,7 @@ export default function SupervisorsIndex({
                 </DialogContent>
             </Dialog>
 
-            {/* â”€â”€ Archive confirmation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* -- Archive confirmation ---------------------------------------- */}
             <ConfirmationDialog
                 open={archiveOpen}
                 onOpenChange={setArchiveOpen}

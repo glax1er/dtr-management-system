@@ -327,7 +327,7 @@ export default function InternsIndex({
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search internsâ€¦"
+                                placeholder="Search interns…"
                                 className="h-9 w-full rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
                             {search && (

@@ -687,11 +687,12 @@ export default function InternDashboard({
                                                             </div>
                                                         </TableCell>
                                                         <TableCell className="text-center text-muted-foreground tabular-nums">
-                                                            {log.time_in ?? '—'}
+                                                            {log.time_in ??
+                                                                '\u2014'}
                                                         </TableCell>
                                                         <TableCell className="text-center text-muted-foreground tabular-nums">
                                                             {log.time_out ??
-                                                                '—'}
+                                                                '\u2014'}
                                                         </TableCell>
                                                         <TableCell className="text-center font-medium tabular-nums">
                                                             {log.hours_rendered >
@@ -722,7 +723,7 @@ export default function InternDashboard({
                                                             {log.status ===
                                                             'complete' ? (
                                                                 <span className="text-xs text-muted-foreground/50">
-                                                                    —
+                                                                    {'\u2014'}
                                                                 </span>
                                                             ) : log.pending_ticket_id !==
                                                               null ? (

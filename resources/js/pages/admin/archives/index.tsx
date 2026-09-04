@@ -32,7 +32,7 @@ import {
 import { useDebounce } from '@/hooks/use-debounce';
 import { dashboard } from '@/routes';
 
-// â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Types --------------------------------------------------------------------
 interface ArchivedRecord {
     id: number;
     name: string;
@@ -91,7 +91,7 @@ export default function ArchivesIndex({
 
     const activeTab = TABS.find((t) => t.value === currentType) ?? TABS[0];
 
-    // â”€â”€ Navigation & Query Handling â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Navigation & Query Handling ------------------------------------------
     const baseParams = () => ({
         type: currentType,
         search: search || undefined,
@@ -157,7 +157,7 @@ export default function ArchivesIndex({
     const changePerPage = (perPage: number) =>
         visit({ ...baseParams(), per_page: String(perPage), page: undefined });
 
-    // â”€â”€ Action Handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Action Handlers ------------------------------------------------------
     const openRestoreDialog = (record: ArchivedRecord) => {
         setRestoreTarget(record);
         setRestoreOpen(true);
@@ -197,7 +197,7 @@ export default function ArchivesIndex({
                 preserveScroll: true,
                 // Inertia's onSuccess fires for ANY completed visit (including a
                 // back()->with('error', ...) redirect when the delete was blocked
-                // by a foreign key constraint) â€” it does NOT mean the record was
+                // by a foreign key constraint) — it does NOT mean the record was
                 // actually deleted. Check the fresh flash props before treating
                 // this as resolved, otherwise the dialog closes and the row looks
                 // "handled" even though it's still sitting in the database.
@@ -217,7 +217,7 @@ export default function ArchivesIndex({
         );
     };
 
-    // â”€â”€ Action Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Action Component -----------------------------------------------------
     const ArchiveActions = ({ record }: { record: ArchivedRecord }) => (
         <div className="flex justify-center gap-1">
             <Tooltip>
@@ -273,7 +273,7 @@ export default function ArchivesIndex({
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder={`Search ${activeTab.label.toLowerCase()}â€¦`}
+                                placeholder={`Search ${activeTab.label.toLowerCase()}…`}
                                 className="h-9 w-48 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
                             {search && (
@@ -318,7 +318,7 @@ export default function ArchivesIndex({
                             </Tabs>
                         </div>
 
-                        {/* View Switcher â€” Desktop Only */}
+                        {/* View Switcher — Desktop Only */}
                         <div className="hidden sm:block">
                             <div className="inline-flex rounded-md border p-0.5">
                                 <Button
@@ -362,7 +362,7 @@ export default function ArchivesIndex({
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder={`Search ${activeTab.label.toLowerCase()}â€¦`}
+                                placeholder={`Search ${activeTab.label.toLowerCase()}…`}
                                 className="h-9 w-full rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
                             {search && (
@@ -394,7 +394,7 @@ export default function ArchivesIndex({
                     </Card>
                 ) : (
                     <>
-                        {/* Table View â€” Desktop Only */}
+                        {/* Table View — Desktop Only */}
                         {view === 'table' && (
                             <div className="hidden sm:block">
                                 <Card>
@@ -454,7 +454,7 @@ export default function ArchivesIndex({
                             </div>
                         )}
 
-                        {/* Grid View â€” Mobile Default & Desktop Grid View */}
+                        {/* Grid View — Mobile Default & Desktop Grid View */}
                         <div className={view === 'table' ? 'sm:hidden' : ''}>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {records.data.map((record) => (

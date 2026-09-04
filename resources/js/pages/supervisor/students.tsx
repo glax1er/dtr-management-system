@@ -253,7 +253,7 @@ export default function MyStudents({
                         <p className="mt-1 ml-[3.25rem] text-sm text-muted-foreground">
                             {studentCount}{' '}
                             {studentCount === 1 ? 'intern' : 'interns'}
-                            {scopeName ? ` â€¢ ${scopeName}` : ''}
+                            {scopeName ? ` • ${scopeName}` : ''}
                         </p>
                     </div>
 
@@ -294,7 +294,7 @@ export default function MyStudents({
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search studentsâ€¦"
+                                placeholder="Search students…"
                                 className="h-9 w-48 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
                             {search && (
@@ -379,7 +379,7 @@ export default function MyStudents({
                             </Select>
                         </div>
 
-                        {/* View toggle â€” desktop only */}
+                        {/* View toggle — desktop only */}
                         <div className="hidden sm:block">
                             <Tabs
                                 value={view}
@@ -406,7 +406,7 @@ export default function MyStudents({
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search studentsâ€¦"
+                            placeholder="Search students…"
                             className="h-9 w-full rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                         />
                     </form>
@@ -493,7 +493,7 @@ export default function MyStudents({
                                                     </TableCell>
                                                     <TableCell className="py-3 pr-4 whitespace-nowrap">
                                                         {student.id_number ??
-                                                            'â€”'}
+                                                            '—'}
                                                     </TableCell>
                                                     <TableCell
                                                         className="max-w-[140px] truncate py-3 pr-4"
@@ -563,7 +563,7 @@ export default function MyStudents({
                                                                 className="text-xs font-normal text-muted-foreground"
                                                             >
                                                                 {student.hours_completed
-                                                                    ? 'Hours Met â€¢ Docs Pending'
+                                                                    ? 'Hours Met • Docs Pending'
                                                                     : `${Math.round(student.progress_percent)}% Rendered`}
                                                             </Badge>
                                                         )}

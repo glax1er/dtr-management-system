@@ -260,7 +260,7 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
     };
 
     const supervisorLabel = (names: string[]) =>
-        names.length === 0 ? 'â€”' : names.join(', ');
+        names.length === 0 ? '—' : names.join(', ');
 
     return (
         <>
@@ -288,7 +288,7 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
                                 onChange={(event) =>
                                     setSearch(event.target.value)
                                 }
-                                placeholder="Search programsâ€¦"
+                                placeholder="Search programs…"
                                 className="h-9 w-44 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
 
@@ -406,7 +406,7 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
                                 onChange={(event) =>
                                     setSearch(event.target.value)
                                 }
-                                placeholder="Search programsâ€¦"
+                                placeholder="Search programs…"
                                 className="h-9 w-full rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
 

@@ -130,16 +130,16 @@ function formatMonthDayYear(dateStr: string): string {
 }
 
 function formatLongDateRange(from: string, to: string): string {
-    return `${formatMonthDayYear(from)} â€“ ${formatMonthDayYear(to)}`;
+    return `${formatMonthDayYear(from)} \u2013 ${formatMonthDayYear(to)}`;
 }
 
 function formatLongTime(time: string | null): string {
-    return time ? time.trim() : 'â€”';
+    return time ? time.trim() : '\u2014';
 }
 
 function formatLongDuration(hours: number): string {
     if (hours <= 0) {
-        return 'â€”';
+        return '\u2014';
     }
 
     const totalMinutes = Math.round(hours * 60);
@@ -337,7 +337,7 @@ export default function MyInterns({
                         <p className="mt-1 ml-[3.25rem] text-sm text-muted-foreground">
                             {internCount}{' '}
                             {internCount === 1 ? 'intern' : 'interns'}
-                            {scopeName ? ` â€¢ ${scopeName}` : ''}
+                            {scopeName ? ` \u2022 ${scopeName}` : ''}
                         </p>
                     </div>
 
@@ -352,7 +352,7 @@ export default function MyInterns({
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search by nameâ€¦"
+                                placeholder="Search by name..."
                                 className="h-9 w-48 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
                             {search && (
@@ -459,7 +459,7 @@ export default function MyInterns({
                             </div>
                         )}
 
-                        {/* View toggle â€” desktop only */}
+                        {/* View toggle - desktop only */}
                         <div className="hidden sm:block">
                             <Tabs
                                 value={view}
@@ -494,7 +494,7 @@ export default function MyInterns({
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search by nameâ€¦"
+                                placeholder="Search by name..."
                                 className="h-9 w-full rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
                             {search && (
@@ -671,7 +671,7 @@ export default function MyInterns({
                     </Card>
                 ) : (
                     <>
-                        {/* Table View â€” desktop */}
+                        {/* Table View - desktop */}
                         {view === 'table' && (
                             <div className="hidden sm:block">
                                 <Card className="flex-1">
@@ -787,7 +787,7 @@ export default function MyInterns({
                             </div>
                         )}
 
-                        {/* Grid View â€” desktop */}
+                        {/* Grid View - desktop */}
                         {view === 'grid' && (
                             <div className="hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3">
                                 {logs.data.map((log) => (
