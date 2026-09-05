@@ -15,8 +15,6 @@ import type { Paginated } from '@/components/pagination-footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useDebounce } from '@/hooks/use-debounce';
 import {
     Table,
     TableBody,
@@ -25,10 +23,16 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { useDebounce } from '@/hooks/use-debounce';
 import { dashboard } from '@/routes';
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// -- Types --------------------------------------------------------------------
 interface ArchivedRecord {
     id: number;
     name: string;
@@ -43,21 +47,32 @@ interface Filters {
 
 interface ArchivesIndexProps {
     records: Paginated<ArchivedRecord>;
-    currentType: 'htes' | 'supervisors' | 'interns' | 'programs' | 'templates';
+    currentType: 'htes' | 'supervisors' | 'interns' | 'programs';
     filters?: Filters;
+    flash?: {
+        success?: string | null;
+        error?: string | null;
+    };
 }
 
 type ViewMode = 'table' | 'grid';
 
-const TABS: { label: string; value: 'htes' | 'supervisors' | 'interns' | 'programs' | 'templates'; detailLabel: string }[] = [
+const TABS: {
+    label: string;
+    value: 'htes' | 'supervisors' | 'interns' | 'programs';
+    detailLabel: string;
+}[] = [
     { label: 'Interns', value: 'interns', detailLabel: 'ID Number' },
     { label: 'Supervisors', value: 'supervisors', detailLabel: 'Email' },
     { label: 'HTEs', value: 'htes', detailLabel: 'Address' },
     { label: 'Programs', value: 'programs', detailLabel: 'Required Hours' },
-    { label: 'Templates', value: 'templates', detailLabel: 'Program / File' },
 ];
 
-export default function ArchivesIndex({ records, currentType, filters }: ArchivesIndexProps) {
+export default function ArchivesIndex({
+    records,
+    currentType,
+    filters,
+}: ArchivesIndexProps) {
     const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters?.search ?? '');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -66,32 +81,39 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
 
     // Confirmation dialog state
     const [restoreOpen, setRestoreOpen] = useState(false);
-    const [restoreTarget, setRestoreTarget] = useState<ArchivedRecord | null>(null);
+    const [restoreTarget, setRestoreTarget] = useState<ArchivedRecord | null>(
+        null,
+    );
 
     const [forceDeleteOpen, setForceDeleteOpen] = useState(false);
-    const [forceDeleteTarget, setForceDeleteTarget] = useState<ArchivedRecord | null>(null);
+    const [forceDeleteTarget, setForceDeleteTarget] =
+        useState<ArchivedRecord | null>(null);
 
     const activeTab = TABS.find((t) => t.value === currentType) ?? TABS[0];
 
-    useEffect(() => {
-        setSearch(filters?.search ?? '');
-    }, [filters?.search]);
-
-    // ── Navigation & Query Handling ──────────────────────────────────────────
+    // -- Navigation & Query Handling ------------------------------------------
     const baseParams = () => ({
         type: currentType,
         search: search || undefined,
         per_page: filters?.per_page ? String(filters.per_page) : undefined,
     });
 
-    const visit = (params: Record<string, string | undefined>, replace = true) => {
-        router.get('/admin/archives', params, { preserveState: true, preserveScroll: true, replace });
+    const visit = (
+        params: Record<string, string | undefined>,
+        replace = true,
+    ) => {
+        router.get('/admin/archives', params, {
+            preserveState: true,
+            preserveScroll: true,
+            replace,
+        });
     };
 
     // Automatically trigger search as user types
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
+
             return;
         }
 
@@ -102,16 +124,27 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
                 page: undefined,
             });
         }
+        // Navigation helpers intentionally remain local to preserve the current
+        // filter state while debounced search requests are issued.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch]);
 
     const switchTab = (type: string) => {
         setSearch('');
-        visit({ type, per_page: filters?.per_page ? String(filters.per_page) : undefined, page: undefined });
+        visit({
+            type,
+            per_page: filters?.per_page ? String(filters.per_page) : undefined,
+            page: undefined,
+        });
     };
 
     const applySearch = (e: FormEvent) => {
         e.preventDefault();
-        visit({ ...baseParams(), search: search || undefined, page: undefined });
+        visit({
+            ...baseParams(),
+            search: search || undefined,
+            page: undefined,
+        });
     };
 
     const clearSearch = () => {
@@ -119,18 +152,22 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
         visit({ ...baseParams(), search: undefined, page: undefined });
     };
 
-    const goToPage = (page: number) => visit({ ...baseParams(), page: String(page) }, false);
+    const goToPage = (page: number) =>
+        visit({ ...baseParams(), page: String(page) }, false);
     const changePerPage = (perPage: number) =>
         visit({ ...baseParams(), per_page: String(perPage), page: undefined });
 
-    // ── Action Handlers ──────────────────────────────────────────────────────
+    // -- Action Handlers ------------------------------------------------------
     const openRestoreDialog = (record: ArchivedRecord) => {
         setRestoreTarget(record);
         setRestoreOpen(true);
     };
 
     const submitRestore = () => {
-        if (!restoreTarget) return;
+        if (!restoreTarget) {
+            return;
+        }
+
         router.post(
             `/admin/archives/${currentType}/${restoreTarget.id}/restore`,
             {},
@@ -140,7 +177,7 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
                     setRestoreOpen(false);
                     setRestoreTarget(null);
                 },
-            }
+            },
         );
     };
 
@@ -150,22 +187,46 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
     };
 
     const submitForceDelete = () => {
-        if (!forceDeleteTarget) return;
-        router.delete(`/admin/archives/${currentType}/${forceDeleteTarget.id}`, {
-            preserveScroll: true,
-            onSuccess: () => {
-                setForceDeleteOpen(false);
-                setForceDeleteTarget(null);
+        if (!forceDeleteTarget) {
+            return;
+        }
+
+        router.delete(
+            `/admin/archives/${currentType}/${forceDeleteTarget.id}`,
+            {
+                preserveScroll: true,
+                // Inertia's onSuccess fires for ANY completed visit (including a
+                // back()->with('error', ...) redirect when the delete was blocked
+                // by a foreign key constraint) — it does NOT mean the record was
+                // actually deleted. Check the fresh flash props before treating
+                // this as resolved, otherwise the dialog closes and the row looks
+                // "handled" even though it's still sitting in the database.
+                onSuccess: (page) => {
+                    const flash = (
+                        page.props as { flash?: { error?: string | null } }
+                    ).flash;
+
+                    if (flash?.error) {
+                        return;
+                    }
+
+                    setForceDeleteOpen(false);
+                    setForceDeleteTarget(null);
+                },
             },
-        });
+        );
     };
 
-    // ── Action Component ─────────────────────────────────────────────────────
+    // -- Action Component -----------------------------------------------------
     const ArchiveActions = ({ record }: { record: ArchivedRecord }) => (
         <div className="flex justify-center gap-1">
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={() => openRestoreDialog(record)}>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openRestoreDialog(record)}
+                    >
                         <ArchiveRestore className="size-4 text-emerald-600" />
                     </Button>
                 </TooltipTrigger>
@@ -174,7 +235,11 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
 
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={() => openForceDeleteDialog(record)}>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openForceDeleteDialog(record)}
+                    >
                         <Trash2 className="size-4 text-destructive" />
                     </Button>
                 </TooltipTrigger>
@@ -197,9 +262,12 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
                         Archives
                     </h1>
 
-                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                    <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end">
                         {/* Desktop Search */}
-                        <form onSubmit={applySearch} className="relative hidden sm:block">
+                        <form
+                            onSubmit={applySearch}
+                            className="relative hidden sm:block"
+                        >
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                             <input
                                 type="text"
@@ -226,15 +294,23 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
                             className="inline-flex size-9 shrink-0 items-center justify-center rounded-md border bg-background text-muted-foreground hover:text-foreground sm:hidden"
                             aria-label="Toggle search"
                         >
-                            {mobileSearchOpen ? <X className="size-4" /> : <Search className="size-4" />}
+                            {mobileSearchOpen ? (
+                                <X className="size-4" />
+                            ) : (
+                                <Search className="size-4" />
+                            )}
                         </button>
 
                         {/* Tabs Filter */}
-                        <div className="overflow-x-auto max-w-[calc(100%-3rem)] sm:max-w-none scrollbar-none">
+                        <div className="max-w-[calc(100%-3rem)] scrollbar-none overflow-x-auto sm:max-w-none">
                             <Tabs value={currentType} onValueChange={switchTab}>
                                 <TabsList className="w-auto">
                                     {TABS.map((tab) => (
-                                        <TabsTrigger key={tab.value} value={tab.value} className="text-xs sm:text-sm px-2 sm:px-3">
+                                        <TabsTrigger
+                                            key={tab.value}
+                                            value={tab.value}
+                                            className="px-2 text-xs sm:px-3 sm:text-sm"
+                                        >
                                             {tab.label}
                                         </TabsTrigger>
                                     ))}
@@ -246,7 +322,9 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
                         <div className="hidden sm:block">
                             <div className="inline-flex rounded-md border p-0.5">
                                 <Button
-                                    variant={view === 'table' ? 'secondary' : 'ghost'}
+                                    variant={
+                                        view === 'table' ? 'secondary' : 'ghost'
+                                    }
                                     size="icon"
                                     className="size-8"
                                     onClick={() => setView('table')}
@@ -254,7 +332,9 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
                                     <TableIcon className="size-4" />
                                 </Button>
                                 <Button
-                                    variant={view === 'grid' ? 'secondary' : 'ghost'}
+                                    variant={
+                                        view === 'grid' ? 'secondary' : 'ghost'
+                                    }
                                     size="icon"
                                     className="size-8"
                                     onClick={() => setView('grid')}
@@ -273,7 +353,7 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
                             applySearch(e);
                             setMobileSearchOpen(false);
                         }}
-                        className="flex items-center gap-2 sm:hidden w-full"
+                        className="flex w-full items-center gap-2 sm:hidden"
                     >
                         <div className="relative flex-1">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -322,10 +402,18 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
                                         <Table>
                                             <TableHeader>
                                                 <TableRow>
-                                                    <TableHead className="px-6">Name</TableHead>
-                                                    <TableHead className="px-6 text-center">{activeTab.detailLabel}</TableHead>
-                                                    <TableHead className="px-6 text-center">Archived On</TableHead>
-                                                    <TableHead className="px-6 text-center">Actions</TableHead>
+                                                    <TableHead className="px-6">
+                                                        Name
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        {activeTab.detailLabel}
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        Archived On
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        Actions
+                                                    </TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
@@ -336,7 +424,9 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
                                                         </TableCell>
                                                         <TableCell
                                                             className="max-w-[240px] truncate px-6 text-center text-muted-foreground"
-                                                            title={record.detail}
+                                                            title={
+                                                                record.detail
+                                                            }
                                                         >
                                                             {record.detail}
                                                         </TableCell>
@@ -344,7 +434,9 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
                                                             {record.deleted_at}
                                                         </TableCell>
                                                         <TableCell className="px-6 text-center">
-                                                            <ArchiveActions record={record} />
+                                                            <ArchiveActions
+                                                                record={record}
+                                                            />
                                                         </TableCell>
                                                     </TableRow>
                                                 ))}
@@ -370,7 +462,9 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
                                         <CardHeader>
                                             <div className="flex items-start justify-between gap-2">
                                                 <div className="min-w-0">
-                                                    <CardTitle className="truncate text-base">{record.name}</CardTitle>
+                                                    <CardTitle className="truncate text-base">
+                                                        {record.name}
+                                                    </CardTitle>
                                                     <p
                                                         className="mt-0.5 truncate text-xs text-muted-foreground"
                                                         title={record.detail}
@@ -379,14 +473,20 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
                                                     </p>
                                                 </div>
                                                 <div className="shrink-0">
-                                                    <ArchiveActions record={record} />
+                                                    <ArchiveActions
+                                                        record={record}
+                                                    />
                                                 </div>
                                             </div>
                                         </CardHeader>
                                         <CardContent className="space-y-2 text-sm">
                                             <div className="flex justify-between gap-2">
-                                                <span className="shrink-0 text-muted-foreground">Archived On</span>
-                                                <span className="text-right text-muted-foreground">{record.deleted_at}</span>
+                                                <span className="shrink-0 text-muted-foreground">
+                                                    Archived On
+                                                </span>
+                                                <span className="text-right text-muted-foreground">
+                                                    {record.deleted_at}
+                                                </span>
                                             </div>
                                         </CardContent>
                                     </Card>
@@ -417,13 +517,13 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
             />
 
             <ConfirmationDialog
-    open={forceDeleteOpen}
-    onOpenChange={setForceDeleteOpen}
-    title="Delete Permanently"
-    description={`Permanently delete "${forceDeleteTarget?.name}"? This action CANNOT be undone.`}
-    onConfirm={submitForceDelete}
-    confirmText="Delete Permanently"
-/>
+                open={forceDeleteOpen}
+                onOpenChange={setForceDeleteOpen}
+                title="Delete Permanently"
+                description={`Permanently delete "${forceDeleteTarget?.name}"? This action CANNOT be undone.`}
+                onConfirm={submitForceDelete}
+                confirmText="Delete Permanently"
+            />
         </>
     );
 }

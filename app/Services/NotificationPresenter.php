@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ResolutionTicket;
+use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Collection;
 
 class NotificationPresenter
@@ -10,7 +11,7 @@ class NotificationPresenter
     /**
      * Format a collection of database notifications into a consistent structure for Inertia.
      *
-     * @param Collection<\Illuminate\Notifications\DatabaseNotification> $notifications
+     * @param  Collection<DatabaseNotification>  $notifications
      * @return array<int, array<string, mixed>>
      */
     public static function formatCollection(Collection $notifications): array

@@ -65,25 +65,30 @@ export default function Profile({
                             </div>
 
                             <div className="grid gap-2">
-    <Label htmlFor="email">Email address</Label>
+                                <Label htmlFor="email">Email address</Label>
 
-    <Input
-        id="email"
-        type="email"
-        className="mt-1 block w-full cursor-not-allowed bg-muted text-muted-foreground"
-        defaultValue={auth.user.email}
-        name="email"
-        readOnly
-        tabIndex={-1}
-        autoComplete="username"
-    />
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    className="mt-1 block w-full cursor-not-allowed bg-muted text-muted-foreground"
+                                    defaultValue={auth.user.email}
+                                    name="email"
+                                    readOnly
+                                    tabIndex={-1}
+                                    autoComplete="username"
+                                />
 
-    <p className="text-xs text-muted-foreground">
-        Your email address cannot be changed here. Contact an administrator if you need it updated.
-    </p>
+                                <p className="text-xs text-muted-foreground">
+                                    Your email address cannot be changed here.
+                                    Contact an administrator if you need it
+                                    updated.
+                                </p>
 
-    <InputError className="mt-2" message={errors.email} />
-</div>
+                                <InputError
+                                    className="mt-2"
+                                    message={errors.email}
+                                />
+                            </div>
 
                             {mustVerifyEmail &&
                                 auth.user.email_verified_at === null && (

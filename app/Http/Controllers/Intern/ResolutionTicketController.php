@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Intern;
 
-use App\Models\User;
-use App\Notifications\ResolutionTicketNotification;
 use App\Http\Controllers\Controller;
 use App\Models\ResolutionTicket;
+use App\Models\User;
+use App\Notifications\ResolutionTicketNotification;
 use App\Services\Attendance\DailyAttendanceCalculator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -135,6 +135,7 @@ class ResolutionTicketController extends Controller
                     ->where('hte_id', $profile->hte_id);
             })
             ->get()
+            ->filter(fn (User $supervisor) => $supervisor->wantsNotification('ticket_requests'))
             ->each(function (User $supervisor) use ($ticket) {
                 $supervisor->notify(
                     new ResolutionTicketNotification(

@@ -7,6 +7,7 @@ use App\Models\AttendanceLog;
 use App\Models\InternProfile;
 use App\Models\ResolutionTicket;
 use App\Notifications\ResolutionTicketNotification;
+use App\Services\Attendance\CheckHoursMilestones;
 use App\Services\Attendance\DailyAttendanceCalculator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -73,7 +74,7 @@ class ResolutionTicketController extends Controller
             });
         }
 
-        if ($type !== 'all' && $type !== null) {
+        if ($type !== 'all') {
             if ($type === 'no_record') {
                 $query->whereNotNull('proposed_time_in')
                     ->whereNotNull('proposed_time_out');
@@ -324,13 +325,17 @@ class ResolutionTicketController extends Controller
          */
         $ticket = $resolutionTicket->fresh(['intern']);
 
-        if ($ticket?->intern) {
+        if ($ticket?->intern && $ticket->intern->wantsNotification('ticket_updates')) {
             $ticket->intern->notify(
                 new ResolutionTicketNotification(
                     $ticket,
                     ResolutionTicketNotification::REQUEST_APPROVED,
                 )
             );
+        }
+
+        if ($ticket?->intern) {
+            app(CheckHoursMilestones::class)->check($ticket->intern_user_id);
         }
 
         Inertia::flash('toast', [
@@ -388,7 +393,7 @@ class ResolutionTicketController extends Controller
          */
         $ticket = $resolutionTicket->fresh(['intern']);
 
-        if ($ticket?->intern) {
+        if ($ticket?->intern && $ticket->intern->wantsNotification('ticket_updates')) {
             $ticket->intern->notify(
                 new ResolutionTicketNotification(
                     $ticket,

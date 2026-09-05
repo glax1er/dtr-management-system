@@ -1,4 +1,13 @@
-import { Bell, CheckCircle2, Clock3, UserPlus, XCircle } from 'lucide-react';
+import {
+    AlertTriangle,
+    Bell,
+    Calendar,
+    CheckCircle2,
+    Clock3,
+    Trophy,
+    UserPlus,
+    XCircle,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Notification } from '@/types/auth';
 
@@ -51,6 +60,9 @@ export type NotificationCategory =
     | 'approved'
     | 'rejected'
     | 'pending'
+    | 'milestone'
+    | 'attendance'
+    | 'schedule'
     | 'registration'
     | 'general';
 
@@ -61,6 +73,9 @@ export const NOTIFICATION_CATEGORY_LABELS: Record<
     approved: 'Approved',
     rejected: 'Rejected',
     pending: 'Pending',
+    milestone: 'Milestones',
+    attendance: 'Attendance',
+    schedule: 'Schedule',
     registration: 'Registration',
     general: 'General',
 };
@@ -76,6 +91,33 @@ export function getNotificationCategory(
     const type = notification.type?.toLowerCase() ?? '';
 
     if (
+        type.includes('milestone') ||
+        type.includes('completed_hours') ||
+        title.includes('milestone') ||
+        title.includes('completed ojt hours') ||
+        title.includes('completed hours')
+    ) {
+        return 'milestone';
+    }
+
+    if (
+        type.includes('missed_timeout') ||
+        type.includes('attendance') ||
+        title.includes('missing time-out') ||
+        title.includes('time-out')
+    ) {
+        return 'attendance';
+    }
+
+    if (
+        type.includes('schedule') ||
+        title.includes('schedule') ||
+        title.includes('shift')
+    ) {
+        return 'schedule';
+    }
+
+    if (
         type === 'intern_registration' ||
         title.includes('sign-up') ||
         title.includes('registration')
@@ -83,15 +125,23 @@ export function getNotificationCategory(
         return 'registration';
     }
 
-    if (title.includes('approved')) {
+    if (type.includes('approved') || title.includes('approved')) {
         return 'approved';
     }
 
-    if (title.includes('rejected')) {
+    if (
+        type.includes('rejected') ||
+        title.includes('rejected') ||
+        title.includes('needs revision')
+    ) {
         return 'rejected';
     }
 
-    if (title.includes('request') || title.includes('submitted')) {
+    if (
+        type.includes('submitted') ||
+        title.includes('request') ||
+        title.includes('submitted')
+    ) {
         return 'pending';
     }
 
@@ -114,6 +164,18 @@ const NOTIFICATION_CATEGORY_TONES: Record<
     pending: {
         icon: Clock3,
         badgeClassName: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+    },
+    milestone: {
+        icon: Trophy,
+        badgeClassName: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+    },
+    attendance: {
+        icon: AlertTriangle,
+        badgeClassName: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
+    },
+    schedule: {
+        icon: Calendar,
+        badgeClassName: 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
     },
     registration: {
         icon: UserPlus,
@@ -143,8 +205,10 @@ export function isRejectedResolutionNotification(
     notification: Notification,
 ): boolean {
     const title = notification.title.toLowerCase();
-    const type = (notification.type || notification.data?.type || '').toLowerCase();
-    const event = (String(notification.data?.event || '')).toLowerCase();
+    const type = String(
+        notification.type || notification.data?.type || '',
+    ).toLowerCase();
+    const event = String(notification.data?.event || '').toLowerCase();
     const hasRejectionReason = Boolean(notification.data?.rejection_reason);
     const isResolution =
         type === 'resolution_ticket' ||

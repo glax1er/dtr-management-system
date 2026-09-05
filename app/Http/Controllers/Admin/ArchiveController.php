@@ -4,11 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceLog;
-use App\Models\DocumentTemplate;
+use App\Models\EmailVerificationCode;
 use App\Models\Hte;
-use App\Models\InternDocument;
 use App\Models\InternProfile;
 use App\Models\Program;
+use App\Models\ResolutionTicket;
 use App\Models\SupervisorProfile;
 use App\Models\User;
 use Illuminate\Database\QueryException;
@@ -26,7 +26,7 @@ class ArchiveController extends Controller
     public function index(Request $request): Response
     {
         $validated = $request->validate([
-            'type' => ['nullable', 'in:htes,supervisors,interns,programs,templates'],
+            'type' => ['nullable', 'in:htes,supervisors,interns,programs'],
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
 
@@ -72,16 +72,12 @@ class ArchiveController extends Controller
                     'detail' => $program->required_hours ? "{$program->required_hours} hrs" : 'No hours set',
                     'deleted_at' => $program->deleted_at->format('M d, Y h:i A'),
                 ]),
-            'templates' => DocumentTemplate::onlyTrashed()
-                ->with(['program', 'uploader'])
-                ->orderBy('deleted_at', 'desc')
-                ->paginate(self::PER_PAGE, ['*'], 'page', $page)
-                ->through(fn (DocumentTemplate $template) => [
-                    'id' => $template->id,
-                    'name' => InternDocument::getTypeConfig($template->document_type)['name'] ?? $template->document_type,
-                    'detail' => ($template->program?->program_name ?? 'Program') . ' • ' . $template->original_filename,
-                    'deleted_at' => $template->deleted_at->format('M d, Y h:i A'),
-                ]),
+            // Unreachable today — the validation above already restricts
+            // $type to these 4 values — but kept as a safety net so a
+            // future change to the validation rule (e.g. adding a type
+            // here without a matching arm) fails loudly with a clear 404
+            // instead of a raw UnhandledMatchError.
+            default => abort(404, "Unknown archive type: {$type}"),
         };
 
         return Inertia::render('admin/archives/index', [
@@ -109,27 +105,49 @@ class ArchiveController extends Controller
                         Storage::disk('public')->delete($profile->profile_photo_path);
                     }
 
-                    // 2. Delete linked attendance logs to satisfy foreign key constraints
+                    // 1b. Delete uploaded requirement documents from storage
+                    Storage::disk('local')->deleteDirectory("intern-documents/{$profile->user_id}");
+
+                    // 2. Delete linked attendance logs to satisfy foreign key constraints.
+                    // Must run before step 2b: attendance_logs.resolved_ticket_id
+                    // restricts deleting a resolution ticket while a written-back
+                    // log still points to it.
                     AttendanceLog::where('intern_user_id', $profile->user_id)->delete();
+
+                    // 2b. Delete this intern's resolution tickets — also guarded by
+                    // a restrictOnDelete FK (resolution_tickets.intern_user_id),
+                    // otherwise the User delete below fails and the whole
+                    // transaction rolls back with no visible explanation.
+                    ResolutionTicket::where('intern_user_id', $profile->user_id)->delete();
 
                     // 3. Permanently remove profile and parent User account
                     $userId = $profile->user_id;
+                    $userEmail = $profile->user?->email;
                     $profile->forceDelete();
                     User::where('id', $userId)->delete();
+
+                    // 4. email_verification_codes has no FK to users (it's keyed
+                    // by email), so it never blocks the delete above — but it
+                    // was also never cleaned up, leaving orphaned rows behind.
+                    if ($userEmail) {
+                        EmailVerificationCode::where('email', strtolower(trim($userEmail)))->delete();
+                    }
 
                 } elseif ($type === 'supervisors') {
                     $profile = SupervisorProfile::onlyTrashed()->findOrFail($id);
                     $userId = $profile->user_id;
+                    $userEmail = $profile->user?->email;
 
+                    // Note: attendance_logs.supervisor_user_id is nullOnDelete
+                    // (see 2026_08_27_000001 migration), so those interns'
+                    // attendance history is preserved — it's just detached
+                    // from this supervisor rather than deleted.
                     $profile->forceDelete();
                     User::where('id', $userId)->delete();
 
-                } elseif ($type === 'templates') {
-                    $template = DocumentTemplate::onlyTrashed()->findOrFail($id);
-                    if ($template->file_path && Storage::disk('local')->exists($template->file_path)) {
-                        Storage::disk('local')->delete($template->file_path);
+                    if ($userEmail) {
+                        EmailVerificationCode::where('email', strtolower(trim($userEmail)))->delete();
                     }
-                    $template->forceDelete();
 
                 } else {
                     $this->modelFor($type)::onlyTrashed()->findOrFail($id)->forceDelete();
@@ -152,7 +170,6 @@ class ArchiveController extends Controller
             'supervisors' => SupervisorProfile::class,
             'interns' => InternProfile::class,
             'programs' => Program::class,
-            'templates' => DocumentTemplate::class,
             default => abort(404),
         };
     }

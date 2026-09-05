@@ -12,11 +12,13 @@ export function useFlashToast(): void {
             if (data?.message) {
                 const type = data.type ?? 'success';
                 toast[type](data.message);
+
                 return;
             }
 
             if (flash?.success) {
                 toast.success(flash.success);
+
                 return;
             }
 

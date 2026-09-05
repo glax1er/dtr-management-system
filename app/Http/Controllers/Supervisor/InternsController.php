@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Supervisor;
 
 use App\Http\Controllers\Controller;
+use App\Models\AttendanceLog;
 use App\Models\Hte;
 use App\Models\InternDocument;
 use App\Models\InternProfile;
-use App\Models\SupervisorProfile;
 use App\Models\SchedulePeriod;
+use App\Models\SupervisorProfile;
 use App\Services\Attendance\DailyAttendance;
 use App\Services\Attendance\DailyAttendanceCalculator;
 use Illuminate\Http\JsonResponse;
@@ -84,10 +85,19 @@ class InternsController extends Controller
         $requiredDocKeys = array_keys(array_filter($programDocTypes, fn ($c) => $c['required'] ?? false));
         $totalRequiredDocsCount = count($requiredDocKeys);
 
-        $allStudents = $internsQuery->get()
-            ->map(function (InternProfile $intern) use ($requiredDocKeys, $totalRequiredDocsCount) {
+        $interns = $internsQuery->get();
+
+        $allScansByIntern = AttendanceLog::query()
+            ->whereIn('intern_user_id', $interns->pluck('user_id'))
+            ->orderBy('scan_timestamp')
+            ->get()
+            ->groupBy('intern_user_id');
+
+        $allStudents = $interns
+            ->map(function (InternProfile $intern) use ($requiredDocKeys, $totalRequiredDocsCount, $allScansByIntern) {
                 $requiredHours = $intern->program->required_hours ?? config('dtr.default_required_hours');
-                $totalHours = $this->calculator->totalHours($intern->user_id, $intern->hte_id);
+                $internScans = $allScansByIntern->get($intern->user_id, collect());
+                $totalHours = $this->calculator->totalHoursForScans($internScans, $intern->hte_id);
                 $hoursCompleted = $totalHours >= $requiredHours;
 
                 $approvedRequiredDocsCount = $intern->internDocuments
@@ -437,7 +447,7 @@ class InternsController extends Controller
             $rangeEnd = Carbon::createFromFormat('Y-m-d', $validated['to'], $timezone)->endOfDay();
         } else {
             $month = isset($validated['month'])
-                ? Carbon::createFromFormat('Y-m-d', $validated['month'] . '-01', $timezone)->startOfMonth()
+                ? Carbon::createFromFormat('Y-m-d', $validated['month'].'-01', $timezone)->startOfMonth()
                 : $today->clone()->startOfMonth();
 
             $rangeStart = $month->clone()->startOfMonth();
@@ -454,7 +464,7 @@ class InternsController extends Controller
             ->with('user', 'hte', 'program');
 
         if ($search !== '') {
-            $internsQuery->whereHas('user', fn($query) => $query->where('name', 'like', "%{$search}%"));
+            $internsQuery->whereHas('user', fn ($query) => $query->where('name', 'like', "%{$search}%"));
         }
 
         $interns = $internsQuery->get();
@@ -469,17 +479,29 @@ class InternsController extends Controller
                     approvedAt: $intern->approved_at,
                 );
 
-                return $days->map(fn(DailyAttendance $day) => array_merge(
+                return $days->map(fn (DailyAttendance $day) => array_merge(
                     $day->toArray(),
                     [
                         'intern_user_id' => $intern->user_id,
                         'intern_name' => $intern->user->name,
                         'hte_name' => $intern->hte?->hte_name ?? 'Deleted HTE',
-                        'program_name' => $intern->program?->program_name ?? 'Deleted Program', 
+                        'program_name' => $intern->program?->program_name ?? 'Deleted Program',
                         'punctuality' => $this->computePunctuality($day, $intern->hte_id),
                     ],
                 ));
             });
+
+        // Compute accumulated hours from the FULL range, before the remarks
+        // filter narrows $rows — the summary card should always reflect the
+        // whole date range, independent of which remarks the table is filtered to.
+        $accumulatedHours = $interns
+            ->map(fn (InternProfile $intern) => [
+                'intern_user_id' => $intern->user_id,
+                'intern_name' => $intern->user->name,
+                'total_hours' => round((float) $rows->where('intern_user_id', $intern->user_id)->sum('hours_rendered'), 2),
+            ])
+            ->sortBy('intern_name')
+            ->values();
 
         if ($remarks !== null) {
             // 'open' ("No time-out yet") is a status flag that can
@@ -499,15 +521,6 @@ class InternsController extends Controller
         $page = min((int) ($validated['page'] ?? 1), $lastPage);
 
         $pagedRows = $rows->forPage($page, $perPage)->values();
-
-        $accumulatedHours = $interns
-            ->map(fn(InternProfile $intern) => [
-                'intern_user_id' => $intern->user_id,
-                'intern_name' => $intern->user->name,
-                'total_hours' => $this->calculator->totalHours($intern->user_id, $intern->hte_id, $rangeStart, $rangeEnd),
-            ])
-            ->sortBy('intern_name')
-            ->values();
 
         return Inertia::render('supervisor/interns', [
             'logs' => [
@@ -594,7 +607,7 @@ class InternsController extends Controller
 
         $graceMinutes = config('dtr.grace_period_minutes', 30);
 
-        $cutoff = Carbon::parse($day->date . ' ' . $expectedStart, $timezone)
+        $cutoff = Carbon::parse($day->date.' '.$expectedStart, $timezone)
             ->addMinutes($graceMinutes);
 
         $localTimeIn = $day->timeIn->clone()->setTimezone($timezone);

@@ -12,6 +12,7 @@ class AttendanceLog extends Model
     // Only created_at exists on this table. Eloquent will populate it on create
     // and {@see UPDATED_AT} is disabled since this table has no updated_at.
     public $timestamps = true;
+
     public const UPDATED_AT = null;
 
     protected $fillable = [
@@ -24,7 +25,7 @@ class AttendanceLog extends Model
 
     protected $casts = [
         'scan_timestamp' => 'datetime',
-        'created_at'     => 'datetime',
+        'created_at' => 'datetime',
     ];
 
     /**

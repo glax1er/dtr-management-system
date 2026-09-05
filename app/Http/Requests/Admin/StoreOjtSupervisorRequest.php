@@ -2,28 +2,29 @@
 
 namespace App\Http\Requests\Admin;
 
-use App\Models\User;
+use App\Concerns\ProfileValidationRules;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class StoreOjtSupervisorRequest extends FormRequest
 {
+    use ProfileValidationRules;
+
     public function authorize(): bool
     {
         return true;
     }
 
+    /**
+     * @return array<string, array<int, ValidationRule|array<mixed>|string>>
+     */
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
-            'email' => [
-                'required',
-                'string',
-                'email:rfc,filter',
-                'max:255',
-                Rule::unique(User::class, 'email'),
-            ],
+            // OJT supervisors are provisioned by admins and are not
+            // restricted to official @usep.edu.ph email addresses.
+            ...$this->profileRules(restrictToUsepDomain: false),
             'program_id' => ['required', 'integer', Rule::exists('programs', 'program_id')],
         ];
     }

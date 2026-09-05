@@ -3,6 +3,7 @@ import {
     GraduationCap,
     LayoutGrid,
     Search,
+    Sparkles,
     Table as TableIcon,
     X,
 } from 'lucide-react';
@@ -11,12 +12,11 @@ import type { FormEvent } from 'react';
 import { InternActions } from '@/components/intern-actions';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
+import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useDebounce } from '@/hooks/use-debounce';
 import {
     Table,
     TableBody,
@@ -25,6 +25,9 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useDebounce } from '@/hooks/use-debounce';
+import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 
 interface Intern {
@@ -57,7 +60,11 @@ const TABS: { label: string; value: string }[] = [
     { label: 'Rejected', value: 'rejected' },
 ];
 
-export default function InternsIndex({ interns, currentStatus, filters }: InternsIndexProps) {
+export default function InternsIndex({
+    interns,
+    currentStatus,
+    filters,
+}: InternsIndexProps) {
     const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters.search || '');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -70,9 +77,32 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<Intern | null>(null);
 
+    const highlightId =
+        typeof window !== 'undefined'
+            ? Number(
+                  new URLSearchParams(window.location.search).get('highlight'),
+              ) || null
+            : null;
+
     useEffect(() => {
-        setSearch(filters.search || '');
-    }, [filters.search]);
+        if (!highlightId) {
+            return;
+        }
+
+        const el =
+            document.getElementById(`intern-row-${highlightId}`) ||
+            document.getElementById(`intern-card-${highlightId}`);
+
+        if (!el) {
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 200);
+
+        return () => clearTimeout(timer);
+    }, [highlightId, interns.data]);
 
     const baseParams = () => ({
         status: currentStatus,
@@ -80,14 +110,22 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
         per_page: String(filters.per_page),
     });
 
-    const visit = (params: Record<string, string | undefined>, replace = true) => {
-        router.get('/admin/interns', params, { preserveState: true, preserveScroll: true, replace });
+    const visit = (
+        params: Record<string, string | undefined>,
+        replace = true,
+    ) => {
+        router.get('/admin/interns', params, {
+            preserveState: true,
+            preserveScroll: true,
+            replace,
+        });
     };
 
     // Automatically trigger search as user types
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
+
             return;
         }
 
@@ -98,6 +136,8 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                 page: undefined,
             });
         }
+        // Navigation helpers intentionally remain local to preserve current filters.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch]);
 
     const switchTab = (status: string) => {
@@ -107,7 +147,11 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
 
     const applySearch = (e: FormEvent) => {
         e.preventDefault();
-        visit({ ...baseParams(), search: search || undefined, page: undefined });
+        visit({
+            ...baseParams(),
+            search: search || undefined,
+            page: undefined,
+        });
     };
 
     const clearSearch = () => {
@@ -115,16 +159,25 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
         visit({ ...baseParams(), search: undefined, page: undefined });
     };
 
-    const goToPage = (page: number) => visit({ ...baseParams(), page: String(page) }, false);
+    const goToPage = (page: number) =>
+        visit({ ...baseParams(), page: String(page) }, false);
     const changePerPage = (perPage: number) =>
         visit({ ...baseParams(), per_page: String(perPage), page: undefined });
 
     const approve = (intern: Intern) => {
-        router.post(`/admin/interns/${intern.user_id}/approve`, {}, { preserveScroll: true });
+        router.post(
+            `/admin/interns/${intern.user_id}/approve`,
+            {},
+            { preserveScroll: true },
+        );
     };
 
     const reject = (intern: Intern) => {
-        router.post(`/admin/interns/${intern.user_id}/reject`, {}, { preserveScroll: true });
+        router.post(
+            `/admin/interns/${intern.user_id}/reject`,
+            {},
+            { preserveScroll: true },
+        );
     };
 
     const openUndoDialog = (intern: Intern) => {
@@ -133,8 +186,15 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
     };
 
     const submitUndo = () => {
-        if (!undoTarget) return;
-        router.post(`/admin/interns/${undoTarget.user_id}/undo`, {}, { preserveScroll: true });
+        if (!undoTarget) {
+            return;
+        }
+
+        router.post(
+            `/admin/interns/${undoTarget.user_id}/undo`,
+            {},
+            { preserveScroll: true },
+        );
         setUndoOpen(false);
         setUndoTarget(null);
     };
@@ -145,8 +205,13 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
     };
 
     const submitDelete = () => {
-        if (!deleteTarget) return;
-        router.delete(`/admin/interns/${deleteTarget.user_id}`, { preserveScroll: true });
+        if (!deleteTarget) {
+            return;
+        }
+
+        router.delete(`/admin/interns/${deleteTarget.user_id}`, {
+            preserveScroll: true,
+        });
         setDeleteOpen(false);
         setDeleteTarget(null);
     };
@@ -164,14 +229,17 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                         Interns
                     </h1>
 
-                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-                        <form onSubmit={applySearch} className="relative hidden sm:block">
+                    <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end">
+                        <form
+                            onSubmit={applySearch}
+                            className="relative hidden sm:block"
+                        >
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                             <input
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search interns…"
+                                placeholder="Search interns"
                                 className="h-9 w-48 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
                             {search && (
@@ -191,14 +259,25 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                             className="inline-flex size-9 shrink-0 items-center justify-center rounded-md border bg-background text-muted-foreground hover:text-foreground sm:hidden"
                             aria-label="Toggle search"
                         >
-                            {mobileSearchOpen ? <X className="size-4" /> : <Search className="size-4" />}
+                            {mobileSearchOpen ? (
+                                <X className="size-4" />
+                            ) : (
+                                <Search className="size-4" />
+                            )}
                         </button>
 
-                        <div className="overflow-x-auto max-w-[calc(100%-3rem)] sm:max-w-none scrollbar-none">
-                            <Tabs value={currentStatus} onValueChange={switchTab}>
+                        <div className="max-w-[calc(100%-3rem)] scrollbar-none overflow-x-auto sm:max-w-none">
+                            <Tabs
+                                value={currentStatus}
+                                onValueChange={switchTab}
+                            >
                                 <TabsList className="w-auto">
                                     {TABS.map((tab) => (
-                                        <TabsTrigger key={tab.value} value={tab.value} className="text-xs sm:text-sm px-2 sm:px-3">
+                                        <TabsTrigger
+                                            key={tab.value}
+                                            value={tab.value}
+                                            className="px-2 text-xs sm:px-3 sm:text-sm"
+                                        >
                                             {tab.label}
                                         </TabsTrigger>
                                     ))}
@@ -209,7 +288,9 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                         <div className="hidden sm:block">
                             <div className="inline-flex rounded-md border p-0.5">
                                 <Button
-                                    variant={view === 'table' ? 'secondary' : 'ghost'}
+                                    variant={
+                                        view === 'table' ? 'secondary' : 'ghost'
+                                    }
                                     size="icon"
                                     className="size-8"
                                     onClick={() => setView('table')}
@@ -217,7 +298,9 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                                     <TableIcon className="size-4" />
                                 </Button>
                                 <Button
-                                    variant={view === 'grid' ? 'secondary' : 'ghost'}
+                                    variant={
+                                        view === 'grid' ? 'secondary' : 'ghost'
+                                    }
                                     size="icon"
                                     className="size-8"
                                     onClick={() => setView('grid')}
@@ -231,8 +314,11 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
 
                 {mobileSearchOpen && (
                     <form
-                        onSubmit={(e) => { applySearch(e); setMobileSearchOpen(false); }}
-                        className="flex items-center gap-2 sm:hidden w-full"
+                        onSubmit={(e) => {
+                            applySearch(e);
+                            setMobileSearchOpen(false);
+                        }}
+                        className="flex w-full items-center gap-2 sm:hidden"
                     >
                         <div className="relative flex-1">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -247,21 +333,27 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                             {search && (
                                 <button
                                     type="button"
-                                    onClick={() => { clearSearch(); setMobileSearchOpen(false); }}
+                                    onClick={() => {
+                                        clearSearch();
+                                        setMobileSearchOpen(false);
+                                    }}
                                     className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                                 >
                                     <X className="size-3.5" />
                                 </button>
                             )}
                         </div>
-                        <Button type="submit" size="sm">Search</Button>
+                        <Button type="submit" size="sm">
+                            Search
+                        </Button>
                     </form>
                 )}
 
                 {interns.data.length === 0 ? (
                     <Card>
                         <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                            No {currentStatus} interns{filters.search ? ' match your search.' : '.'}
+                            No {currentStatus} interns
+                            {filters.search ? ' match your search.' : '.'}
                         </CardContent>
                     </Card>
                 ) : (
@@ -273,59 +365,129 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                                         <Table>
                                             <TableHeader>
                                                 <TableRow>
-                                                    <TableHead className="px-6">Name</TableHead>
-                                                    <TableHead className="px-6 text-center">ID Number</TableHead>
-                                                    <TableHead className="px-6 text-center">Program</TableHead>
-                                                    <TableHead className="px-6 text-center">HTE</TableHead>
-                                                    <TableHead className="px-6 text-center">Status</TableHead>
-                                                    <TableHead className="px-6 text-center">Registered</TableHead>
-                                                    <TableHead className="px-6 text-center">Actions</TableHead>
+                                                    <TableHead className="px-6">
+                                                        Name
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        ID Number
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        Program
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        HTE
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        Status
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        Registered
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        Actions
+                                                    </TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {interns.data.map((intern) => (
-                                                    <TableRow key={intern.user_id}>
-                                                        <TableCell className="px-6">
-                                                            <p className="font-medium whitespace-nowrap">{intern.name}</p>
-                                                            <p
-                                                                className="max-w-[180px] truncate text-xs text-muted-foreground"
-                                                                title={intern.email}
+                                                {interns.data.map((intern) => {
+                                                    const isHighlighted =
+                                                        highlightId ===
+                                                        intern.user_id;
+
+                                                    return (
+                                                        <TableRow
+                                                            key={intern.user_id}
+                                                            id={`intern-row-${intern.user_id}`}
+                                                            className={cn(
+                                                                'transition-all duration-300',
+                                                                isHighlighted &&
+                                                                    'bg-primary/10 ring-2 ring-primary/40 dark:bg-primary/20',
+                                                            )}
+                                                        >
+                                                            <TableCell className="px-6">
+                                                                <div className="flex items-center gap-2">
+                                                                    <p className="font-medium whitespace-nowrap">
+                                                                        {
+                                                                            intern.name
+                                                                        }
+                                                                    </p>
+                                                                    {isHighlighted && (
+                                                                        <Badge className="animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase">
+                                                                            <Sparkles className="size-3" />
+                                                                            Focus
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+                                                                <p
+                                                                    className="max-w-[180px] truncate text-xs text-muted-foreground"
+                                                                    title={
+                                                                        intern.email
+                                                                    }
+                                                                >
+                                                                    {
+                                                                        intern.email
+                                                                    }
+                                                                </p>
+                                                            </TableCell>
+                                                            <TableCell className="px-6 text-center whitespace-nowrap">
+                                                                {
+                                                                    intern.id_number
+                                                                }
+                                                            </TableCell>
+                                                            <TableCell
+                                                                className="max-w-[160px] truncate px-6 text-center"
+                                                                title={
+                                                                    intern.program_name
+                                                                }
                                                             >
-                                                                {intern.email}
-                                                            </p>
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-center whitespace-nowrap">
-                                                            {intern.id_number}
-                                                        </TableCell>
-                                                        <TableCell
-                                                            className="max-w-[160px] truncate px-6 text-center"
-                                                            title={intern.program_name}
-                                                        >
-                                                            {intern.program_name}
-                                                        </TableCell>
-                                                        <TableCell
-                                                            className="max-w-[160px] truncate px-6 text-center"
-                                                            title={intern.hte_name}
-                                                        >
-                                                            {intern.hte_name}
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-center">
-                                                            <StatusBadge status={intern.status} />
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-center whitespace-nowrap text-muted-foreground">
-                                                            {intern.registered_at}
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-center">
-                                                            <InternActions
-                                                                intern={intern}
-                                                                onApprove={approve}
-                                                                onReject={reject}
-                                                                onUndo={openUndoDialog}
-                                                                onDelete={openDeleteDialog}
-                                                            />
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
+                                                                {
+                                                                    intern.program_name
+                                                                }
+                                                            </TableCell>
+                                                            <TableCell
+                                                                className="max-w-[160px] truncate px-6 text-center"
+                                                                title={
+                                                                    intern.hte_name
+                                                                }
+                                                            >
+                                                                {
+                                                                    intern.hte_name
+                                                                }
+                                                            </TableCell>
+                                                            <TableCell className="px-6 text-center">
+                                                                <StatusBadge
+                                                                    status={
+                                                                        intern.status
+                                                                    }
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell className="px-6 text-center whitespace-nowrap text-muted-foreground">
+                                                                {
+                                                                    intern.registered_at
+                                                                }
+                                                            </TableCell>
+                                                            <TableCell className="px-6 text-center">
+                                                                <InternActions
+                                                                    intern={
+                                                                        intern
+                                                                    }
+                                                                    onApprove={
+                                                                        approve
+                                                                    }
+                                                                    onReject={
+                                                                        reject
+                                                                    }
+                                                                    onUndo={
+                                                                        openUndoDialog
+                                                                    }
+                                                                    onDelete={
+                                                                        openDeleteDialog
+                                                                    }
+                                                                />
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })}
                                             </TableBody>
                                         </Table>
                                         <NumberedPagination
@@ -341,53 +503,98 @@ export default function InternsIndex({ interns, currentStatus, filters }: Intern
                         )}
 
                         <div className={view === 'table' ? 'sm:hidden' : ''}>
-                                                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                {interns.data.map((intern) => (
-                                    <Card key={intern.user_id}>
-                                        <CardHeader>
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div className="min-w-0">
-                                                    <CardTitle className="truncate text-base">
-                                                        {intern.name}
-                                                    </CardTitle>
-                                                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                                                        {intern.email}
-                                                    </p>
-                                                    <div className="mt-2">
-                                                        <StatusBadge status={intern.status} />
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                {interns.data.map((intern) => {
+                                    const isHighlighted =
+                                        highlightId === intern.user_id;
+
+                                    return (
+                                        <Card
+                                            key={intern.user_id}
+                                            id={`intern-card-${intern.user_id}`}
+                                            className={cn(
+                                                'transition-all duration-300',
+                                                isHighlighted &&
+                                                    'border-primary bg-primary/5 shadow-sm ring-2 ring-primary dark:bg-primary/10',
+                                            )}
+                                        >
+                                            <CardHeader>
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="min-w-0">
+                                                        <div className="flex items-center gap-2">
+                                                            <CardTitle className="truncate text-base">
+                                                                {intern.name}
+                                                            </CardTitle>
+                                                            {isHighlighted && (
+                                                                <Badge className="animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase">
+                                                                    <Sparkles className="size-3" />
+                                                                    Focus
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                                                            {intern.email}
+                                                        </p>
+                                                        <div className="mt-2">
+                                                            <StatusBadge
+                                                                status={
+                                                                    intern.status
+                                                                }
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="shrink-0">
+                                                        <InternActions
+                                                            intern={intern}
+                                                            onApprove={approve}
+                                                            onReject={reject}
+                                                            onUndo={
+                                                                openUndoDialog
+                                                            }
+                                                            onDelete={
+                                                                openDeleteDialog
+                                                            }
+                                                        />
                                                     </div>
                                                 </div>
-                                                <div className="shrink-0">
-                                                    <InternActions
-                                                        intern={intern}
-                                                        onApprove={approve}
-                                                        onReject={reject}
-                                                        onUndo={openUndoDialog}
-                                                        onDelete={openDeleteDialog}
-                                                    />
+                                            </CardHeader>
+                                            <CardContent className="space-y-2 text-sm">
+                                                <div className="flex justify-between gap-2">
+                                                    <span className="text-muted-foreground">
+                                                        ID Number
+                                                    </span>
+                                                    <span>
+                                                        {intern.id_number}
+                                                    </span>
                                                 </div>
-                                            </div>
-                                        </CardHeader>
-                                        <CardContent className="space-y-2 text-sm">
-                                            <div className="flex justify-between gap-2">
-                                                <span className="text-muted-foreground">ID Number</span>
-                                                <span>{intern.id_number}</span>
-                                            </div>
-                                            <div className="flex justify-between gap-2">
-                                                <span className="shrink-0 text-muted-foreground">Program</span>
-                                                <span className="truncate text-right">{intern.program_name}</span>
-                                            </div>
-                                            <div className="flex justify-between gap-2">
-                                                <span className="shrink-0 text-muted-foreground">HTE</span>
-                                                <span className="truncate text-right">{intern.hte_name}</span>
-                                            </div>
-                                            <div className="flex justify-between gap-2">
-                                                <span className="text-muted-foreground">Registered</span>
-                                                <span>{intern.registered_at}</span>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                ))}
+                                                <div className="flex justify-between gap-2">
+                                                    <span className="shrink-0 text-muted-foreground">
+                                                        Program
+                                                    </span>
+                                                    <span className="truncate text-right">
+                                                        {intern.program_name}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between gap-2">
+                                                    <span className="shrink-0 text-muted-foreground">
+                                                        HTE
+                                                    </span>
+                                                    <span className="truncate text-right">
+                                                        {intern.hte_name}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between gap-2">
+                                                    <span className="text-muted-foreground">
+                                                        Registered
+                                                    </span>
+                                                    <span>
+                                                        {intern.registered_at}
+                                                    </span>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                })}
                             </div>
                             <div className="mt-4">
                                 <NumberedPagination

@@ -17,7 +17,15 @@ export type Status =
     | 'not_uploaded'
     | 'required'
     | 'optional'
-    | 'archived';
+    | 'archived'
+    | 'workday'
+    | 'work_day'
+    | 'restday'
+    | 'rest_day'
+    | 'hte_override'
+    | 'global_schedule'
+    | 'default_schedule'
+    | 'today';
 
 const styles: Record<Status, string> = {
     active: 'bg-emerald-100 text-emerald-600 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800',
@@ -35,6 +43,14 @@ const styles: Record<Status, string> = {
     required: 'bg-red-100 text-red-600 border-red-300 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800',
     optional: 'bg-slate-100 text-slate-600 border-slate-300 dark:bg-slate-800/60 dark:text-slate-400 dark:border-slate-700',
     archived: 'bg-orange-100 text-orange-600 border-orange-300 dark:bg-orange-950/40 dark:text-orange-400 dark:border-orange-800',
+    workday: 'bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800',
+    work_day: 'bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800',
+    restday: 'bg-slate-100 text-slate-600 border-slate-300 dark:bg-slate-800/60 dark:text-slate-400 dark:border-slate-700',
+    rest_day: 'bg-slate-100 text-slate-600 border-slate-300 dark:bg-slate-800/60 dark:text-slate-400 dark:border-slate-700',
+    hte_override: 'bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-950/40 dark:text-purple-400 dark:border-purple-800',
+    global_schedule: 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800',
+    default_schedule: 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700',
+    today: 'bg-primary/10 text-primary border-primary dark:bg-primary/20 dark:text-primary dark:border-primary',
 };
 
 const labels: Record<Status, string> = {
@@ -53,6 +69,14 @@ const labels: Record<Status, string> = {
     required: 'Required',
     optional: 'Optional',
     archived: 'Archived',
+    workday: 'Work Day',
+    work_day: 'Work Day',
+    restday: 'Rest Day',
+    rest_day: 'Rest Day',
+    hte_override: 'HTE Time Schedule',
+    global_schedule: 'Global OJT Schedule',
+    default_schedule: 'Standard 8:00 AM',
+    today: 'Today',
 };
 
 export interface StatusBadgeProps {

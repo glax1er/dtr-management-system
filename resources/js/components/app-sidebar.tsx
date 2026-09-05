@@ -1,5 +1,18 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Building, CalendarClock, Paperclip, FileWarning, GraduationCap, LayoutGrid, MonitorSmartphone, Users, PenLine, Archive, BookOpen, FileStack } from 'lucide-react';
+import {
+    Building,
+    CalendarClock,
+    Paperclip,
+    FileWarning,
+    GraduationCap,
+    LayoutGrid,
+    MonitorSmartphone,
+    Users,
+    PenLine,
+    Archive,
+    BookOpen,
+    FileStack,
+} from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -33,12 +46,20 @@ const adminNavItems: NavItem[] = [
 const hteSupervisorNavItems: NavItem[] = [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
     { title: 'My Interns', href: '/supervisor/interns', icon: GraduationCap },
-    { title: 'Schedule', href: '/supervisor/schedule', icon: CalendarClock },    
+    { title: 'Schedule', href: '/supervisor/schedule', icon: CalendarClock },
 ];
 
 const ojtSupervisorNavItems: NavItem[] = [
-    { title: 'Program Interns', href: '/supervisor/interns', icon: GraduationCap },
-    { title: 'Document Templates', href: '/supervisor/document-templates', icon: FileStack },
+    {
+        title: 'Program Interns',
+        href: '/supervisor/interns',
+        icon: GraduationCap,
+    },
+    {
+        title: 'Document Templates',
+        href: '/supervisor/document-templates',
+        icon: FileStack,
+    },
     { title: 'HTEs', href: '/supervisor/htes', icon: Building },
 ];
 
@@ -62,6 +83,7 @@ const manualAttendanceNavItem: NavItem = {
 
 const internNavItems: NavItem[] = [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
+    { title: 'Work Schedule', href: '/intern/schedule', icon: CalendarClock },
     { title: 'My Documents', href: '/intern/documents', icon: Paperclip },
 ];
 
@@ -81,7 +103,11 @@ export function AppSidebar() {
           ];
 
     const mainNavItems =
-        auth.user.role === 'admin' ? adminNavItems : auth.user.role === 'supervisor' ? supervisorNavItems : internNavItems;
+        auth.user.role === 'admin'
+            ? adminNavItems
+            : auth.user.role === 'supervisor'
+              ? supervisorNavItems
+              : internNavItems;
 
     return (
         <Sidebar collapsible="icon" variant="inset">

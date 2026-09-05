@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+﻿import { Head, router } from '@inertiajs/react';
 import {
     FileWarning,
     LayoutGrid,
@@ -12,8 +12,8 @@ import type { FormEvent } from 'react';
 import { TicketActions } from '@/components/approve-ticket-dialog';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
-import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
 import { Badge } from '@/components/ui/badge';
+import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -23,7 +23,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Table,
     TableBody,
@@ -32,6 +31,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Tooltip,
     TooltipContent,
@@ -65,6 +65,16 @@ type ResolutionTicketsProps = {
     filters?: Filters;
 };
 
+const buildParams = (
+    search: string,
+    type: TypeFilter,
+    perPage: number,
+): Record<string, string | undefined> => ({
+    search: search || undefined,
+    type: type && type !== 'all' ? type : undefined,
+    per_page: String(perPage),
+});
+
 export default function ResolutionTickets({
     tickets,
     totalPending = tickets.total,
@@ -77,14 +87,10 @@ export default function ResolutionTickets({
     const isFirstRender = useRef(true);
 
     useEffect(() => {
+        // Keep the input in sync after an Inertia visit updates the server filters.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSearch(filters.search || '');
     }, [filters.search]);
-
-    const baseParams = () => ({
-        search: search || undefined,
-        type: filters.type && filters.type !== 'all' ? filters.type : undefined,
-        per_page: String(filters.per_page),
-    });
 
     const visit = (
         params: Record<string, string | undefined>,
@@ -101,22 +107,29 @@ export default function ResolutionTickets({
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
+
             return;
         }
 
         if (debouncedSearch !== (filters.search || '')) {
             visit({
-                ...baseParams(),
+                ...buildParams(search, filters.type, filters.per_page),
                 search: debouncedSearch || undefined,
                 page: undefined,
             });
         }
-    }, [debouncedSearch]);
+    }, [
+        debouncedSearch,
+        filters.search,
+        filters.type,
+        filters.per_page,
+        search,
+    ]);
 
     const applySearch = (e: FormEvent) => {
         e.preventDefault();
         visit({
-            ...baseParams(),
+            ...buildParams(search, filters.type, filters.per_page),
             search: search || undefined,
             page: undefined,
         });
@@ -125,7 +138,7 @@ export default function ResolutionTickets({
     const clearSearch = () => {
         setSearch('');
         visit({
-            ...baseParams(),
+            ...buildParams(search, filters.type, filters.per_page),
             search: undefined,
             page: undefined,
         });
@@ -133,18 +146,28 @@ export default function ResolutionTickets({
 
     const changeType = (value: TypeFilter) => {
         visit({
-            ...baseParams(),
+            ...buildParams(search, filters.type, filters.per_page),
             type: value === 'all' ? undefined : value,
             page: undefined,
         });
     };
 
     const goToPage = (page: number) => {
-        visit({ ...baseParams(), page: String(page) }, false);
+        visit(
+            {
+                ...buildParams(search, filters.type, filters.per_page),
+                page: String(page),
+            },
+            false,
+        );
     };
 
     const changePerPage = (perPage: number) => {
-        visit({ ...baseParams(), per_page: String(perPage), page: undefined });
+        visit({
+            ...buildParams(search, filters.type, filters.per_page),
+            per_page: String(perPage),
+            page: undefined,
+        });
     };
 
     const hasActiveFilters = Boolean(
@@ -181,7 +204,7 @@ export default function ResolutionTickets({
                             variant="secondary"
                             className="shrink-0 px-3 py-1 text-xs font-semibold"
                         >
-                            {tickets.total} Pending
+                            {totalPending} Pending
                         </Badge>
                         {/* Desktop search */}
                         <form

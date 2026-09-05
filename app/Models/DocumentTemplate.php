@@ -89,7 +89,7 @@ class DocumentTemplate extends Model
         $power = $this->file_size_bytes > 0 ? floor(log($this->file_size_bytes, 1024)) : 0;
         $power = min($power, count($units) - 1);
 
-        return number_format($this->file_size_bytes / (1024 ** $power), 1) . ' ' . $units[$power];
+        return number_format($this->file_size_bytes / (1024 ** $power), 1).' '.$units[$power];
     }
 
     public function getFileExtensionAttribute(): string

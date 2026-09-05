@@ -1,4 +1,5 @@
 <?php
+
 // app/Models/Kiosk.php
 
 namespace App\Models;

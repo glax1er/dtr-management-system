@@ -1,4 +1,6 @@
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, usePage } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
+import ForgotPasswordDialog from '@/components/forgot-password-dialog';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
@@ -7,20 +9,68 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import VerifyEmailDialog from '@/components/verify-email-dialog';
 import { register } from '@/routes';
 import { store } from '@/routes/login';
-import { request } from '@/routes/password';
 
 type Props = {
     status?: string;
     canResetPassword: boolean;
+    showVerification?: boolean;
+    verificationEmail?: string;
 };
 
-export default function Login({ status, canResetPassword }: Props) {
+export default function Login({
+    status,
+    canResetPassword,
+    showVerification = false,
+    verificationEmail = '',
+}: Props) {
+    const [showForgotPassword, setShowForgotPassword] = useState(false);
+    const [showVerifyModal, setShowVerifyModal] = useState(showVerification);
+    const [verifyEmail, setVerifyEmail] = useState(verificationEmail);
+
+    const page = usePage<{ errors?: Record<string, string> }>();
+
+    // Both effects below react to Inertia updating this page's props in
+    // place after a server round-trip (e.g. a failed login submit
+    // redirects back to /login with new errors/flags) — the component
+    // instance isn't remounted, so these can't be replaced by an
+    // initializer or a local event handler.
+    /* eslint-disable react-hooks/set-state-in-effect */
+    useEffect(() => {
+        if (showVerification) {
+            // These flags arrive from server-side redirects/props and are
+            // intentionally mirrored into the dialog state when the page is re-rendered.
+            setShowVerifyModal(true);
+
+            if (verificationEmail) {
+                setVerifyEmail(verificationEmail);
+            }
+        }
+    }, [showVerification, verificationEmail]);
+    /* eslint-enable react-hooks/set-state-in-effect */
+
+    /* eslint-disable react-hooks/set-state-in-effect */
+    useEffect(() => {
+        if (page.props.errors?.unverified_email) {
+            // Page errors trigger the verification modal after a login attempt.
+            setVerifyEmail(page.props.errors.unverified_email);
+            setShowVerifyModal(true);
+        }
+    }, [page.props.errors?.unverified_email]);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     return (
         <>
             <Head title="Log in" />
+
+            {status && (
+                <div className="mb-2 flex animate-in items-start gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 p-3.5 text-xs font-medium text-emerald-800 duration-300 fade-in-50 dark:border-emerald-800/50 dark:bg-emerald-950/30 dark:text-emerald-300">
+                    <span className="mt-0.5 inline-block h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
+                    <span className="leading-relaxed">{status}</span>
+                </div>
+            )}
 
             <Form
                 {...store.form()}
@@ -49,13 +99,16 @@ export default function Login({ status, canResetPassword }: Props) {
                                 <div className="flex items-center">
                                     <Label htmlFor="password">Password</Label>
                                     {canResetPassword && (
-                                        <TextLink
-                                            href={request()}
-                                            className="ml-auto text-sm"
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setShowForgotPassword(true)
+                                            }
+                                            className="ml-auto cursor-pointer text-sm text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground"
                                             tabIndex={5}
                                         >
                                             Forgot your password?
-                                        </TextLink>
+                                        </button>
                                     )}
                                 </div>
                                 <PasswordInput
@@ -100,11 +153,16 @@ export default function Login({ status, canResetPassword }: Props) {
                 )}
             </Form>
 
-            {status && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {status}
-                </div>
-            )}
+            <ForgotPasswordDialog
+                open={showForgotPassword}
+                onOpenChange={setShowForgotPassword}
+            />
+
+            <VerifyEmailDialog
+                open={showVerifyModal}
+                onOpenChange={setShowVerifyModal}
+                email={verifyEmail}
+            />
         </>
     );
 }

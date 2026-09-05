@@ -137,7 +137,10 @@
         @apply border-border;
     }
 
-    body {
+    html,
+    body,
+    #app {
         @apply bg-background text-foreground;
+        overflow-x: hidden;
     }
 }

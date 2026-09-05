@@ -20,7 +20,11 @@ class ProfileController extends Controller
     public function edit(Request $request): Response
     {
         return Inertia::render('settings/profile', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            // Email verification is intern-only — supervisors and admins
+            // are exempt (see User::hasVerifiedEmail()), so they should
+            // never see the "verify your email" prompt on this page.
+            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail
+                && $request->user()->isIntern(),
             'status' => $request->session()->get('status'),
         ]);
     }
@@ -41,5 +45,22 @@ class ProfileController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Profile updated.')]);
 
         return to_route('profile.edit');
+    }
+
+    /**
+     * Delete the user's account.
+     */
+    public function destroy(ProfileDeleteRequest $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        Auth::logout();
+
+        $user->delete();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return to_route('home');
     }
 }

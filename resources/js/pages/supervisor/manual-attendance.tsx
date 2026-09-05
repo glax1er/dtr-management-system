@@ -1,5 +1,4 @@
-import { Head, router } from '@inertiajs/react';
-import { toast } from 'sonner';
+﻿import { Head, router } from '@inertiajs/react';
 import {
     AlertTriangle,
     Check,
@@ -17,10 +16,10 @@ import {
     X,
 } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { DatePicker } from '@/components/ui/date-picker';
 import {
     Card,
     CardContent,
@@ -28,6 +27,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
     Dialog,
     DialogContent,
@@ -106,7 +106,10 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
 
     const filteredInterns = useMemo(() => {
         const q = searchQuery.trim().toLowerCase();
-        if (!q) return interns;
+
+        if (!q) {
+            return interns;
+        }
 
         return interns.filter(
             (intern) =>
@@ -275,6 +278,7 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
     const submit = async (force = false) => {
         if (!internId) {
             toast.error('Select an intern first.');
+
             return;
         }
 
@@ -286,6 +290,7 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
             showError(
                 'Each record needs a date and at least a time in or a time out. Complete or remove unfinished rows before saving.',
             );
+
             return;
         }
 
@@ -293,6 +298,7 @@ export default function ManualAttendance({ interns }: ManualAttendanceProps) {
             showError(
                 'Add at least one attendance record with a date and a time in or time out.',
             );
+
             return;
         }
 

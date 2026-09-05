@@ -1,6 +1,11 @@
 <?php
 
+use App\Models\Hte;
+use App\Models\InternProfile;
+use App\Models\Program;
 use App\Models\User;
+use App\Notifications\EmailVerificationCodeNotification;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Fortify\Features;
 
@@ -11,13 +16,24 @@ test('login screen can be rendered', function () {
 });
 
 test('users can authenticate using the login screen', function () {
-    $hte = \App\Models\Hte::create(['hte_name' => 'Test HTE']);
-    $program = \App\Models\Program::create(['program_name' => 'BSIT-BTM']);
-    $user = User::factory()->create(['role' => User::ROLE_INTERN]);
+    $user = User::factory()->create(['role' => User::ROLE_ADMIN]);
 
-    \App\Models\InternProfile::create([
+    $response = $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $this->assertAuthenticated();
+    $response->assertRedirect(route('admin.dashboard', absolute: false));
+});
+
+test('approved intern can authenticate using the login screen', function () {
+    $hte = Hte::create(['hte_name' => 'Test HTE']);
+    $program = Program::create(['program_name' => 'BSIT']);
+    $user = User::factory()->create(['role' => User::ROLE_INTERN]);
+    InternProfile::create([
         'user_id' => $user->id,
-        'id_number' => '2026-'.$user->id,
+        'id_number' => '2026-11111',
         'sex' => 'male',
         'hte_id' => $hte->hte_id,
         'program_id' => $program->program_id,
@@ -86,4 +102,33 @@ test('users are rate limited', function () {
     ]);
 
     $response->assertTooManyRequests();
+});
+
+test('logging in with an unverified intern account sends a fresh code and reports unverified_email instead of authenticating', function () {
+    Notification::fake();
+
+    $hte = Hte::create(['hte_name' => 'Test HTE']);
+    $program = Program::create(['program_name' => 'BSIT']);
+    $user = User::factory()->unverified()->create(['role' => User::ROLE_INTERN]);
+    InternProfile::create([
+        'user_id' => $user->id,
+        'id_number' => '2026-22222',
+        'sex' => 'male',
+        'hte_id' => $hte->hte_id,
+        'program_id' => $program->program_id,
+        'status' => 'approved',
+        'privacy_accepted_at' => now(),
+    ]);
+
+    $response = $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $this->assertGuest();
+    $response->assertSessionHasErrors('unverified_email');
+    Notification::assertSentTo(
+        $user,
+        EmailVerificationCodeNotification::class,
+    );
 });

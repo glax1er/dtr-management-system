@@ -2,7 +2,6 @@ import { Head, router, usePage } from '@inertiajs/react';
 import {
     Building2,
     CalendarCheck2,
-    CheckCircle2,
     ClipboardCheck,
     GraduationCap,
     TrendingUp,
@@ -35,8 +34,8 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import type { PageProps } from '@/types';
 import { dashboard } from '@/routes';
+import type { PageProps } from '@/types';
 
 interface RecentRegistration {
     user_id: number;
@@ -131,7 +130,8 @@ export default function AdminDashboard({
             value: pendingApprovals,
             icon: ClipboardCheck,
             variant: 'warning' as const,
-            description: pendingApprovals > 0 ? 'Requires your review' : 'All caught up',
+            description:
+                pendingApprovals > 0 ? 'Requires your review' : 'All caught up',
             onClick: () => router.visit('/admin/interns?status=pending'),
         },
         {
@@ -191,11 +191,12 @@ export default function AdminDashboard({
             <div className="flex h-full flex-1 flex-col gap-5 p-4 sm:p-6">
                 {/* Header banner */}
                 <div className="flex flex-col gap-1">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                    <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                         Welcome back, {auth.user.name}
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        Real-time overview of registrations, attendance, and training establishments.
+                        Real-time overview of registrations, attendance, and
+                        training establishments.
                     </p>
                 </div>
 
@@ -217,7 +218,7 @@ export default function AdminDashboard({
 
                 {/* Analytics row 1: registration momentum + right-now attendance */}
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                    <Card className="lg:col-span-2 shadow-xs">
+                    <Card className="shadow-xs lg:col-span-2">
                         <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
                             <div>
                                 <CardTitle className="text-base font-semibold">
@@ -225,7 +226,8 @@ export default function AdminDashboard({
                                 </CardTitle>
                                 <CardDescription>
                                     {registrationsTotal} new sign-up
-                                    {registrationsTotal === 1 ? '' : 's'} across this window
+                                    {registrationsTotal === 1 ? '' : 's'} across
+                                    this window
                                 </CardDescription>
                             </div>
                             <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
@@ -241,7 +243,7 @@ export default function AdminDashboard({
                         </CardContent>
                     </Card>
 
-                    <Card className="shadow-xs flex flex-col justify-between">
+                    <Card className="flex flex-col justify-between shadow-xs">
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <div>
                                 <CardTitle className="text-base font-semibold">
@@ -333,7 +335,15 @@ export default function AdminDashboard({
                                                 <CountUp value={item.count} />
                                             </span>
                                             <span className="text-xs text-muted-foreground">
-                                                ({totalStatusCount > 0 ? Math.round((item.count / totalStatusCount) * 100) : 0}%)
+                                                (
+                                                {totalStatusCount > 0
+                                                    ? Math.round(
+                                                          (item.count /
+                                                              totalStatusCount) *
+                                                              100,
+                                                      )
+                                                    : 0}
+                                                %)
                                             </span>
                                         </div>
                                     </button>
@@ -342,7 +352,7 @@ export default function AdminDashboard({
                         </CardContent>
                     </Card>
 
-                    <Card className="lg:col-span-2 shadow-xs">
+                    <Card className="shadow-xs lg:col-span-2">
                         <CardHeader className="pb-3">
                             <CardTitle className="text-base font-semibold">
                                 Top HTEs by Approved Interns
@@ -376,10 +386,14 @@ export default function AdminDashboard({
                                     Recent Registrations
                                 </CardTitle>
                                 <CardDescription>
-                                    Latest student intern sign-ups awaiting approval
+                                    Latest student intern sign-ups awaiting
+                                    approval
                                 </CardDescription>
                             </div>
-                            <Badge variant="outline" className="text-xs font-normal">
+                            <Badge
+                                variant="outline"
+                                className="text-xs font-normal"
+                            >
                                 Total {recentRegistrations.total}
                             </Badge>
                         </div>
@@ -390,64 +404,94 @@ export default function AdminDashboard({
                                 No registrations recorded yet.
                             </div>
                         ) : (
-                            <div className="rounded-lg border overflow-hidden">
+                            <div className="overflow-hidden rounded-lg border">
                                 <Table>
                                     <TableHeader className="bg-muted/40">
                                         <TableRow>
-                                            <TableHead className="font-semibold">Student Name</TableHead>
-                                            <TableHead className="font-semibold text-center">ID Number</TableHead>
-                                            <TableHead className="font-semibold text-center">Program</TableHead>
-                                            <TableHead className="font-semibold text-center">HTE</TableHead>
-                                            <TableHead className="font-semibold text-center">Registered</TableHead>
-                                            <TableHead className="font-semibold text-center">Status</TableHead>
+                                            <TableHead className="font-semibold">
+                                                Student Name
+                                            </TableHead>
+                                            <TableHead className="text-center font-semibold">
+                                                ID Number
+                                            </TableHead>
+                                            <TableHead className="text-center font-semibold">
+                                                Program
+                                            </TableHead>
+                                            <TableHead className="text-center font-semibold">
+                                                HTE
+                                            </TableHead>
+                                            <TableHead className="text-center font-semibold">
+                                                Registered
+                                            </TableHead>
+                                            <TableHead className="text-center font-semibold">
+                                                Status
+                                            </TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {recentRegistrations.data.map((intern) => (
-                                            <TableRow
-                                                key={intern.user_id}
-                                                className={
-                                                    intern.status === 'pending'
-                                                        ? 'cursor-pointer hover:bg-muted/50'
-                                                        : undefined
-                                                }
-                                                onClick={
-                                                    intern.status === 'pending'
-                                                        ? () =>
-                                                              router.visit(
-                                                                  `/admin/interns?status=pending&search=${encodeURIComponent(intern.name)}`,
-                                                              )
-                                                        : undefined
-                                                }
-                                            >
-                                                <TableCell className="font-medium">
-                                                    <div className="font-medium text-foreground">
-                                                        {intern.name}
-                                                    </div>
-                                                    <div className="text-xs text-muted-foreground">
-                                                        {intern.email}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="text-muted-foreground tabular-nums text-center">
-                                                    {intern.id_number}
-                                                </TableCell>
-                                                <TableCell className="max-w-[180px] truncate text-center" title={intern.program_name}>
-                                                    {intern.program_name}
-                                                </TableCell>
-                                                <TableCell className="max-w-[180px] truncate text-center" title={intern.hte_name}>
-                                                    {intern.hte_name}
-                                                </TableCell>
-                                                <TableCell
-                                                    className="text-muted-foreground whitespace-nowrap text-xs text-center"
-                                                    title={intern.registered_at_full}
+                                        {recentRegistrations.data.map(
+                                            (intern) => (
+                                                <TableRow
+                                                    key={intern.user_id}
+                                                    className={
+                                                        intern.status ===
+                                                        'pending'
+                                                            ? 'cursor-pointer hover:bg-muted/50'
+                                                            : undefined
+                                                    }
+                                                    onClick={
+                                                        intern.status ===
+                                                        'pending'
+                                                            ? () =>
+                                                                  router.visit(
+                                                                      `/admin/interns?status=pending&search=${encodeURIComponent(intern.name)}`,
+                                                                  )
+                                                            : undefined
+                                                    }
                                                 >
-                                                    {intern.registered_at}
-                                                </TableCell>
-                                                <TableCell className="text-center">
-                                                    <StatusBadge status={intern.status}/>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
+                                                    <TableCell className="font-medium">
+                                                        <div className="font-medium text-foreground">
+                                                            {intern.name}
+                                                        </div>
+                                                        <div className="text-xs text-muted-foreground">
+                                                            {intern.email}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-center text-muted-foreground tabular-nums">
+                                                        {intern.id_number}
+                                                    </TableCell>
+                                                    <TableCell
+                                                        className="max-w-[180px] truncate text-center"
+                                                        title={
+                                                            intern.program_name
+                                                        }
+                                                    >
+                                                        {intern.program_name}
+                                                    </TableCell>
+                                                    <TableCell
+                                                        className="max-w-[180px] truncate text-center"
+                                                        title={intern.hte_name}
+                                                    >
+                                                        {intern.hte_name}
+                                                    </TableCell>
+                                                    <TableCell
+                                                        className="text-center text-xs whitespace-nowrap text-muted-foreground"
+                                                        title={
+                                                            intern.registered_at_full
+                                                        }
+                                                    >
+                                                        {intern.registered_at}
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        <StatusBadge
+                                                            status={
+                                                                intern.status
+                                                            }
+                                                        />
+                                                    </TableCell>
+                                                </TableRow>
+                                            ),
+                                        )}
                                     </TableBody>
                                 </Table>
                             </div>
@@ -470,4 +514,3 @@ export default function AdminDashboard({
 AdminDashboard.layout = {
     breadcrumbs: [{ title: 'Dashboard', href: dashboard() }],
 };
-

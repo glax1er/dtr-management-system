@@ -1,7 +1,4 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
-import type { FormEvent } from 'react';
-import { useDebounce } from '@/hooks/use-debounce';
 import {
     Archive,
     Building2,
@@ -15,6 +12,8 @@ import {
     Table as TableIcon,
     X,
 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import type { FormEvent } from 'react';
 import InputError from '@/components/input-error';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
@@ -39,7 +38,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Table,
     TableBody,
@@ -48,7 +46,13 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { useDebounce } from '@/hooks/use-debounce';
 import { dashboard } from '@/routes';
 
 interface Hte {
@@ -82,7 +86,12 @@ interface HteActionsProps {
     onArchive: (hteId: number, name: string) => void;
 }
 
-function HteActions({ hte, onEdit, onToggleStatus, onArchive }: HteActionsProps) {
+function HteActions({
+    hte,
+    onEdit,
+    onToggleStatus,
+    onArchive,
+}: HteActionsProps) {
     return (
         <div className="flex justify-center gap-1">
             <Tooltip>
@@ -105,7 +114,11 @@ function HteActions({ hte, onEdit, onToggleStatus, onArchive }: HteActionsProps)
                         variant="ghost"
                         size="icon"
                         onClick={() => onToggleStatus(hte)}
-                        aria-label={hte.status === 'active' ? `Deactivate ${hte.hte_name}` : `Activate ${hte.hte_name}`}
+                        aria-label={
+                            hte.status === 'active'
+                                ? `Deactivate ${hte.hte_name}`
+                                : `Activate ${hte.hte_name}`
+                        }
                     >
                         {hte.status === 'active' ? (
                             <PowerOff className="size-4 text-destructive" />
@@ -121,7 +134,10 @@ function HteActions({ hte, onEdit, onToggleStatus, onArchive }: HteActionsProps)
 
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <span tabIndex={hte.status === 'active' ? 0 : undefined} className="inline-flex">
+                    <span
+                        tabIndex={hte.status === 'active' ? 0 : undefined}
+                        className="inline-flex"
+                    >
                         <Button
                             variant="ghost"
                             size="icon"
@@ -134,7 +150,9 @@ function HteActions({ hte, onEdit, onToggleStatus, onArchive }: HteActionsProps)
                     </span>
                 </TooltipTrigger>
                 <TooltipContent>
-                    {hte.status === 'active' ? 'Archive inactive HTEs only' : 'Archive to collection'}
+                    {hte.status === 'active'
+                        ? 'Archive inactive HTEs only'
+                        : 'Archive to collection'}
                 </TooltipContent>
             </Tooltip>
         </div>
@@ -145,6 +163,21 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
     const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters.search || '');
     const [status, setStatus] = useState(filters.status || '');
+    // Track the filter values search/status were last synced from, so
+    // browser back/forward navigation (which changes `filters` without
+    // this component unmounting) resets the local drafts during render
+    // instead of via a post-commit effect.
+    const [syncedFilters, setSyncedFilters] = useState(filters);
+
+    if (
+        filters.search !== syncedFilters.search ||
+        filters.status !== syncedFilters.status
+    ) {
+        setSyncedFilters(filters);
+        setSearch(filters.search || '');
+        setStatus(filters.status || '');
+    }
+
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const debouncedSearch = useDebounce(search, 300);
     const isFirstRender = useRef(true);
@@ -168,18 +201,16 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
         contact_number: '',
     });
 
-    // Keep local search and status in sync with filter props
-    useEffect(() => {
-        setSearch(filters.search || '');
-    }, [filters.search]);
-
-    useEffect(() => {
-        setStatus(filters.status || '');
-    }, [filters.status]);
-
-    // ── Navigation helpers ──────────────────────────────────────────
-    const visit = (params: Record<string, string | undefined>, replace = true) => {
-        router.get('/admin/htes', params, { preserveState: true, preserveScroll: true, replace });
+    // -- Navigation helpers ------------------------------------------
+    const visit = (
+        params: Record<string, string | undefined>,
+        replace = true,
+    ) => {
+        router.get('/admin/htes', params, {
+            preserveState: true,
+            preserveScroll: true,
+            replace,
+        });
     };
 
     const baseParams = () => ({
@@ -192,6 +223,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
+
             return;
         }
 
@@ -202,11 +234,17 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                 page: undefined,
             });
         }
+        // Navigation helpers intentionally remain local to preserve current filters.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch]);
 
     const applySearch = (event: FormEvent) => {
         event.preventDefault();
-        visit({ ...baseParams(), search: search || undefined, page: undefined });
+        visit({
+            ...baseParams(),
+            search: search || undefined,
+            page: undefined,
+        });
     };
 
     const clearSearch = () => {
@@ -242,7 +280,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
         });
     };
 
-    // ── CRUD helpers ────────────────────────────────────────────────
+    // -- CRUD helpers ------------------------------------------------
     const openAddDialog = () => {
         addForm.reset();
         addForm.clearErrors();
@@ -282,7 +320,11 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
 
     const handleEditSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!editingHte) return;
+
+        if (!editingHte) {
+            return;
+        }
+
         editForm.patch(`/admin/htes/${editingHte.hte_id}`, {
             preserveScroll: true,
             onSuccess: () => closeEditDialog(),
@@ -305,7 +347,9 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
 
     const submitArchive = () => {
         if (archiveHteId !== null) {
-            router.delete(`/admin/htes/${archiveHteId}`, { preserveScroll: true });
+            router.delete(`/admin/htes/${archiveHteId}`, {
+                preserveScroll: true,
+            });
             setArchiveOpen(false);
             setArchiveHteId(null);
             setArchiveHteName('');
@@ -317,7 +361,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
             <Head title="HTEs" />
 
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
-                {/* ── Header toolbar ────────────────────────────────────── */}
+                {/* -- Header toolbar -------------------------------------- */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
                         <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
@@ -328,7 +372,10 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
 
                     <div className="flex flex-wrap items-center gap-2">
                         {/* Desktop: full search input */}
-                        <form onSubmit={applySearch} className="relative hidden sm:block">
+                        <form
+                            onSubmit={applySearch}
+                            className="relative hidden sm:block"
+                        >
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                             <input
                                 type="text"
@@ -356,44 +403,75 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                             className="inline-flex size-9 items-center justify-center rounded-md border bg-background text-muted-foreground hover:text-foreground sm:hidden"
                             aria-label="Toggle search"
                         >
-                            {mobileSearchOpen ? <X className="size-4" /> : <Search className="size-4" />}
+                            {mobileSearchOpen ? (
+                                <X className="size-4" />
+                            ) : (
+                                <Search className="size-4" />
+                            )}
                         </button>
 
                         {/* Status filter — full on sm+, icon-only on mobile */}
                         <div className="hidden sm:block">
-                            <Select value={status || 'all'} onValueChange={applyStatus}>
+                            <Select
+                                value={status || 'all'}
+                                onValueChange={applyStatus}
+                            >
                                 <SelectTrigger className="h-9 w-36">
                                     <SlidersHorizontal className="mr-1 size-3.5 shrink-0 text-muted-foreground" />
                                     <SelectValue placeholder="All Status" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">All Status</SelectItem>
-                                    <SelectItem value="active">Active</SelectItem>
-                                    <SelectItem value="inactive">Inactive</SelectItem>
+                                    <SelectItem value="all">
+                                        All Status
+                                    </SelectItem>
+                                    <SelectItem value="active">
+                                        Active
+                                    </SelectItem>
+                                    <SelectItem value="inactive">
+                                        Inactive
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                         <div className="sm:hidden">
-                            <Select value={status || 'all'} onValueChange={applyStatus}>
+                            <Select
+                                value={status || 'all'}
+                                onValueChange={applyStatus}
+                            >
                                 <SelectTrigger className="inline-flex size-9 items-center justify-center p-0 [&>span]:hidden [&>svg:last-child]:hidden">
                                     <SlidersHorizontal className="size-4 text-muted-foreground" />
                                 </SelectTrigger>
                                 <SelectContent align="end">
-                                    <SelectItem value="all">All Status</SelectItem>
-                                    <SelectItem value="active">Active</SelectItem>
-                                    <SelectItem value="inactive">Inactive</SelectItem>
+                                    <SelectItem value="all">
+                                        All Status
+                                    </SelectItem>
+                                    <SelectItem value="active">
+                                        Active
+                                    </SelectItem>
+                                    <SelectItem value="inactive">
+                                        Inactive
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
 
                         {/* View toggle — desktop only */}
                         <div className="hidden sm:block">
-                            <Tabs value={view} onValueChange={(v) => setView(v as ViewMode)}>
+                            <Tabs
+                                value={view}
+                                onValueChange={(v) => setView(v as ViewMode)}
+                            >
                                 <TabsList>
-                                    <TabsTrigger value="table" aria-label="Table view">
+                                    <TabsTrigger
+                                        value="table"
+                                        aria-label="Table view"
+                                    >
                                         <TableIcon className="size-4" />
                                     </TabsTrigger>
-                                    <TabsTrigger value="grid" aria-label="Grid view">
+                                    <TabsTrigger
+                                        value="grid"
+                                        aria-label="Grid view"
+                                    >
                                         <LayoutGrid className="size-4" />
                                     </TabsTrigger>
                                 </TabsList>
@@ -415,7 +493,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                             applySearch(e);
                             setMobileSearchOpen(false);
                         }}
-                        className="flex items-center gap-2 sm:hidden w-full"
+                        className="flex w-full items-center gap-2 sm:hidden"
                     >
                         <div className="relative flex-1">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -441,15 +519,20 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                 </button>
                             )}
                         </div>
-                        <Button type="submit" size="sm">Search</Button>
+                        <Button type="submit" size="sm">
+                            Search
+                        </Button>
                     </form>
                 )}
 
-                {/* ── Content ───────────────────────────────────────────── */}
+                {/* -- Content --------------------------------------------- */}
                 {htes.data.length === 0 ? (
                     <Card>
                         <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                            No HTEs{filters.search || filters.status ? ' match this filter.' : ' yet.'}
+                            No HTEs
+                            {filters.search || filters.status
+                                ? ' match this filter.'
+                                : ' yet.'}
                         </CardContent>
                     </Card>
                 ) : (
@@ -463,14 +546,27 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                             <TableHeader>
                                                 <TableRow>
                                                     <TableHead className="px-6">
-                                                        Host Training Establishment
+                                                        Host Training
+                                                        Establishment
                                                     </TableHead>
-                                                    <TableHead className="px-6 text-center">Address</TableHead>
-                                                    <TableHead className="px-6 text-center">Contact</TableHead>
-                                                    <TableHead className="px-6 text-center">Status</TableHead>
-                                                    <TableHead className="px-6 text-center">Interns</TableHead>
-                                                    <TableHead className="px-6 text-center">Supervisors</TableHead>
-                                                    <TableHead className="px-6 text-center">Actions</TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        Address
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        Contact
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        Status
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        Interns
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        Supervisors
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        Actions
+                                                    </TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
@@ -481,35 +577,59 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                                         </TableCell>
                                                         <TableCell
                                                             className="max-w-xs truncate px-6 text-center text-muted-foreground"
-                                                            title={hte.address ?? undefined}
+                                                            title={
+                                                                hte.address ??
+                                                                undefined
+                                                            }
                                                         >
                                                             {hte.address ?? '—'}
                                                         </TableCell>
                                                         <TableCell className="px-6 text-center">
-                                                            <p className="truncate" title={hte.contact_person ?? undefined}>
-                                                                {hte.contact_person ?? '—'}
+                                                            <p
+                                                                className="truncate"
+                                                                title={
+                                                                    hte.contact_person ??
+                                                                    undefined
+                                                                }
+                                                            >
+                                                                {hte.contact_person ??
+                                                                    '—'}
                                                             </p>
                                                             {hte.contact_number && (
                                                                 <p className="truncate text-xs text-muted-foreground">
-                                                                    {hte.contact_number}
+                                                                    {
+                                                                        hte.contact_number
+                                                                    }
                                                                 </p>
                                                             )}
                                                         </TableCell>
                                                         <TableCell className="px-6 text-center">
-                                                            <StatusBadge status={hte.status} />
+                                                            <StatusBadge
+                                                                status={
+                                                                    hte.status
+                                                                }
+                                                            />
                                                         </TableCell>
                                                         <TableCell className="px-6 text-center">
                                                             {hte.interns_count}
                                                         </TableCell>
                                                         <TableCell className="px-6 text-center">
-                                                            {hte.supervisors_count}
+                                                            {
+                                                                hte.supervisors_count
+                                                            }
                                                         </TableCell>
                                                         <TableCell className="px-6 text-center">
                                                             <HteActions
                                                                 hte={hte}
-                                                                onEdit={openEditDialog}
-                                                                onToggleStatus={toggleStatus}
-                                                                onArchive={openArchiveDialog}
+                                                                onEdit={
+                                                                    openEditDialog
+                                                                }
+                                                                onToggleStatus={
+                                                                    toggleStatus
+                                                                }
+                                                                onArchive={
+                                                                    openArchiveDialog
+                                                                }
                                                             />
                                                         </TableCell>
                                                     </TableRow>
@@ -540,41 +660,68 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                                         {hte.hte_name}
                                                     </CardTitle>
                                                     <div className="mt-2">
-                                                        <StatusBadge status={hte.status} />
+                                                        <StatusBadge
+                                                            status={hte.status}
+                                                        />
                                                     </div>
                                                 </div>
                                                 <div className="shrink-0">
                                                     <HteActions
                                                         hte={hte}
                                                         onEdit={openEditDialog}
-                                                        onToggleStatus={toggleStatus}
-                                                        onArchive={openArchiveDialog}
+                                                        onToggleStatus={
+                                                            toggleStatus
+                                                        }
+                                                        onArchive={
+                                                            openArchiveDialog
+                                                        }
                                                     />
                                                 </div>
                                             </div>
                                         </CardHeader>
                                         <CardContent className="space-y-2 text-sm">
                                             <div className="flex justify-between gap-2">
-                                                <span className="shrink-0 text-muted-foreground">Address</span>
-                                                <span className="text-right" title={hte.address ?? undefined}>
+                                                <span className="shrink-0 text-muted-foreground">
+                                                    Address
+                                                </span>
+                                                <span
+                                                    className="text-right"
+                                                    title={
+                                                        hte.address ?? undefined
+                                                    }
+                                                >
                                                     {hte.address ?? '—'}
                                                 </span>
                                             </div>
                                             <div className="flex justify-between gap-2">
-                                                <span className="shrink-0 text-muted-foreground">Contact Person</span>
-                                                <span className="text-right">{hte.contact_person ?? '—'}</span>
+                                                <span className="shrink-0 text-muted-foreground">
+                                                    Contact Person
+                                                </span>
+                                                <span className="text-right">
+                                                    {hte.contact_person ?? '—'}
+                                                </span>
                                             </div>
                                             <div className="flex justify-between gap-2">
-                                                <span className="shrink-0 text-muted-foreground">Contact Number</span>
-                                                <span className="text-right">{hte.contact_number ?? '—'}</span>
+                                                <span className="shrink-0 text-muted-foreground">
+                                                    Contact Number
+                                                </span>
+                                                <span className="text-right">
+                                                    {hte.contact_number ?? '—'}
+                                                </span>
                                             </div>
                                             <div className="flex justify-between gap-2">
-                                                <span className="shrink-0 text-muted-foreground">Interns</span>
+                                                <span className="shrink-0 text-muted-foreground">
+                                                    Interns
+                                                </span>
                                                 <span>{hte.interns_count}</span>
                                             </div>
                                             <div className="flex justify-between gap-2">
-                                                <span className="shrink-0 text-muted-foreground">Supervisors</span>
-                                                <span>{hte.supervisors_count}</span>
+                                                <span className="shrink-0 text-muted-foreground">
+                                                    Supervisors
+                                                </span>
+                                                <span>
+                                                    {hte.supervisors_count}
+                                                </span>
                                             </div>
                                         </CardContent>
                                     </Card>
@@ -595,52 +742,88 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                 )}
             </div>
 
-            {/* ── Edit dialog ───────────────────────────────────────── */}
-            <Dialog open={editingHte !== null} onOpenChange={(open) => !open && closeEditDialog()}>
+            {/* -- Edit dialog ----------------------------------------- */}
+            <Dialog
+                open={editingHte !== null}
+                onOpenChange={(open) => !open && closeEditDialog()}
+            >
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Edit HTE</DialogTitle>
-                        <DialogDescription>Update this HTE's details.</DialogDescription>
+                        <DialogDescription>
+                            Update this HTE's details.
+                        </DialogDescription>
                     </DialogHeader>
                     {editingHte && (
-                        <form onSubmit={handleEditSubmit} className="flex flex-col gap-4">
+                        <form
+                            onSubmit={handleEditSubmit}
+                            className="flex flex-col gap-4"
+                        >
                             <div className="grid gap-1.5">
                                 <Label htmlFor="edit_hte_name">Name</Label>
                                 <Input
                                     id="edit_hte_name"
                                     value={editForm.data.hte_name}
-                                    onChange={(e) => editForm.setData('hte_name', e.target.value)}
+                                    onChange={(e) =>
+                                        editForm.setData(
+                                            'hte_name',
+                                            e.target.value,
+                                        )
+                                    }
                                     maxLength={150}
                                     required
                                 />
-                                <InputError message={editForm.errors.hte_name} />
+                                <InputError
+                                    message={editForm.errors.hte_name}
+                                />
                             </div>
                             <div className="grid gap-1.5">
                                 <Label htmlFor="edit_address">Address</Label>
                                 <Input
                                     id="edit_address"
                                     value={editForm.data.address}
-                                    onChange={(e) => editForm.setData('address', e.target.value)}
+                                    onChange={(e) =>
+                                        editForm.setData(
+                                            'address',
+                                            e.target.value,
+                                        )
+                                    }
                                     maxLength={255}
                                     required
                                 />
                                 <InputError message={editForm.errors.address} />
                             </div>
                             <div className="grid gap-1.5">
-                                <Label htmlFor="edit_contact_number">Contact Number</Label>
+                                <Label htmlFor="edit_contact_number">
+                                    Contact Number
+                                </Label>
                                 <Input
                                     id="edit_contact_number"
                                     value={editForm.data.contact_number}
-                                    onChange={(e) => editForm.setData('contact_number', e.target.value)}
+                                    onChange={(e) =>
+                                        editForm.setData(
+                                            'contact_number',
+                                            e.target.value,
+                                        )
+                                    }
                                     maxLength={20}
                                 />
-                                <InputError message={editForm.errors.contact_number} />
+                                <InputError
+                                    message={editForm.errors.contact_number}
+                                />
                             </div>
                             <DialogFooter>
-                                <Button variant="outline" type="button" onClick={closeEditDialog}>
+                                <Button
+                                    variant="outline"
+                                    type="button"
+                                    onClick={closeEditDialog}
+                                >
                                     Cancel
                                 </Button>
-                                <Button type="submit" disabled={editForm.processing}>
+                                <Button
+                                    type="submit"
+                                    disabled={editForm.processing}
+                                >
                                     Save Changes
                                 </Button>
                             </DialogFooter>
@@ -649,22 +832,33 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                 </DialogContent>
             </Dialog>
 
-            {/* ── Add dialog ────────────────────────────────────────── */}
-            <Dialog open={addOpen} onOpenChange={(open) => (open ? openAddDialog() : closeAddDialog())}>
+            {/* -- Add dialog ------------------------------------------ */}
+            <Dialog
+                open={addOpen}
+                onOpenChange={(open) =>
+                    open ? openAddDialog() : closeAddDialog()
+                }
+            >
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Add HTE</DialogTitle>
                         <DialogDescription>
-                            This HTE will become available for assigning interns and supervisors.
+                            This HTE will become available for assigning interns
+                            and supervisors.
                         </DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleAddSubmit} className="flex flex-col gap-4">
+                    <form
+                        onSubmit={handleAddSubmit}
+                        className="flex flex-col gap-4"
+                    >
                         <div className="grid gap-1.5">
                             <Label htmlFor="hte_name">Name</Label>
                             <Input
                                 id="hte_name"
                                 value={addForm.data.hte_name}
-                                onChange={(e) => addForm.setData('hte_name', e.target.value)}
+                                onChange={(e) =>
+                                    addForm.setData('hte_name', e.target.value)
+                                }
                                 maxLength={150}
                                 required
                             />
@@ -675,24 +869,39 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                             <Input
                                 id="address"
                                 value={addForm.data.address}
-                                onChange={(e) => addForm.setData('address', e.target.value)}
+                                onChange={(e) =>
+                                    addForm.setData('address', e.target.value)
+                                }
                                 maxLength={255}
                                 required
                             />
                             <InputError message={addForm.errors.address} />
                         </div>
                         <div className="grid gap-1.5">
-                            <Label htmlFor="contact_number">Contact Number</Label>
+                            <Label htmlFor="contact_number">
+                                Contact Number
+                            </Label>
                             <Input
                                 id="contact_number"
                                 value={addForm.data.contact_number}
-                                onChange={(e) => addForm.setData('contact_number', e.target.value)}
+                                onChange={(e) =>
+                                    addForm.setData(
+                                        'contact_number',
+                                        e.target.value,
+                                    )
+                                }
                                 maxLength={20}
                             />
-                            <InputError message={addForm.errors.contact_number} />
+                            <InputError
+                                message={addForm.errors.contact_number}
+                            />
                         </div>
                         <DialogFooter>
-                            <Button variant="outline" type="button" onClick={closeAddDialog}>
+                            <Button
+                                variant="outline"
+                                type="button"
+                                onClick={closeAddDialog}
+                            >
                                 Cancel
                             </Button>
                             <Button type="submit" disabled={addForm.processing}>
@@ -703,7 +912,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                 </DialogContent>
             </Dialog>
 
-            {/* ── Archive confirmation ──────────────────────────────── */}
+            {/* -- Archive confirmation -------------------------------- */}
             <ConfirmationDialog
                 open={archiveOpen}
                 onOpenChange={setArchiveOpen}

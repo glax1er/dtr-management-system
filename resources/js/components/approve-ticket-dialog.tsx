@@ -1,8 +1,7 @@
-import { router } from '@inertiajs/react';
+﻿import { router } from '@inertiajs/react';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Badge } from '@/components/ui/badge';
 import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -38,27 +37,30 @@ export const badgeStyles: Record<TicketActionsProps['type'], string> = {
         'bg-red-100 text-red-800 border-red-300 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800',
 };
 
-const typeLabel: Record<TicketActionsProps['type'], string> = {
-    missing_time_in: 'Missing Time In',
-    open: 'No Time Out',
-    no_record: 'No Record',
-};
-
 export function formatTo12Hour(timeStr: string | null): string {
-    if (!timeStr) return '—';
+    if (!timeStr) {
+        return '—';
+    }
 
     try {
         const cleanTime = timeStr.trim();
-        if (/am|pm/i.test(cleanTime)) return cleanTime;
+
+        if (/am|pm/i.test(cleanTime)) {
+            return cleanTime;
+        }
+
         const date = new Date(`2000-01-01T${cleanTime}`);
-        if (isNaN(date.getTime())) return cleanTime;
+
+        if (isNaN(date.getTime())) {
+            return cleanTime;
+        }
 
         return date.toLocaleTimeString('en-US', {
             hour: 'numeric',
             minute: '2-digit',
             hour12: true,
         });
-    } catch (e) {
+    } catch {
         return timeStr;
     }
 }
@@ -69,18 +71,29 @@ export function formatTo12Hour(timeStr: string | null): string {
 // string slice/regex here would silently turn PM times into their
 // AM equivalent (1:35 PM -> wrongly sent as 01:35).
 function to24Hour(timeStr: string | null): string | null {
-    if (!timeStr) return null;
+    if (!timeStr) {
+        return null;
+    }
 
     const match = timeStr.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
-    if (!match) return timeStr; // already 24-hour, or unrecognized — pass through
 
-    let [, hoursStr, minutes, meridiem] = match;
+    if (!match) {
+        return timeStr; // already 24-hour, or unrecognized — pass through
+    }
+
+    const [, hoursStr, minutes, meridiem] = match;
     let hours = parseInt(hoursStr, 10);
 
     if (meridiem) {
         const isPM = meridiem.toUpperCase() === 'PM';
-        if (isPM && hours !== 12) hours += 12;
-        if (!isPM && hours === 12) hours = 0;
+
+        if (isPM && hours !== 12) {
+            hours += 12;
+        }
+
+        if (!isPM && hours === 12) {
+            hours = 0;
+        }
     }
 
     return `${String(hours).padStart(2, '0')}:${minutes}`;
@@ -132,6 +145,7 @@ export function TicketActions({
 
     const handleOpenRejectChange = (open: boolean) => {
         setOpenReject(open);
+
         if (!open) {
             setRejectionReason('');
             setRejectionError('');
@@ -140,10 +154,12 @@ export function TicketActions({
 
     const handleReject = () => {
         const trimmed = rejectionReason.trim();
+
         if (!trimmed) {
             setRejectionError(
                 'Please provide a reason for rejecting this resolution request.',
             );
+
             return;
         }
 
@@ -321,7 +337,10 @@ export function TicketActions({
                             value={rejectionReason}
                             onChange={(e) => {
                                 setRejectionReason(e.target.value);
-                                if (rejectionError) setRejectionError('');
+
+                                if (rejectionError) {
+                                    setRejectionError('');
+                                }
                             }}
                             placeholder="e.g., No supervisor confirmation on site, incorrect time indicated, etc."
                             rows={3}

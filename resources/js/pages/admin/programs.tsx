@@ -12,13 +12,12 @@ import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { toast } from 'sonner';
 import { NumberedPagination } from '@/components/numbered-pagination';
+import type { Paginated } from '@/components/pagination-footer';
 import { ProgramActions } from '@/components/program-actions';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
-import type { Paginated } from '@/components/pagination-footer';
-import { useDebounce } from '@/hooks/use-debounce';
 import {
     Dialog,
     DialogContent,
@@ -29,7 +28,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import {
     Table,
     TableBody,
@@ -38,13 +43,8 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useDebounce } from '@/hooks/use-debounce';
 import { dashboard } from '@/routes';
 
 interface Program {
@@ -90,15 +90,10 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
     const [archiveId, setArchiveId] = useState<number | null>(null);
     const [archiveName, setArchiveName] = useState('');
 
-    useEffect(() => {
-        setSearch(filters.search || '');
-    }, [filters.search]);
-
-    useEffect(() => {
-        setStatus(filters.status || '');
-    }, [filters.status]);
-
-    const visit = (params: Record<string, string | undefined>, replace = true) => {
+    const visit = (
+        params: Record<string, string | undefined>,
+        replace = true,
+    ) => {
         router.get('/admin/programs', params, {
             preserveState: true,
             preserveScroll: true,
@@ -116,6 +111,7 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
+
             return;
         }
 
@@ -126,11 +122,18 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
                 page: undefined,
             });
         }
+        // Navigation helpers intentionally remain local to preserve the current
+        // filter state while debounced search requests are issued.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch]);
 
     const applySearch = (event: FormEvent) => {
         event.preventDefault();
-        visit({ ...baseParams(), search: search || undefined, page: undefined });
+        visit({
+            ...baseParams(),
+            search: search || undefined,
+            page: undefined,
+        });
     };
 
     const clearSearch = () => {
@@ -156,10 +159,13 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
     };
 
     const goToPage = (page: number) => {
-        visit({
-            ...baseParams(),
-            page: String(page),
-        }, false);
+        visit(
+            {
+                ...baseParams(),
+                page: String(page),
+            },
+            false,
+        );
     };
 
     const changePerPage = (perPage: number) => {
@@ -174,6 +180,7 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
     const submitAdd = () => {
         if (!addName.trim() || !addHours) {
             toast.error('Program name and required hours are required.');
+
             return;
         }
 
@@ -204,6 +211,7 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
     const submitEdit = () => {
         if (!editingId || !editName.trim() || !editHours) {
             toast.error('Program name and required hours are required.');
+
             return;
         }
 
@@ -238,7 +246,9 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
     };
 
     const submitArchive = () => {
-        if (archiveId === null) return;
+        if (archiveId === null) {
+            return;
+        }
 
         router.delete(`/admin/programs/${archiveId}`, {
             preserveScroll: true,
@@ -384,7 +394,7 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
                             applySearch(event);
                             setMobileSearchOpen(false);
                         }}
-                        className="flex items-center gap-2 sm:hidden w-full"
+                        className="flex w-full items-center gap-2 sm:hidden"
                     >
                         <div className="relative flex-1">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -499,10 +509,18 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
                                                             </TableCell>
                                                             <TableCell className="px-6 text-center">
                                                                 <ProgramActions
-                                                                    program={program}
-                                                                    onEdit={openEdit}
-                                                                    onToggleActive={toggleActive}
-                                                                    onArchive={openArchiveDialog}
+                                                                    program={
+                                                                        program
+                                                                    }
+                                                                    onEdit={
+                                                                        openEdit
+                                                                    }
+                                                                    onToggleActive={
+                                                                        toggleActive
+                                                                    }
+                                                                    onArchive={
+                                                                        openArchiveDialog
+                                                                    }
                                                                 />
                                                             </TableCell>
                                                         </TableRow>
@@ -547,8 +565,12 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
                                                     <ProgramActions
                                                         program={program}
                                                         onEdit={openEdit}
-                                                        onToggleActive={toggleActive}
-                                                        onArchive={openArchiveDialog}
+                                                        onToggleActive={
+                                                            toggleActive
+                                                        }
+                                                        onArchive={
+                                                            openArchiveDialog
+                                                        }
                                                     />
                                                 </div>
                                             </div>

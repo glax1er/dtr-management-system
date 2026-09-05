@@ -26,11 +26,18 @@ type RejectedResolutionDialogProps = {
 };
 
 function formatDisplayDate(dateStr?: string | null): string {
-    if (!dateStr) return '—';
+    if (!dateStr) {
+        return '—';
+    }
 
     try {
-        const date = new Date(dateStr.includes('T') ? dateStr : `${dateStr}T00:00:00`);
-        if (Number.isNaN(date.getTime())) return dateStr;
+        const date = new Date(
+            dateStr.includes('T') ? dateStr : `${dateStr}T00:00:00`,
+        );
+
+        if (Number.isNaN(date.getTime())) {
+            return dateStr;
+        }
 
         return date.toLocaleDateString('en-US', {
             weekday: 'short',
@@ -44,11 +51,16 @@ function formatDisplayDate(dateStr?: string | null): string {
 }
 
 function formatDisplayDateTime(dateStr?: string | null): string {
-    if (!dateStr) return '';
+    if (!dateStr) {
+        return '';
+    }
 
     try {
         const date = new Date(dateStr);
-        if (Number.isNaN(date.getTime())) return dateStr;
+
+        if (Number.isNaN(date.getTime())) {
+            return dateStr;
+        }
 
         return date.toLocaleString('en-US', {
             month: 'short',
@@ -87,7 +99,8 @@ export function RejectedResolutionDialog({
     const rejectedBy = data.rejected_by || 'Supervisor';
     const resolvedAt = data.resolved_at || notification.created_at;
 
-    const isOnInternDashboard = url === '/intern/dashboard' || url.startsWith('/intern/dashboard?');
+    const isOnInternDashboard =
+        url === '/intern/dashboard' || url.startsWith('/intern/dashboard?');
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -102,7 +115,7 @@ export function RejectedResolutionDialog({
 
                             <Badge
                                 variant="outline"
-                                className="border-destructive/30 bg-destructive/10 text-xs font-semibold text-destructive uppercase tracking-wider"
+                                className="border-destructive/30 bg-destructive/10 text-xs font-semibold tracking-wider text-destructive uppercase"
                             >
                                 Rejected
                             </Badge>
@@ -113,7 +126,8 @@ export function RejectedResolutionDialog({
                                 Resolution Request Rejected
                             </DialogTitle>
                             <DialogDescription className="mt-0.5 text-xs text-muted-foreground">
-                                Details and supervisor feedback regarding your resolution request.
+                                Details and supervisor feedback regarding your
+                                resolution request.
                             </DialogDescription>
                         </div>
                     </DialogHeader>
@@ -125,55 +139,76 @@ export function RejectedResolutionDialog({
                     <div className="space-y-2 rounded-xl border border-destructive/25 bg-destructive/[0.04] p-4 text-sm">
                         <div className="flex items-center gap-1.5 font-semibold text-destructive">
                             <AlertCircle className="size-4 shrink-0" />
-                            <span className="text-xs uppercase tracking-wider">Supervisor&apos;s Reason for Rejection</span>
+                            <span className="text-xs tracking-wider uppercase">
+                                Supervisor&apos;s Reason for Rejection
+                            </span>
                         </div>
 
-                        <p className="text-sm leading-relaxed font-medium text-foreground whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word]">
-                            {rejectionReason || 'No specific explanation provided by supervisor.'}
+                        <p className="text-sm leading-relaxed font-medium [overflow-wrap:anywhere] break-words [word-break:break-word] whitespace-pre-wrap text-foreground">
+                            {rejectionReason ||
+                                'No specific explanation provided by supervisor.'}
                         </p>
 
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-destructive/15 pt-2 text-[11px] text-muted-foreground">
-                            <span className="flex items-center gap-1 min-w-0">
+                            <span className="flex min-w-0 items-center gap-1">
                                 <UserCheck className="size-3 shrink-0 text-destructive/80" />
-                                <span className="break-words">Reviewed by: <strong className="text-foreground">{rejectedBy}</strong></span>
+                                <span className="break-words">
+                                    Reviewed by:{' '}
+                                    <strong className="text-foreground">
+                                        {rejectedBy}
+                                    </strong>
+                                </span>
                             </span>
                             {resolvedAt && (
-                                <span className="shrink-0">• {formatDisplayDateTime(resolvedAt)}</span>
+                                <span className="shrink-0">
+                                    • {formatDisplayDateTime(resolvedAt)}
+                                </span>
                             )}
                         </div>
                     </div>
 
                     {/* Original Request Details */}
                     <div className="space-y-2.5 rounded-xl border border-border/80 bg-muted/20 p-4">
-                        <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        <div className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                             Request Summary
                         </div>
 
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                            <div className="flex items-start gap-2.5 min-w-0">
+                            <div className="flex min-w-0 items-start gap-2.5">
                                 <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
                                     <Calendar className="size-3.5" />
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                    <span className="block text-[11px] text-muted-foreground">Attendance Date</span>
+                                    <span className="block text-[11px] text-muted-foreground">
+                                        Attendance Date
+                                    </span>
                                     <span className="block truncate text-xs font-semibold text-foreground">
                                         {formatDisplayDate(date)}
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="flex items-start gap-2.5 min-w-0">
+                            <div className="flex min-w-0 items-start gap-2.5">
                                 <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
                                     <Clock className="size-3.5" />
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                    <span className="block text-[11px] text-muted-foreground">Proposed Time</span>
+                                    <span className="block text-[11px] text-muted-foreground">
+                                        Proposed Time
+                                    </span>
                                     <span className="block truncate text-xs font-semibold text-foreground tabular-nums">
                                         {proposedTimeIn || proposedTimeOut ? (
                                             <>
-                                                {proposedTimeIn ? `In: ${proposedTimeIn}` : ''}
-                                                {proposedTimeIn && proposedTimeOut ? ' • ' : ''}
-                                                {proposedTimeOut ? `Out: ${proposedTimeOut}` : ''}
+                                                {proposedTimeIn
+                                                    ? `In: ${proposedTimeIn}`
+                                                    : ''}
+                                                {proposedTimeIn &&
+                                                proposedTimeOut
+                                                    ? ' • '
+                                                    : ''}
+                                                {proposedTimeOut
+                                                    ? `Out: ${proposedTimeOut}`
+                                                    : ''}
                                             </>
                                         ) : (
                                             '—'
@@ -185,11 +220,13 @@ export function RejectedResolutionDialog({
 
                         {reason && (
                             <div className="border-t border-border/60 pt-2.5">
-                                <div className="flex items-start gap-2 min-w-0">
+                                <div className="flex min-w-0 items-start gap-2">
                                     <FileText className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
                                     <div className="min-w-0 flex-1 space-y-0.5">
-                                        <span className="block text-[11px] text-muted-foreground">Your Submitted Reason:</span>
-                                        <p className="text-xs text-foreground/90 italic whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word]">
+                                        <span className="block text-[11px] text-muted-foreground">
+                                            Your Submitted Reason:
+                                        </span>
+                                        <p className="text-xs [overflow-wrap:anywhere] break-words [word-break:break-word] whitespace-pre-wrap text-foreground/90 italic">
                                             &ldquo;{reason}&rdquo;
                                         </p>
                                     </div>
@@ -200,7 +237,11 @@ export function RejectedResolutionDialog({
 
                     {/* Helpful Notice */}
                     <p className="text-xs text-muted-foreground">
-                        <span className="font-semibold text-foreground">Need to make adjustments?</span> You can submit a new resolution request with updated information from your DTR Attendance Log.
+                        <span className="font-semibold text-foreground">
+                            Need to make adjustments?
+                        </span>{' '}
+                        You can submit a new resolution request with updated
+                        information from your DTR Attendance Log.
                     </p>
                 </div>
 

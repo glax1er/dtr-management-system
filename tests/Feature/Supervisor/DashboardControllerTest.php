@@ -4,7 +4,6 @@ use App\Models\AttendanceLog;
 use App\Models\Hte;
 use App\Models\InternProfile;
 use App\Models\Program;
-use App\Models\ResolutionTicket;
 use App\Models\SupervisorProfile;
 use App\Models\User;
 use Illuminate\Support\Carbon;
@@ -32,7 +31,7 @@ test('an HTE supervisor sees their dashboard with paginated recent scans and sta
 
     AttendanceLog::create([
         'intern_user_id' => $intern->id,
-        'scan_timestamp' => Carbon::now('Asia/Manila')->subHours(2),
+        'scan_timestamp' => Carbon::now('Asia/Manila')->setTime(8, 0),
     ]);
 
     $this->actingAs($supervisor)

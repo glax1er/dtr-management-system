@@ -1,0 +1,290 @@
+parameters:
+    ignoreErrors:
+        -
+            identifier: nullsafe.neverNull
+            count: 2
+            path: app/Actions/Attendance/RecordScan.php
+
+        -
+            identifier: missingType.iterableValue
+            count: 4
+            path: app/Concerns/PasswordValidationRules.php
+
+        -
+            identifier: nullsafe.neverNull
+            count: 3
+            path: app/Http/Controllers/Admin/ArchiveController.php
+
+        -
+            identifier: nullsafe.neverNull
+            count: 2
+            path: app/Http/Controllers/Admin/DashboardController.php
+        -
+            identifier: property.notFound
+            count: 2
+            path: app/Http/Controllers/Admin/DashboardController.php
+        -
+            identifier: argument.unresolvableType
+            count: 1
+            path: app/Http/Controllers/Admin/DashboardController.php
+        -
+            identifier: method.unresolvableReturnType
+            count: 3
+            path: app/Http/Controllers/Admin/DashboardController.php
+
+        -
+            identifier: argument.unresolvableType
+            count: 1
+            path: app/Http/Controllers/Admin/HteController.php
+        -
+            identifier: method.unresolvableReturnType
+            count: 1
+            path: app/Http/Controllers/Admin/HteController.php
+        -
+            identifier: property.notFound
+            count: 1
+            path: app/Http/Controllers/Admin/HteController.php
+
+        -
+            identifier: nullsafe.neverNull
+            count: 2
+            path: app/Http/Controllers/Admin/InternController.php
+
+        -
+            identifier: nullsafe.neverNull
+            count: 1
+            path: app/Http/Controllers/Admin/SchedulePeriodController.php
+        -
+            identifier: missingType.iterableValue
+            count: 2
+            path: app/Http/Controllers/Admin/SchedulePeriodController.php
+
+        -
+            identifier: nullsafe.neverNull
+            count: 1
+            path: app/Http/Controllers/Admin/SupervisorController.php
+
+        -
+            identifier: nullsafe.neverNull
+            count: 2
+            path: app/Http/Controllers/DocumentReviewController.php
+        -
+            identifier: method.notFound
+            count: 4
+            path: app/Http/Controllers/DocumentReviewController.php
+
+        -
+            identifier: nullsafe.neverNull
+            count: 3
+            path: app/Http/Controllers/Intern/DashboardController.php
+
+        -
+            identifier: property.notFound
+            count: 1
+            path: app/Http/Controllers/Intern/DocumentController.php
+        -
+            identifier: nullsafe.neverNull
+            count: 2
+            path: app/Http/Controllers/Intern/DocumentController.php
+
+        -
+            identifier: nullsafe.neverNull
+            count: 1
+            path: app/Http/Controllers/Supervisor/DashboardController.php
+        -
+            identifier: property.notFound
+            count: 1
+            path: app/Http/Controllers/Supervisor/DashboardController.php
+
+        -
+            identifier: nullsafe.neverNull
+            count: 3
+            path: app/Http/Controllers/Supervisor/DocumentTemplateController.php
+        -
+            identifier: argument.unresolvableType
+            count: 1
+            path: app/Http/Controllers/Supervisor/DocumentTemplateController.php
+        -
+            identifier: method.unresolvableReturnType
+            count: 3
+            path: app/Http/Controllers/Supervisor/DocumentTemplateController.php
+        -
+            identifier: property.notFound
+            count: 1
+            path: app/Http/Controllers/Supervisor/DocumentTemplateController.php
+
+        -
+            identifier: return.type
+            count: 1
+            path: app/Http/Controllers/Supervisor/HtesController.php
+        -
+            identifier: argument.unresolvableType
+            count: 1
+            path: app/Http/Controllers/Supervisor/HtesController.php
+        -
+            identifier: argument.type
+            count: 1
+            path: app/Http/Controllers/Supervisor/HtesController.php
+        -
+            identifier: method.unresolvableReturnType
+            count: 2
+            path: app/Http/Controllers/Supervisor/HtesController.php
+        -
+            identifier: property.notFound
+            count: 1
+            path: app/Http/Controllers/Supervisor/HtesController.php
+
+        -
+            identifier: nullsafe.neverNull
+            count: 6
+            path: app/Http/Controllers/Supervisor/InternsController.php
+        -
+            identifier: property.notFound
+            count: 1
+            path: app/Http/Controllers/Supervisor/InternsController.php
+        -
+            identifier: missingType.generics
+            count: 2
+            path: app/Http/Controllers/Supervisor/InternsController.php
+
+        -
+            identifier: argument.templateType
+            count: 2
+            path: app/Http/Controllers/Supervisor/ManualAttendanceController.php
+
+        -
+            identifier: nullsafe.neverNull
+            count: 3
+            path: app/Http/Controllers/Supervisor/SchedulePeriodController.php
+        -
+            identifier: missingType.iterableValue
+            count: 2
+            path: app/Http/Controllers/Supervisor/SchedulePeriodController.php
+
+        -
+            identifier: missingType.iterableValue
+            count: 1
+            path: app/Http/Requests/Admin/StoreHteRequest.php
+        -
+            identifier: missingType.iterableValue
+            count: 1
+            path: app/Http/Requests/Admin/UpdateHteRequest.php
+        -
+            identifier: missingType.iterableValue
+            count: 1
+            path: app/Http/Requests/Admin/UpdateInternRequest.php
+        -
+            identifier: missingType.iterableValue
+            count: 1
+            path: app/Http/Requests/Admin/UpdateSupervisorRequest.php
+        -
+            identifier: missingType.iterableValue
+            count: 1
+            path: app/Http/Requests/Intern/UpdateProfilePhotoRequest.php
+
+        -
+            identifier: missingType.generics
+            count: 3
+            path: app/Models/DocumentTemplate.php
+        -
+            identifier: offsetAccess.invalidOffset
+            count: 1
+            path: app/Models/DocumentTemplate.php
+
+        -
+            identifier: missingType.generics
+            count: 1
+            path: app/Models/EmailVerificationCode.php
+
+        -
+            identifier: missingType.generics
+            count: 3
+            path: app/Models/InternDocument.php
+        -
+            identifier: missingType.iterableValue
+            count: 2
+            path: app/Models/InternDocument.php
+        -
+            identifier: offsetAccess.invalidOffset
+            count: 1
+            path: app/Models/InternDocument.php
+
+        -
+            identifier: nullsafe.neverNull
+            count: 2
+            path: app/Models/SupervisorProfile.php
+
+        -
+            identifier: argument.type
+            count: 1
+            path: app/Models/User.php
+
+        -
+            identifier: missingType.iterableValue
+            count: 2
+            path: app/Notifications/HoursMilestoneNotification.php
+        -
+            identifier: nullsafe.neverNull
+            count: 1
+            path: app/Notifications/HoursMilestoneNotification.php
+
+        -
+            identifier: missingType.iterableValue
+            count: 2
+            path: app/Notifications/InternApprovalNotification.php
+
+        -
+            identifier: missingType.iterableValue
+            count: 2
+            path: app/Notifications/InternDocumentNotification.php
+        -
+            identifier: nullsafe.neverNull
+            count: 1
+            path: app/Notifications/InternDocumentNotification.php
+
+        -
+            identifier: missingType.iterableValue
+            count: 2
+            path: app/Notifications/MissedTimeOutNotification.php
+
+        -
+            identifier: missingType.iterableValue
+            count: 2
+            path: app/Notifications/NewInternRegistrationNotification.php
+        -
+            identifier: nullsafe.neverNull
+            count: 1
+            path: app/Notifications/NewInternRegistrationNotification.php
+
+        -
+            identifier: missingType.iterableValue
+            count: 2
+            path: app/Notifications/ResolutionTicketNotification.php
+        -
+            identifier: nullsafe.neverNull
+            count: 1
+            path: app/Notifications/ResolutionTicketNotification.php
+
+        -
+            identifier: missingType.iterableValue
+            count: 2
+            path: app/Notifications/ScheduleUpdatedNotification.php
+
+        -
+            identifier: method.notFound
+            count: 1
+            path: app/Providers/AppServiceProvider.php
+
+        -
+            identifier: nullsafe.neverNull
+            count: 1
+            path: app/Services/Attendance/CheckHoursMilestones.php
+
+        -
+            identifier: missingType.generics
+            count: 1
+            path: app/Services/NotificationPresenter.php
+        -
+            identifier: nullsafe.neverNull
+            count: 1
+            path: app/Services/NotificationPresenter.php

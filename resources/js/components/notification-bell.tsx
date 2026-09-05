@@ -1,7 +1,7 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { Bell, BellOff, ChevronRight } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { RejectedResolutionDialog } from '@/components/rejected-resolution-dialog';
+import { Bell, BellOff, CheckCheck, ChevronRight, Trash2 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { toast as sonnerToast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,21 +12,45 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-    formatRelativeTime,
-    getNotificationTone,
-    isRejectedResolutionNotification,
-} from '@/lib/notifications';
+import { formatRelativeTime, getNotificationTone } from '@/lib/notifications';
 import { cn } from '@/lib/utils';
 import type { Notification, PageProps } from '@/types';
 
 export function NotificationBell() {
     const { notifications } = usePage<PageProps>().props;
-    const [selectedRejectedNotification, setSelectedRejectedNotification] =
-        useState<Notification | null>(null);
 
-    const count = notifications?.count ?? 0;
-    const items = notifications?.items ?? [];
+    const count = useMemo(
+        () => notifications?.count ?? 0,
+        [notifications?.count],
+    );
+    const items = useMemo(
+        () => notifications?.items ?? [],
+        [notifications?.items],
+    );
+
+    const seenIds = useRef<Set<string>>(
+        new Set(items.map((n: Notification) => n.id)),
+    );
+    const isInitialMount = useRef(true);
+
+    // `items` is a fresh array reference on every Inertia response (the 15s
+    // poll below included), even when its content hasn't changed, so
+    // depending on the array itself would re-run the toast effect on every
+    // poll/navigation. Depend on this derived id list instead — its value
+    // (not reference) only changes when the actual set of notifications does.
+    const itemsKey = useMemo(
+        () => items.map((n: Notification) => n.id).join(','),
+        [items],
+    );
+
+    // Mirrors the latest `items` into a ref so the toast effect below can
+    // read the current list without needing `items` itself in its deps
+    // (which would reintroduce the reference-identity problem `itemsKey`
+    // exists to avoid).
+    const itemsRef = useRef(items);
+    useEffect(() => {
+        itemsRef.current = items;
+    }, [items]);
 
     useEffect(() => {
         const interval = window.setInterval(() => {
@@ -40,26 +64,15 @@ export function NotificationBell() {
         };
     }, []);
 
-    const handleNotificationClick = (notification: Notification) => {
-        if (isRejectedResolutionNotification(notification)) {
-            if (!notification.read_at) {
-                router.post(
-                    `/notifications/${notification.id}/read`,
-                    {},
-                    {
-                        preserveScroll: true,
-                        preserveState: true,
-                    },
-                );
-            }
-            setSelectedRejectedNotification(notification);
-            return;
-        }
-
-        markAsRead(notification);
-    };
-
-    const markAsRead = (notification: Notification) => {
+    // Defined above the toast effect below (which calls it from inside a
+    // "View" action) rather than further down the component — referencing
+    // a const before its declaration only works at runtime because effects
+    // and click handlers fire after the whole component body has run, but
+    // eslint's exhaustive-deps check is purely lexical and flags it
+    // regardless. Wrapped in useCallback (stable, since it only closes
+    // over the imported `router` singleton) so it can be listed as a real
+    // effect dependency below without changing identity on every render.
+    const markAsRead = useCallback((notification: Notification) => {
         router.post(
             `/notifications/${notification.id}/read`,
             {},
@@ -71,6 +84,49 @@ export function NotificationBell() {
                 },
             },
         );
+    }, []);
+
+    useEffect(() => {
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+
+            return;
+        }
+
+        for (const item of itemsRef.current) {
+            if (!seenIds.current.has(item.id)) {
+                seenIds.current.add(item.id);
+
+                if (!item.read_at) {
+                    sonnerToast(item.title, {
+                        description: item.message,
+                        action: {
+                            label: 'View',
+                            onClick: () => markAsRead(item),
+                        },
+                    });
+                }
+            }
+        }
+    }, [itemsKey, markAsRead]);
+
+    const markAllAsRead = () => {
+        router.post(
+            '/notifications/mark-all-read',
+            {},
+            {
+                preserveScroll: true,
+                preserveState: true,
+            },
+        );
+    };
+
+    const deleteNotification = (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        router.delete(`/notifications/${id}`, {
+            preserveScroll: true,
+            preserveState: true,
+        });
     };
 
     const clearNotifications = () => {
@@ -81,8 +137,7 @@ export function NotificationBell() {
     };
 
     return (
-        <>
-            <DropdownMenu>
+        <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button
                     variant="ghost"
@@ -108,7 +163,7 @@ export function NotificationBell() {
                 sideOffset={8}
                 className="w-[calc(100vw-2rem)] max-w-sm overflow-hidden rounded-2xl border border-border bg-popover p-0 shadow-lg sm:w-96"
             >
-                <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+                <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
                     <div className="min-w-0">
                         <DropdownMenuLabel className="p-0 text-sm font-semibold text-foreground">
                             Notifications
@@ -121,17 +176,34 @@ export function NotificationBell() {
                         </p>
                     </div>
 
-                    {count > 0 && (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="shrink-0 text-muted-foreground hover:text-foreground"
-                            onClick={clearNotifications}
-                        >
-                            Clear all
-                        </Button>
-                    )}
+                    <div className="flex items-center gap-1">
+                        {count > 0 && (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                                onClick={markAllAsRead}
+                                title="Mark all as read"
+                            >
+                                <CheckCheck className="mr-1 size-3.5" />
+                                Mark read
+                            </Button>
+                        )}
+
+                        {items.length > 0 && (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                                onClick={clearNotifications}
+                                title="Clear all notifications"
+                            >
+                                Clear all
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
                 {items.length === 0 ? (
@@ -151,14 +223,13 @@ export function NotificationBell() {
                             return (
                                 <DropdownMenuItem
                                     key={notification.id}
-                                    className="p-0 focus:bg-transparent"
+                                    className="group relative p-0 focus:bg-transparent"
                                     asChild
                                 >
-                                    <button
-                                        type="button"
-                                        onClick={() => handleNotificationClick(notification)}
+                                    <div
+                                        onClick={() => markAsRead(notification)}
                                         className={cn(
-                                            'flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-accent/10',
+                                            'flex w-full cursor-pointer items-start gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-accent/10',
                                             unread && 'bg-primary/5',
                                         )}
                                     >
@@ -171,7 +242,7 @@ export function NotificationBell() {
                                             <Icon className="size-4" />
                                         </span>
 
-                                        <span className="min-w-0 flex-1 space-y-0.5">
+                                        <span className="min-w-0 flex-1 space-y-0.5 pr-6">
                                             <span className="flex items-center gap-1.5">
                                                 <span className="truncate text-sm font-medium text-foreground">
                                                     {notification.title}
@@ -195,7 +266,21 @@ export function NotificationBell() {
                                                 )}
                                             </span>
                                         </span>
-                                    </button>
+
+                                        <button
+                                            type="button"
+                                            title="Delete notification"
+                                            onClick={(e) =>
+                                                deleteNotification(
+                                                    e,
+                                                    notification.id,
+                                                )
+                                            }
+                                            className="absolute top-3 right-2.5 rounded-md p-1 text-muted-foreground/50 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive focus:opacity-100"
+                                        >
+                                            <Trash2 className="size-3.5" />
+                                        </button>
+                                    </div>
                                 </DropdownMenuItem>
                             );
                         })}
@@ -215,16 +300,5 @@ export function NotificationBell() {
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
-
-        <RejectedResolutionDialog
-            open={selectedRejectedNotification !== null}
-            onOpenChange={(open) => {
-                if (!open) {
-                    setSelectedRejectedNotification(null);
-                }
-            }}
-            notification={selectedRejectedNotification}
-        />
-        </>
     );
 }

@@ -1,4 +1,5 @@
 <?php
+
 // app/Actions/Attendance/RecordScan.php
 
 namespace App\Actions\Attendance;
@@ -7,6 +8,7 @@ use App\Exceptions\Attendance\InvalidScanException;
 use App\Models\AttendanceLog;
 use App\Models\InternProfile;
 use App\Models\Kiosk;
+use App\Services\Attendance\CheckHoursMilestones;
 use App\Support\Attendance\ScanLabel;
 use App\Support\Attendance\ScanRejectionReason;
 use App\Support\Attendance\ScanResult;
@@ -49,6 +51,8 @@ class RecordScan
                 'kiosk_id' => $kiosk->id,
                 'scan_timestamp' => $at,
             ]);
+
+            app(CheckHoursMilestones::class)->check($internProfile);
         }
 
         return new ScanResult(
@@ -76,7 +80,7 @@ class RecordScan
             ->whereBetween('scan_timestamp', [$dayStart, $dayEnd])
             ->count();
 
-        $cutoff = Carbon::parse($localAt->toDateString() . ' ' . config('dtr.time_out_cutoff'), $timezone);
+        $cutoff = Carbon::parse($localAt->toDateString().' '.config('dtr.time_out_cutoff'), $timezone);
 
         // If the day's first scan is after the time-out cutoff (e.g. 4:00 PM),
         // it is a Time Out (missing time in), not a Time In.

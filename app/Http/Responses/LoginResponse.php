@@ -1,4 +1,5 @@
 <?php
+
 // app/Http/Responses/LoginResponse.php
 
 namespace App\Http\Responses;

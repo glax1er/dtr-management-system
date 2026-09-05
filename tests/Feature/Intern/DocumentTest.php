@@ -1,9 +1,11 @@
 <?php
 
+use App\Models\DocumentTemplate;
 use App\Models\Hte;
 use App\Models\InternDocument;
 use App\Models\InternProfile;
 use App\Models\Program;
+use App\Models\SupervisorProfile;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -85,7 +87,7 @@ test('supervisor can review, approve, and reject intern documents, while admin c
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
 
     $supervisorUser = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
-    \App\Models\SupervisorProfile::create([
+    SupervisorProfile::create([
         'user_id' => $supervisorUser->id,
         'program_id' => $program->program_id,
         'supervisor_type' => 'ojt',
@@ -130,7 +132,7 @@ test('OJT supervisor can upload blank template formats and interns can download 
 
     // Create OJT Supervisor for this program
     $ojtSupervisorUser = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
-    \App\Models\SupervisorProfile::create([
+    SupervisorProfile::create([
         'user_id' => $ojtSupervisorUser->id,
         'program_id' => $program->program_id,
         'supervisor_type' => 'ojt',
@@ -164,7 +166,7 @@ test('OJT supervisor can upload blank template formats and interns can download 
         'original_filename' => 'consent_official_template.docx',
     ]);
 
-    $template = \App\Models\DocumentTemplate::where('document_type', 'parents_consent')->firstOrFail();
+    $template = DocumentTemplate::where('document_type', 'parents_consent')->firstOrFail();
 
     // Intern views their checklist and sees the blank template available
     $this->actingAs($intern)
@@ -230,7 +232,7 @@ test('intern can see custom document requirements and upload PDF documents for t
 
     // Create custom document requirement for the intern's program
     $supervisorUser = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
-    \App\Models\SupervisorProfile::create([
+    SupervisorProfile::create([
         'user_id' => $supervisorUser->id,
         'program_id' => $program->program_id,
         'supervisor_type' => 'ojt',
@@ -244,7 +246,7 @@ test('intern can see custom document requirements and upload PDF documents for t
         'required' => true,
     ])->assertSessionHasNoErrors();
 
-    $customTemplate = \App\Models\DocumentTemplate::where('name', 'Vaccination Record')->firstOrFail();
+    $customTemplate = DocumentTemplate::where('name', 'Vaccination Record')->firstOrFail();
 
     // Intern checklist should have 13 items
     $this->actingAs($intern)
@@ -273,5 +275,3 @@ test('intern can see custom document requirements and upload PDF documents for t
         'status' => InternDocument::STATUS_PENDING,
     ]);
 });
-
-

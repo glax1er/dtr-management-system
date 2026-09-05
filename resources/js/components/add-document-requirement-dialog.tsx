@@ -50,7 +50,9 @@ export function AddDocumentRequirementDialog({
     onSuccess,
 }: AddDocumentRequirementDialogProps) {
     const [name, setName] = useState('');
-    const [category, setCategory] = useState(availableCategories[0] || 'Pre Deployment');
+    const [category, setCategory] = useState(
+        availableCategories[0] || 'Pre Deployment',
+    );
     const [isCustomCategory, setIsCustomCategory] = useState(false);
     const [customCategory, setCustomCategory] = useState('');
     const [description, setDescription] = useState('');
@@ -77,18 +79,24 @@ export function AddDocumentRequirementDialog({
         if (!newOpen) {
             resetForm();
         }
+
         onOpenChange(newOpen);
     };
 
     const validateFile = (selectedFile: File): boolean => {
         const ext = selectedFile.name.split('.').pop()?.toLowerCase();
+
         if (!['pdf', 'docx', 'doc'].includes(ext || '')) {
-            toast.error('Invalid format. Templates must be PDF or Microsoft Word (.pdf, .docx, .doc).');
+            toast.error(
+                'Invalid format. Templates must be PDF or Microsoft Word (.pdf, .docx, .doc).',
+            );
+
             return false;
         }
 
         if (selectedFile.size > MAX_TEMPLATE_SIZE) {
             toast.error('The selected template file is too large (max 15 MB).');
+
             return false;
         }
 
@@ -98,27 +106,37 @@ export function AddDocumentRequirementDialog({
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
         const trimmedName = name.trim();
+
         if (!trimmedName) {
             toast.error('Please enter a document title.');
+
             return;
         }
 
-        const categoryVal = isCustomCategory ? customCategory.trim() : category.trim();
+        const categoryVal = isCustomCategory
+            ? customCategory.trim()
+            : category.trim();
+
         if (!categoryVal) {
             toast.error('Please specify a category for this document.');
+
             return;
         }
 
         const formData = new FormData();
         formData.append('name', trimmedName);
         formData.append('category', categoryVal);
+
         if (description.trim()) {
             formData.append('description', description.trim());
         }
+
         formData.append('required', required ? '1' : '0');
+
         if (instructions.trim()) {
             formData.append('instructions', instructions.trim());
         }
+
         if (file) {
             formData.append('file', file);
         }
@@ -129,12 +147,16 @@ export function AddDocumentRequirementDialog({
             preserveScroll: true,
             forceFormData: true,
             onSuccess: () => {
-                toast.success(`Document requirement "${trimmedName}" added successfully.`);
+                toast.success(
+                    `Document requirement "${trimmedName}" added successfully.`,
+                );
                 handleOpenChange(false);
                 onSuccess?.();
             },
             onError: (errors) => {
-                const msg = (Object.values(errors)[0] as string) || 'Failed to create document requirement.';
+                const msg =
+                    (Object.values(errors)[0] as string) ||
+                    'Failed to create document requirement.';
                 toast.error(msg);
             },
             onFinish: () => {
@@ -145,26 +167,38 @@ export function AddDocumentRequirementDialog({
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogContent className="max-w-lg w-full max-h-[90vh] sm:max-h-[85vh] p-0 flex flex-col overflow-hidden gap-0 rounded-2xl sm:rounded-xl">
+            <DialogContent className="flex max-h-[90vh] w-full max-w-lg flex-col gap-0 overflow-hidden rounded-2xl p-0 sm:max-h-[85vh] sm:rounded-xl">
                 {/* ── Dialog Header ── */}
-                <DialogHeader className="px-5 py-4 sm:px-6 sm:py-5 border-b bg-card shrink-0">
-                    <DialogTitle className="text-base sm:text-lg font-semibold flex items-center gap-2.5 text-foreground">
-                        <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
+                <DialogHeader className="shrink-0 border-b bg-card px-5 py-4 sm:px-6 sm:py-5">
+                    <DialogTitle className="flex items-center gap-2.5 text-base font-semibold text-foreground sm:text-lg">
+                        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                             <FilePlus className="size-5" />
                         </div>
                         <span>Add Document Requirement</span>
                     </DialogTitle>
-                    <DialogDescription className="text-xs text-muted-foreground mt-1">
-                        Add a new clearance document requirement for <span className="font-medium text-foreground">{programName}</span>.
+                    <DialogDescription className="mt-1 text-xs text-muted-foreground">
+                        Add a new clearance document requirement for{' '}
+                        <span className="font-medium text-foreground">
+                            {programName}
+                        </span>
+                        .
                     </DialogDescription>
                 </DialogHeader>
 
                 {/* ── Form Body (Scrollable & Responsive) ── */}
-                <form id="add-doc-requirement-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-5 py-4 sm:px-6 sm:py-5 space-y-4">
+                <form
+                    id="add-doc-requirement-form"
+                    onSubmit={handleSubmit}
+                    className="flex-1 space-y-4 overflow-y-auto px-5 py-4 sm:px-6 sm:py-5"
+                >
                     {/* Document Title */}
                     <div className="space-y-1.5">
-                        <Label htmlFor="add-doc-name" className="text-xs font-semibold text-foreground">
-                            Document Title / Requirement Name <span className="text-destructive">*</span>
+                        <Label
+                            htmlFor="add-doc-name"
+                            className="text-xs font-semibold text-foreground"
+                        >
+                            Document Title / Requirement Name{' '}
+                            <span className="text-destructive">*</span>
                         </Label>
                         <Input
                             id="add-doc-name"
@@ -178,8 +212,12 @@ export function AddDocumentRequirementDialog({
 
                     {/* Category Selector / Custom Category */}
                     <div className="space-y-1.5">
-                        <Label htmlFor="add-doc-category" className="text-xs font-semibold text-foreground">
-                            Category / Folder <span className="text-destructive">*</span>
+                        <Label
+                            htmlFor="add-doc-category"
+                            className="text-xs font-semibold text-foreground"
+                        >
+                            Category / Folder{' '}
+                            <span className="text-destructive">*</span>
                         </Label>
                         <Select
                             value={isCustomCategory ? '__custom__' : category}
@@ -192,16 +230,26 @@ export function AddDocumentRequirementDialog({
                                 }
                             }}
                         >
-                            <SelectTrigger id="add-doc-category" className="h-10 text-xs sm:text-sm">
+                            <SelectTrigger
+                                id="add-doc-category"
+                                className="h-10 text-xs sm:text-sm"
+                            >
                                 <SelectValue placeholder="Select category..." />
                             </SelectTrigger>
                             <SelectContent>
                                 {availableCategories.map((cat) => (
-                                    <SelectItem key={cat} value={cat} className="text-xs sm:text-sm">
+                                    <SelectItem
+                                        key={cat}
+                                        value={cat}
+                                        className="text-xs sm:text-sm"
+                                    >
                                         {cat}
                                     </SelectItem>
                                 ))}
-                                <SelectItem value="__custom__" className="text-xs sm:text-sm font-semibold text-primary">
+                                <SelectItem
+                                    value="__custom__"
+                                    className="text-xs font-semibold text-primary sm:text-sm"
+                                >
                                     + Add Custom Category...
                                 </SelectItem>
                             </SelectContent>
@@ -211,7 +259,9 @@ export function AddDocumentRequirementDialog({
                             <div className="pt-1.5">
                                 <Input
                                     value={customCategory}
-                                    onChange={(e) => setCustomCategory(e.target.value)}
+                                    onChange={(e) =>
+                                        setCustomCategory(e.target.value)
+                                    }
                                     placeholder="Enter new category name (e.g. Post Deployment)..."
                                     className="h-10 text-xs sm:text-sm"
                                     required
@@ -223,8 +273,14 @@ export function AddDocumentRequirementDialog({
 
                     {/* Requirement Description */}
                     <div className="space-y-1.5">
-                        <Label htmlFor="add-doc-desc" className="text-xs font-semibold text-foreground">
-                            Requirement Description <span className="text-muted-foreground font-normal">(Optional)</span>
+                        <Label
+                            htmlFor="add-doc-desc"
+                            className="text-xs font-semibold text-foreground"
+                        >
+                            Requirement Description{' '}
+                            <span className="font-normal text-muted-foreground">
+                                (Optional)
+                            </span>
                         </Label>
                         <Textarea
                             id="add-doc-desc"
@@ -232,32 +288,44 @@ export function AddDocumentRequirementDialog({
                             onChange={(e) => setDescription(e.target.value)}
                             placeholder="Brief summary explaining what this document is for and who issues it..."
                             rows={2}
-                            className="text-xs sm:text-sm resize-none"
+                            className="resize-none text-xs sm:text-sm"
                         />
                     </div>
 
                     {/* Mandatory / Required Toggle Card */}
-                    <div className="flex items-start gap-3 rounded-xl border border-border/80 p-3.5 bg-muted/20 hover:bg-muted/30 transition-colors">
+                    <div className="flex items-start gap-3 rounded-xl border border-border/80 bg-muted/20 p-3.5 transition-colors hover:bg-muted/30">
                         <Checkbox
                             id="add-doc-required"
                             checked={required}
-                            onCheckedChange={(checked) => setRequired(!!checked)}
+                            onCheckedChange={(checked) =>
+                                setRequired(!!checked)
+                            }
                             className="mt-0.5"
                         />
                         <div className="space-y-0.5 leading-none">
-                            <Label htmlFor="add-doc-required" className="text-xs sm:text-sm font-semibold text-foreground cursor-pointer">
+                            <Label
+                                htmlFor="add-doc-required"
+                                className="cursor-pointer text-xs font-semibold text-foreground sm:text-sm"
+                            >
                                 Mandatory / Required Document
                             </Label>
-                            <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed">
-                                Interns cannot complete clearance without having an approved upload for this requirement.
+                            <p className="text-[11px] leading-relaxed text-muted-foreground sm:text-xs">
+                                Interns cannot complete clearance without having
+                                an approved upload for this requirement.
                             </p>
                         </div>
                     </div>
 
                     {/* Intern Guidance & Instructions */}
                     <div className="space-y-1.5">
-                        <Label htmlFor="add-doc-instructions" className="text-xs font-semibold text-foreground">
-                            Intern Instructions & Guidelines <span className="text-muted-foreground font-normal">(Optional)</span>
+                        <Label
+                            htmlFor="add-doc-instructions"
+                            className="text-xs font-semibold text-foreground"
+                        >
+                            Intern Instructions & Guidelines{' '}
+                            <span className="font-normal text-muted-foreground">
+                                (Optional)
+                            </span>
                         </Label>
                         <Textarea
                             id="add-doc-instructions"
@@ -265,10 +333,11 @@ export function AddDocumentRequirementDialog({
                             onChange={(e) => setInstructions(e.target.value)}
                             placeholder="e.g. Must be signed with wet blue ink by your supervisor and submitted in PDF format."
                             rows={2}
-                            className="text-xs sm:text-sm resize-none"
+                            className="resize-none text-xs sm:text-sm"
                         />
                         <p className="text-[11px] text-muted-foreground">
-                            Interns will see this guidance when preparing and uploading their document.
+                            Interns will see this guidance when preparing and
+                            uploading their document.
                         </p>
                     </div>
 
@@ -276,13 +345,16 @@ export function AddDocumentRequirementDialog({
                     <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
                             <Label className="text-xs font-semibold text-foreground">
-                                Blank Template File <span className="text-muted-foreground font-normal">(Optional)</span>
+                                Blank Template File{' '}
+                                <span className="font-normal text-muted-foreground">
+                                    (Optional)
+                                </span>
                             </Label>
                             {file && (
                                 <button
                                     type="button"
                                     onClick={() => setFile(null)}
-                                    className="text-[11px] text-destructive hover:underline inline-flex items-center gap-1"
+                                    className="inline-flex items-center gap-1 text-[11px] text-destructive hover:underline"
                                 >
                                     <X className="size-3" />
                                     Remove file
@@ -300,12 +372,13 @@ export function AddDocumentRequirementDialog({
                                 e.preventDefault();
                                 setIsDragOver(false);
                                 const droppedFile = e.dataTransfer.files?.[0];
+
                                 if (droppedFile && validateFile(droppedFile)) {
                                     setFile(droppedFile);
                                 }
                             }}
                             onClick={() => fileInputRef.current?.click()}
-                            className={`border-2 border-dashed rounded-xl p-4 sm:p-5 text-center cursor-pointer transition-all duration-200 ${
+                            className={`cursor-pointer rounded-xl border-2 border-dashed p-4 text-center transition-all duration-200 sm:p-5 ${
                                 isDragOver
                                     ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
                                     : file
@@ -319,7 +392,11 @@ export function AddDocumentRequirementDialog({
                                 accept=".pdf,.docx,.doc,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
                                 onChange={(e) => {
                                     const selectedFile = e.target.files?.[0];
-                                    if (selectedFile && validateFile(selectedFile)) {
+
+                                    if (
+                                        selectedFile &&
+                                        validateFile(selectedFile)
+                                    ) {
                                         setFile(selectedFile);
                                     }
                                 }}
@@ -328,26 +405,29 @@ export function AddDocumentRequirementDialog({
 
                             {file ? (
                                 <div className="space-y-1.5 text-xs">
-                                    <div className="size-10 mx-auto rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                                    <div className="mx-auto flex size-10 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
                                         <FileCheck className="size-5" />
                                     </div>
-                                    <div className="font-semibold text-foreground truncate max-w-xs mx-auto text-xs sm:text-sm">
+                                    <div className="mx-auto max-w-xs truncate text-xs font-semibold text-foreground sm:text-sm">
                                         {file.name}
                                     </div>
                                     <div className="text-[11px] text-muted-foreground">
-                                        {(file.size / (1024 * 1024)).toFixed(2)} MB • Click or drop to replace
+                                        {(file.size / (1024 * 1024)).toFixed(2)}{' '}
+                                        MB • Click or drop to replace
                                     </div>
                                 </div>
                             ) : (
                                 <div className="space-y-1.5 text-xs">
-                                    <div className="size-10 mx-auto rounded-full bg-muted text-muted-foreground flex items-center justify-center">
+                                    <div className="mx-auto flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
                                         <UploadCloud className="size-5" />
                                     </div>
-                                    <div className="font-medium text-foreground text-xs sm:text-sm">
-                                        Click to browse or drop template file here
+                                    <div className="text-xs font-medium text-foreground sm:text-sm">
+                                        Click to browse or drop template file
+                                        here
                                     </div>
                                     <div className="text-[11px] text-muted-foreground">
-                                        Supports PDF (.pdf) and Word (.docx, .doc) up to 15 MB
+                                        Supports PDF (.pdf) and Word (.docx,
+                                        .doc) up to 15 MB
                                     </div>
                                 </div>
                             )}
@@ -356,14 +436,14 @@ export function AddDocumentRequirementDialog({
                 </form>
 
                 {/* ── Dialog Footer (Responsive Buttons) ── */}
-                <DialogFooter className="px-5 py-3.5 sm:px-6 sm:py-4 border-t bg-muted/20 shrink-0 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                <DialogFooter className="flex shrink-0 flex-col-reverse gap-2 border-t bg-muted/20 px-5 py-3.5 sm:flex-row sm:justify-end sm:px-6 sm:py-4">
                     <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => handleOpenChange(false)}
                         disabled={isSubmitting}
-                        className="w-full sm:w-auto h-9 text-xs sm:text-sm"
+                        className="h-9 w-full text-xs sm:w-auto sm:text-sm"
                     >
                         Cancel
                     </Button>
@@ -372,7 +452,7 @@ export function AddDocumentRequirementDialog({
                         form="add-doc-requirement-form"
                         size="sm"
                         disabled={isSubmitting || !name.trim()}
-                        className="w-full sm:w-auto h-9 gap-1.5 text-xs sm:text-sm shadow-sm"
+                        className="h-9 w-full gap-1.5 text-xs shadow-sm sm:w-auto sm:text-sm"
                     >
                         {isSubmitting ? (
                             <>

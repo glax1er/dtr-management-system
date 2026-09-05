@@ -35,6 +35,7 @@ class KioskController extends Controller
         $kiosk->update(['device_token' => Kiosk::generateToken()]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Kiosk link regenerated. The old link no longer works.']);
+
         return back();
     }
 
@@ -43,6 +44,7 @@ class KioskController extends Controller
         $kiosk->update(['is_active' => ! $kiosk->is_active]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => $kiosk->is_active ? 'Kiosk enabled.' : 'Kiosk disabled.']);
+
         return back();
     }
 }

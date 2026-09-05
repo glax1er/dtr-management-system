@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Supervisor;
 
 use App\Http\Controllers\Controller;
 use App\Models\SchedulePeriod;
+use App\Models\User;
+use App\Notifications\ScheduleUpdatedNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -14,6 +17,7 @@ class SchedulePeriodController extends Controller
     public function index(Request $request): Response
     {
         $hteId = $request->user()->supervisorProfile->hte_id;
+        $highlightId = $request->input('highlight') ?? $request->input('highlight_id');
 
         // Global periods first (read-only reference for the supervisor),
         // then this HTE's own overrides — both shown together so the
@@ -31,6 +35,7 @@ class SchedulePeriodController extends Controller
         return Inertia::render('supervisor/schedule', [
             'globalPeriods' => $globalPeriods,
             'periods' => $ownPeriods,
+            'highlightId' => $highlightId ? (int) $highlightId : null,
         ]);
     }
 
@@ -39,7 +44,7 @@ class SchedulePeriodController extends Controller
         $hteId = $request->user()->supervisorProfile->hte_id;
         $validated = $this->validatePayload($request);
 
-        SchedulePeriod::create([
+        $schedulePeriod = SchedulePeriod::create([
             'hte_id' => $hteId,
             'name' => $validated['name'] ?? null,
             'start_date' => $validated['start_date'],
@@ -47,21 +52,17 @@ class SchedulePeriodController extends Controller
             'day_schedule' => $validated['day_schedule'],
         ]);
 
+        $this->notifyScheduleChange($schedulePeriod, ScheduleUpdatedNotification::ACTION_CREATED, $request->user());
+
         Inertia::flash('toast', ['type' => 'success', 'message' => 'HTE schedule override created.']);
+
         return back();
     }
 
     public function update(Request $request, SchedulePeriod $schedulePeriod): RedirectResponse
     {
         $hteId = $request->user()->supervisorProfile->hte_id;
-
-        if ($schedulePeriod->hte_id !== $hteId) {
-            abort(403);
-        }
-
-        if ($schedulePeriod->end_date->endOfDay()->isPast()) {
-            abort(403, 'Cannot edit a schedule period that has already ended.');
-        }
+        abort_if($schedulePeriod->hte_id !== $hteId, 404);
 
         $validated = $this->validatePayload($request);
 
@@ -72,38 +73,72 @@ class SchedulePeriodController extends Controller
             'day_schedule' => $validated['day_schedule'],
         ]);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Override updated.']);
+        $this->notifyScheduleChange($schedulePeriod, ScheduleUpdatedNotification::ACTION_UPDATED, $request->user());
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'HTE schedule override updated.']);
+
         return back();
     }
 
     public function destroy(Request $request, SchedulePeriod $schedulePeriod): RedirectResponse
     {
         $hteId = $request->user()->supervisorProfile->hte_id;
+        abort_if($schedulePeriod->hte_id !== $hteId, 404);
 
-        if ($schedulePeriod->hte_id !== $hteId) {
-            abort(403);
-        }
-
-        if ($schedulePeriod->end_date->endOfDay()->isPast()) {
-            abort(403, 'Cannot delete a schedule period that has already ended.');
-        }
+        $scheduleName = $schedulePeriod->name ?? "{$schedulePeriod->start_date->format('M d, Y')} - {$schedulePeriod->end_date->format('M d, Y')}";
+        $periodId = $schedulePeriod->id;
+        $hteName = $schedulePeriod->hte?->hte_name ?? $request->user()->supervisorProfile?->hte?->hte_name;
 
         $schedulePeriod->delete();
 
+        $this->notifyScheduleChangeDeleted($scheduleName, $periodId, $hteId, $hteName, $request->user());
+
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Override removed.']);
+
         return back();
     }
 
-    private function toArray(SchedulePeriod $period, string $scope): array
+    private function notifyScheduleChange(SchedulePeriod $schedulePeriod, string $action, ?User $actor = null): void
     {
-        return [
-            'id' => $period->id,
-            'name' => $period->name,
-            'start_date' => $period->start_date->toDateString(),
-            'end_date' => $period->end_date->toDateString(),
-            'day_schedule' => $period->day_schedule,
-            'scope' => $scope,
-        ];
+        $recipients = User::query()
+            ->where('role', User::ROLE_INTERN)
+            ->whereHas('internProfile', fn ($q) => $q->where('hte_id', $schedulePeriod->hte_id))
+            ->get()
+            ->filter(fn (User $user) => $user->wantsNotification('schedule_alerts'));
+
+        if ($recipients->isNotEmpty()) {
+            $scheduleName = $schedulePeriod->name ?? "{$schedulePeriod->start_date->format('M d, Y')} - {$schedulePeriod->end_date->format('M d, Y')}";
+            $hteName = $schedulePeriod->hte?->hte_name ?? $actor?->supervisorProfile?->hte?->hte_name;
+            Notification::send($recipients, new ScheduleUpdatedNotification(
+                action: $action,
+                scope: ScheduleUpdatedNotification::SCOPE_HTE,
+                scheduleName: $scheduleName,
+                hteName: $hteName,
+                actor: $actor,
+                schedulePeriodId: $schedulePeriod->id,
+                startDate: $schedulePeriod->start_date?->toDateString(),
+            ));
+        }
+    }
+
+    private function notifyScheduleChangeDeleted(string $scheduleName, int $periodId, int $hteId, ?string $hteName, ?User $actor = null): void
+    {
+        $recipients = User::query()
+            ->where('role', User::ROLE_INTERN)
+            ->whereHas('internProfile', fn ($q) => $q->where('hte_id', $hteId))
+            ->get()
+            ->filter(fn (User $user) => $user->wantsNotification('schedule_alerts'));
+
+        if ($recipients->isNotEmpty()) {
+            Notification::send($recipients, new ScheduleUpdatedNotification(
+                action: ScheduleUpdatedNotification::ACTION_DELETED,
+                scope: ScheduleUpdatedNotification::SCOPE_HTE,
+                scheduleName: $scheduleName,
+                hteName: $hteName,
+                actor: $actor,
+                schedulePeriodId: $periodId,
+            ));
+        }
     }
 
     private function validatePayload(Request $request): array
@@ -121,5 +156,17 @@ class SchedulePeriodController extends Controller
             'day_schedule.saturday' => ['nullable', 'date_format:H:i'],
             'day_schedule.sunday' => ['nullable', 'date_format:H:i'],
         ]);
+    }
+
+    private function toArray(SchedulePeriod $period, string $scope): array
+    {
+        return [
+            'id' => $period->id,
+            'name' => $period->name,
+            'start_date' => $period->start_date->toDateString(),
+            'end_date' => $period->end_date->toDateString(),
+            'day_schedule' => $period->day_schedule,
+            'scope' => $scope,
+        ];
     }
 }

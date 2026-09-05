@@ -76,7 +76,6 @@ return [
     */
     'time_out_cutoff' => env('DTR_TIME_OUT_CUTOFF', '16:00'),
 
-
     'grace_period_minutes' => env('DTR_GRACE_PERIOD_MINUTES', 30),
 
     /*
