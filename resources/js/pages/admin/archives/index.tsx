@@ -234,7 +234,11 @@ export default function ArchivesIndex({ records, currentType, filters }: Archive
                             <Tabs value={currentType} onValueChange={switchTab}>
                                 <TabsList className="w-auto">
                                     {TABS.map((tab) => (
-                                        <TabsTrigger key={tab.value} value={tab.value} className="text-xs sm:text-sm px-2 sm:px-3">
+                                        <TabsTrigger
+                                            key={tab.value}
+                                            value={tab.value}
+                                            className="text-xs sm:text-sm px-2 sm:px-3 dark:data-[state=active]:bg-white dark:data-[state=active]:text-black dark:data-[state=active]:border-transparent"
+                                        >
                                             {tab.label}
                                         </TabsTrigger>
                                     ))}
