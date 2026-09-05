@@ -1,7 +1,6 @@
 <?php
-// app/Http/Requests/Intern/UpdateProfilePhotoRequest.php
 
-namespace App\Http\Requests\Intern;
+namespace App\Http\Requests\Settings;
 
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -9,7 +8,7 @@ class UpdateProfilePhotoRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true; // any authenticated intern may update their own photo
+        return true;
     }
 
     public function rules(): array

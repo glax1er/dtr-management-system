@@ -181,3 +181,18 @@ test('supervisor can view manual attendance page with approved interns including
             ->where('interns.0.photo_url', null)
         );
 });
+
+test('supervisor can view manual attendance page with intern profile photo when present', function () {
+    [$supervisor, $hte] = makeHteSupervisorForManualAttendanceTest();
+    $intern = makeApprovedInternForManualAttendanceTest($hte);
+    $intern->update(['profile_photo_path' => 'profile-photos/intern.jpg']);
+
+    $this->actingAs($supervisor)
+        ->get('/supervisor/manual-attendance')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('supervisor/manual-attendance')
+            ->where('interns.0.photo_url', fn ($url) => str_contains((string) $url, 'profile-photos/intern.jpg'))
+        );
+});
+

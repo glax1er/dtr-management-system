@@ -63,9 +63,7 @@ class HandleInertiaRequests extends Middleware
                     'supervisor_type' => $user->isSupervisor()
                         ? $user->supervisorProfile?->supervisor_type
                         : null,
-                    'avatar' => $user->isIntern()
-                        ? $user->internProfile?->profile_photo_url
-                        : null,
+                    'avatar' => $user->profile_photo_url,
                 ] : null,
             ],
             'notifications' => $notifications,

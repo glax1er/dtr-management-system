@@ -84,7 +84,7 @@ class DashboardController extends Controller
                 'program_name' => $profile->program?->program_name ?? 'Deleted Program',
                 'status' => $profile->status,
                 'has_qr_code' => $profile->qr_code_value !== null,
-                'photo_url' => $profile->profile_photo_url,
+                'photo_url' => $user->profile_photo_url,
             ],
             'today' => [
                 'date' => $today->toDateString(),

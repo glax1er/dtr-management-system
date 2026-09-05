@@ -26,10 +26,11 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
  * @property string|null $remember_token
+ * @property string|null $profile_photo_path
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['role', 'name', 'email', 'password'])]
+#[Fillable(['role', 'name', 'email', 'password', 'profile_photo_path'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
@@ -86,6 +87,17 @@ class User extends Authenticatable implements PasskeyUser
     public function internDocuments(): HasMany
     {
         return $this->hasMany(InternDocument::class, 'user_id', 'id');
+    }
+
+        /**
+     * Public URL for the profile photo, or null if this user hasn't
+     * uploaded one — same feature for every role now, not just interns.
+     */
+    public function getProfilePhotoUrlAttribute(): ?string
+    {
+        return $this->profile_photo_path
+            ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->profile_photo_path)
+            : null;
     }
 
     public function isAdmin(): bool

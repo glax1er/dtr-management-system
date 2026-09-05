@@ -11,7 +11,6 @@ use App\Http\Controllers\Admin\SchedulePeriodController as AdminScheduleControll
 use App\Http\Controllers\Intern\QrCodeImageController;
 use App\Http\Controllers\Intern\DashboardController as InternDashboardController;
 use App\Http\Controllers\Intern\DtrReportController;
-use App\Http\Controllers\Intern\ProfilePhotoController;
 use App\Http\Controllers\Supervisor\DashboardController as SupervisorDashboardController;
 use App\Http\Controllers\Supervisor\HtesController as SupervisorHtesController;
 use App\Http\Controllers\Supervisor\InternsController;
@@ -36,6 +35,9 @@ Route::redirect('/', '/login')->name('home');
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('notifications', [NotificationController::class, 'index'])
     ->name('notifications.index');
+
+    Route::post('settings/profile-photo', [\App\Http\Controllers\Settings\ProfilePhotoController::class, 'store'])->name('settings.profile-photo.store');
+    Route::delete('settings/profile-photo', [\App\Http\Controllers\Settings\ProfilePhotoController::class, 'destroy'])->name('settings.profile-photo.destroy');
 
     Route::post('notifications/{notification}/read', [NotificationController::class, 'markRead'])
         ->name('notifications.markRead');
@@ -170,9 +172,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('dashboard', [InternDashboardController::class, 'index'])->name('dashboard');
         Route::get('dtr-report', [DtrReportController::class, 'download'])->name('dtr-report.download');
         Route::get('qr-code', [QrCodeImageController::class, 'show'])->name('qr-code.show');
-
-        Route::post('profile-photo', [ProfilePhotoController::class, 'store'])->name('profile-photo.store');
-        Route::delete('profile-photo', [ProfilePhotoController::class, 'destroy'])->name('profile-photo.destroy');
 
         Route::post('resolution-tickets', [InternResolutionTicketController::class, 'store'])
             ->name('resolution-tickets.store');
