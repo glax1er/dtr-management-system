@@ -368,7 +368,7 @@ export default function MyStudents({
                                                     <TableHead className="px-4">Hours Rendered</TableHead>
                                                     <TableHead className="px-4 text-center">Documents</TableHead>
                                                     <TableHead className="px-4 text-center">Requirement Status</TableHead>
-                                                    <TableHead className="px-6 text-right">Actions</TableHead>
+                                                    <TableHead className="px-6 text-center">Actions</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
@@ -418,8 +418,8 @@ export default function MyStudents({
                                                                 className="text-xs"
                                                             />
                                                         </TableCell>
-                                                        <TableCell className="px-6 py-3 whitespace-nowrap text-right">
-                                                            <div className="flex items-center justify-end gap-1.5">
+                                                        <TableCell className="px-6 py-3 whitespace-nowrap text-center">
+                                                            <div className="flex items-center justify-center gap-1.5">
                                                                 <CompletionSummaryDialog
                                                                     internUserId={student.intern_user_id}
                                                                     internName={student.name}
