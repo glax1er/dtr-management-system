@@ -212,9 +212,6 @@ export default function SupervisorHtes({
                             </span>
                             Host Training Establishments
                         </h1>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            {hteCount} HTE{hteCount === 1 ? '' : 's'} hosting interns from {scopeName ?? 'your program'}.
-                        </p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
@@ -342,10 +339,10 @@ export default function SupervisorHtes({
                         {/* Table view */}
                         {view === 'table' && (
                             <div className="hidden sm:block">
-                                <Card>
+                                <Card className="overflow-hidden p-0">
                                     <CardContent className="p-0">
                                         <Table>
-                                            <TableHeader className="bg-muted/40">
+                                            <TableHeader>
                                                 <TableRow>
                                                     <TableHead className="w-8 px-4" />
                                                     <TableHead className="px-6 font-semibold">Host Training Establishment</TableHead>
@@ -407,7 +404,7 @@ export default function SupervisorHtes({
                                                                         ) : (
                                                                             <div className="rounded-lg border bg-card overflow-hidden">
                                                                                 <Table>
-                                                                                    <TableHeader className="bg-muted/40">
+                                                                                    <TableHeader>
                                                                                         <TableRow>
                                                                                             <TableHead className="px-4 font-semibold">Intern</TableHead>
                                                                                             <TableHead className="px-4 text-center font-semibold">ID Number</TableHead>
