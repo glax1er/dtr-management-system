@@ -357,7 +357,7 @@ export default function MyStudents({
                         {/* Table view */}
                         {view === 'table' && (
                             <div className="hidden sm:block">
-                                <Card>
+                                <Card className="overflow-hidden p-0">
                                     <CardContent className="p-0">
                                         <Table>
                                             <TableHeader>

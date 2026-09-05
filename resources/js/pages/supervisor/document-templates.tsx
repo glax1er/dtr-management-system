@@ -650,11 +650,11 @@ export default function DocumentTemplates({
                         </div>
                     ) : (
                         /* Archived Table */
-                        <Card>
+                        <Card className="overflow-hidden p-0">
                             <CardContent className="p-0">
                                 <Table>
                                     <TableHeader>
-                                        <TableRow className="bg-muted/50">
+                                        <TableRow>
                                             <TableHead className="px-6">Document Name</TableHead>
                                             <TableHead className="px-6 text-center">Category</TableHead>
                                             <TableHead className="px-6 text-center">Type</TableHead>
@@ -910,11 +910,11 @@ export default function DocumentTemplates({
                         </div>
                     ) : (
                         /* Uniform Admin Table View */
-                        <Card>
+                        <Card className="overflow-hidden p-0">
                             <CardContent className="p-0">
                                 <Table>
                                     <TableHeader>
-                                        <TableRow className="bg-muted/50">
+                                        <TableRow>
                                             <TableHead className="px-6">Document Requirement</TableHead>
                                             <TableHead className="px-6 text-center">Category</TableHead>
                                             <TableHead className="px-6 text-center">Requirement</TableHead>
