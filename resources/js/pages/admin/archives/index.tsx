@@ -302,7 +302,7 @@ export default function ArchivesIndex({
                         </button>
 
                         {/* Tabs Filter */}
-                        <div className="max-w-[calc(100%-3rem)] scrollbar-none overflow-x-auto sm:max-w-none">
+                        <div className="scrollbar-none max-w-[calc(100%-3rem)] overflow-x-auto sm:max-w-none">
                             <Tabs value={currentType} onValueChange={switchTab}>
                                 <TabsList className="w-auto">
                                     {TABS.map((tab) => (

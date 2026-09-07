@@ -427,7 +427,7 @@ export default function MyStudents({
                     <>
                         {/* Table view */}
                         {view === 'table' && (
-                            <div className="hidden overflow-x-auto rounded-md border sm:block">
+                            <div className="scrollbar-none hidden overflow-x-auto rounded-md border sm:block">
                                 <Table className="w-full min-w-[720px] text-sm">
                                     <TableHeader>
                                         <TableRow className="border-b text-left text-muted-foreground">

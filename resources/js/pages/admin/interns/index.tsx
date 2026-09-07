@@ -266,7 +266,7 @@ export default function InternsIndex({
                             )}
                         </button>
 
-                        <div className="max-w-[calc(100%-3rem)] scrollbar-none overflow-x-auto sm:max-w-none">
+                        <div className="scrollbar-none max-w-[calc(100%-3rem)] overflow-x-auto sm:max-w-none">
                             <Tabs
                                 value={currentStatus}
                                 onValueChange={switchTab}
