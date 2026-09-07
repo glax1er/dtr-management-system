@@ -240,4 +240,3 @@ test('supervisor can view manual attendance page with intern profile photo when 
             ->where('interns.0.photo_url', fn ($url) => str_contains((string) $url, 'profile-photos/intern.jpg'))
         );
 });
-
