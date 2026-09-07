@@ -195,7 +195,7 @@ export default function InternDashboard({
                 {/* Header Banner */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-4">
-                                                <div className="shrink-0">
+                        <div className="shrink-0">
                             <div className="flex size-14 items-center justify-center overflow-hidden rounded-2xl border border-border bg-muted shadow-xs sm:size-16">
                                 {profile.photo_url ? (
                                     <img
