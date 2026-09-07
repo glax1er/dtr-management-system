@@ -180,7 +180,7 @@ parameters:
         -
             identifier: missingType.iterableValue
             count: 1
-            path: app/Http/Requests/Intern/UpdateProfilePhotoRequest.php
+            path: app/Http/Requests/Settings/UpdateProfilePhotoRequest.php
 
         -
             identifier: missingType.generics

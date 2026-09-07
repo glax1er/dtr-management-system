@@ -29,7 +29,7 @@ class ProfileController extends Controller
         ]);
     }
 
-        /**
+    /**
      * Update the user's profile information. Email is intentionally
      * excluded — it's permanent once the account exists, changeable
      * only by an admin working directly with the record, not via this
