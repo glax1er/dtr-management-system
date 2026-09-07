@@ -1,7 +1,6 @@
 import { Head, router } from '@inertiajs/react';
 import {
     CalendarCheck2,
-    Camera,
     CheckCircle2,
     ChevronLeft,
     ChevronRight,
@@ -14,8 +13,7 @@ import {
     TrendingUp,
     User as UserIcon,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
+import { useEffect, useState } from 'react';
 import { StatCard } from '@/components/dashboard-analytics';
 import { HoursProgressRing } from '@/components/hours-progress-ring';
 import { NumberedPagination } from '@/components/numbered-pagination';
@@ -65,7 +63,6 @@ export default function InternDashboard({
     monthTotalHours,
     canGoNextMonth,
 }: InternDashboardProps) {
-    const fileInputRef = useRef<HTMLInputElement>(null);
     const [startDate, setStartDate] = useState<string>('');
     const [endDate, setEndDate] = useState<string>('');
 
@@ -164,27 +161,6 @@ export default function InternDashboard({
         );
     };
 
-    const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-
-        if (!file) {
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append('photo', file);
-
-        router.post('/intern/profile-photo', formData, {
-            preserveScroll: true,
-            forceFormData: true,
-            onSuccess: () => toast.success('Profile photo updated.'),
-            onError: (errors) =>
-                toast.error(
-                    Object.values(errors)[0] ?? 'Could not upload photo.',
-                ),
-        });
-    };
-
     const remainingHours = Math.max(0, hours.required - hours.total_rendered);
     const remainingPercent = Math.max(0, 100 - hours.progress_percent);
 
@@ -219,7 +195,7 @@ export default function InternDashboard({
                 {/* Header Banner */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-4">
-                        <div className="group relative shrink-0">
+                                                <div className="shrink-0">
                             <div className="flex size-14 items-center justify-center overflow-hidden rounded-2xl border border-border bg-muted shadow-xs sm:size-16">
                                 {profile.photo_url ? (
                                     <img
@@ -231,23 +207,6 @@ export default function InternDashboard({
                                     <UserIcon className="size-7 text-muted-foreground sm:size-8" />
                                 )}
                             </div>
-
-                            <button
-                                type="button"
-                                onClick={() => fileInputRef.current?.click()}
-                                className="absolute -right-1 -bottom-1 flex size-6 items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground shadow-xs transition-transform hover:scale-110 sm:size-6.5"
-                                title="Change profile photo"
-                            >
-                                <Camera className="size-3" />
-                            </button>
-
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/jpeg,image/png,image/webp"
-                                className="hidden"
-                                onChange={handlePhotoSelect}
-                            />
                         </div>
 
                         <div className="space-y-0.5">

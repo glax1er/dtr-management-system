@@ -75,9 +75,11 @@ class InternProfile extends Model
      */
     public function getProfilePhotoUrlAttribute(): ?string
     {
-        return $this->profile_photo_path
-            ? Storage::disk('public')->url($this->profile_photo_path)
-            : null;
+        if ($this->profile_photo_path) {
+            return Storage::disk('public')->url($this->profile_photo_path);
+        }
+
+        return $this->user?->profile_photo_url;
     }
 
     /**

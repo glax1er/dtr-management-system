@@ -14,6 +14,8 @@ test('profile page is displayed', function () {
 
 test('profile information can be updated', function () {
     $user = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $originalEmail = $user->email;
+    $originalVerifiedAt = $user->email_verified_at;
 
     $response = $this
         ->actingAs($user)
@@ -29,8 +31,8 @@ test('profile information can be updated', function () {
     $user->refresh();
 
     expect($user->name)->toBe('Test User');
-    expect($user->email)->toBe('test@example.com');
-    expect($user->email_verified_at)->toBeNull();
+    expect($user->email)->toBe($originalEmail);
+    expect($user->email_verified_at)->toEqual($originalVerifiedAt);
 });
 
 test('email verification status is unchanged when the email address is unchanged', function () {

@@ -28,10 +28,11 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
  * @property string|null $remember_token
+ * @property string|null $profile_photo_path
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['role', 'name', 'email', 'password', 'notification_preferences', 'notifications_cleared_at'])]
+#[Fillable(['role', 'name', 'email', 'password', 'profile_photo_path', 'notification_preferences', 'notifications_cleared_at'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
@@ -48,6 +49,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         'name',
         'email',
         'password',
+        'profile_photo_path',
         'notification_preferences',
         'notifications_cleared_at',
     ];
@@ -278,6 +280,13 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function internDocuments(): HasMany
     {
         return $this->hasMany(InternDocument::class, 'user_id', 'id');
+    }
+
+    public function getProfilePhotoUrlAttribute(): ?string
+    {
+        return $this->profile_photo_path
+            ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->profile_photo_path)
+            : null;
     }
 
     public function isAdmin(): bool

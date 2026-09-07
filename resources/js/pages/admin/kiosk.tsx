@@ -1,6 +1,7 @@
 import { Head, router } from '@inertiajs/react';
 import { MonitorSmartphone } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,28 +30,33 @@ export default function AdminKiosk({ kiosk }: KioskProps) {
     const copyLink = async () => {
         await navigator.clipboard.writeText(kiosk.scan_url);
         setCopied(true);
+        toast.success('Link copied to clipboard.');
         setTimeout(() => setCopied(false), 2000);
     };
 
     const regenerate = () => {
-        if (
-            confirm(
-                'Regenerate the kiosk link? The old link will stop working immediately.',
-            )
-        ) {
-            router.post(
-                `/admin/kiosk/${kiosk.id}/regenerate`,
-                {},
-                { preserveScroll: true },
-            );
-        }
+        router.post(
+            `/admin/kiosk/${kiosk.id}/regenerate`,
+            {},
+            {
+                preserveScroll: true,
+                onError: () => {
+                    toast.error('Failed to regenerate kiosk link.');
+                },
+            },
+        );
     };
 
     const toggle = () => {
         router.post(
             `/admin/kiosk/${kiosk.id}/toggle`,
             {},
-            { preserveScroll: true },
+            {
+                preserveScroll: true,
+                onError: () => {
+                    toast.error('Failed to update kiosk status.');
+                },
+            },
         );
     };
 

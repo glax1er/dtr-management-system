@@ -104,6 +104,9 @@ class ArchiveController extends Controller
                     if ($profile->profile_photo_path) {
                         Storage::disk('public')->delete($profile->profile_photo_path);
                     }
+                    if ($profile->user?->profile_photo_path) {
+                        Storage::disk('public')->delete($profile->user->profile_photo_path);
+                    }
 
                     // 1b. Delete uploaded requirement documents from storage
                     Storage::disk('local')->deleteDirectory("intern-documents/{$profile->user_id}");
