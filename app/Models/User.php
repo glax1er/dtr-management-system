@@ -335,7 +335,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
      *
      * OJT Supervisors don't get a dashboard of their own — they only
      * view/monitor their program's roster — so they land straight on
-     * "My Students" instead of the (HTE-only) supervisor dashboard.
+     * "My Interns" instead of the (HTE-only) supervisor dashboard.
      */
     public function homeRouteName(): string
     {
