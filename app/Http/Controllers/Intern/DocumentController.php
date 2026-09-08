@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Intern;
 use App\Http\Controllers\Controller;
 use App\Models\DocumentTemplate;
 use App\Models\InternDocument;
+use App\Models\User;
+use App\Notifications\InternDocumentNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -166,7 +168,7 @@ class DocumentController extends Controller
 
         $path = $file->store("intern-documents/{$user->id}", 'local');
 
-        InternDocument::updateOrCreate(
+        $internDoc = InternDocument::updateOrCreate(
             [
                 'user_id' => $user->id,
                 'document_type' => $documentType,
@@ -187,6 +189,29 @@ class DocumentController extends Controller
         $docConfig = InternDocument::getTypeConfig($documentType, $internProfile?->program_id);
         $docName = $docConfig['name'] ?? 'Document';
 
+        // Notify OJT supervisors overseeing this intern's program
+        if ($internProfile?->program_id) {
+            User::query()
+                ->where('role', User::ROLE_SUPERVISOR)
+                ->whereHas('supervisorProfile', function ($query) use ($internProfile) {
+                    $query
+                        ->where('supervisor_type', 'ojt')
+                        ->where('program_id', $internProfile->program_id);
+                })
+                ->get()
+                ->filter(fn (User $supervisor) => $supervisor->wantsNotification('document_submissions'))
+                ->each(function (User $supervisor) use ($internDoc, $user, $docName) {
+                    $supervisor->notify(
+                        new InternDocumentNotification(
+                            internDocument: $internDoc,
+                            event: InternDocumentNotification::DOCUMENT_SUBMITTED,
+                            actor: $user,
+                            docName: $docName,
+                        )
+                    );
+                });
+        }
+
         return back()->with('success', "{$docName} uploaded successfully and submitted for review.");
     }
 
@@ -204,7 +229,7 @@ class DocumentController extends Controller
 
         return response()->file($fullPath, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="' . addslashes($internDocument->original_filename) . '"',
+            'Content-Disposition' => 'inline; filename="'.addslashes($internDocument->original_filename).'"',
         ]);
     }
 

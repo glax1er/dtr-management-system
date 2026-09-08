@@ -25,17 +25,12 @@ return new class extends Migration
                     ->update(['profile_photo_path' => $profile->profile_photo_path]);
             });
 
-        Schema::table('intern_profiles', function (Blueprint $table) {
-            $table->dropColumn('profile_photo_path');
-        });
+        // Keep the legacy column for compatibility with existing intern photo
+        // uploads while new uploads are stored on users.profile_photo_path.
     }
 
     public function down(): void
     {
-        Schema::table('intern_profiles', function (Blueprint $table) {
-            $table->string('profile_photo_path')->nullable();
-        });
-
         DB::table('users')
             ->whereNotNull('profile_photo_path')
             ->orderBy('id')

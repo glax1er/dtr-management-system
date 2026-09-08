@@ -10,14 +10,17 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class SupervisorProfile extends Model
 {
     use SoftDeletes;
+
     // user_id is the primary key here (one-to-one with users) —
     // same reasoning as InternProfile.
     protected $primaryKey = 'user_id';
+
     public $incrementing = false;
 
     // Only created_at exists on this table. Eloquent will populate it on create
     // and {@see UPDATED_AT} is disabled since this table has no updated_at.
     public $timestamps = true;
+
     public const UPDATED_AT = null;
 
     protected $fillable = [
@@ -97,10 +100,10 @@ class SupervisorProfile extends Model
     public function getAssignedInterns(): mixed
     {
         if ($this->isHteSupervisor()) {
-            return $this->hte?->internProfiles() ?? \App\Models\InternProfile::whereRaw('1 = 0');
+            return $this->hte?->internProfiles() ?? InternProfile::whereRaw('1 = 0');
         }
 
-        return $this->program?->internProfiles() ?? \App\Models\InternProfile::whereRaw('1 = 0');
+        return $this->program?->internProfiles() ?? InternProfile::whereRaw('1 = 0');
     }
 
     /**

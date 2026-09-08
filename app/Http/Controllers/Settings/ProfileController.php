@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
+use App\Models\SupervisorProfile;
+use App\Models\User;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,12 +19,16 @@ class ProfileController extends Controller
     /**
      * Show the user's profile settings page.
      */
-        public function edit(Request $request): Response
+    public function edit(Request $request): Response
     {
         $user = $request->user();
 
         return Inertia::render('settings/profile', [
-            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
+            // Email verification is intern-only — supervisors and admins
+            // are exempt (see User::hasVerifiedEmail()), so they should
+            // never see the "verify your email" prompt on this page.
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail
+                && $user->isIntern(),
             'status' => $request->session()->get('status'),
             'idCard' => $this->idCardData($user),
             'profileDetails' => $this->profileDetails($user),
@@ -33,8 +39,10 @@ class ProfileController extends Controller
      * Role-specific fields for the printable ID card — nothing here
      * lives on the shared users table, so it isn't already available
      * via the globally-shared auth.user prop.
+     *
+     * @return array<string, mixed>
      */
-    private function idCardData(\App\Models\User $user): array
+    private function idCardData(User $user): array
     {
         if ($user->isIntern()) {
             $profile = $user->internProfile()->with([
@@ -44,8 +52,8 @@ class ProfileController extends Controller
 
             return [
                 'id_number' => $profile?->id_number,
-                'subtitle' => $profile?->program?->program_name ?? 'Not assigned',
-                'detail' => $profile?->hte?->hte_name ?? 'Not assigned',
+                'subtitle' => $profile?->program->program_name ?? 'Not assigned',
+                'detail' => $profile?->hte->hte_name ?? 'Not assigned',
                 'has_qr_code' => $profile?->qr_code_value !== null,
                 'qr_code_url' => $profile?->qr_code_value !== null
                     ? route('intern.qr-code.show')
@@ -77,8 +85,10 @@ class ProfileController extends Controller
     /**
      * Non-editable profile assignment details (role, id_number, program,
      * HTE, and supervisor names) shown in the profile settings form.
+     *
+     * @return array<string, mixed>
      */
-    private function profileDetails(\App\Models\User $user): array
+    private function profileDetails(User $user): array
     {
         if ($user->isIntern()) {
             $profile = $user->internProfile()->with([
@@ -88,7 +98,7 @@ class ProfileController extends Controller
 
             $hteSupervisorNames = null;
             if ($profile?->hte_id) {
-                $names = \App\Models\SupervisorProfile::where('hte_id', $profile->hte_id)
+                $names = SupervisorProfile::where('hte_id', $profile->hte_id)
                     ->where('supervisor_type', 'hte')
                     ->where('status', 'active')
                     ->with('user:id,name')
@@ -104,7 +114,7 @@ class ProfileController extends Controller
 
             $ojtSupervisorNames = null;
             if ($profile?->program_id) {
-                $names = \App\Models\SupervisorProfile::where('program_id', $profile->program_id)
+                $names = SupervisorProfile::where('program_id', $profile->program_id)
                     ->where('supervisor_type', 'ojt')
                     ->where('status', 'active')
                     ->with('user:id,name')
@@ -154,7 +164,7 @@ class ProfileController extends Controller
         ];
     }
 
-        /**
+    /**
      * Update the user's profile information. Email is intentionally
      * excluded — it's permanent once the account exists, changeable
      * only by an admin working directly with the record, not via this
@@ -171,5 +181,22 @@ class ProfileController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Profile updated.')]);
 
         return to_route('profile.edit');
+    }
+
+    /**
+     * Delete the user's account.
+     */
+    public function destroy(ProfileDeleteRequest $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        Auth::logout();
+
+        $user->delete();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return to_route('home');
     }
 }

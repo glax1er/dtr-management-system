@@ -15,6 +15,7 @@ class Program extends Model
     // Only created_at exists on this table. Eloquent will populate it on create
     // and {@see UPDATED_AT} is disabled since this table has no updated_at.
     public $timestamps = true;
+
     public const UPDATED_AT = null;
 
     protected $fillable = [
@@ -24,9 +25,9 @@ class Program extends Model
     ];
 
     protected $casts = [
-        'is_active'      => 'boolean',
+        'is_active' => 'boolean',
         'required_hours' => 'integer',
-        'created_at'     => 'datetime',
+        'created_at' => 'datetime',
     ];
 
     /**

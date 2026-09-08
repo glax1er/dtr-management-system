@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,12 +50,16 @@ export default function PaginationFooter({
     idPrefix = 'per-page',
 }: PaginationFooterProps) {
     const [perPageDraft, setPerPageDraft] = useState(String(meta.per_page));
+    // Track the per_page value perPageDraft was last synced from, so a
+    // change coming from outside (e.g. the user navigates back/forward
+    // and a different value is restored) resets the draft during render
+    // instead of via a post-commit effect.
+    const [syncedPerPage, setSyncedPerPage] = useState(meta.per_page);
 
-    // Keep the input in sync if per_page changes from outside (e.g. the
-    // user navigates back/forward and a different value is restored).
-    useEffect(() => {
+    if (meta.per_page !== syncedPerPage) {
+        setSyncedPerPage(meta.per_page);
         setPerPageDraft(String(meta.per_page));
-    }, [meta.per_page]);
+    }
 
     if (meta.total === 0) {
         return null;

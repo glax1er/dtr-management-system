@@ -50,7 +50,7 @@ class DevDataSeeder extends Seeder
             $supervisorUser = User::create([
                 'role' => User::ROLE_SUPERVISOR,
                 'name' => fake()->name(),
-                'email' => Str::slug($hteName) . '-supervisor@dtr.test',
+                'email' => Str::slug($hteName).'-supervisor@dtr.test',
                 'password' => config('supervisor.default_supervisor_password'),
                 'email_verified_at' => now(),
             ]);

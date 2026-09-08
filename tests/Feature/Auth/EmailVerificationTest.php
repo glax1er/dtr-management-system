@@ -1,101 +1,167 @@
 <?php
 
+use App\Models\EmailVerificationCode;
+use App\Models\Hte;
+use App\Models\InternProfile;
+use App\Models\Program;
+use App\Models\SupervisorProfile;
 use App\Models\User;
+use App\Notifications\EmailVerificationCodeNotification;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Notification;
 use Laravel\Fortify\Features;
 
 beforeEach(function () {
     $this->skipUnlessFortifyHas(Features::emailVerification());
 });
 
-test('email verification screen can be rendered', function () {
+test('email verification notice redirects to login modal with verification state', function () {
     $user = User::factory()->unverified()->create();
 
     $response = $this->actingAs($user)->get(route('verification.notice'));
 
-    $response->assertOk();
+    $response->assertRedirect(route('login'));
+    $response->assertSessionHas('show_verification', true);
 });
 
-test('email can be verified', function () {
-    $user = User::factory()->unverified()->create();
+test('verified user or admin is redirected away from verification screen', function () {
+    $user = User::factory()->create(['role' => User::ROLE_ADMIN]);
 
+    $response = $this->actingAs($user)->get(route('verification.notice'));
+
+    $response->assertRedirect(route('dashboard'));
+});
+
+test('unverified user can verify email using valid 6-digit code', function () {
     Event::fake();
 
-    $verificationUrl = URL::temporarySignedRoute(
-        'verification.verify',
-        now()->addMinutes(60),
-        ['id' => $user->id, 'hash' => sha1($user->email)],
-    );
+    $user = User::factory()->unverified()->create([
+        'role' => User::ROLE_INTERN,
+    ]);
+    $hte = Hte::create(['hte_name' => 'Test HTE']);
+    $program = Program::create(['program_name' => 'BSIT']);
+    InternProfile::create([
+        'user_id' => $user->id,
+        'id_number' => '2026-88888',
+        'sex' => 'male',
+        'hte_id' => $hte->hte_id,
+        'program_id' => $program->program_id,
+        'status' => 'approved',
+        'privacy_accepted_at' => now(),
+    ]);
 
-    $response = $this->actingAs($user)->get($verificationUrl);
+    $code = EmailVerificationCode::generateFor($user->email);
+
+    $response = $this->actingAs($user)->post(route('verification.verify-code'), [
+        'code' => $code,
+    ]);
 
     Event::assertDispatched(Verified::class);
-
     expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
-    $response->assertRedirect(route('dashboard', absolute: false).'?verified=1');
+    $response->assertRedirect(route('dashboard'));
 });
 
-test('email is not verified with invalid hash', function () {
-    $user = User::factory()->unverified()->create();
-
+test('intern with pending approval is logged out after verifying email and prompted to wait for approval', function () {
     Event::fake();
 
-    $verificationUrl = URL::temporarySignedRoute(
-        'verification.verify',
-        now()->addMinutes(60),
-        ['id' => $user->id, 'hash' => sha1('wrong-email')],
-    );
+    $user = User::factory()->unverified()->create([
+        'role' => User::ROLE_INTERN,
+    ]);
+    $hte = Hte::create(['hte_name' => 'Test HTE']);
+    $program = Program::create(['program_name' => 'BSIT']);
+    InternProfile::create([
+        'user_id' => $user->id,
+        'id_number' => '2026-99999',
+        'sex' => 'female',
+        'hte_id' => $hte->hte_id,
+        'program_id' => $program->program_id,
+        'status' => 'pending',
+        'privacy_accepted_at' => now(),
+    ]);
 
-    $this->actingAs($user)->get($verificationUrl);
+    $code = EmailVerificationCode::generateFor($user->email);
+
+    $response = $this->actingAs($user)->post(route('verification.verify-code'), [
+        'code' => $code,
+    ]);
+
+    Event::assertDispatched(Verified::class);
+    expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
+    $this->assertGuest();
+    $response->assertRedirect(route('login'));
+    $response->assertSessionHas('status');
+});
+
+test('email is not verified with invalid 6-digit code', function () {
+    Event::fake();
+
+    $user = User::factory()->unverified()->create();
+    EmailVerificationCode::generateFor($user->email);
+
+    $response = $this->actingAs($user)->post(route('verification.verify-code'), [
+        'code' => '000000',
+    ]);
 
     Event::assertNotDispatched(Verified::class);
     expect($user->fresh()->hasVerifiedEmail())->toBeFalse();
+    $response->assertSessionHasErrors('code');
 });
 
-test('email is not verified with invalid user id', function () {
+test('resending verification notification generates new code and sends email', function () {
+    Notification::fake();
+
     $user = User::factory()->unverified()->create();
 
-    Event::fake();
+    $response = $this->actingAs($user)->post(route('verification.send'));
 
-    $verificationUrl = URL::temporarySignedRoute(
-        'verification.verify',
-        now()->addMinutes(60),
-        ['id' => 123, 'hash' => sha1($user->email)],
-    );
-
-    $this->actingAs($user)->get($verificationUrl);
-
-    Event::assertNotDispatched(Verified::class);
-    expect($user->fresh()->hasVerifiedEmail())->toBeFalse();
+    $response->assertSessionHas('status');
+    Notification::assertSentTo($user, EmailVerificationCodeNotification::class);
 });
 
-test('verified user is redirected to dashboard from verification prompt', function () {
-    $user = User::factory()->create();
+test('admin account is always considered verified and exempt', function () {
+    $admin = User::factory()->unverified()->create([
+        'role' => User::ROLE_ADMIN,
+    ]);
 
-    Event::fake();
-
-    $response = $this->actingAs($user)->get(route('verification.notice'));
-
-    Event::assertNotDispatched(Verified::class);
-    $response->assertRedirect(route('dashboard', absolute: false));
+    expect($admin->isAdmin())->toBeTrue();
+    expect($admin->hasVerifiedEmail())->toBeTrue();
 });
 
-test('already verified user visiting verification link is redirected without firing event again', function () {
-    $user = User::factory()->create();
+test('hte and ojt supervisor accounts are always considered verified and exempt', function () {
+    $hteSupervisor = User::factory()->unverified()->create([
+        'role' => User::ROLE_SUPERVISOR,
+    ]);
+    SupervisorProfile::create([
+        'user_id' => $hteSupervisor->id,
+        'supervisor_type' => 'hte',
+        'status' => 'active',
+    ]);
 
-    Event::fake();
+    $ojtSupervisor = User::factory()->unverified()->create([
+        'role' => User::ROLE_SUPERVISOR,
+    ]);
+    SupervisorProfile::create([
+        'user_id' => $ojtSupervisor->id,
+        'supervisor_type' => 'ojt',
+        'status' => 'active',
+    ]);
 
-    $verificationUrl = URL::temporarySignedRoute(
-        'verification.verify',
-        now()->addMinutes(60),
-        ['id' => $user->id, 'hash' => sha1($user->email)],
-    );
+    expect($hteSupervisor->hasVerifiedEmail())->toBeTrue();
+    expect($ojtSupervisor->hasVerifiedEmail())->toBeTrue();
+});
 
-    $this->actingAs($user)->get($verificationUrl)
-        ->assertRedirect(route('dashboard', absolute: false).'?verified=1');
+test('verified user or supervisor is redirected away from verification screen', function () {
+    $supervisor = User::factory()->unverified()->create([
+        'role' => User::ROLE_SUPERVISOR,
+    ]);
+    SupervisorProfile::create([
+        'user_id' => $supervisor->id,
+        'supervisor_type' => 'ojt',
+        'status' => 'active',
+    ]);
 
-    Event::assertNotDispatched(Verified::class);
-    expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
+    $response = $this->actingAs($supervisor)->get(route('verification.notice'));
+
+    $response->assertRedirect(route('dashboard'));
 });

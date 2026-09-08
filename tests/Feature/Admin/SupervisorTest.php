@@ -93,4 +93,3 @@ test('supervisor creation validates email presence, format, and uniqueness', fun
         'email' => 'The email must be a valid email address.',
     ]);
 });
-

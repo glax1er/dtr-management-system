@@ -38,19 +38,19 @@ class DtrReportController extends Controller
 
         // Determine reporting period. Prefer explicit start/end, then a single date (use that week),
         // then legacy month param; default to current week to support weekly reporting.
-        if (!empty($validated['start']) && !empty($validated['end'])) {
+        if (! empty($validated['start']) && ! empty($validated['end'])) {
             $from = Carbon::createFromFormat('Y-m-d', $validated['start'], $timezone)->startOfDay();
             $to = Carbon::createFromFormat('Y-m-d', $validated['end'], $timezone)->endOfDay();
             if ($from->gt($to)) {
                 // swap to be safe
                 [$from, $to] = [$to, $from];
             }
-        } elseif (!empty($validated['date'])) {
+        } elseif (! empty($validated['date'])) {
             $d = Carbon::createFromFormat('Y-m-d', $validated['date'], $timezone);
             // Use ISO week start (Monday) to end (Sunday)
             $from = $d->copy()->startOfWeek();
             $to = $d->copy()->endOfWeek();
-        } elseif (!empty($validated['month'])) {
+        } elseif (! empty($validated['month'])) {
             $month = Carbon::createFromFormat('Y-m-d', $validated['month'].'-01', $timezone)->startOfMonth();
             $from = $month->copy()->startOfMonth();
             $to = $month->copy()->endOfMonth();

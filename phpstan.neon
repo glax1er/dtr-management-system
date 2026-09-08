@@ -1,6 +1,7 @@
 includes:
     - vendor/larastan/larastan/extension.neon
     - vendor/nesbot/carbon/extension.neon
+    - phpstan-baseline.neon
 
 parameters:
     paths:
@@ -11,3 +12,13 @@ parameters:
         - routes/
 
     level: 7
+
+    # floatDiffIn*() (and friends) are real Carbon 3 methods, added via a
+    # trait on the concrete Carbon/CarbonImmutable classes, but not
+    # declared on the CarbonInterface interface those classes implement —
+    # so code typed against the interface (rather than a concrete class)
+    # trips this as a false positive. Carbon's own phpstan.neon ignores
+    # the exact same pattern for its own codebase, for the same reason:
+    # https://github.com/briannesbitt/Carbon/blob/master/phpstan.neon
+    ignoreErrors:
+        - '#^Call to an undefined method Carbon\\Carbon(Interface|Immutable)?::floatDiffIn([A-Za-z]+)\(\)\.$#'

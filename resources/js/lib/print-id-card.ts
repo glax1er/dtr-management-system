@@ -1,4 +1,8 @@
-import type { IdCardData, IdCardOrientation, IdCardSide } from '@/components/id-card';
+import type {
+    IdCardData,
+    IdCardOrientation,
+    IdCardSide,
+} from '@/components/id-card';
 
 interface PrintIdCardParams {
     name: string;
@@ -759,6 +763,7 @@ export function printIdCard({
 
     if (!printWindow) {
         alert('Please allow popups for this site to print the ID card.');
+
         return;
     }
 

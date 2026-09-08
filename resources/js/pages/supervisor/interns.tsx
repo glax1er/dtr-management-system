@@ -20,8 +20,6 @@ import type { Paginated } from '@/components/pagination-footer';
 import { Badge } from '@/components/ui/badge';
 import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
 import { Button } from '@/components/ui/button';
-import { DatePicker } from '@/components/ui/date-picker';
-import { useDebounce } from '@/hooks/use-debounce';
 import {
     Card,
     CardContent,
@@ -29,6 +27,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
     Select,
     SelectContent,
@@ -36,7 +35,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Table,
     TableBody,
@@ -45,11 +43,9 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { cn } from '@/lib/utils';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useDebounce } from '@/hooks/use-debounce';
 import { dashboard } from '@/routes';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-
 
 interface AttendanceLogRow {
     date: string;
@@ -85,51 +81,6 @@ const REMARKS_OPTIONS: { value: RemarksFilter; label: string }[] = [
     { value: 'no_record', label: 'No Record' },
     { value: 'open', label: 'No time-out yet' },
 ];
-
-function PunctualityBadges({
-    punctuality,
-    status,
-    align = 'center',
-}: {
-    punctuality: AttendanceLogRow['punctuality'];
-    status: AttendanceLogRow['status'];
-    align?: 'center' | 'start';
-}) {
-    return (
-        <div className={cn("flex flex-wrap gap-1", align === 'center' ? 'justify-center' : 'justify-start')}>
-            {punctuality === 'on_time' && (
-                <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800">
-                    On Time
-                </Badge>
-            )}
-            {punctuality === 'unscheduled' && (
-                <Badge className="bg-teal-100 text-teal-800 border-teal-300 dark:bg-teal-950/50 dark:text-teal-300 dark:border-teal-800">
-                    Unscheduled
-                </Badge>
-            )}
-            {punctuality === 'missing_time_in' && (
-                <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-950/50 dark:text-yellow-300 dark:border-yellow-800">
-                    Missing Time In
-                </Badge>
-            )}
-            {punctuality === 'no_record' && (
-                <Badge className="bg-red-100 text-red-800 border-red-300 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800">
-                    No Record
-                </Badge>
-            )}
-            {punctuality === 'late' && (
-                <Badge className="bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-950/50 dark:text-orange-300 dark:border-orange-800">
-                    Late
-                </Badge>
-            )}
-            {status === 'open' && (
-                <Badge variant="outline" className="text-muted-foreground border-dashed">
-                    No time-out yet
-                </Badge>
-            )}
-        </div>
-    );
-}
 
 interface Filters {
     from: string;
@@ -179,16 +130,16 @@ function formatMonthDayYear(dateStr: string): string {
 }
 
 function formatLongDateRange(from: string, to: string): string {
-    return `${formatMonthDayYear(from)} – ${formatMonthDayYear(to)}`;
+    return `${formatMonthDayYear(from)} \u2013 ${formatMonthDayYear(to)}`;
 }
 
 function formatLongTime(time: string | null): string {
-    return time ? time.trim() : '—';
+    return time ? time.trim() : '\u2014';
 }
 
 function formatLongDuration(hours: number): string {
     if (hours <= 0) {
-        return '—';
+        return '\u2014';
     }
 
     const totalMinutes = Math.round(hours * 60);
@@ -227,14 +178,13 @@ export default function MyInterns({
     const debouncedSearch = useDebounce(search, 300);
     const isFirstRender = useRef(true);
 
-    useEffect(() => {
-        setSearch(filters.search || '');
-    }, [filters.search]);
-
     const hasActiveFilters =
         filters.search !== '' || filters.remarks !== null || mode === 'range';
 
-    const visit = (params: Record<string, string | undefined>, replace = true) => {
+    const visit = (
+        params: Record<string, string | undefined>,
+        replace = true,
+    ) => {
         router.get('/supervisor/interns', params, {
             preserveState: true,
             preserveScroll: true,
@@ -257,6 +207,7 @@ export default function MyInterns({
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
+
             return;
         }
 
@@ -267,6 +218,8 @@ export default function MyInterns({
                 page: undefined,
             });
         }
+        // Navigation helpers intentionally remain local to preserve current filters.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch]);
 
     const goToMonth = (targetMonth: string) => {
@@ -381,6 +334,11 @@ export default function MyInterns({
                             </span>
                             My Interns
                         </h1>
+                        <p className="mt-1 ml-[3.25rem] text-sm text-muted-foreground">
+                            {internCount}{' '}
+                            {internCount === 1 ? 'intern' : 'interns'}
+                            {scopeName ? ` \u2022 ${scopeName}` : ''}
+                        </p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
@@ -394,7 +352,7 @@ export default function MyInterns({
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search by name…"
+                                placeholder="Search by name..."
                                 className="h-9 w-48 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
                             {search && (
@@ -501,9 +459,12 @@ export default function MyInterns({
                             </div>
                         )}
 
-                        {/* View toggle — desktop only */}
+                        {/* View toggle - desktop only */}
                         <div className="hidden sm:block">
-                            <Tabs value={view} onValueChange={(v) => setView(v as ViewMode)}>
+                            <Tabs
+                                value={view}
+                                onValueChange={(v) => setView(v as ViewMode)}
+                            >
                                 <TabsList>
                                     <TabsTrigger value="table">
                                         <TableIcon className="size-4" />
@@ -524,7 +485,7 @@ export default function MyInterns({
                             applySearch(e);
                             setMobileSearchOpen(false);
                         }}
-                        className="flex items-center gap-2 sm:hidden w-full"
+                        className="flex w-full items-center gap-2 sm:hidden"
                     >
                         <div className="relative flex-1">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -533,7 +494,7 @@ export default function MyInterns({
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search by name…"
+                                placeholder="Search by name..."
                                 className="h-9 w-full rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
                             {search && (
@@ -559,13 +520,13 @@ export default function MyInterns({
                 <div className="flex flex-col gap-3 rounded-lg border bg-card p-3 shadow-xs lg:flex-row lg:items-center lg:justify-between">
                     <form
                         onSubmit={applyRange}
-                        className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full lg:w-auto"
+                        className="flex w-full flex-wrap items-center gap-2 sm:gap-2.5 lg:w-auto"
                     >
                         <span className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-muted-foreground">
                             <Calendar className="size-3.5" /> Date range:
                         </span>
-                        <div className="flex items-center gap-1.5 flex-1 min-w-0 w-full sm:w-auto sm:flex-initial">
-                            <div className="flex-1 min-w-0 sm:w-44 sm:flex-initial">
+                        <div className="flex w-full min-w-0 flex-1 items-center gap-1.5 sm:w-auto sm:flex-initial">
+                            <div className="min-w-0 flex-1 sm:w-44 sm:flex-initial">
                                 <DatePicker
                                     date={fromDraft}
                                     onDateChange={(d) => setFromDraft(d)}
@@ -576,9 +537,9 @@ export default function MyInterns({
                                 />
                             </div>
                             <span className="shrink-0 text-xs text-muted-foreground">
-                            to
-                        </span>
-                            <div className="flex-1 min-w-0 sm:w-44 sm:flex-initial">
+                                to
+                            </span>
+                            <div className="min-w-0 flex-1 sm:w-44 sm:flex-initial">
                                 <DatePicker
                                     date={toDraft}
                                     onDateChange={(d) => setToDraft(d)}
@@ -590,13 +551,13 @@ export default function MyInterns({
                                 />
                             </div>
                         </div>
-                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <div className="flex w-full items-center gap-2 sm:w-auto">
                             <Button
                                 type="submit"
                                 size="sm"
                                 variant="secondary"
                                 disabled={!fromDraft || !toDraft}
-                                className="h-9 px-3 text-xs sm:text-sm flex-1 sm:flex-initial"
+                                className="h-9 flex-1 px-3 text-xs sm:flex-initial sm:text-sm"
                             >
                                 Apply Range
                             </Button>
@@ -606,7 +567,7 @@ export default function MyInterns({
                                     variant="ghost"
                                     size="sm"
                                     onClick={clearRange}
-                                    className="h-9 px-3 text-xs text-muted-foreground hover:text-foreground sm:text-sm flex-1 sm:flex-initial"
+                                    className="h-9 flex-1 px-3 text-xs text-muted-foreground hover:text-foreground sm:flex-initial sm:text-sm"
                                 >
                                     Switch to Month
                                 </Button>
@@ -615,8 +576,8 @@ export default function MyInterns({
                     </form>
 
                     {hasActiveFilters && (
-                        <div className="flex flex-wrap items-center gap-2 pt-2 lg:pt-0 border-t lg:border-t-0">
-                            <span className="text-xs text-muted-foreground shrink-0">
+                        <div className="flex flex-wrap items-center gap-2 border-t pt-2 lg:border-t-0 lg:pt-0">
+                            <span className="shrink-0 text-xs text-muted-foreground">
                                 Active:
                             </span>
                             {filters.search !== '' && (
@@ -710,11 +671,11 @@ export default function MyInterns({
                     </Card>
                 ) : (
                     <>
-                        {/* Table View — desktop */}
+                        {/* Table View - desktop */}
                         {view === 'table' && (
                             <div className="hidden sm:block">
                                 <Card className="flex-1">
-                                    <CardHeader className="flex flex-row items-center justify-between ">
+                                    <CardHeader className="flex flex-row items-center justify-between">
                                         <CardTitle className="text-base font-semibold">
                                             Attendance Logs
                                         </CardTitle>
@@ -735,7 +696,9 @@ export default function MyInterns({
                                                         <button
                                                             type="button"
                                                             onClick={() =>
-                                                                toggleSort('date')
+                                                                toggleSort(
+                                                                    'date',
+                                                                )
                                                             }
                                                             className="inline-flex items-center font-semibold hover:text-foreground"
                                                         >
@@ -747,7 +710,9 @@ export default function MyInterns({
                                                         <button
                                                             type="button"
                                                             onClick={() =>
-                                                                toggleSort('name')
+                                                                toggleSort(
+                                                                    'name',
+                                                                )
                                                             }
                                                             className="inline-flex items-center font-semibold hover:text-foreground"
                                                         >
@@ -822,9 +787,9 @@ export default function MyInterns({
                             </div>
                         )}
 
-                        {/* Grid View — desktop */}
+                        {/* Grid View - desktop */}
                         {view === 'grid' && (
-                            <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3">
                                 {logs.data.map((log) => (
                                     <Card
                                         key={`${log.intern_user_id}-${log.date}`}
@@ -833,7 +798,7 @@ export default function MyInterns({
                                         <CardHeader className="pb-3">
                                             <div className="flex items-start justify-between gap-2">
                                                 <div className="min-w-0">
-                                                    <CardTitle className="text-base font-semibold truncate">
+                                                    <CardTitle className="truncate text-base font-semibold">
                                                         {log.intern_name}
                                                     </CardTitle>
                                                     <p className="mt-0.5 text-xs text-muted-foreground">
@@ -861,13 +826,17 @@ export default function MyInterns({
                                             <div className="flex items-center justify-between border-t pt-2">
                                                 <span>Time In:</span>
                                                 <span className="font-medium text-foreground">
-                                                    {formatLongTime(log.time_in)}
+                                                    {formatLongTime(
+                                                        log.time_in,
+                                                    )}
                                                 </span>
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <span>Time Out:</span>
                                                 <span className="font-medium text-foreground">
-                                                    {formatLongTime(log.time_out)}
+                                                    {formatLongTime(
+                                                        log.time_out,
+                                                    )}
                                                 </span>
                                             </div>
                                             <div className="flex items-center justify-between">

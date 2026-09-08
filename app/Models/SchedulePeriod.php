@@ -2,10 +2,9 @@
 
 namespace App\Models;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Carbon\CarbonInterface;
-use Illuminate\Support\Carbon;
 
 class SchedulePeriod extends Model
 {
@@ -66,6 +65,10 @@ class SchedulePeriod extends Model
 
         if ($global) {
             return $global->day_schedule[$dayName] ?? null;
+        }
+
+        if ($date->isWeekend()) {
+            return null;
         }
 
         return config('dtr.expected_start_time', '08:00');

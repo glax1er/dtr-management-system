@@ -27,6 +27,7 @@ class OjtSupervisorSeeder extends Seeder
 
         if ($programs->isEmpty()) {
             $this->command->warn('No active programs found. Please seed programs first.');
+
             return;
         }
 

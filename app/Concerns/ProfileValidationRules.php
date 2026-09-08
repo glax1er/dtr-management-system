@@ -8,11 +8,14 @@ use Illuminate\Validation\Rule;
 
 trait ProfileValidationRules
 {
-    protected function profileRules(?int $userId = null): array
+    /**
+     * @return array<string, array<int, ValidationRule|array<mixed>|string>>
+     */
+    protected function profileRules(?int $userId = null, bool $restrictToUsepDomain = true): array
     {
         return [
             'name' => $this->nameRules(),
-            'email' => $this->emailRules($userId),
+            'email' => $this->emailRules($userId, $restrictToUsepDomain),
         ];
     }
 
@@ -34,17 +37,20 @@ trait ProfileValidationRules
 
     /**
      * Restricts registration to official @usep.edu.ph email addresses.
+     * This restriction is intern-only — HTE and OJT supervisors are
+     * provisioned by admins and may use any valid email address, so
+     * callers acting on their behalf pass $restrictToUsepDomain = false.
      *
      * @return array<int, ValidationRule|array<mixed>|string>
      */
-    protected function emailRules(?int $userId = null): array
+    protected function emailRules(?int $userId = null, bool $restrictToUsepDomain = true): array
     {
         return [
             'required',
             'string',
             'email',
             'max:255',
-            'regex:/^[^@\s]+@usep\.edu\.ph$/i',
+            ...($restrictToUsepDomain ? ['regex:/^[^@\s]+@usep\.edu\.ph$/i'] : []),
             $userId === null
                 ? Rule::unique(User::class)
                 : Rule::unique(User::class)->ignore($userId),

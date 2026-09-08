@@ -1,8 +1,13 @@
 <?php
+
 // app/Http/Requests/Admin/UpdateSupervisorRequest.php
+
 namespace App\Http\Requests\Admin;
+
+use App\Models\SupervisorProfile;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+
 class UpdateSupervisorRequest extends FormRequest
 {
     public function authorize(): bool
@@ -12,7 +17,7 @@ class UpdateSupervisorRequest extends FormRequest
 
     public function rules(): array
     {
-        /** @var \App\Models\SupervisorProfile $supervisorProfile */
+        /** @var SupervisorProfile $supervisorProfile */
         $supervisorProfile = $this->route('supervisorProfile');
 
         return [

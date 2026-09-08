@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-
 class Hte extends Model
 {
     use SoftDeletes;
@@ -16,6 +15,7 @@ class Hte extends Model
     // Only created_at exists on this table. Eloquent will populate it on create
     // and {@see UPDATED_AT} is disabled since this table has no updated_at.
     public $timestamps = true;
+
     public const UPDATED_AT = null;
 
     protected $fillable = [

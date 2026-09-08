@@ -1,6 +1,6 @@
 import { Link } from '@inertiajs/react';
+import { SettingsIcon } from 'lucide-react';
 import type { PropsWithChildren } from 'react';
-import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/hooks/use-current-url';
@@ -9,7 +9,6 @@ import { edit as editAppearance } from '@/routes/appearance';
 import { edit } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
 import type { NavItem } from '@/types';
-import { SettingsIcon } from 'lucide-react';
 
 const sidebarNavItems: NavItem[] = [
     {
@@ -20,6 +19,11 @@ const sidebarNavItems: NavItem[] = [
     {
         title: 'Security',
         href: editSecurity(),
+        icon: null,
+    },
+    {
+        title: 'Notifications',
+        href: '/settings/notifications',
         icon: null,
     },
     {
@@ -34,17 +38,17 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
 
     return (
         <div className="px-4 py-4">
-            <div className = 'mb-10'>
-                        <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
-                            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-                                <SettingsIcon className="size-5" />
-                            </span>
-                            Settings
-                        </h1>
-                    </div>
+            <div className="mb-6 sm:mb-8">
+                <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                        <SettingsIcon className="size-5" />
+                    </span>
+                    Settings
+                </h1>
+            </div>
 
-            <div className="flex flex-col lg:flex-row lg:space-x-12">
-                <aside className="w-full max-w-xl lg:w-48">
+            <div className="flex flex-col lg:flex-row lg:gap-6 xl:gap-8 2xl:gap-12">
+                <aside className="w-full shrink-0 lg:w-44 xl:w-48">
                     <nav
                         className="flex flex-col space-y-1 space-x-0"
                         aria-label="Settings"
@@ -72,10 +76,8 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
 
                 <Separator className="my-6 lg:hidden" />
 
-                <div className="flex-1 min-w-0">
-                    <section className="space-y-12">
-                        {children}
-                    </section>
+                <div className="min-w-0 flex-1">
+                    <section className="space-y-12">{children}</section>
                 </div>
             </div>
         </div>

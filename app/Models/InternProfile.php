@@ -6,14 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class InternProfile extends Model
 {
     use SoftDeletes;
+
     // user_id is the primary key here (one-to-one with users) —
     // it's not an auto-incrementing column of its own, it just
     // borrows the id assigned by the users table.
     protected $primaryKey = 'user_id';
+
     public $incrementing = false;
 
     // Only created_at (registered_at) exists, no updated_at column.
@@ -28,6 +31,7 @@ class InternProfile extends Model
         'program_id',
         'status',
         'qr_code_value',
+        'profile_photo_path',
         'registered_at',
         'approved_at',
         'privacy_accepted_at',
@@ -35,7 +39,7 @@ class InternProfile extends Model
 
     protected $casts = [
         'registered_at' => 'datetime',
-        'approved_at'   => 'datetime',
+        'approved_at' => 'datetime',
         'privacy_accepted_at' => 'datetime',
     ];
 
@@ -47,14 +51,6 @@ class InternProfile extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
-    }
-
-    /**
-     * Public URL for the profile photo, delegating to the related User model.
-     */
-    public function getProfilePhotoUrlAttribute(): ?string
-    {
-        return $this->user?->profile_photo_url;
     }
 
     /**
@@ -71,6 +67,19 @@ class InternProfile extends Model
     public function program(): BelongsTo
     {
         return $this->belongsTo(Program::class, 'program_id', 'program_id');
+    }
+
+    /**
+     * Public URL for the profile photo, or null if the intern hasn't
+     * uploaded one — the frontend falls back to a generic icon in that case.
+     */
+    public function getProfilePhotoUrlAttribute(): ?string
+    {
+        if ($this->profile_photo_path) {
+            return Storage::disk('public')->url($this->profile_photo_path);
+        }
+
+        return $this->user?->profile_photo_url;
     }
 
     /**

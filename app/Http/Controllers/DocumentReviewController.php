@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\InternDocument;
 use App\Models\InternProfile;
 use App\Models\User;
+use App\Notifications\InternDocumentNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -113,7 +114,7 @@ class DocumentReviewController extends Controller
 
         return response()->file($fullPath, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="' . addslashes($internDocument->original_filename) . '"',
+            'Content-Disposition' => 'inline; filename="'.addslashes($internDocument->original_filename).'"',
         ]);
     }
 
@@ -156,6 +157,18 @@ class DocumentReviewController extends Controller
         $docConfig = InternDocument::getTypeConfig($internDocument->document_type);
         $docName = $docConfig['name'] ?? 'Document';
 
+        // Notify intern of approval
+        if ($internDocument->user?->wantsNotification('document_updates')) {
+            $internDocument->user->notify(
+                new InternDocumentNotification(
+                    internDocument: $internDocument,
+                    event: InternDocumentNotification::DOCUMENT_APPROVED,
+                    actor: $user,
+                    docName: $docName,
+                )
+            );
+        }
+
         return back()->with('success', "{$docName} approved successfully.");
     }
 
@@ -186,6 +199,19 @@ class DocumentReviewController extends Controller
 
         $docConfig = InternDocument::getTypeConfig($internDocument->document_type);
         $docName = $docConfig['name'] ?? 'Document';
+
+        // Notify intern of rejection / revision needed
+        if ($internDocument->user?->wantsNotification('document_updates')) {
+            $internDocument->user->notify(
+                new InternDocumentNotification(
+                    internDocument: $internDocument,
+                    event: InternDocumentNotification::DOCUMENT_REJECTED,
+                    actor: $user,
+                    docName: $docName,
+                    reason: trim($validated['rejection_reason']),
+                )
+            );
+        }
 
         return back()->with('success', "{$docName} marked as needs revision.");
     }

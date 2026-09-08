@@ -12,7 +12,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
-use App\Http\Requests\Admin\UpdateSupervisorRequest;
 
 class InternController extends Controller
 {
@@ -26,7 +25,7 @@ class InternController extends Controller
             'status' => ['nullable', 'in:pending,approved,rejected'],
             'search' => ['nullable', 'string', 'max:255'],
             'page' => ['nullable', 'integer', 'min:1'],
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:' . self::MAX_PER_PAGE],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_PER_PAGE],
         ]);
 
         $status = $validated['status'] ?? 'pending';

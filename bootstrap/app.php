@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Middleware\EnsureHteSupervisor;
+use App\Http\Middleware\EnsureOjtSupervisor;
+use App\Http\Middleware\EnsureUserRole;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -7,10 +10,6 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
-
-use App\Http\Middleware\EnsureUserRole;
-use App\Http\Middleware\EnsureHteSupervisor;
-use App\Http\Middleware\EnsureOjtSupervisor;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(

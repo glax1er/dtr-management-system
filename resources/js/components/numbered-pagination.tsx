@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { Input } from '@/components/ui/input';
+import { useState } from 'react';
 import type { PaginationMeta } from '@/components/pagination-footer';
+import { Input } from '@/components/ui/input';
 import {
     Pagination,
     PaginationContent,
@@ -48,23 +48,31 @@ export function NumberedPagination({
     } = meta;
 
     const [perPageInput, setPerPageInput] = useState(String(perPage));
+    // Track the per_page value perPageInput was last synced from, so a
+    // change coming from outside (pagination, filters, etc.) can reset
+    // the draft during render instead of via a post-commit effect.
+    const [syncedPerPage, setSyncedPerPage] = useState(perPage);
 
-    useEffect(() => {
+    if (perPage !== syncedPerPage) {
+        setSyncedPerPage(perPage);
         setPerPageInput(String(perPage));
-    }, [perPage]);
+    }
 
     const submitPerPage = () => {
         const nextPerPage = Number(perPageInput);
 
         if (!Number.isInteger(nextPerPage) || nextPerPage < 1) {
             setPerPageInput(String(perPage));
+
             return;
         }
 
         onPerPageChange(nextPerPage);
     };
 
-    if (total === 0) return null;
+    if (total === 0) {
+        return null;
+    }
 
     const pages: (number | 'ellipsis')[] = [];
 

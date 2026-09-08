@@ -8,7 +8,6 @@ use App\Notifications\InternApprovalNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
-use App\Http\Requests\Admin\UpdateSupervisorRequest;
 
 class InternApprovalController extends Controller
 {
@@ -23,6 +22,7 @@ class InternApprovalController extends Controller
         $internProfile->user?->notify(new InternApprovalNotification($internProfile, 'approved'));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "{$internProfile->user->name} has been approved."]);
+
         return back();
     }
 
@@ -35,6 +35,7 @@ class InternApprovalController extends Controller
         $internProfile->user?->notify(new InternApprovalNotification($internProfile, 'rejected'));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "{$internProfile->user->name} has been rejected."]);
+
         return back();
     }
 
@@ -47,6 +48,7 @@ class InternApprovalController extends Controller
         ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "{$internProfile->user->name} has been reverted to pending."]);
+
         return back();
     }
 

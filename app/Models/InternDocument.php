@@ -28,7 +28,9 @@ class InternDocument extends Model
     use HasFactory;
 
     public const STATUS_PENDING = 'pending_review';
+
     public const STATUS_APPROVED = 'approved';
+
     public const STATUS_REJECTED = 'rejected';
 
     public const DOCUMENT_TYPES = [
@@ -249,6 +251,6 @@ class InternDocument extends Model
         $power = $this->file_size_bytes > 0 ? floor(log($this->file_size_bytes, 1024)) : 0;
         $power = min($power, count($units) - 1);
 
-        return number_format($this->file_size_bytes / (1024 ** $power), 1) . ' ' . $units[$power];
+        return number_format($this->file_size_bytes / (1024 ** $power), 1).' '.$units[$power];
     }
 }

@@ -1,7 +1,13 @@
 import { router, usePage } from '@inertiajs/react';
-import { BellOff, Check, ChevronRight, Search } from 'lucide-react';
+import {
+    BellOff,
+    Check,
+    CheckCheck,
+    ChevronRight,
+    Search,
+    Trash2,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { RejectedResolutionDialog } from '@/components/rejected-resolution-dialog';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,7 +16,6 @@ import {
     formatRelativeTime,
     getNotificationCategory,
     getNotificationTone,
-    isRejectedResolutionNotification,
 } from '@/lib/notifications';
 import type { NotificationCategory } from '@/lib/notifications';
 import { cn } from '@/lib/utils';
@@ -30,6 +35,8 @@ const CATEGORY_FILTERS: { value: CategoryFilter; label: string }[] = [
     { value: 'approved', label: NOTIFICATION_CATEGORY_LABELS.approved },
     { value: 'rejected', label: NOTIFICATION_CATEGORY_LABELS.rejected },
     { value: 'pending', label: NOTIFICATION_CATEGORY_LABELS.pending },
+    { value: 'milestone', label: NOTIFICATION_CATEGORY_LABELS.milestone },
+    { value: 'attendance', label: NOTIFICATION_CATEGORY_LABELS.attendance },
     { value: 'general', label: NOTIFICATION_CATEGORY_LABELS.general },
 ];
 
@@ -53,20 +60,20 @@ function getDateGroup(dateString?: string | null): string {
     const diffDays = Math.round((today - day) / (1000 * 60 * 60 * 24));
 
     if (diffDays <= 0) {
-return 'Today';
-}
+        return 'Today';
+    }
 
     if (diffDays === 1) {
-return 'Yesterday';
-}
+        return 'Yesterday';
+    }
 
     if (diffDays <= 7) {
-return 'This week';
-}
+        return 'This week';
+    }
 
     if (diffDays <= 30) {
-return 'This month';
-}
+        return 'This month';
+    }
 
     return 'Earlier';
 }
@@ -92,11 +99,27 @@ export default function NotificationsPage() {
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
     const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
     const [query, setQuery] = useState('');
-    const [selectedRejectedNotification, setSelectedRejectedNotification] =
-        useState<Notification | null>(null);
 
     const clearNotifications = () => {
         router.delete('/notifications', {
+            preserveScroll: true,
+            preserveState: true,
+        });
+    };
+
+    const markAllAsRead = () => {
+        router.post(
+            '/notifications/mark-all-read',
+            {},
+            {
+                preserveScroll: true,
+                preserveState: true,
+            },
+        );
+    };
+
+    const deleteNotification = (notification: Notification) => {
+        router.delete(`/notifications/${notification.id}`, {
             preserveScroll: true,
             preserveState: true,
         });
@@ -113,19 +136,18 @@ export default function NotificationsPage() {
         );
     };
 
-    const handleNotificationAction = (notification: Notification) => {
-        if (isRejectedResolutionNotification(notification)) {
-            if (!notification.read_at) {
-                markAsRead(notification);
-            }
-            setSelectedRejectedNotification(notification);
+    const openNotification = (notification: Notification) => {
+        const href = notification.href;
+        const hasMeaningfulHref =
+            href && href !== '/dashboard' && href !== '/intern/dashboard';
+
+        if (!hasMeaningfulHref) {
+            // No specific destination — just mark as read in place
+            markAsRead(notification);
+
             return;
         }
 
-        openNotification(notification);
-    };
-
-    const openNotification = (notification: Notification) => {
         router.post(
             `/notifications/${notification.id}/read`,
             {},
@@ -133,7 +155,7 @@ export default function NotificationsPage() {
                 preserveScroll: true,
                 preserveState: true,
                 onSuccess: () => {
-                    router.visit(notification.href);
+                    router.visit(href);
                 },
             },
         );
@@ -199,9 +221,7 @@ export default function NotificationsPage() {
             {/* Header */}
             <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-semibold">
-                        Notifications
-                    </h1>
+                    <h1 className="text-2xl font-semibold">Notifications</h1>
                     <p className="text-muted-foreground">
                         {count > 0
                             ? `${count} unread notification${count === 1 ? '' : 's'}`
@@ -209,15 +229,28 @@ export default function NotificationsPage() {
                     </p>
                 </div>
 
-                {items.length > 0 && (
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={clearNotifications}
-                    >
-                        Clear all
-                    </Button>
-                )}
+                <div className="flex flex-wrap items-center gap-2">
+                    {count > 0 && (
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={markAllAsRead}
+                        >
+                            <CheckCheck className="mr-1.5 size-4" />
+                            Mark all as read
+                        </Button>
+                    )}
+
+                    {items.length > 0 && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={clearNotifications}
+                        >
+                            Clear all
+                        </Button>
+                    )}
+                </div>
             </div>
 
             {items.length > 0 && (
@@ -227,9 +260,7 @@ export default function NotificationsPage() {
                         <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             value={query}
-                            onChange={(event) =>
-                                setQuery(event.target.value)
-                            }
+                            onChange={(event) => setQuery(event.target.value)}
                             placeholder="Search notifications"
                             className="pl-9"
                         />
@@ -314,8 +345,8 @@ export default function NotificationsPage() {
                             No matches
                         </p>
                         <p className="mx-auto max-w-sm text-sm text-muted-foreground">
-                            No notifications match these filters. Try
-                            adjusting or resetting them.
+                            No notifications match these filters. Try adjusting
+                            or resetting them.
                         </p>
                     </div>
                     {isFiltering && (
@@ -355,12 +386,10 @@ export default function NotificationsPage() {
                                         <div
                                             key={notification.id}
                                             onClick={() =>
-                                                handleNotificationAction(
-                                                    notification,
-                                                )
+                                                openNotification(notification)
                                             }
                                             className={cn(
-                                                'flex cursor-pointer items-start gap-3 p-3.5 transition-colors hover:bg-muted/40 sm:items-center',
+                                                'group flex cursor-pointer items-start gap-3 p-3.5 transition-colors hover:bg-accent/10 sm:items-center',
                                                 unread && 'bg-primary/[0.03]',
                                             )}
                                         >
@@ -384,7 +413,7 @@ export default function NotificationsPage() {
                                                     )}
                                                 </div>
 
-                                                <p className="line-clamp-1 text-sm text-muted-foreground break-all sm:break-normal sm:truncate">
+                                                <p className="line-clamp-1 text-sm text-muted-foreground sm:line-clamp-none sm:truncate">
                                                     {notification.message}
                                                 </p>
 
@@ -427,9 +456,24 @@ export default function NotificationsPage() {
                                                     type="button"
                                                     variant="ghost"
                                                     size="icon"
+                                                    title="Delete notification"
+                                                    className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                                    onClick={() =>
+                                                        deleteNotification(
+                                                            notification,
+                                                        )
+                                                    }
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                </Button>
+
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
                                                     title="View"
                                                     onClick={() =>
-                                                        handleNotificationAction(
+                                                        openNotification(
                                                             notification,
                                                         )
                                                     }
@@ -445,16 +489,6 @@ export default function NotificationsPage() {
                     ))}
                 </div>
             )}
-
-            <RejectedResolutionDialog
-                open={selectedRejectedNotification !== null}
-                onOpenChange={(open) => {
-                    if (!open) {
-                        setSelectedRejectedNotification(null);
-                    }
-                }}
-                notification={selectedRejectedNotification}
-            />
         </div>
     );
 }

@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\StoreSupervisorRequest;
 use App\Http\Requests\Admin\StoreOjtSupervisorRequest;
+use App\Http\Requests\Admin\StoreSupervisorRequest;
 use App\Http\Requests\Admin\UpdateSupervisorRequest;
 use App\Models\Hte;
 use App\Models\Program;
@@ -28,7 +28,7 @@ class SupervisorController extends Controller
             'search' => ['nullable', 'string', 'max:255'],
             'type' => ['nullable', 'in:hte,ojt'],
             'page' => ['nullable', 'integer', 'min:1'],
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:' . self::MAX_PER_PAGE],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_PER_PAGE],
         ]);
 
         $search = trim($validated['search'] ?? '');
@@ -92,6 +92,7 @@ class SupervisorController extends Controller
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Supervisor status updated.']);
+
         return back();
     }
 
@@ -141,7 +142,7 @@ class SupervisorController extends Controller
             ]);
         });
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => "OJT Supervisor account created.\nDefault password: " . config('supervisor.default_supervisor_password')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => "OJT Supervisor account created.\nDefault password: ".config('supervisor.default_supervisor_password')]);
 
         return redirect()->route('admin.supervisors.index');
     }
@@ -155,14 +156,17 @@ class SupervisorController extends Controller
             ]);
 
             if ($supervisorProfile->supervisor_type === 'hte') {
+                $oldHte = $supervisorProfile->hte;
                 $supervisorProfile->update(['hte_id' => $request->validated('hte_id')]);
-                $supervisorProfile->hte?->refreshContactPerson();
+                $oldHte?->refreshContactPerson();
+                $supervisorProfile->fresh()->hte?->refreshContactPerson();
             } else {
                 $supervisorProfile->update(['program_id' => $request->validated('program_id')]);
             }
         });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Supervisor updated.']);
+
         return back();
     }
 
@@ -175,6 +179,7 @@ class SupervisorController extends Controller
         $supervisorProfile->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Supervisor archived.']);
+
         return back();
     }
 }

@@ -3,6 +3,9 @@
 use App\Models\Hte;
 use App\Models\InternProfile;
 use App\Models\Program;
+use App\Models\User;
+use App\Notifications\EmailVerificationCodeNotification;
+use Illuminate\Support\Facades\Notification;
 use Laravel\Fortify\Features;
 
 beforeEach(function () {
@@ -14,13 +17,15 @@ test('registration screen can be rendered', function () {
     $response->assertOk();
 });
 
-test('new interns can register and are sent to the pending-approval screen', function () {
+test('new interns can register and are sent a verification code to their email', function () {
+    Notification::fake();
+
     $hte = Hte::create(['hte_name' => 'Test HTE']);
     $program = Program::create(['program_name' => 'BSIT-BTM']);
 
     $response = $this->post(route('register.store'), [
         'name' => 'Test User',
-        'email' => 'test@usep.edu.ph',
+        'email' => 'test.intern@usep.edu.ph',
         'id_number' => '2026-00001',
         'sex' => 'male',
         'hte_id' => $hte->hte_id,
@@ -30,7 +35,12 @@ test('new interns can register and are sent to the pending-approval screen', fun
         'password_confirmation' => 'Password123!',
     ]);
 
-    $this->assertGuest();
-    $response->assertRedirect(route('register'));
+    $response->assertRedirect(route('verification.notice'));
+
+    $user = User::where('email', 'test.intern@usep.edu.ph')->first();
+    expect($user)->not->toBeNull();
+    expect($user->hasVerifiedEmail())->toBeFalse();
     expect(InternProfile::first()->status)->toBe('pending');
+
+    Notification::assertSentTo($user, EmailVerificationCodeNotification::class);
 });

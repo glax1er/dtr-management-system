@@ -1,5 +1,6 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
+import { toPng } from 'html-to-image';
 import {
     Camera,
     Download,
@@ -11,17 +12,16 @@ import {
 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { toPng } from 'html-to-image';
 import Heading from '@/components/heading';
+import { IdCard } from '@/components/id-card';
+import type { IdCardData, IdCardOrientation } from '@/components/id-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { edit } from '@/routes/profile';
-import { send } from '@/routes/verification';
-import { IdCard } from '@/components/id-card';
-import type { IdCardData, IdCardOrientation } from '@/components/id-card';
 import { printIdCard } from '@/lib/print-id-card';
 import { cn } from '@/lib/utils';
+import { edit } from '@/routes/profile';
+import { send } from '@/routes/verification';
 import type { Auth } from '@/types';
 
 export interface ProfileDetails {
@@ -55,7 +55,10 @@ export default function Profile({
     const [isDownloading, setIsDownloading] = useState(false);
 
     const handlePrint = () => {
-        if (!user) return;
+        if (!user) {
+            return;
+        }
+
         printIdCard({
             name: user.name,
             email: user.email,
@@ -69,7 +72,10 @@ export default function Profile({
 
     const handleDownload = async () => {
         const cardEl = document.getElementById('printable-id-cards-container');
-        if (!cardEl || !user) return;
+
+        if (!cardEl || !user) {
+            return;
+        }
 
         try {
             setIsDownloading(true);
@@ -83,12 +89,15 @@ export default function Profile({
                     ) {
                         return false;
                     }
+
                     return true;
                 },
             });
 
             const link = document.createElement('a');
-            const cleanName = (user.name || 'user').toLowerCase().replace(/\s+/g, '-');
+            const cleanName = (user.name || 'user')
+                .toLowerCase()
+                .replace(/\s+/g, '-');
             link.download = `${cleanName}-id-card-${orientation}.png`;
             link.href = dataUrl;
             link.click();
@@ -105,7 +114,10 @@ export default function Profile({
 
     const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (!file) return;
+
+        if (!file) {
+            return;
+        }
 
         const formData = new FormData();
         formData.append('photo', file);
@@ -131,16 +143,16 @@ export default function Profile({
 
             <h1 className="sr-only">Profile settings</h1>
 
-            <div className="flex flex-col gap-10 xl:flex-row xl:items-start xl:gap-12">
+            <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:gap-6 2xl:gap-10">
                 {/* Profile Form (Left on desktop, Top on mobile) */}
-                <div className="w-full max-w-xl shrink-0 space-y-6">
+                <div className="min-w-0 flex-1 max-w-xl space-y-6">
                     <Heading
                         variant="small"
                         title="Profile"
                         description="View your account profile and assignment details"
                     />
 
-                    <div className="flex flex-col items-center justify-center gap-3 text-center py-2">
+                    <div className="flex flex-col items-center justify-center gap-3 py-2 text-center">
                         <div className="group relative shrink-0">
                             <div className="flex size-36 items-center justify-center overflow-hidden rounded-2xl border-2 border-border bg-muted shadow-sm sm:size-40">
                                 {user?.avatar ? (
@@ -176,189 +188,229 @@ export default function Profile({
                         </p>
                     </div>
 
-                    <div className="space-y-6">
-                        <div className="grid gap-2">
-                            <Label htmlFor="name">Name</Label>
+                    <div className="space-y-4">
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="grid gap-2">
+                                <Label htmlFor="name">Name</Label>
 
-                            <Input
-                                id="name"
-                                className="mt-1 block w-full cursor-not-allowed opacity-70 bg-muted/50"
-                                defaultValue={auth.user.name}
-                                disabled
-                                readOnly
-                                placeholder="Full name"
-                            />
+                                <Input
+                                    id="name"
+                                    className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
+                                    defaultValue={auth.user.name}
+                                    disabled
+                                    readOnly
+                                    placeholder="Full name"
+                                />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="email">Email address</Label>
+
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
+                                    defaultValue={auth.user.email}
+                                    disabled
+                                    readOnly
+                                    autoComplete="username"
+                                    placeholder="Email address"
+                                />
+                            </div>
                         </div>
 
-                        <div className="grid gap-2">
-                            <Label htmlFor="email">Email address</Label>
+                        {auth.user.role === 'intern' && (
+                            <>
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="id_number">
+                                            ID Number
+                                        </Label>
+                                        <Input
+                                            id="id_number"
+                                            className="mt-1 block w-full cursor-not-allowed bg-muted/50 font-mono opacity-70"
+                                            defaultValue={
+                                                profileDetails?.id_number ?? '—'
+                                            }
+                                            disabled
+                                            readOnly
+                                        />
+                                    </div>
 
-                            <Input
-                                id="email"
-                                type="email"
-                                className="mt-1 block w-full cursor-not-allowed opacity-70 bg-muted/50"
-                                defaultValue={auth.user.email}
-                                disabled
-                                readOnly
-                                autoComplete="username"
-                                placeholder="Email address"
-                            />
-                        </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="program">Program</Label>
+                                        <Input
+                                            id="program"
+                                            className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
+                                            defaultValue={
+                                                profileDetails?.program ?? '—'
+                                            }
+                                            disabled
+                                            readOnly
+                                        />
+                                    </div>
+                                </div>
 
-                                {auth.user.role === 'intern' && (
-                                    <>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="hte">
+                                        Host Training Establishment (HTE)
+                                    </Label>
+                                    <Input
+                                        id="hte"
+                                        className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
+                                        defaultValue={
+                                            profileDetails?.hte ?? '—'
+                                        }
+                                        disabled
+                                        readOnly
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="hte_supervisor">
+                                            HTE Supervisor
+                                        </Label>
+                                        <Input
+                                            id="hte_supervisor"
+                                            className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
+                                            defaultValue={
+                                                profileDetails?.hte_supervisor ??
+                                                'None assigned'
+                                            }
+                                            disabled
+                                            readOnly
+                                        />
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="ojt_supervisor">
+                                            OJT Supervisor
+                                        </Label>
+                                        <Input
+                                            id="ojt_supervisor"
+                                            className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
+                                            defaultValue={
+                                                profileDetails?.ojt_supervisor ??
+                                                'None assigned'
+                                            }
+                                            disabled
+                                            readOnly
+                                        />
+                                    </div>
+                                </div>
+
+                                <p className="text-xs text-muted-foreground">
+                                    Internship assignment details are managed by
+                                    your administrator and OJT coordinator and
+                                    cannot be edited directly.
+                                </p>
+                            </>
+                        )}
+
+                        {auth.user.role === 'supervisor' && (
+                            <>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="role">
+                                        Supervisor Role
+                                    </Label>
+                                    <Input
+                                        id="role"
+                                        className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
+                                        defaultValue={
+                                            profileDetails?.role ?? 'Supervisor'
+                                        }
+                                        disabled
+                                        readOnly
+                                    />
+                                </div>
+
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    {profileDetails?.hte && (
                                         <div className="grid gap-2">
-                                            <Label htmlFor="id_number">ID Number</Label>
-                                            <Input
-                                                id="id_number"
-                                                className="mt-1 block w-full cursor-not-allowed opacity-70 bg-muted/50 font-mono"
-                                                defaultValue={profileDetails?.id_number ?? '—'}
-                                                disabled
-                                                readOnly
-                                            />
-                                        </div>
-
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="program">Program</Label>
-                                            <Input
-                                                id="program"
-                                                className="mt-1 block w-full cursor-not-allowed opacity-70 bg-muted/50"
-                                                defaultValue={profileDetails?.program ?? '—'}
-                                                disabled
-                                                readOnly
-                                            />
-                                        </div>
-
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="hte">Host Training Establishment (HTE)</Label>
+                                            <Label htmlFor="hte">
+                                                Assigned HTE
+                                            </Label>
                                             <Input
                                                 id="hte"
-                                                className="mt-1 block w-full cursor-not-allowed opacity-70 bg-muted/50"
-                                                defaultValue={profileDetails?.hte ?? '—'}
+                                                className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
+                                                defaultValue={
+                                                    profileDetails.hte
+                                                }
                                                 disabled
                                                 readOnly
                                             />
-                                        </div>
-
-                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="hte_supervisor">HTE Supervisor</Label>
-                                                <Input
-                                                    id="hte_supervisor"
-                                                    className="mt-1 block w-full cursor-not-allowed opacity-70 bg-muted/50"
-                                                    defaultValue={profileDetails?.hte_supervisor ?? 'None assigned'}
-                                                    disabled
-                                                    readOnly
-                                                />
-                                            </div>
-
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="ojt_supervisor">OJT Supervisor</Label>
-                                                <Input
-                                                    id="ojt_supervisor"
-                                                    className="mt-1 block w-full cursor-not-allowed opacity-70 bg-muted/50"
-                                                    defaultValue={profileDetails?.ojt_supervisor ?? 'None assigned'}
-                                                    disabled
-                                                    readOnly
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <p className="text-xs text-muted-foreground">
-                                            Internship assignment details are managed by your administrator and OJT coordinator and cannot be edited directly.
-                                        </p>
-                                    </>
-                                )}
-
-                                {auth.user.role === 'supervisor' && (
-                                    <>
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="role">Supervisor Role</Label>
-                                            <Input
-                                                id="role"
-                                                className="mt-1 block w-full cursor-not-allowed opacity-70 bg-muted/50"
-                                                defaultValue={profileDetails?.role ?? 'Supervisor'}
-                                                disabled
-                                                readOnly
-                                            />
-                                        </div>
-
-                                        {profileDetails?.hte && (
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="hte">Assigned HTE</Label>
-                                                <Input
-                                                    id="hte"
-                                                    className="mt-1 block w-full cursor-not-allowed opacity-70 bg-muted/50"
-                                                    defaultValue={profileDetails.hte}
-                                                    disabled
-                                                    readOnly
-                                                />
-                                            </div>
-                                        )}
-
-                                        {profileDetails?.program && (
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="program">Assigned Program</Label>
-                                                <Input
-                                                    id="program"
-                                                    className="mt-1 block w-full cursor-not-allowed opacity-70 bg-muted/50"
-                                                    defaultValue={profileDetails.program}
-                                                    disabled
-                                                    readOnly
-                                                />
-                                            </div>
-                                        )}
-
-                                        <p className="text-xs text-muted-foreground">
-                                            Supervisor assignments are managed by the administrator and cannot be edited directly.
-                                        </p>
-                                    </>
-                                )}
-
-                                {auth.user.role === 'admin' && (
-                                    <>
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="role">Role</Label>
-                                            <Input
-                                                id="role"
-                                                className="mt-1 block w-full cursor-not-allowed opacity-70 bg-muted/50"
-                                                defaultValue="System Administrator"
-                                                disabled
-                                                readOnly
-                                            />
-                                        </div>
-                                    </>
-                                )}
-
-                                {mustVerifyEmail &&
-                                    auth.user.email_verified_at === null && (
-                                        <div>
-                                            <p className="-mt-4 text-sm text-muted-foreground">
-                                                Your email address is unverified.{' '}
-                                                <Link
-                                                    href={send()}
-                                                    as="button"
-                                                    className="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
-                                                >
-                                                    Click here to re-send the
-                                                    verification email.
-                                                </Link>
-                                            </p>
-
-                                            {status ===
-                                                'verification-link-sent' && (
-                                                <div className="mt-2 text-sm font-medium text-green-600">
-                                                    A new verification link has been
-                                                    sent to your email address.
-                                                </div>
-                                            )}
                                         </div>
                                     )}
+
+                                    {profileDetails?.program && (
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="program">
+                                                Assigned Program
+                                            </Label>
+                                            <Input
+                                                id="program"
+                                                className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
+                                                defaultValue={
+                                                    profileDetails.program
+                                                }
+                                                disabled
+                                                readOnly
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+
+                                <p className="text-xs text-muted-foreground">
+                                    Supervisor assignments are managed by the
+                                    administrator and cannot be edited directly.
+                                </p>
+                            </>
+                        )}
+
+                        {auth.user.role === 'admin' && (
+                            <>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="role">Role</Label>
+                                    <Input
+                                        id="role"
+                                        className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
+                                        defaultValue="System Administrator"
+                                        disabled
+                                        readOnly
+                                    />
+                                </div>
+                            </>
+                        )}
+
+                        {mustVerifyEmail &&
+                            auth.user.email_verified_at === null && (
+                                <div>
+                                    <p className="-mt-4 text-sm text-muted-foreground">
+                                        Your email address is unverified.{' '}
+                                        <Link
+                                            href={send()}
+                                            as="button"
+                                            className="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
+                                        >
+                                            Click here to re-send the
+                                            verification email.
+                                        </Link>
+                                    </p>
+
+                                    {status === 'verification-link-sent' && (
+                                        <div className="mt-2 text-sm font-medium text-green-600">
+                                            A new verification link has been
+                                            sent to your email address.
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                     </div>
                 </div>
 
                 {/* ID Card (Right on desktop, Below on mobile) */}
-                <div className="w-full shrink-0 space-y-4 lg:w-auto">
+                <div className="w-full shrink-0 space-y-4 xl:w-auto xl:max-w-[390px] 2xl:max-w-[420px]">
                     <Heading
                         variant="small"
                         title="ID Card"
@@ -402,7 +454,7 @@ export default function Profile({
                             variant="outline"
                             onClick={handleDownload}
                             disabled={isDownloading}
-                            className="size-9 p-0 sm:h-9 sm:w-auto sm:px-4"
+                            className="h-9 px-3 sm:px-4"
                             title="Download ID Card"
                             aria-label="Download ID Card"
                         >
@@ -411,21 +463,27 @@ export default function Profile({
                             ) : (
                                 <Download className="size-4 sm:mr-1.5" />
                             )}
-                            <span className="hidden sm:inline">
+                            <span className="hidden sm:inline xl:hidden 2xl:inline">
                                 Download ID Card
+                            </span>
+                            <span className="hidden xl:inline 2xl:hidden">
+                                Download
                             </span>
                         </Button>
 
                         <Button
                             type="button"
                             onClick={handlePrint}
-                            className="size-9 p-0 sm:h-9 sm:w-auto sm:px-4"
+                            className="h-9 px-3 sm:px-4"
                             title="Print ID Card"
                             aria-label="Print ID Card"
                         >
                             <Printer className="size-4 sm:mr-1.5" />
-                            <span className="hidden sm:inline">
+                            <span className="hidden sm:inline xl:hidden 2xl:inline">
                                 Print ID Card
+                            </span>
+                            <span className="hidden xl:inline 2xl:hidden">
+                                Print
                             </span>
                         </Button>
                     </div>
@@ -438,14 +496,14 @@ export default function Profile({
                         {/* Front Card */}
                         <div
                             className={cn(
-                                'space-y-1.5',
+                                'w-full space-y-1.5',
                                 orientation === 'landscape'
-                                    ? 'w-full max-w-[420px]'
-                                    : 'w-[270px]',
+                                    ? 'max-w-[390px] 2xl:max-w-[420px]'
+                                    : 'max-w-[270px]',
                             )}
                         >
                             <div className="no-export flex items-center justify-between px-1">
-                                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                                <span className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
                                     Front Face
                                 </span>
                                 <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
@@ -467,14 +525,14 @@ export default function Profile({
                         {/* Back Card */}
                         <div
                             className={cn(
-                                'space-y-1.5',
+                                'w-full space-y-1.5',
                                 orientation === 'landscape'
-                                    ? 'w-full max-w-[420px]'
-                                    : 'w-[270px]',
+                                    ? 'max-w-[390px] 2xl:max-w-[420px]'
+                                    : 'max-w-[270px]',
                             )}
                         >
                             <div className="no-export flex items-center justify-between px-1">
-                                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                                <span className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
                                     Back Face
                                 </span>
                                 <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">

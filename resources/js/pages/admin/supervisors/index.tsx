@@ -15,7 +15,6 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import InputError from '@/components/input-error';
-import { useDebounce } from '@/hooks/use-debounce';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
@@ -40,7 +39,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Table,
     TableBody,
@@ -49,12 +47,24 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { useDebounce } from '@/hooks/use-debounce';
 import { dashboard } from '@/routes';
 
-// ── Types ────────────────────────────────────────────────────────────────────
-interface Hte { hte_id: number; hte_name: string; }
-interface Program { program_id: number; program_name: string; }
+// -- Types --------------------------------------------------------------------
+interface Hte {
+    hte_id: number;
+    hte_name: string;
+}
+interface Program {
+    program_id: number;
+    program_name: string;
+}
 
 interface Supervisor {
     user_id: number;
@@ -82,8 +92,13 @@ interface SupervisorsIndexProps {
 
 type ViewMode = 'table' | 'grid';
 
-// ── Main page ─────────────────────────────────────────────────────────────────
-export default function SupervisorsIndex({ supervisors, htes, programs, filters }: SupervisorsIndexProps) {
+// -- Main page -----------------------------------------------------------------
+export default function SupervisorsIndex({
+    supervisors,
+    htes,
+    programs,
+    filters,
+}: SupervisorsIndexProps) {
     const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters.search || '');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -91,7 +106,8 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
     const isFirstRender = useRef(true);
 
     const [addOpen, setAddOpen] = useState(false);
-    const [editingSupervisor, setEditingSupervisor] = useState<Supervisor | null>(null);
+    const [editingSupervisor, setEditingSupervisor] =
+        useState<Supervisor | null>(null);
 
     const [archiveOpen, setArchiveOpen] = useState(false);
     const [archiveId, setArchiveId] = useState<number | null>(null);
@@ -112,13 +128,11 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
         program_id: '',
     });
 
-    // Keep local search in sync with filter props
-    useEffect(() => {
-        setSearch(filters.search || '');
-    }, [filters.search]);
-
-    // ── Navigation ─────────────────────────────────────────────────────────
-    const visit = (params: Record<string, string | undefined>, replace = true) =>
+    // -- Navigation ---------------------------------------------------------
+    const visit = (
+        params: Record<string, string | undefined>,
+        replace = true,
+    ) =>
         router.get('/admin/supervisors', params, {
             preserveState: true,
             preserveScroll: true,
@@ -135,6 +149,7 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
+
             return;
         }
 
@@ -145,11 +160,17 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                 page: undefined,
             });
         }
+        // Navigation helpers intentionally remain local to preserve current filters.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch]);
 
     const applySearch = (e: FormEvent) => {
         e.preventDefault();
-        visit({ ...baseParams(), search: search || undefined, page: undefined });
+        visit({
+            ...baseParams(),
+            search: search || undefined,
+            page: undefined,
+        });
     };
 
     const clearSearch = () => {
@@ -158,22 +179,31 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
     };
 
     const applyType = (value: string) => {
-        visit({ ...baseParams(), type: value === 'all' ? undefined : value, page: undefined });
+        visit({
+            ...baseParams(),
+            type: value === 'all' ? undefined : value,
+            page: undefined,
+        });
     };
 
-    const goToPage = (page: number) => visit({ ...baseParams(), page: String(page) }, false);
+    const goToPage = (page: number) =>
+        visit({ ...baseParams(), page: String(page) }, false);
     const changePerPage = (perPage: number) =>
         visit({ ...baseParams(), per_page: String(perPage), page: undefined });
 
-    // ── CRUD ───────────────────────────────────────────────────────────────
+    // -- CRUD ---------------------------------------------------------------
     const handleAddSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const url = addForm.data.supervisor_type === 'ojt'
-            ? '/admin/supervisors/ojt'
-            : '/admin/supervisors';
+        const url =
+            addForm.data.supervisor_type === 'ojt'
+                ? '/admin/supervisors/ojt'
+                : '/admin/supervisors';
         addForm.post(url, {
             preserveScroll: true,
-            onSuccess: () => { addForm.reset(); setAddOpen(false); },
+            onSuccess: () => {
+                addForm.reset();
+                setAddOpen(false);
+            },
         });
     };
 
@@ -182,14 +212,20 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
             name: supervisor.name,
             email: supervisor.email,
             hte_id: supervisor.hte_id ? String(supervisor.hte_id) : '',
-            program_id: supervisor.program_id ? String(supervisor.program_id) : '',
+            program_id: supervisor.program_id
+                ? String(supervisor.program_id)
+                : '',
         });
         setEditingSupervisor(supervisor);
     };
 
     const handleEditSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!editingSupervisor) return;
+
+        if (!editingSupervisor) {
+            return;
+        }
+
         editForm.patch(`/admin/supervisors/${editingSupervisor.user_id}`, {
             preserveScroll: true,
             onSuccess: () => setEditingSupervisor(null),
@@ -197,9 +233,13 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
     };
 
     const changeStatus = (userId: number, status: string) =>
-        router.patch(`/admin/supervisors/${userId}/status`, { status }, {
-            preserveScroll: true,
-        });
+        router.patch(
+            `/admin/supervisors/${userId}/status`,
+            { status },
+            {
+                preserveScroll: true,
+            },
+        );
 
     const openArchiveDialog = (supervisor: Supervisor) => {
         setArchiveId(supervisor.user_id);
@@ -208,19 +248,28 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
     };
 
     const submitArchive = () => {
-        if (archiveId === null) return;
-        router.delete(`/admin/supervisors/${archiveId}`, { preserveScroll: true });
+        if (archiveId === null) {
+            return;
+        }
+
+        router.delete(`/admin/supervisors/${archiveId}`, {
+            preserveScroll: true,
+        });
         setArchiveOpen(false);
         setArchiveId(null);
         setArchiveName('');
     };
 
-    // ── Per-row actions (shared between table and grid) ────────────────────
+    // -- Per-row actions (shared between table and grid) --------------------
     const SupervisorActions = ({ supervisor }: { supervisor: Supervisor }) => (
         <div className="flex justify-center gap-1">
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={() => openEditDialog(supervisor)}>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openEditDialog(supervisor)}
+                    >
                         <Pencil className="size-4 text-blue-600" />
                     </Button>
                 </TooltipTrigger>
@@ -229,13 +278,28 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
 
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={() => changeStatus(supervisor.user_id, supervisor.status === 'active' ? 'inactive' : 'active')}>
-                        {supervisor.status === 'active'
-                            ? <PowerOff className="size-4 text-destructive" />
-                            : <Power className="size-4 text-emerald-600" />}
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() =>
+                            changeStatus(
+                                supervisor.user_id,
+                                supervisor.status === 'active'
+                                    ? 'inactive'
+                                    : 'active',
+                            )
+                        }
+                    >
+                        {supervisor.status === 'active' ? (
+                            <PowerOff className="size-4 text-destructive" />
+                        ) : (
+                            <Power className="size-4 text-emerald-600" />
+                        )}
                     </Button>
                 </TooltipTrigger>
-                <TooltipContent>{supervisor.status === 'active' ? 'Deactivate' : 'Activate'}</TooltipContent>
+                <TooltipContent>
+                    {supervisor.status === 'active' ? 'Deactivate' : 'Activate'}
+                </TooltipContent>
             </Tooltip>
 
             <Tooltip>
@@ -250,13 +314,15 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                     </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                    {supervisor.status === 'active' ? 'Archive inactive supervisors only' : 'Archive'}
+                    {supervisor.status === 'active'
+                        ? 'Archive inactive supervisors only'
+                        : 'Archive'}
                 </TooltipContent>
             </Tooltip>
         </div>
     );
 
-    // ── Render ─────────────────────────────────────────────────────────────
+    // -- Render -------------------------------------------------------------
     return (
         <>
             <Head title="Supervisors" />
@@ -273,13 +339,16 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
 
                     <div className="flex flex-wrap items-center gap-2">
                         {/* Desktop search */}
-                        <form onSubmit={applySearch} className="relative hidden sm:block">
+                        <form
+                            onSubmit={applySearch}
+                            className="relative hidden sm:block"
+                        >
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                             <input
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search supervisors…"
+                                placeholder="Search supervisors"
                                 className="h-9 w-48 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
                             {search && (
@@ -300,42 +369,71 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                             className="inline-flex size-9 items-center justify-center rounded-md border bg-background text-muted-foreground hover:text-foreground sm:hidden"
                             aria-label="Toggle search"
                         >
-                            {mobileSearchOpen ? <X className="size-4" /> : <Search className="size-4" />}
+                            {mobileSearchOpen ? (
+                                <X className="size-4" />
+                            ) : (
+                                <Search className="size-4" />
+                            )}
                         </button>
 
                         {/* Type filter — full on desktop, icon-only on mobile */}
                         <div className="hidden sm:block">
-                            <Select value={filters.type ?? 'all'} onValueChange={applyType}>
+                            <Select
+                                value={filters.type ?? 'all'}
+                                onValueChange={applyType}
+                            >
                                 <SelectTrigger className="h-9 w-40">
                                     <SlidersHorizontal className="mr-1 size-3.5 shrink-0 text-muted-foreground" />
                                     <SelectValue placeholder="All types" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">All Types</SelectItem>
-                                    <SelectItem value="hte">HTE Supervisor</SelectItem>
-                                    <SelectItem value="ojt">OJT Supervisor</SelectItem>
+                                    <SelectItem value="all">
+                                        All Types
+                                    </SelectItem>
+                                    <SelectItem value="hte">
+                                        HTE Supervisor
+                                    </SelectItem>
+                                    <SelectItem value="ojt">
+                                        OJT Supervisor
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                         <div className="sm:hidden">
-                            <Select value={filters.type ?? 'all'} onValueChange={applyType}>
+                            <Select
+                                value={filters.type ?? 'all'}
+                                onValueChange={applyType}
+                            >
                                 <SelectTrigger className="inline-flex size-9 items-center justify-center p-0 [&>span]:hidden [&>svg:last-child]:hidden">
                                     <SlidersHorizontal className="size-4 text-muted-foreground" />
                                 </SelectTrigger>
                                 <SelectContent align="end">
-                                    <SelectItem value="all">All Types</SelectItem>
-                                    <SelectItem value="hte">HTE Supervisor</SelectItem>
-                                    <SelectItem value="ojt">OJT Supervisor</SelectItem>
+                                    <SelectItem value="all">
+                                        All Types
+                                    </SelectItem>
+                                    <SelectItem value="hte">
+                                        HTE Supervisor
+                                    </SelectItem>
+                                    <SelectItem value="ojt">
+                                        OJT Supervisor
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
 
                         {/* View toggle — desktop only */}
                         <div className="hidden sm:block">
-                            <Tabs value={view} onValueChange={(v) => setView(v as ViewMode)}>
+                            <Tabs
+                                value={view}
+                                onValueChange={(v) => setView(v as ViewMode)}
+                            >
                                 <TabsList>
-                                    <TabsTrigger value="table"><TableIcon className="size-4" /></TabsTrigger>
-                                    <TabsTrigger value="grid"><LayoutGrid className="size-4" /></TabsTrigger>
+                                    <TabsTrigger value="table">
+                                        <TableIcon className="size-4" />
+                                    </TabsTrigger>
+                                    <TabsTrigger value="grid">
+                                        <LayoutGrid className="size-4" />
+                                    </TabsTrigger>
                                 </TabsList>
                             </Tabs>
                         </div>
@@ -343,7 +441,9 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                         {/* Add button */}
                         <Button onClick={() => setAddOpen(true)}>
                             <Plus className="size-4" />
-                            <span className="hidden sm:inline">Add Supervisor</span>
+                            <span className="hidden sm:inline">
+                                Add Supervisor
+                            </span>
                         </Button>
                     </div>
                 </div>
@@ -351,8 +451,11 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                 {/* Mobile inline search */}
                 {mobileSearchOpen && (
                     <form
-                        onSubmit={(e) => { applySearch(e); setMobileSearchOpen(false); }}
-                        className="flex items-center gap-2 sm:hidden w-full"
+                        onSubmit={(e) => {
+                            applySearch(e);
+                            setMobileSearchOpen(false);
+                        }}
+                        className="flex w-full items-center gap-2 sm:hidden"
                     >
                         <div className="relative flex-1">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -367,14 +470,19 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                             {search && (
                                 <button
                                     type="button"
-                                    onClick={() => { clearSearch(); setMobileSearchOpen(false); }}
+                                    onClick={() => {
+                                        clearSearch();
+                                        setMobileSearchOpen(false);
+                                    }}
                                     className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                                 >
                                     <X className="size-3.5" />
                                 </button>
                             )}
                         </div>
-                        <Button type="submit" size="sm">Search</Button>
+                        <Button type="submit" size="sm">
+                            Search
+                        </Button>
                     </form>
                 )}
 
@@ -382,7 +490,10 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                 {supervisors.data.length === 0 ? (
                     <Card>
                         <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                            No supervisors{filters.search || filters.type ? ' match this filter.' : ' yet.'}
+                            No supervisors
+                            {filters.search || filters.type
+                                ? ' match this filter.'
+                                : ' yet.'}
                         </CardContent>
                     </Card>
                 ) : (
@@ -395,37 +506,83 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                                         <Table>
                                             <TableHeader>
                                                 <TableRow>
-                                                    <TableHead className="px-6">Name</TableHead>
-                                                    <TableHead className="px-6 text-center">Email</TableHead>
-                                                    <TableHead className="px-6 text-center">Type</TableHead>
-                                                    <TableHead className="px-6 text-center">Scope</TableHead>
-                                                    <TableHead className="px-6 text-center">Status</TableHead>
-                                                    <TableHead className="px-6 text-center">Actions</TableHead>
+                                                    <TableHead className="px-6">
+                                                        Name
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        Email
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        Type
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        Scope
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        Status
+                                                    </TableHead>
+                                                    <TableHead className="px-6 text-center">
+                                                        Actions
+                                                    </TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {supervisors.data.map((supervisor) => (
-                                                    <TableRow key={supervisor.user_id}>
-                                                        <TableCell className="px-6 font-medium whitespace-nowrap">
-                                                            {supervisor.name}
-                                                        </TableCell>
-                                                        <TableCell className="max-w-[200px] truncate px-6 text-center text-muted-foreground" title={supervisor.email}>
-                                                            {supervisor.email}
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-center">
-                                                            <TypeBadge type={supervisor.supervisor_type} />
-                                                        </TableCell>
-                                                        <TableCell className="max-w-[180px] truncate px-6 text-center" title={supervisor.scope_name}>
-                                                            {supervisor.scope_name}
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-center">
-                                                            <StatusBadge status={supervisor.status} />
-                                                        </TableCell>
-                                                        <TableCell className="px-6 text-center">
-                                                            <SupervisorActions supervisor={supervisor} />
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
+                                                {supervisors.data.map(
+                                                    (supervisor) => (
+                                                        <TableRow
+                                                            key={
+                                                                supervisor.user_id
+                                                            }
+                                                        >
+                                                            <TableCell className="px-6 font-medium whitespace-nowrap">
+                                                                {
+                                                                    supervisor.name
+                                                                }
+                                                            </TableCell>
+                                                            <TableCell
+                                                                className="max-w-[200px] truncate px-6 text-center text-muted-foreground"
+                                                                title={
+                                                                    supervisor.email
+                                                                }
+                                                            >
+                                                                {
+                                                                    supervisor.email
+                                                                }
+                                                            </TableCell>
+                                                            <TableCell className="px-6 text-center">
+                                                                <TypeBadge
+                                                                    type={
+                                                                        supervisor.supervisor_type
+                                                                    }
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell
+                                                                className="max-w-[180px] truncate px-6 text-center"
+                                                                title={
+                                                                    supervisor.scope_name
+                                                                }
+                                                            >
+                                                                {
+                                                                    supervisor.scope_name
+                                                                }
+                                                            </TableCell>
+                                                            <TableCell className="px-6 text-center">
+                                                                <StatusBadge
+                                                                    status={
+                                                                        supervisor.status
+                                                                    }
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell className="px-6 text-center">
+                                                                <SupervisorActions
+                                                                    supervisor={
+                                                                        supervisor
+                                                                    }
+                                                                />
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ),
+                                                )}
                                             </TableBody>
                                         </Table>
                                         <NumberedPagination
@@ -455,19 +612,33 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                                                         {supervisor.email}
                                                     </p>
                                                     <div className="mt-2 flex flex-wrap gap-1.5">
-                                                <TypeBadge type={supervisor.supervisor_type} />
-                                                <StatusBadge status={supervisor.status} />
-                                            </div>
+                                                        <TypeBadge
+                                                            type={
+                                                                supervisor.supervisor_type
+                                                            }
+                                                        />
+                                                        <StatusBadge
+                                                            status={
+                                                                supervisor.status
+                                                            }
+                                                        />
+                                                    </div>
                                                 </div>
                                                 <div className="shrink-0">
-                                                    <SupervisorActions supervisor={supervisor} />
+                                                    <SupervisorActions
+                                                        supervisor={supervisor}
+                                                    />
                                                 </div>
                                             </div>
                                         </CardHeader>
                                         <CardContent className="space-y-2 text-sm">
                                             <div className="flex justify-between gap-2">
-                                                <span className="shrink-0 text-muted-foreground">Scope</span>
-                                                <span className="text-right">{supervisor.scope_name}</span>
+                                                <span className="shrink-0 text-muted-foreground">
+                                                    Scope
+                                                </span>
+                                                <span className="text-right">
+                                                    {supervisor.scope_name}
+                                                </span>
                                             </div>
                                         </CardContent>
                                     </Card>
@@ -487,30 +658,49 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                 )}
             </div>
 
-            {/* ── Add dialog ───────────────────────────────────────────────── */}
+            {/* -- Add dialog ------------------------------------------------- */}
             <Dialog open={addOpen} onOpenChange={setAddOpen}>
                 <DialogContent>
-                    <form onSubmit={handleAddSubmit} className="flex flex-col gap-4">
+                    <form
+                        onSubmit={handleAddSubmit}
+                        className="flex flex-col gap-4"
+                    >
                         <DialogHeader>
                             <DialogTitle>Add Supervisor</DialogTitle>
                             <DialogDescription>
-                                Create an HTE or OJT supervisor. They'll receive a default password and can change it after logging in.
+                                Create an HTE or OJT supervisor. They'll receive
+                                a default password and can change it after
+                                logging in.
                             </DialogDescription>
                         </DialogHeader>
 
                         <div className="flex flex-col gap-4">
                             <div className="grid gap-1.5">
-                                <Label htmlFor="supervisor_type">Supervisor Type</Label>
+                                <Label htmlFor="supervisor_type">
+                                    Supervisor Type
+                                </Label>
                                 <Select
                                     value={addForm.data.supervisor_type}
-                                    onValueChange={(v) => addForm.setData('supervisor_type', v as 'hte' | 'ojt')}
+                                    onValueChange={(v) =>
+                                        addForm.setData(
+                                            'supervisor_type',
+                                            v as 'hte' | 'ojt',
+                                        )
+                                    }
                                 >
-                                    <SelectTrigger id="supervisor_type" className="w-full">
+                                    <SelectTrigger
+                                        id="supervisor_type"
+                                        className="w-full"
+                                    >
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="hte">HTE Supervisor</SelectItem>
-                                        <SelectItem value="ojt">OJT Supervisor</SelectItem>
+                                        <SelectItem value="hte">
+                                            HTE Supervisor
+                                        </SelectItem>
+                                        <SelectItem value="ojt">
+                                            OJT Supervisor
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -520,7 +710,9 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                                 <Input
                                     id="add_name"
                                     value={addForm.data.name}
-                                    onChange={(e) => addForm.setData('name', e.target.value)}
+                                    onChange={(e) =>
+                                        addForm.setData('name', e.target.value)
+                                    }
                                     required
                                 />
                                 <InputError message={addForm.errors.name} />
@@ -532,8 +724,9 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                                     id="add_email"
                                     type="email"
                                     value={addForm.data.email}
-                                    onChange={(e) => addForm.setData('email', e.target.value)}
-                                    placeholder="supervisor@example.com"
+                                    onChange={(e) =>
+                                        addForm.setData('email', e.target.value)
+                                    }
                                     required
                                 />
                                 <InputError message={addForm.errors.email} />
@@ -541,43 +734,79 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
 
                             {addForm.data.supervisor_type === 'hte' ? (
                                 <div className="grid gap-1.5">
-                                    <Label htmlFor="add_hte_id">Host Training Establishment</Label>
-                                    <Select value={addForm.data.hte_id} onValueChange={(v) => addForm.setData('hte_id', v)}>
-                                        <SelectTrigger id="add_hte_id" className="w-full">
+                                    <Label htmlFor="add_hte_id">
+                                        Host Training Establishment
+                                    </Label>
+                                    <Select
+                                        value={addForm.data.hte_id}
+                                        onValueChange={(v) =>
+                                            addForm.setData('hte_id', v)
+                                        }
+                                    >
+                                        <SelectTrigger
+                                            id="add_hte_id"
+                                            className="w-full"
+                                        >
                                             <SelectValue placeholder="Select HTE" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {htes.map((hte) => (
-                                                <SelectItem key={hte.hte_id} value={String(hte.hte_id)}>
+                                                <SelectItem
+                                                    key={hte.hte_id}
+                                                    value={String(hte.hte_id)}
+                                                >
                                                     {hte.hte_name}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    <InputError message={addForm.errors.hte_id} />
+                                    <InputError
+                                        message={addForm.errors.hte_id}
+                                    />
                                 </div>
                             ) : (
                                 <div className="grid gap-1.5">
-                                    <Label htmlFor="add_program_id">Program</Label>
-                                    <Select value={addForm.data.program_id} onValueChange={(v) => addForm.setData('program_id', v)}>
-                                        <SelectTrigger id="add_program_id" className="w-full">
+                                    <Label htmlFor="add_program_id">
+                                        Program
+                                    </Label>
+                                    <Select
+                                        value={addForm.data.program_id}
+                                        onValueChange={(v) =>
+                                            addForm.setData('program_id', v)
+                                        }
+                                    >
+                                        <SelectTrigger
+                                            id="add_program_id"
+                                            className="w-full"
+                                        >
                                             <SelectValue placeholder="Select program" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {programs.map((program) => (
-                                                <SelectItem key={program.program_id} value={String(program.program_id)}>
+                                                <SelectItem
+                                                    key={program.program_id}
+                                                    value={String(
+                                                        program.program_id,
+                                                    )}
+                                                >
                                                     {program.program_name}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    <InputError message={addForm.errors.program_id} />
+                                    <InputError
+                                        message={addForm.errors.program_id}
+                                    />
                                 </div>
                             )}
                         </div>
 
                         <DialogFooter>
-                            <Button variant="outline" type="button" onClick={() => setAddOpen(false)}>
+                            <Button
+                                variant="outline"
+                                type="button"
+                                onClick={() => setAddOpen(false)}
+                            >
                                 Cancel
                             </Button>
                             <Button type="submit" disabled={addForm.processing}>
@@ -588,13 +817,21 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                 </DialogContent>
             </Dialog>
 
-            {/* ── Edit dialog ──────────────────────────────────────────────── */}
-            <Dialog open={editingSupervisor !== null} onOpenChange={(open) => !open && setEditingSupervisor(null)}>
+            {/* -- Edit dialog ------------------------------------------------ */}
+            <Dialog
+                open={editingSupervisor !== null}
+                onOpenChange={(open) => !open && setEditingSupervisor(null)}
+            >
                 <DialogContent>
-                    <form onSubmit={handleEditSubmit} className="flex flex-col gap-4">
+                    <form
+                        onSubmit={handleEditSubmit}
+                        className="flex flex-col gap-4"
+                    >
                         <DialogHeader>
                             <DialogTitle>Edit Supervisor</DialogTitle>
-                            <DialogDescription>Update this supervisor's account and assignment.</DialogDescription>
+                            <DialogDescription>
+                                Update this supervisor's account and assignment.
+                            </DialogDescription>
                         </DialogHeader>
 
                         <div className="flex flex-col gap-4">
@@ -603,7 +840,9 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                                 <Input
                                     id="edit_name"
                                     value={editForm.data.name}
-                                    onChange={(e) => editForm.setData('name', e.target.value)}
+                                    onChange={(e) =>
+                                        editForm.setData('name', e.target.value)
+                                    }
                                     required
                                 />
                                 <InputError message={editForm.errors.name} />
@@ -615,8 +854,12 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                                     id="edit_email"
                                     type="email"
                                     value={editForm.data.email}
-                                    onChange={(e) => editForm.setData('email', e.target.value)}
-                                    placeholder="supervisor@example.com"
+                                    onChange={(e) =>
+                                        editForm.setData(
+                                            'email',
+                                            e.target.value,
+                                        )
+                                    }
                                     required
                                 />
                                 <InputError message={editForm.errors.email} />
@@ -624,46 +867,85 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
 
                             {editingSupervisor?.supervisor_type === 'hte' ? (
                                 <div className="grid gap-1.5">
-                                    <Label htmlFor="edit_hte_id">Host Training Establishment</Label>
-                                    <Select value={editForm.data.hte_id} onValueChange={(v) => editForm.setData('hte_id', v)}>
-                                        <SelectTrigger id="edit_hte_id" className="w-full">
+                                    <Label htmlFor="edit_hte_id">
+                                        Host Training Establishment
+                                    </Label>
+                                    <Select
+                                        value={editForm.data.hte_id}
+                                        onValueChange={(v) =>
+                                            editForm.setData('hte_id', v)
+                                        }
+                                    >
+                                        <SelectTrigger
+                                            id="edit_hte_id"
+                                            className="w-full"
+                                        >
                                             <SelectValue placeholder="Select HTE" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {htes.map((hte) => (
-                                                <SelectItem key={hte.hte_id} value={String(hte.hte_id)}>
+                                                <SelectItem
+                                                    key={hte.hte_id}
+                                                    value={String(hte.hte_id)}
+                                                >
                                                     {hte.hte_name}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    <InputError message={editForm.errors.hte_id} />
+                                    <InputError
+                                        message={editForm.errors.hte_id}
+                                    />
                                 </div>
                             ) : (
                                 <div className="grid gap-1.5">
-                                    <Label htmlFor="edit_program_id">Program</Label>
-                                    <Select value={editForm.data.program_id} onValueChange={(v) => editForm.setData('program_id', v)}>
-                                        <SelectTrigger id="edit_program_id" className="w-full">
+                                    <Label htmlFor="edit_program_id">
+                                        Program
+                                    </Label>
+                                    <Select
+                                        value={editForm.data.program_id}
+                                        onValueChange={(v) =>
+                                            editForm.setData('program_id', v)
+                                        }
+                                    >
+                                        <SelectTrigger
+                                            id="edit_program_id"
+                                            className="w-full"
+                                        >
                                             <SelectValue placeholder="Select program" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {programs.map((program) => (
-                                                <SelectItem key={program.program_id} value={String(program.program_id)}>
+                                                <SelectItem
+                                                    key={program.program_id}
+                                                    value={String(
+                                                        program.program_id,
+                                                    )}
+                                                >
                                                     {program.program_name}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    <InputError message={editForm.errors.program_id} />
+                                    <InputError
+                                        message={editForm.errors.program_id}
+                                    />
                                 </div>
                             )}
                         </div>
 
                         <DialogFooter>
-                            <Button variant="outline" type="button" onClick={() => setEditingSupervisor(null)}>
+                            <Button
+                                variant="outline"
+                                type="button"
+                                onClick={() => setEditingSupervisor(null)}
+                            >
                                 Cancel
                             </Button>
-                            <Button type="submit" disabled={editForm.processing}>
+                            <Button
+                                type="submit"
+                                disabled={editForm.processing}
+                            >
                                 Save Changes
                             </Button>
                         </DialogFooter>
@@ -671,7 +953,7 @@ export default function SupervisorsIndex({ supervisors, htes, programs, filters 
                 </DialogContent>
             </Dialog>
 
-            {/* ── Archive confirmation ──────────────────────────────────────── */}
+            {/* -- Archive confirmation ---------------------------------------- */}
             <ConfirmationDialog
                 open={archiveOpen}
                 onOpenChange={setArchiveOpen}

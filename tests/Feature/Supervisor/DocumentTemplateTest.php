@@ -2,8 +2,6 @@
 
 use App\Models\DocumentTemplate;
 use App\Models\Hte;
-use App\Models\InternDocument;
-use App\Models\InternProfile;
 use App\Models\Program;
 use App\Models\SupervisorProfile;
 use App\Models\User;

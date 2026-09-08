@@ -28,7 +28,7 @@ class DashboardController extends Controller
     {
         $validated = $request->validate([
             'page' => ['nullable', 'integer', 'min:1'],
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:' . self::MAX_PER_PAGE],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_PER_PAGE],
         ]);
 
         $perPage = (int) ($validated['per_page'] ?? self::DEFAULT_PER_PAGE);

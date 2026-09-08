@@ -8,7 +8,7 @@ class UpdateProfilePhotoRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return true; // any authenticated user may update their own photo
     }
 
     public function rules(): array
