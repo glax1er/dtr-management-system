@@ -32,7 +32,7 @@ function createTestInternProfile(): array
 
     $profile = InternProfile::create([
         'user_id' => $user->id,
-        'id_number' => 'IT-2026-'.rand(100, 999),
+        'id_number' => 'IT-2026-'.$user->id,
         'sex' => 'male',
         'hte_id' => $hte->hte_id,
         'program_id' => $program->program_id,
@@ -574,7 +574,7 @@ test('hte supervisor creating, updating, or deleting schedule override notifies 
     $otherInternUser = User::factory()->create(['role' => User::ROLE_INTERN]);
     InternProfile::create([
         'user_id' => $otherInternUser->id,
-        'id_number' => 'IT-2026-998',
+        'id_number' => 'IT-2026-'.$otherInternUser->id,
         'sex' => 'female',
         'hte_id' => $otherHte->hte_id,
         'program_id' => $program->program_id,

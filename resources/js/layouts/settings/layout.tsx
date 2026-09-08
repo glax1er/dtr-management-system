@@ -38,7 +38,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
 
     return (
         <div className="px-4 py-4">
-            <div className="mb-10">
+            <div className="mb-6 sm:mb-8">
                 <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
                     <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
                         <SettingsIcon className="size-5" />
@@ -47,8 +47,8 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                 </h1>
             </div>
 
-            <div className="flex flex-col lg:flex-row lg:space-x-12">
-                <aside className="w-full max-w-xl lg:w-48">
+            <div className="flex flex-col lg:flex-row lg:gap-6 xl:gap-8 2xl:gap-12">
+                <aside className="w-full shrink-0 lg:w-44 xl:w-48">
                     <nav
                         className="flex flex-col space-y-1 space-x-0"
                         aria-label="Settings"

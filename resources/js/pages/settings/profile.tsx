@@ -143,9 +143,9 @@ export default function Profile({
 
             <h1 className="sr-only">Profile settings</h1>
 
-            <div className="flex flex-col gap-10 xl:flex-row xl:items-start xl:gap-12">
+            <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:gap-6 2xl:gap-10">
                 {/* Profile Form (Left on desktop, Top on mobile) */}
-                <div className="w-full max-w-xl shrink-0 space-y-6">
+                <div className="min-w-0 flex-1 max-w-xl space-y-6">
                     <Heading
                         variant="small"
                         title="Profile"
@@ -410,7 +410,7 @@ export default function Profile({
                 </div>
 
                 {/* ID Card (Right on desktop, Below on mobile) */}
-                <div className="w-full shrink-0 space-y-4 xl:w-auto">
+                <div className="w-full shrink-0 space-y-4 xl:w-auto xl:max-w-[390px] 2xl:max-w-[420px]">
                     <Heading
                         variant="small"
                         title="ID Card"
@@ -463,8 +463,11 @@ export default function Profile({
                             ) : (
                                 <Download className="size-4 sm:mr-1.5" />
                             )}
-                            <span className="hidden sm:inline">
+                            <span className="hidden sm:inline xl:hidden 2xl:inline">
                                 Download ID Card
+                            </span>
+                            <span className="hidden xl:inline 2xl:hidden">
+                                Download
                             </span>
                         </Button>
 
@@ -476,8 +479,11 @@ export default function Profile({
                             aria-label="Print ID Card"
                         >
                             <Printer className="size-4 sm:mr-1.5" />
-                            <span className="hidden sm:inline">
+                            <span className="hidden sm:inline xl:hidden 2xl:inline">
                                 Print ID Card
+                            </span>
+                            <span className="hidden xl:inline 2xl:hidden">
+                                Print
                             </span>
                         </Button>
                     </div>
@@ -492,7 +498,7 @@ export default function Profile({
                             className={cn(
                                 'w-full space-y-1.5',
                                 orientation === 'landscape'
-                                    ? 'max-w-[420px]'
+                                    ? 'max-w-[390px] 2xl:max-w-[420px]'
                                     : 'max-w-[270px]',
                             )}
                         >
@@ -521,7 +527,7 @@ export default function Profile({
                             className={cn(
                                 'w-full space-y-1.5',
                                 orientation === 'landscape'
-                                    ? 'max-w-[420px]'
+                                    ? 'max-w-[390px] 2xl:max-w-[420px]'
                                     : 'max-w-[270px]',
                             )}
                         >

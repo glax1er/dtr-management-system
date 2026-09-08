@@ -68,7 +68,7 @@ export function IdCard({
             className={cn(
                 'flex flex-col justify-between overflow-hidden rounded-2xl border border-zinc-200/90 bg-white bg-cover bg-center p-4 text-zinc-900 shadow-sm select-none',
                 isLandscape
-                    ? 'aspect-[3.375/2.125] w-full max-w-[420px]'
+                    ? 'aspect-[3.375/2.125] w-full max-w-[390px] 2xl:max-w-[420px]'
                     : 'aspect-[2.125/3.375] w-[270px]',
                 className,
             )}
@@ -111,7 +111,7 @@ export function IdCard({
                                 className={cn(
                                     'flex items-center justify-center border border-zinc-300/90 bg-white shadow-xs',
                                     isLandscape
-                                        ? 'size-[134px] rounded-xl p-1.5'
+                                        ? 'size-[124px] 2xl:size-[134px] rounded-xl p-1.5'
                                         : 'size-[195px] rounded-2xl p-2.5',
                                 )}
                             >
@@ -176,8 +176,8 @@ export function IdCard({
                     {/* Front Body */}
                     {isLandscape ? (
                         /* Landscape Front: Photo on left, spacious details on right */
-                        <div className="flex flex-1 items-center gap-4 py-2">
-                            <div className="flex size-[120px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-white/95 bg-zinc-100 shadow-sm ring-1 ring-zinc-200/70">
+                        <div className="flex flex-1 items-center gap-3.5 2xl:gap-4 py-2">
+                            <div className="flex size-[112px] 2xl:size-[120px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-white/95 bg-zinc-100 shadow-sm ring-1 ring-zinc-200/70">
                                 {avatarUrl ? (
                                     <img
                                         src={avatarUrl}
