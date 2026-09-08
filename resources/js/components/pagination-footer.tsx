@@ -39,7 +39,7 @@ const DEFAULT_MAX_PER_PAGE = 100;
 /** Pagination footer shared by every paginated admin table/list:
  * "Showing X–Y of Z" + rows-per-page input on the left, Previous/Page/Next
  * on the right. Mirrors the pagination UI already used on the supervisor
- * pages (My Interns, My Students) so behavior is consistent app-wide. */
+ * pages (My Interns) so behavior is consistent app-wide. */
 export default function PaginationFooter({
     meta,
     itemLabel,

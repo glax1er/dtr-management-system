@@ -41,7 +41,7 @@ const adminNavItems: NavItem[] = [
 ];
 
 // HTE Supervisors get a dashboard; OJT Supervisors don't (they only
-// view/monitor their program's roster) so "My Students" is their landing
+// view/monitor their program's roster) so "My Interns" is their landing
 // page and there's no Dashboard link to show.
 const hteSupervisorNavItems: NavItem[] = [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
@@ -51,7 +51,7 @@ const hteSupervisorNavItems: NavItem[] = [
 
 const ojtSupervisorNavItems: NavItem[] = [
     {
-        title: 'Program Interns',
+        title: 'My Interns',
         href: '/supervisor/interns',
         icon: GraduationCap,
     },

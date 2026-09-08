@@ -111,7 +111,7 @@ export function IdCard({
                                 className={cn(
                                     'flex items-center justify-center border border-zinc-300/90 bg-white shadow-xs',
                                     isLandscape
-                                        ? 'size-[124px] 2xl:size-[134px] rounded-xl p-1.5'
+                                        ? 'size-[124px] rounded-xl p-1.5 2xl:size-[134px]'
                                         : 'size-[195px] rounded-2xl p-2.5',
                                 )}
                             >
@@ -176,8 +176,8 @@ export function IdCard({
                     {/* Front Body */}
                     {isLandscape ? (
                         /* Landscape Front: Photo on left, spacious details on right */
-                        <div className="flex flex-1 items-center gap-3.5 2xl:gap-4 py-2">
-                            <div className="flex size-[112px] 2xl:size-[120px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-white/95 bg-zinc-100 shadow-sm ring-1 ring-zinc-200/70">
+                        <div className="flex flex-1 items-center gap-3.5 py-2 2xl:gap-4">
+                            <div className="flex size-[112px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-white/95 bg-zinc-100 shadow-sm ring-1 ring-zinc-200/70 2xl:size-[120px]">
                                 {avatarUrl ? (
                                     <img
                                         src={avatarUrl}
