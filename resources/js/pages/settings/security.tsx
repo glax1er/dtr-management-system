@@ -27,7 +27,7 @@ export default function Security(props: Props) {
 
             <h1 className="sr-only">Security settings</h1>
 
-            <div className="space-y-6">
+            <div className="max-w-xl space-y-6">
                 <Heading
                     variant="small"
                     title="Update password"
