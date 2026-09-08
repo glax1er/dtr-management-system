@@ -145,7 +145,7 @@ export default function Profile({
 
             <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:gap-6 2xl:gap-10">
                 {/* Profile Form (Left on desktop, Top on mobile) */}
-                <div className="min-w-0 flex-1 max-w-xl space-y-6">
+                <div className="max-w-xl min-w-0 flex-1 space-y-6">
                     <Heading
                         variant="small"
                         title="Profile"
