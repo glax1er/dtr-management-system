@@ -188,61 +188,67 @@ export default function Profile({
                         </p>
                     </div>
 
-                    <div className="space-y-6">
-                        <div className="grid gap-2">
-                            <Label htmlFor="name">Name</Label>
+                    <div className="space-y-4">
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="grid gap-2">
+                                <Label htmlFor="name">Name</Label>
 
-                            <Input
-                                id="name"
-                                className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
-                                defaultValue={auth.user.name}
-                                disabled
-                                readOnly
-                                placeholder="Full name"
-                            />
-                        </div>
+                                <Input
+                                    id="name"
+                                    className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
+                                    defaultValue={auth.user.name}
+                                    disabled
+                                    readOnly
+                                    placeholder="Full name"
+                                />
+                            </div>
 
-                        <div className="grid gap-2">
-                            <Label htmlFor="email">Email address</Label>
+                            <div className="grid gap-2">
+                                <Label htmlFor="email">Email address</Label>
 
-                            <Input
-                                id="email"
-                                type="email"
-                                className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
-                                defaultValue={auth.user.email}
-                                disabled
-                                readOnly
-                                autoComplete="username"
-                                placeholder="Email address"
-                            />
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
+                                    defaultValue={auth.user.email}
+                                    disabled
+                                    readOnly
+                                    autoComplete="username"
+                                    placeholder="Email address"
+                                />
+                            </div>
                         </div>
 
                         {auth.user.role === 'intern' && (
                             <>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="id_number">ID Number</Label>
-                                    <Input
-                                        id="id_number"
-                                        className="mt-1 block w-full cursor-not-allowed bg-muted/50 font-mono opacity-70"
-                                        defaultValue={
-                                            profileDetails?.id_number ?? '—'
-                                        }
-                                        disabled
-                                        readOnly
-                                    />
-                                </div>
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="id_number">
+                                            ID Number
+                                        </Label>
+                                        <Input
+                                            id="id_number"
+                                            className="mt-1 block w-full cursor-not-allowed bg-muted/50 font-mono opacity-70"
+                                            defaultValue={
+                                                profileDetails?.id_number ?? '—'
+                                            }
+                                            disabled
+                                            readOnly
+                                        />
+                                    </div>
 
-                                <div className="grid gap-2">
-                                    <Label htmlFor="program">Program</Label>
-                                    <Input
-                                        id="program"
-                                        className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
-                                        defaultValue={
-                                            profileDetails?.program ?? '—'
-                                        }
-                                        disabled
-                                        readOnly
-                                    />
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="program">Program</Label>
+                                        <Input
+                                            id="program"
+                                            className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
+                                            defaultValue={
+                                                profileDetails?.program ?? '—'
+                                            }
+                                            disabled
+                                            readOnly
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="grid gap-2">
@@ -319,37 +325,41 @@ export default function Profile({
                                     />
                                 </div>
 
-                                {profileDetails?.hte && (
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="hte">
-                                            Assigned HTE
-                                        </Label>
-                                        <Input
-                                            id="hte"
-                                            className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
-                                            defaultValue={profileDetails.hte}
-                                            disabled
-                                            readOnly
-                                        />
-                                    </div>
-                                )}
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    {profileDetails?.hte && (
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="hte">
+                                                Assigned HTE
+                                            </Label>
+                                            <Input
+                                                id="hte"
+                                                className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
+                                                defaultValue={
+                                                    profileDetails.hte
+                                                }
+                                                disabled
+                                                readOnly
+                                            />
+                                        </div>
+                                    )}
 
-                                {profileDetails?.program && (
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="program">
-                                            Assigned Program
-                                        </Label>
-                                        <Input
-                                            id="program"
-                                            className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
-                                            defaultValue={
-                                                profileDetails.program
-                                            }
-                                            disabled
-                                            readOnly
-                                        />
-                                    </div>
-                                )}
+                                    {profileDetails?.program && (
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="program">
+                                                Assigned Program
+                                            </Label>
+                                            <Input
+                                                id="program"
+                                                className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
+                                                defaultValue={
+                                                    profileDetails.program
+                                                }
+                                                disabled
+                                                readOnly
+                                            />
+                                        </div>
+                                    )}
+                                </div>
 
                                 <p className="text-xs text-muted-foreground">
                                     Supervisor assignments are managed by the
@@ -400,7 +410,7 @@ export default function Profile({
                 </div>
 
                 {/* ID Card (Right on desktop, Below on mobile) */}
-                <div className="w-full shrink-0 space-y-4 lg:w-auto">
+                <div className="w-full shrink-0 space-y-4 xl:w-auto">
                     <Heading
                         variant="small"
                         title="ID Card"
@@ -444,7 +454,7 @@ export default function Profile({
                             variant="outline"
                             onClick={handleDownload}
                             disabled={isDownloading}
-                            className="size-9 p-0 sm:h-9 sm:w-auto sm:px-4"
+                            className="h-9 px-3 sm:px-4"
                             title="Download ID Card"
                             aria-label="Download ID Card"
                         >
@@ -461,7 +471,7 @@ export default function Profile({
                         <Button
                             type="button"
                             onClick={handlePrint}
-                            className="size-9 p-0 sm:h-9 sm:w-auto sm:px-4"
+                            className="h-9 px-3 sm:px-4"
                             title="Print ID Card"
                             aria-label="Print ID Card"
                         >
@@ -480,10 +490,10 @@ export default function Profile({
                         {/* Front Card */}
                         <div
                             className={cn(
-                                'space-y-1.5',
+                                'w-full space-y-1.5',
                                 orientation === 'landscape'
-                                    ? 'w-full max-w-[420px]'
-                                    : 'w-[270px]',
+                                    ? 'max-w-[420px]'
+                                    : 'max-w-[270px]',
                             )}
                         >
                             <div className="no-export flex items-center justify-between px-1">
@@ -509,10 +519,10 @@ export default function Profile({
                         {/* Back Card */}
                         <div
                             className={cn(
-                                'space-y-1.5',
+                                'w-full space-y-1.5',
                                 orientation === 'landscape'
-                                    ? 'w-full max-w-[420px]'
-                                    : 'w-[270px]',
+                                    ? 'max-w-[420px]'
+                                    : 'max-w-[270px]',
                             )}
                         >
                             <div className="no-export flex items-center justify-between px-1">
