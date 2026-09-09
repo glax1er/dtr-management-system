@@ -33,7 +33,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['role', 'name', 'email', 'password', 'profile_photo_path', 'notification_preferences', 'notifications_cleared_at'])]
+#[Fillable(['role', 'name', 'email', 'password', 'must_change_password', 'profile_photo_path', 'notification_preferences', 'notifications_cleared_at'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
@@ -50,6 +50,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         'name',
         'email',
         'password',
+        'must_change_password',
         'profile_photo_path',
         'notification_preferences',
         'notifications_cleared_at',
@@ -222,6 +223,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'must_change_password' => 'boolean',
             'two_factor_confirmed_at' => 'datetime',
             'notification_preferences' => 'array',
             'notifications_cleared_at' => 'datetime',
@@ -318,6 +320,33 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         }
 
         return ! is_null($this->email_verified_at);
+    }
+
+    /**
+     * Determine whether the user is required to change their password on login.
+     * Checks if the user is explicitly flagged with must_change_password, or if
+     * a supervisor is still using the default temporary password (Supervisor@123).
+     */
+    public function requiresPasswordChange(): bool
+    {
+        if ($this->must_change_password) {
+            return true;
+        }
+
+        if ($this->isSupervisor()) {
+            $defaultPassword = (string) config('supervisor.default_supervisor_password', 'Supervisor@123');
+
+            if (\Illuminate\Support\Facades\Hash::check($defaultPassword, $this->password)) {
+                if ($this->exists) {
+                    $this->must_change_password = true;
+                    $this->saveQuietly();
+                }
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

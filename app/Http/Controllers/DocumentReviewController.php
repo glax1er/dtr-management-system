@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 
 class DocumentReviewController extends Controller
 {
@@ -112,9 +113,14 @@ class DocumentReviewController extends Controller
 
         $fullPath = Storage::disk('local')->path($internDocument->file_path);
 
+        $disposition = HeaderUtils::makeDisposition(
+            HeaderUtils::DISPOSITION_INLINE,
+            $internDocument->original_filename,
+        );
+
         return response()->file($fullPath, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="'.addslashes($internDocument->original_filename).'"',
+            'Content-Disposition' => $disposition,
         ]);
     }
 

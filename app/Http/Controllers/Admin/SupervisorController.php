@@ -104,6 +104,7 @@ class SupervisorController extends Controller
                 'email' => $request->validated('email'),
                 'password' => config('supervisor.default_supervisor_password'),
                 'role' => User::ROLE_SUPERVISOR,
+                'must_change_password' => true,
             ]);
 
             $supervisorProfile = SupervisorProfile::create([
@@ -131,6 +132,7 @@ class SupervisorController extends Controller
                 'email' => $request->validated('email'),
                 'password' => config('supervisor.default_supervisor_password'),
                 'role' => User::ROLE_SUPERVISOR,
+                'must_change_password' => true,
             ]);
 
             SupervisorProfile::create([

@@ -190,6 +190,10 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
+        if ($user->isAdmin() && User::where('role', User::ROLE_ADMIN)->count() <= 1) {
+            return back()->with('error', 'The system must have at least one active administrator. You cannot delete the sole administrator account.');
+        }
+
         Auth::logout();
 
         $user->delete();

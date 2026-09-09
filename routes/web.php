@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\ProgramController;
 use App\Http\Controllers\Admin\SchedulePeriodController as AdminScheduleController;
 use App\Http\Controllers\Admin\SupervisorController;
 use App\Http\Controllers\Auth\EmailVerificationCodeController;
+use App\Http\Controllers\Auth\FirstLoginPasswordController;
 use App\Http\Controllers\DocumentReviewController;
 use App\Http\Controllers\Intern\DashboardController as InternDashboardController;
 use App\Http\Controllers\Intern\DocumentController as InternDocumentController;
@@ -199,8 +200,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('{internDocument}/reject', [DocumentReviewController::class, 'reject'])->name('review.reject');
     });
 
+    Route::middleware(['auth'])->group(function () {
+        Route::get('password/first-login', [FirstLoginPasswordController::class, 'show'])
+            ->name('password.first-login');
+        Route::post('password/first-login', [FirstLoginPasswordController::class, 'update'])
+            ->middleware('throttle:10,1')
+            ->name('password.first-login.update');
+    });
+
 });
 
-Route::get('kiosk/{token}', [KioskScanController::class, 'show'])->name('kiosk.scan.show');
-Route::post('kiosk/{token}/scan', [KioskScanController::class, 'store'])->name('kiosk.scan.store');
+Route::get('kiosk/{token}', [KioskScanController::class, 'show'])
+    ->middleware('throttle:30,1')
+    ->name('kiosk.scan.show');
+Route::post('kiosk/{token}/scan', [KioskScanController::class, 'store'])
+    ->middleware('throttle:60,1')
+    ->name('kiosk.scan.store');
 require __DIR__.'/settings.php';
