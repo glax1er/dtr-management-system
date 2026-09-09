@@ -86,15 +86,22 @@ export function IdCard({
                     <div className="flex items-center justify-between border-b border-border/60 pb-2">
                         <div className="flex min-w-0 items-center gap-2">
                             <img
-                                src="/images/cims-logo-light.png"
+                                src="/images/cims-logo-light.png?v=3"
                                 alt="Logo"
-                                className="h-7 w-auto shrink-0 object-contain"
+                                className="h-10 w-auto shrink-0 object-contain"
                             />
                             <div className="flex min-w-0 flex-col">
-                                <span className="truncate text-xs leading-tight font-black tracking-wide text-primary uppercase">
-                                    TentaKeeper
+                                <span
+                                    className={cn(
+                                        'leading-tight font-black tracking-wide text-primary uppercase',
+                                        isLandscape
+                                            ? 'text-[10px]'
+                                            : 'text-[8.5px]',
+                                    )}
+                                >
+                                    University of Southeastern Philippines
                                 </span>
-                                <span className="truncate text-[7.5px] leading-tight font-semibold tracking-wider text-muted-foreground uppercase">
+                                <span className="text-[7.5px] leading-tight font-semibold tracking-wider text-muted-foreground uppercase">
                                     Attendance Verification Pass
                                 </span>
                             </div>
@@ -132,7 +139,7 @@ export function IdCard({
                             </p>
                             <p className="mt-1 max-w-[280px] text-[10px] font-medium text-zinc-600">
                                 Authorized {roleLabel} credential for
-                                TentaKeeper Internship Management System.
+                                USeP Internship Management System.
                             </p>
                             <p className="mt-2 font-mono text-[9px] text-zinc-500">
                                 {email}
@@ -142,7 +149,7 @@ export function IdCard({
 
                     {/* Back Footer */}
                     <div className="border-t border-zinc-200/80 pt-1.5 text-center text-[7.5px] font-medium tracking-wide text-zinc-500">
-                        Non-transferable • Property of TentaKeeper • If found,
+                        Non-transferable • Property of USeP • If found,
                         return to OJT Coordinator's office
                     </div>
                 </>
@@ -155,15 +162,22 @@ export function IdCard({
                     <div className="flex items-center justify-between border-b border-border/60 pb-2">
                         <div className="flex min-w-0 items-center gap-2">
                             <img
-                                src="/images/cims-logo-light.png"
+                                src="/images/cims-logo-light.png?v=3"
                                 alt="Logo"
-                                className="h-7 w-auto shrink-0 object-contain"
+                                className="h-10 w-auto shrink-0 object-contain"
                             />
                             <div className="flex min-w-0 flex-col">
-                                <span className="truncate text-xs leading-tight font-black tracking-wide text-primary uppercase">
-                                    TentaKeeper
+                                <span
+                                    className={cn(
+                                        'leading-tight font-black tracking-wide text-primary uppercase',
+                                        isLandscape
+                                            ? 'text-[10px]'
+                                            : 'text-[8.5px]',
+                                    )}
+                                >
+                                    University of Southeastern Philippines
                                 </span>
-                                <span className="truncate text-[7.5px] leading-tight font-semibold tracking-wider text-muted-foreground uppercase">
+                                <span className="text-[7.5px] leading-tight font-semibold tracking-wider text-muted-foreground uppercase">
                                     Internship Management System
                                 </span>
                             </div>
@@ -259,9 +273,8 @@ export function IdCard({
                     )}
 
                     {/* Front Footer */}
-                    <div className="flex items-center justify-between border-t border-zinc-200/80 pt-1.5 text-[7.5px] font-semibold tracking-wider text-zinc-500 uppercase">
+                    <div className="border-t border-zinc-200/80 pt-1.5 text-center text-[7.5px] font-semibold tracking-wider text-zinc-500 uppercase">
                         <span>Official Identification</span>
-                        <span>TentaKeeper System</span>
                     </div>
                 </>
             )}

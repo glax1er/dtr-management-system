@@ -281,7 +281,7 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                             className="mb-2 h-12 w-auto object-contain"
                         />
                         <img
-                            src="/images/cims-logo-light.png"
+                            src="/images/cims-logo-light.png?v=3"
                             alt="CIC logo"
                             className="h-27 w-auto object-contain dark:hidden"
                         />

@@ -32,10 +32,10 @@
 
     </style>
 
-    <link rel="icon" href="/favicon.ico?v=4" sizes="any">
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-    <link rel="icon" type="image/png" sizes="32x32" href="/tab-logo.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/tab-logo2.png">
+    <link rel="icon" href="/favicon.ico?v=7" sizes="any">
+    <link rel="icon" type="image/png" sizes="48x48" href="/tab-logo-48.png?v=5">
+    <link rel="icon" type="image/png" sizes="32x32" href="/tab-logo.png?v=5">
+    <link rel="apple-touch-icon" sizes="180x180" href="/tab-logo2.png?v=5">
 
     @fonts
 

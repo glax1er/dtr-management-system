@@ -3,18 +3,18 @@ export default function AppLogo() {
         <>
             <div className="-ml-3 flex aspect-square size-15 items-center justify-center overflow-hidden rounded-md">
                 <img
-                    src="/images/cims-logo-light.png"
+                    src="/images/cims-logo-light.png?v=3"
                     alt="CIMS logo"
                     className="block h-14 w-auto object-contain"
                 />
             </div>
 
-            <div className="grid flex-1 text-left group-data-[collapsible=icon]:hidden">
+            <div className="-ml-1.5 grid flex-1 text-left group-data-[collapsible=icon]:hidden">
                 <span className="text-[11px] leading-tight font-semibold">
-                    TentaKeeper
+                    USeP
                 </span>
                 <span className="text-[9px] leading-tight font-normal">
-                    USeP - CIC · Internship Management System
+                    Internship Management System
                 </span>
             </div>
         </>
