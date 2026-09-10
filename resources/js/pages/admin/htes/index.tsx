@@ -62,6 +62,7 @@ interface Hte {
     contact_person: string | null;
     contact_number: string | null;
     status: 'active' | 'inactive';
+    id_bg_url: string | null;
     interns_count: number;
     supervisors_count: number;
 }
@@ -189,16 +190,37 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
     const [archiveHteId, setArchiveHteId] = useState<number | null>(null);
     const [archiveHteName, setArchiveHteName] = useState('');
 
-    const addForm = useForm({
+    const [addBgPreview, setAddBgPreview] = useState<string | null>(null);
+    const [editBgPreview, setEditBgPreview] = useState<string | null>(null);
+    const addFileInputRef = useRef<HTMLInputElement>(null);
+    const editFileInputRef = useRef<HTMLInputElement>(null);
+
+    const addForm = useForm<{
+        hte_name: string;
+        address: string;
+        contact_number: string;
+        id_bg: File | null;
+    }>({
         hte_name: '',
         address: '',
         contact_number: '',
+        id_bg: null,
     });
 
-    const editForm = useForm({
+    const editForm = useForm<{
+        _method: string;
+        hte_name: string;
+        address: string;
+        contact_number: string;
+        id_bg: File | null;
+        remove_id_bg: boolean;
+    }>({
+        _method: 'patch',
         hte_name: '',
         address: '',
         contact_number: '',
+        id_bg: null,
+        remove_id_bg: false,
     });
 
     // -- Navigation helpers ------------------------------------------
@@ -284,6 +306,10 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
     const openAddDialog = () => {
         addForm.reset();
         addForm.clearErrors();
+        setAddBgPreview(null);
+        if (addFileInputRef.current) {
+            addFileInputRef.current.value = '';
+        }
         setAddOpen(true);
     };
 
@@ -291,12 +317,17 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
         setAddOpen(false);
         addForm.reset();
         addForm.clearErrors();
+        setAddBgPreview(null);
+        if (addFileInputRef.current) {
+            addFileInputRef.current.value = '';
+        }
     };
 
     const handleAddSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         addForm.post('/admin/htes', {
             preserveScroll: true,
+            forceFormData: true,
             onSuccess: () => {
                 closeAddDialog();
             },
@@ -306,16 +337,27 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
     const openEditDialog = (hte: Hte) => {
         editForm.clearErrors();
         editForm.setData({
+            _method: 'patch',
             hte_name: hte.hte_name,
             address: hte.address ?? '',
             contact_number: hte.contact_number ?? '',
+            id_bg: null,
+            remove_id_bg: false,
         });
+        setEditBgPreview(null);
+        if (editFileInputRef.current) {
+            editFileInputRef.current.value = '';
+        }
         setEditingHte(hte);
     };
 
     const closeEditDialog = () => {
         setEditingHte(null);
         editForm.clearErrors();
+        setEditBgPreview(null);
+        if (editFileInputRef.current) {
+            editFileInputRef.current.value = '';
+        }
     };
 
     const handleEditSubmit = (e: React.FormEvent) => {
@@ -325,8 +367,9 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
             return;
         }
 
-        editForm.patch(`/admin/htes/${editingHte.hte_id}`, {
+        editForm.post(`/admin/htes/${editingHte.hte_id}`, {
             preserveScroll: true,
+            forceFormData: true,
             onSuccess: () => closeEditDialog(),
         });
     };
@@ -747,7 +790,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                 open={editingHte !== null}
                 onOpenChange={(open) => !open && closeEditDialog()}
             >
-                <DialogContent>
+                <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle>Edit HTE</DialogTitle>
                         <DialogDescription>
@@ -812,6 +855,84 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                     message={editForm.errors.contact_number}
                                 />
                             </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="edit_id_bg">
+                                    Card Background (Optional)
+                                </Label>
+                                <p className="text-xs text-muted-foreground">
+                                    Upload a picture to be used as the background of the cards. Max 5MB (JPG, PNG, WebP).
+                                </p>
+
+                                {/* Image Preview */}
+                                {(editBgPreview || (editingHte.id_bg_url && !editForm.data.remove_id_bg)) && (
+                                    <div className="relative h-32 w-full overflow-hidden rounded-xl border border-border bg-muted/20 shadow-xs">
+                                        <img
+                                            src={editBgPreview || editingHte.id_bg_url!}
+                                            alt="Card Background Preview"
+                                            className="size-full object-cover"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                editForm.setData((prev) => ({
+                                                    ...prev,
+                                                    id_bg: null,
+                                                    remove_id_bg: true,
+                                                }));
+                                                setEditBgPreview(null);
+                                                if (editFileInputRef.current) {
+                                                    editFileInputRef.current.value = '';
+                                                }
+                                            }}
+                                            className="absolute top-2 right-2 rounded-full bg-black/60 p-1.5 text-white shadow-sm transition hover:bg-black/80"
+                                            title="Remove image"
+                                        >
+                                            <X className="size-4" />
+                                        </button>
+                                    </div>
+                                )}
+
+                                {editingHte.id_bg_url && editForm.data.remove_id_bg && (
+                                    <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300">
+                                        <span>Image will be removed upon saving.</span>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-6 text-xs text-amber-900 hover:text-amber-950 dark:text-amber-200"
+                                            onClick={() => {
+                                                editForm.setData((prev) => ({
+                                                    ...prev,
+                                                    remove_id_bg: false,
+                                                }));
+                                            }}
+                                        >
+                                            Undo
+                                        </Button>
+                                    </div>
+                                )}
+
+                                <Input
+                                    ref={editFileInputRef}
+                                    id="edit_id_bg"
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0] || null;
+                                        if (file) {
+                                            editForm.setData((prev) => ({
+                                                ...prev,
+                                                id_bg: file,
+                                                remove_id_bg: false,
+                                            }));
+                                            setEditBgPreview(URL.createObjectURL(file));
+                                        }
+                                    }}
+                                />
+                                <InputError message={editForm.errors.id_bg} />
+                            </div>
+
                             <DialogFooter>
                                 <Button
                                     variant="outline"
@@ -839,7 +960,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                     open ? openAddDialog() : closeAddDialog()
                 }
             >
-                <DialogContent>
+                <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle>Add HTE</DialogTitle>
                         <DialogDescription>
@@ -896,6 +1017,57 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                 message={addForm.errors.contact_number}
                             />
                         </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="add_id_bg">
+                                Card Background (Optional)
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                                Upload a picture to be used as the background of the cards. Max 5MB (JPG, PNG, WebP).
+                            </p>
+
+                            {addBgPreview && (
+                                <div className="relative h-32 w-full overflow-hidden rounded-xl border border-border bg-muted/20 shadow-xs">
+                                    <img
+                                        src={addBgPreview}
+                                        alt="Card Background Preview"
+                                        className="size-full object-cover"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            addForm.setData('id_bg', null);
+                                            setAddBgPreview(null);
+                                            if (addFileInputRef.current) {
+                                                addFileInputRef.current.value = '';
+                                            }
+                                        }}
+                                        className="absolute top-2 right-2 rounded-full bg-black/60 p-1.5 text-white shadow-sm transition hover:bg-black/80"
+                                        title="Remove image"
+                                    >
+                                        <X className="size-4" />
+                                    </button>
+                                </div>
+                            )}
+
+                            <Input
+                                ref={addFileInputRef}
+                                id="add_id_bg"
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0] || null;
+                                    addForm.setData('id_bg', file);
+                                    if (file) {
+                                        setAddBgPreview(URL.createObjectURL(file));
+                                    } else {
+                                        setAddBgPreview(null);
+                                    }
+                                }}
+                            />
+                            <InputError message={addForm.errors.id_bg} />
+                        </div>
+
                         <DialogFooter>
                             <Button
                                 variant="outline"

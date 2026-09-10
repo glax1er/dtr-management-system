@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class Hte extends Model
 {
@@ -24,11 +25,20 @@ class Hte extends Model
         'contact_person',
         'contact_number',
         'status',
+        'id_bg_path',
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
     ];
+
+    /**
+     * Public URL for the HTE's custom ID card background image, or null if none is set.
+     */
+    public function getIdBgUrlAttribute(): ?string
+    {
+        return $this->id_bg_path ? Storage::disk('public')->url($this->id_bg_path) : null;
+    }
 
     /**
      * All interns assigned to this HTE.

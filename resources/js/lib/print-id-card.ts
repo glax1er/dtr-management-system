@@ -42,12 +42,14 @@ export function printIdCard({
         detail: null,
         has_qr_code: false,
         qr_code_url: null,
+        bg_url: null,
     };
     const roleLabel =
         ROLE_LABEL[role] ??
         (role
             ? String(role).charAt(0).toUpperCase() + String(role).slice(1)
             : 'Member');
+    const bgUrl = cardData.bg_url || '/images/cic-bg.jpg';
 
     // Exact on-screen dimensions matching IdCard component (420x265 landscape, 270x430 portrait)
     const cardWidth = isLandscape ? '420px' : '270px';
@@ -234,7 +236,7 @@ export function printIdCard({
             border: 1px solid var(--card-border);
             border-radius: 16px;
             background-color: var(--card-bg);
-            background-image: linear-gradient(rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.86)), url('/images/cic-bg.jpg');
+            background-image: linear-gradient(rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.86)), url('${bgUrl}');
             background-size: cover;
             background-position: center;
             padding: 16px;

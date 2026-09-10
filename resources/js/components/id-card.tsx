@@ -10,6 +10,7 @@ export interface IdCardData {
     detail: string | null;
     has_qr_code: boolean;
     qr_code_url: string | null;
+    bg_url?: string | null;
 }
 
 export interface IdCardProps {
@@ -52,12 +53,14 @@ export function IdCard({
         detail: null,
         has_qr_code: false,
         qr_code_url: null,
+        bg_url: null,
     };
     const roleLabel =
         ROLE_LABEL[role] ??
         (role
             ? String(role).charAt(0).toUpperCase() + String(role).slice(1)
             : 'Member');
+    const bgUrl = cardData.bg_url || '/images/cic-bg.jpg';
 
     return (
         <div
@@ -73,8 +76,7 @@ export function IdCard({
                 className,
             )}
             style={{
-                backgroundImage:
-                    "linear-gradient(rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.86)), url('/images/cic-bg.jpg')",
+                backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.86)), url('${bgUrl}')`,
             }}
         >
             {isBack ? (
