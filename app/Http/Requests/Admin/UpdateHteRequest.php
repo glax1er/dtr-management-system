@@ -23,6 +23,8 @@ class UpdateHteRequest extends FormRequest
             ],
             'address' => ['required', 'string', 'max:255'],
             'contact_number' => ['nullable', 'string', 'max:20'],
+            'id_bg' => ['nullable', 'image', 'max:5120', 'mimes:jpg,jpeg,png,webp'],
+            'remove_id_bg' => ['nullable', 'boolean'],
         ];
     }
 }

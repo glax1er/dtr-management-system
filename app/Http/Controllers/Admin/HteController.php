@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\UpdateHteRequest;
 use App\Models\Hte;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -57,6 +58,7 @@ class HteController extends Controller
                 'contact_person' => $hte->contact_person,
                 'contact_number' => $hte->contact_number,
                 'status' => $hte->status,
+                'id_bg_url' => $hte->id_bg_url,
                 'interns_count' => $hte->interns_count,
                 'supervisors_count' => $hte->supervisor_profiles_count,
             ]);
@@ -73,8 +75,16 @@ class HteController extends Controller
 
     public function store(StoreHteRequest $request): RedirectResponse
     {
+        $data = $request->validated();
+
+        if ($request->hasFile('id_bg')) {
+            $data['id_bg_path'] = $request->file('id_bg')->store('hte-backgrounds', 'public');
+        }
+
+        unset($data['id_bg']);
+
         Hte::create([
-            ...$request->validated(),
+            ...$data,
             'status' => 'active',
         ]);
 
@@ -85,7 +95,23 @@ class HteController extends Controller
 
     public function update(UpdateHteRequest $request, Hte $hte): RedirectResponse
     {
-        $hte->update($request->validated());
+        $data = $request->validated();
+
+        if ($request->boolean('remove_id_bg')) {
+            if ($hte->id_bg_path) {
+                Storage::disk('public')->delete($hte->id_bg_path);
+            }
+            $data['id_bg_path'] = null;
+        } elseif ($request->hasFile('id_bg')) {
+            if ($hte->id_bg_path) {
+                Storage::disk('public')->delete($hte->id_bg_path);
+            }
+            $data['id_bg_path'] = $request->file('id_bg')->store('hte-backgrounds', 'public');
+        }
+
+        unset($data['id_bg'], $data['remove_id_bg']);
+
+        $hte->update($data);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'HTE updated.']);
 

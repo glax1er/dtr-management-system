@@ -152,6 +152,12 @@ class ArchiveController extends Controller
                         EmailVerificationCode::where('email', strtolower(trim($userEmail)))->delete();
                     }
 
+                } elseif ($type === 'htes') {
+                    $hte = Hte::onlyTrashed()->findOrFail($id);
+                    if ($hte->id_bg_path) {
+                        Storage::disk('public')->delete($hte->id_bg_path);
+                    }
+                    $hte->forceDelete();
                 } else {
                     $this->modelFor($type)::onlyTrashed()->findOrFail($id)->forceDelete();
                 }

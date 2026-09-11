@@ -57,3 +57,31 @@ test('force deleting an intern deletes profile photo and document files in stora
     Storage::disk('local')->assertMissing($docPath);
     expect(Storage::disk('local')->files("intern-documents/{$intern->id}"))->toBeEmpty();
 });
+
+test('force deleting an HTE deletes its ID card background image in storage', function () {
+    Storage::fake('public');
+
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $bgPath = 'hte-backgrounds/sample-bg.jpg';
+    Storage::disk('public')->put($bgPath, 'fake-bg-content');
+
+    $hte = Hte::create([
+        'hte_name' => 'Archived Tech Corp',
+        'status' => 'inactive',
+        'id_bg_path' => $bgPath,
+    ]);
+
+    $hte->delete(); // soft delete
+
+    Storage::disk('public')->assertExists($bgPath);
+
+    $response = $this->actingAs($admin)->delete(route('admin.archives.forceDelete', [
+        'type' => 'htes',
+        'id' => $hte->hte_id,
+    ]));
+
+    $response->assertRedirect();
+
+    Storage::disk('public')->assertMissing($bgPath);
+    expect(Hte::withTrashed()->find($hte->hte_id))->toBeNull();
+});

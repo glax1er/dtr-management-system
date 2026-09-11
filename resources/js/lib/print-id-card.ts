@@ -42,12 +42,14 @@ export function printIdCard({
         detail: null,
         has_qr_code: false,
         qr_code_url: null,
+        bg_url: null,
     };
     const roleLabel =
         ROLE_LABEL[role] ??
         (role
             ? String(role).charAt(0).toUpperCase() + String(role).slice(1)
             : 'Member');
+    const bgUrl = cardData.bg_url || '/images/cic-bg.jpg';
 
     // Exact on-screen dimensions matching IdCard component (420x265 landscape, 270x430 portrait)
     const cardWidth = isLandscape ? '420px' : '270px';
@@ -234,7 +236,7 @@ export function printIdCard({
             border: 1px solid var(--card-border);
             border-radius: 16px;
             background-color: var(--card-bg);
-            background-image: linear-gradient(rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.86)), url('/images/cic-bg.jpg');
+            background-image: linear-gradient(rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.86)), url('${bgUrl}');
             background-size: cover;
             background-position: center;
             padding: 16px;
@@ -298,7 +300,7 @@ export function printIdCard({
         }
 
         .logo {
-            height: 28px;
+            height: 40px;
             width: auto;
             object-fit: contain;
             flex-shrink: 0;
@@ -312,14 +314,12 @@ export function printIdCard({
         }
 
         .brand-title {
-            font-size: 12px;
+            font-size: ${isLandscape ? '10.5px' : '8.5px'};
             font-weight: 900;
             letter-spacing: 0.025em;
             color: var(--primary);
             text-transform: uppercase;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            line-height: 1.15;
         }
 
         .brand-sub {
@@ -328,9 +328,7 @@ export function printIdCard({
             letter-spacing: 0.05em;
             color: var(--text-muted);
             text-transform: uppercase;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            line-height: 1.15;
         }
 
         .role-pill {
@@ -664,9 +662,9 @@ export function printIdCard({
             <div class="card card-front">
                 <div class="card-header">
                     <div class="header-left">
-                        <img src="/images/cims-logo-light.png" class="logo" alt="Logo">
+                        <img src="/images/cims-logo-light.png?v=3" class="logo" alt="Logo">
                         <div class="brand-group">
-                            <span class="brand-title">TentaKeeper</span>
+                            <span class="brand-title">University of Southeastern Philippines</span>
                             <span class="brand-sub">Internship Management System</span>
                         </div>
                     </div>
@@ -694,9 +692,8 @@ export function printIdCard({
                     </div>
                 </div>
 
-                <div class="card-footer">
+                <div class="card-footer card-footer-center">
                     <span>Official Identification</span>
-                    <span>TentaKeeper System</span>
                 </div>
             </div>
 
@@ -710,9 +707,9 @@ export function printIdCard({
             <div class="card card-back">
                 <div class="card-header">
                     <div class="header-left">
-                        <img src="/images/cims-logo-light.png" class="logo" style="height: 24px;" alt="Logo">
+                        <img src="/images/cims-logo-light.png?v=3" class="logo" alt="Logo">
                         <div class="brand-group">
-                            <span class="brand-title" style="font-size: 11px;">TentaKeeper</span>
+                            <span class="brand-title">University of Southeastern Philippines</span>
                             <span class="brand-sub">Attendance Verification Pass</span>
                         </div>
                     </div>
@@ -734,7 +731,7 @@ export function printIdCard({
                                 </svg>
                                 <div style="font-size: 12px; font-weight: 900; text-transform: uppercase; color: #18181b;">Official Credential</div>
                                 <div style="font-size: 10px; font-weight: 500; color: #52525b; margin-top: 4px; max-width: 260px;">
-                                    Authorized ${roleLabel} credential for TentaKeeper Internship Management System.
+                                    Authorized ${roleLabel} credential for USeP Internship Management System.
                                 </div>
                                 <div style="font-size: 9px; font-family: monospace; color: #71717a; margin-top: 6px;">${email}</div>
                                </div>`
@@ -742,7 +739,7 @@ export function printIdCard({
                 </div>
 
                 <div class="card-footer card-footer-center">
-                    Non-transferable • Property of TentaKeeper • If found, return to OJT Coordinator's office
+                    Non-transferable • Property of USeP • If found, return to OJT Coordinator's office
                 </div>
             </div>
         </div>

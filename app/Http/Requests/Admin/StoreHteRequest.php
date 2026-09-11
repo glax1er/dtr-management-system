@@ -17,6 +17,7 @@ class StoreHteRequest extends FormRequest
             'hte_name' => ['required', 'string', 'max:150', 'unique:htes,hte_name'],
             'address' => ['required', 'string', 'max:255'],
             'contact_number' => ['nullable', 'string', 'max:20'],
+            'id_bg' => ['nullable', 'image', 'max:5120', 'mimes:jpg,jpeg,png,webp'],
         ];
     }
 }
