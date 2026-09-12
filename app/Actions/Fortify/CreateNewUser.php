@@ -5,6 +5,7 @@ namespace App\Actions\Fortify;
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
 use App\Models\InternProfile;
+use App\Models\Program;
 use App\Models\User;
 use App\Notifications\NewInternRegistrationNotification;
 use Illuminate\Support\Facades\DB;
@@ -46,7 +47,23 @@ class CreateNewUser implements CreatesNewUsers
 
             'sex' => ['required', 'in:male,female'],
 
-            'program_id' => ['required', 'integer', 'exists:programs,program_id'],
+            'campus' => ['nullable', 'string', 'max:100'],
+
+            'college_id' => ['nullable', 'integer', 'exists:colleges,id'],
+
+            'program_id' => [
+                'required',
+                'integer',
+                'exists:programs,program_id',
+                function ($attribute, $value, $fail) use ($input) {
+                    if (! empty($input['college_id'])) {
+                        $program = Program::find($value);
+                        if ($program && $program->college_id && (int) $program->college_id !== (int) $input['college_id']) {
+                            $fail('The selected program does not belong to the selected college.');
+                        }
+                    }
+                },
+            ],
 
             'hte_id' => ['required', 'integer', 'exists:htes,hte_id'],
 
@@ -65,8 +82,19 @@ class CreateNewUser implements CreatesNewUsers
         ])->validate();
 
         return DB::transaction(function () use ($input) {
+            $program = Program::find($input['program_id']);
+            $collegeId = ! empty($input['college_id'])
+                ? (int) $input['college_id']
+                : $program?->college_id;
+
+            $campus = ! empty($input['campus'])
+                ? $input['campus']
+                : ($collegeId ? \App\Models\College::find($collegeId)?->campus : null);
+
             $user = User::create([
                 'role' => User::ROLE_INTERN,
+                'college_id' => $collegeId,
+                'campus' => $campus,
                 'name' => $input['name'],
                 'email' => $input['email'],
                 'password' => $input['password'],
@@ -77,6 +105,7 @@ class CreateNewUser implements CreatesNewUsers
                 'id_number' => $input['id_number'],
                 'contact_number' => $input['contact_number'] ?? null,
                 'sex' => $input['sex'],
+                'campus' => $campus,
                 'hte_id' => $input['hte_id'],
                 'program_id' => $input['program_id'],
                 'status' => 'pending',
@@ -84,10 +113,18 @@ class CreateNewUser implements CreatesNewUsers
                 'registered_at' => now(),
             ]);
 
-            // Notify all admins that a new intern signed up and is pending approval
-            $admins = User::where('role', User::ROLE_ADMIN)
+            // Notify super admins and the relevant college admin
+            $internCollegeId = $internProfile->program?->college_id;
+            $admins = User::whereIn('role', [User::ROLE_SUPER_ADMIN, User::ROLE_COLLEGE_ADMIN, User::ROLE_ADMIN])
+                ->where('is_active', true)
                 ->get()
-                ->filter(fn (User $admin) => $admin->wantsNotification('intern_registrations'));
+                ->filter(function (User $admin) use ($internCollegeId) {
+                    if ($admin->isCollegeAdmin() && $admin->college_id !== $internCollegeId) {
+                        return false;
+                    }
+
+                    return $admin->wantsNotification('intern_registrations');
+                });
             if ($admins->isNotEmpty()) {
                 Notification::send($admins, new NewInternRegistrationNotification($internProfile));
             }

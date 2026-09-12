@@ -35,8 +35,17 @@ class SupervisorController extends Controller
         $type = $validated['type'] ?? null;
         $perPage = (int) ($validated['per_page'] ?? self::DEFAULT_PER_PAGE);
 
+        $collegeId = $request->user()->isCollegeAdmin() ? $request->user()->college_id : null;
+
         $query = SupervisorProfile::query()
-            ->with(['user:id,name,email', 'hte:hte_id,hte_name', 'program:program_id,program_name']);
+            ->with(['user:id,name,email', 'hte:hte_id,hte_name', 'program:program_id,program_name,college_id']);
+
+        if ($collegeId !== null) {
+            $query->where(function ($q) use ($collegeId) {
+                $q->where('supervisor_type', 'hte')
+                    ->orWhereHas('program', fn ($pq) => $pq->where('college_id', $collegeId));
+            });
+        }
 
         if ($search !== '') {
             $query->whereHas(
@@ -68,7 +77,10 @@ class SupervisorController extends Controller
         return Inertia::render('admin/supervisors/index', [
             'supervisors' => $supervisors,
             'htes' => Hte::where('status', 'active')->orderBy('hte_name')->get(['hte_id', 'hte_name']),
-            'programs' => Program::where('is_active', true)->orderBy('program_name')->get(['program_id', 'program_name']),
+            'programs' => Program::where('is_active', true)
+                ->when($collegeId !== null, fn ($q) => $q->where('college_id', $collegeId))
+                ->orderBy('program_name')
+                ->get(['program_id', 'program_name', 'college_id']),
             'filters' => [
                 'search' => $search,
                 'type' => $type,
@@ -77,8 +89,21 @@ class SupervisorController extends Controller
         ]);
     }
 
+    private function authorizeCollege(Request $request, SupervisorProfile $supervisorProfile): void
+    {
+        if ($request->user()->isCollegeAdmin() && $supervisorProfile->isOjtSupervisor()) {
+            abort_if(
+                $supervisorProfile->program?->college_id !== $request->user()->college_id,
+                403,
+                'Unauthorized action.'
+            );
+        }
+    }
+
     public function updateStatus(Request $request, SupervisorProfile $supervisorProfile): RedirectResponse
     {
+        $this->authorizeCollege($request, $supervisorProfile);
+
         $validated = $request->validate([
             'status' => ['required', 'in:active,inactive'],
         ]);
@@ -125,6 +150,16 @@ class SupervisorController extends Controller
 
     public function storeOjtSupervisor(StoreOjtSupervisorRequest $request): RedirectResponse
     {
+        if ($request->user()->isCollegeAdmin()) {
+            abort_if(
+                Program::where('program_id', $request->validated('program_id'))
+                    ->where('college_id', $request->user()->college_id)
+                    ->doesntExist(),
+                422,
+                'Selected program does not belong to your college.'
+            );
+        }
+
         DB::transaction(function () use ($request) {
             $user = User::create([
                 'name' => $request->validated('name'),
@@ -149,6 +184,18 @@ class SupervisorController extends Controller
 
     public function update(UpdateSupervisorRequest $request, SupervisorProfile $supervisorProfile): RedirectResponse
     {
+        $this->authorizeCollege($request, $supervisorProfile);
+
+        if ($request->user()->isCollegeAdmin() && $supervisorProfile->isOjtSupervisor()) {
+            abort_if(
+                Program::where('program_id', $request->validated('program_id'))
+                    ->where('college_id', $request->user()->college_id)
+                    ->doesntExist(),
+                422,
+                'Selected program does not belong to your college.'
+            );
+        }
+
         DB::transaction(function () use ($request, $supervisorProfile) {
             $supervisorProfile->user->update([
                 'name' => $request->validated('name'),
@@ -170,8 +217,10 @@ class SupervisorController extends Controller
         return back();
     }
 
-    public function destroy(SupervisorProfile $supervisorProfile): RedirectResponse
+    public function destroy(Request $request, SupervisorProfile $supervisorProfile): RedirectResponse
     {
+        $this->authorizeCollege($request, $supervisorProfile);
+
         if ($supervisorProfile->status !== 'inactive') {
             return back()->with('error', 'Only inactive supervisors can be deleted.');
         }

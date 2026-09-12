@@ -12,6 +12,9 @@ import {
     Archive,
     BookOpen,
     FileStack,
+    ShieldCheck,
+    Landmark,
+    MapPin,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -38,6 +41,24 @@ const adminNavItems: NavItem[] = [
     { title: 'Kiosk', href: '/admin/kiosk', icon: MonitorSmartphone },
     { title: 'Schedule', href: '/admin/schedule', icon: CalendarClock },
     { title: 'Archives', href: '/admin/archives', icon: Archive },
+];
+
+const superAdminNavItems: NavItem[] = [
+    {
+        title: 'Admins',
+        href: '/admin/admins',
+        icon: ShieldCheck,
+    },
+    {
+        title: 'Colleges',
+        href: '/admin/colleges',
+        icon: Landmark,
+    },
+    {
+        title: 'Campuses',
+        href: '/admin/campuses',
+        icon: MapPin,
+    },
 ];
 
 // HTE Supervisors get a dashboard; OJT Supervisors don't (they only
@@ -102,9 +123,21 @@ export function AppSidebar() {
               manualAttendanceNavItem,
           ];
 
+    const isSuperAdmin = auth.user.role === 'super_admin' || Boolean(auth.user.is_super_admin);
+    const isCollegeAdmin = auth.user.role === 'college_admin' || Boolean(auth.user.is_college_admin);
+    const isAdmin = isSuperAdmin || isCollegeAdmin || auth.user.role === 'admin';
+
+    const currentAdminNavItems: NavItem[] = isSuperAdmin
+        ? [
+              adminNavItems[0], // Dashboard
+              ...superAdminNavItems, // Admins and Colleges (Super Admin only)
+              ...adminNavItems.slice(1),
+          ]
+        : adminNavItems;
+
     const mainNavItems =
-        auth.user.role === 'admin'
-            ? adminNavItems
+        isAdmin
+            ? currentAdminNavItems
             : auth.user.role === 'supervisor'
               ? supervisorNavItems
               : internNavItems;

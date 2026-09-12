@@ -29,6 +29,7 @@ class InternProfile extends Model
         'sex',
         'hte_id',
         'program_id',
+        'campus',
         'status',
         'qr_code_value',
         'profile_photo_path',

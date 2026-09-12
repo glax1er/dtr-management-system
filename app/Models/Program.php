@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -19,16 +20,28 @@ class Program extends Model
     public const UPDATED_AT = null;
 
     protected $fillable = [
+        'college_id',
         'program_name',
         'is_active',
         'required_hours',
     ];
 
     protected $casts = [
+        'college_id' => 'integer',
         'is_active' => 'boolean',
         'required_hours' => 'integer',
         'created_at' => 'datetime',
     ];
+
+    /**
+     * The college this program belongs to.
+     *
+     * @return BelongsTo<College, $this>
+     */
+    public function college(): BelongsTo
+    {
+        return $this->belongsTo(College::class, 'college_id', 'id');
+    }
 
     /**
      * All intern profiles enrolled under this program.
