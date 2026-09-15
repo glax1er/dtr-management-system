@@ -50,7 +50,7 @@ class SupervisorProfile extends Model
      */
     public function hte(): BelongsTo
     {
-        return $this->belongsTo(Hte::class, 'hte_id', 'hte_id');
+        return $this->belongsTo(Hte::class, 'hte_id', 'hte_id')->withTrashed();
     }
 
     /**
@@ -61,7 +61,7 @@ class SupervisorProfile extends Model
      */
     public function program(): BelongsTo
     {
-        return $this->belongsTo(Program::class, 'program_id', 'program_id');
+        return $this->belongsTo(Program::class, 'program_id', 'program_id')->withTrashed();
     }
 
     /**
@@ -99,11 +99,11 @@ class SupervisorProfile extends Model
      */
     public function getAssignedInterns(): mixed
     {
-        if ($this->isHteSupervisor()) {
-            return $this->hte?->internProfiles() ?? InternProfile::whereRaw('1 = 0');
-        }
+        $query = $this->isHteSupervisor()
+            ? ($this->hte?->internProfiles() ?? InternProfile::whereRaw('1 = 0'))
+            : ($this->program?->internProfiles() ?? InternProfile::whereRaw('1 = 0'));
 
-        return $this->program?->internProfiles() ?? InternProfile::whereRaw('1 = 0');
+        return $query->verified();
     }
 
     /**

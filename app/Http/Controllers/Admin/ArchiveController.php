@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceLog;
+use App\Models\Campus;
+use App\Models\College;
+use App\Models\CollegeAdminProfile;
 use App\Models\EmailVerificationCode;
 use App\Models\Hte;
 use App\Models\InternProfile;
@@ -26,16 +29,25 @@ class ArchiveController extends Controller
     public function index(Request $request): Response
     {
         $validated = $request->validate([
-            'type' => ['nullable', 'in:htes,supervisors,interns,programs'],
+            'type' => ['nullable', 'in:htes,supervisors,interns,programs,colleges,campuses'],
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
 
         $type = $validated['type'] ?? 'interns';
         $page = $validated['page'] ?? 1;
+        $collegeId = $request->user()->isCollegeAdmin() ? $request->user()->college_id : null;
+
+        if (in_array($type, ['colleges', 'campuses']) && $request->user()->isCollegeAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
 
         $records = match ($type) {
             'interns' => InternProfile::onlyTrashed()
                 ->with('user:id,name,email')
+                ->when($collegeId !== null, fn ($q) => $q->where(function ($iq) use ($collegeId) {
+                    $iq->whereHas('user', fn ($uq) => $uq->where('college_id', $collegeId))
+                        ->orWhereHas('program', fn ($pq) => $pq->where('college_id', $collegeId));
+                }))
                 ->orderBy('deleted_at', 'desc')
                 ->paginate(self::PER_PAGE, ['*'], 'page', $page)
                 ->through(fn (InternProfile $profile) => [
@@ -46,6 +58,15 @@ class ArchiveController extends Controller
                 ]),
             'supervisors' => SupervisorProfile::onlyTrashed()
                 ->with('user:id,name,email')
+                ->when($collegeId !== null, fn ($q) => $q->where(function ($sq) use ($collegeId) {
+                    $sq->where(function ($hq) use ($collegeId) {
+                        $hq->where('supervisor_type', 'hte')
+                            ->whereHas('hte', fn ($sub) => $sub->withTrashed()->where('college_id', $collegeId));
+                    })->orWhere(function ($pq) use ($collegeId) {
+                        $pq->where('supervisor_type', 'ojt')
+                            ->whereHas('program', fn ($sub) => $sub->withTrashed()->where('college_id', $collegeId));
+                    });
+                }))
                 ->orderBy('deleted_at', 'desc')
                 ->paginate(self::PER_PAGE, ['*'], 'page', $page)
                 ->through(fn (SupervisorProfile $profile) => [
@@ -55,6 +76,7 @@ class ArchiveController extends Controller
                     'deleted_at' => $profile->deleted_at->format('M d, Y h:i A'),
                 ]),
             'htes' => Hte::onlyTrashed()
+                ->when($collegeId !== null, fn ($q) => $q->where('college_id', $collegeId))
                 ->orderBy('deleted_at', 'desc')
                 ->paginate(self::PER_PAGE, ['*'], 'page', $page)
                 ->through(fn (Hte $hte) => [
@@ -64,6 +86,7 @@ class ArchiveController extends Controller
                     'deleted_at' => $hte->deleted_at->format('M d, Y h:i A'),
                 ]),
             'programs' => Program::onlyTrashed()
+                ->when($collegeId !== null, fn ($q) => $q->where('college_id', $collegeId))
                 ->orderBy('deleted_at', 'desc')
                 ->paginate(self::PER_PAGE, ['*'], 'page', $page)
                 ->through(fn (Program $program) => [
@@ -71,6 +94,24 @@ class ArchiveController extends Controller
                     'name' => $program->program_name,
                     'detail' => $program->required_hours ? "{$program->required_hours} hrs" : 'No hours set',
                     'deleted_at' => $program->deleted_at->format('M d, Y h:i A'),
+                ]),
+            'colleges' => College::onlyTrashed()
+                ->orderBy('deleted_at', 'desc')
+                ->paginate(self::PER_PAGE, ['*'], 'page', $page)
+                ->through(fn (College $college) => [
+                    'id' => $college->id,
+                    'name' => $college->name,
+                    'detail' => $college->code,
+                    'deleted_at' => $college->deleted_at->format('M d, Y h:i A'),
+                ]),
+            'campuses' => Campus::onlyTrashed()
+                ->orderBy('deleted_at', 'desc')
+                ->paginate(self::PER_PAGE, ['*'], 'page', $page)
+                ->through(fn (Campus $campus) => [
+                    'id' => $campus->id,
+                    'name' => $campus->name,
+                    'detail' => $campus->code,
+                    'deleted_at' => $campus->deleted_at->format('M d, Y h:i A'),
                 ]),
             // Unreachable today — the validation above already restricts
             // $type to these 4 values — but kept as a safety net so a
@@ -86,19 +127,79 @@ class ArchiveController extends Controller
         ]);
     }
 
-    public function restore(string $type, int $id): RedirectResponse
+    public function restore(Request $request, string $type, int $id): RedirectResponse
     {
-        $this->modelFor($type)::onlyTrashed()->findOrFail($id)->restore();
+        $record = $this->modelFor($type)::onlyTrashed()->findOrFail($id);
+
+        if (in_array($type, ['colleges', 'campuses']) && ! $request->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        if ($request->user()->isCollegeAdmin()) {
+            $collegeId = $request->user()->college_id;
+            if ($type === 'htes' && $record->college_id !== $collegeId) {
+                abort(403, 'Unauthorized action.');
+            }
+            if ($type === 'interns') {
+                $internCollegeId = $record->program?->college_id ?? $record->user?->college_id;
+                if ($internCollegeId !== $collegeId) {
+                    abort(403, 'Unauthorized action.');
+                }
+            }
+            if ($type === 'supervisors') {
+                if ($record->isOjtSupervisor() && $record->program?->college_id !== $collegeId) {
+                    abort(403, 'Unauthorized action.');
+                }
+                if ($record->isHteSupervisor() && $record->hte?->college_id !== $collegeId) {
+                    abort(403, 'Unauthorized action.');
+                }
+            }
+            if ($type === 'programs' && $record->college_id !== $collegeId) {
+                abort(403, 'Unauthorized action.');
+            }
+        }
+
+        $record->restore();
 
         return back()->with('success', 'Record restored.');
     }
 
-    public function forceDelete(string $type, int $id): RedirectResponse
+    public function forceDelete(Request $request, string $type, int $id): RedirectResponse
     {
+        $record = $this->modelFor($type)::onlyTrashed()->findOrFail($id);
+
+        if (in_array($type, ['colleges', 'campuses']) && ! $request->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        if ($request->user()->isCollegeAdmin()) {
+            $collegeId = $request->user()->college_id;
+            if ($type === 'htes' && $record->college_id !== $collegeId) {
+                abort(403, 'Unauthorized action.');
+            }
+            if ($type === 'interns') {
+                $internCollegeId = $record->program?->college_id ?? $record->user?->college_id;
+                if ($internCollegeId !== $collegeId) {
+                    abort(403, 'Unauthorized action.');
+                }
+            }
+            if ($type === 'supervisors') {
+                if ($record->isOjtSupervisor() && $record->program?->college_id !== $collegeId) {
+                    abort(403, 'Unauthorized action.');
+                }
+                if ($record->isHteSupervisor() && $record->hte?->college_id !== $collegeId) {
+                    abort(403, 'Unauthorized action.');
+                }
+            }
+            if ($type === 'programs' && $record->college_id !== $collegeId) {
+                abort(403, 'Unauthorized action.');
+            }
+        }
+
         try {
-            DB::transaction(function () use ($type, $id) {
+            DB::transaction(function () use ($type, $id, $record) {
                 if ($type === 'interns') {
-                    $profile = InternProfile::onlyTrashed()->findOrFail($id);
+                    $profile = $record;
 
                     // 1. Delete associated profile photo if exists
                     if ($profile->profile_photo_path) {
@@ -158,6 +259,18 @@ class ArchiveController extends Controller
                         Storage::disk('public')->delete($hte->id_bg_path);
                     }
                     $hte->forceDelete();
+                } elseif ($type === 'colleges') {
+                    $college = College::onlyTrashed()->findOrFail($id);
+                    // Null out foreign keys to allow clean deletion
+                    Program::where('college_id', $college->id)->update(['college_id' => null]);
+                    User::where('college_id', $college->id)->update(['college_id' => null]);
+                    $college->forceDelete();
+                } elseif ($type === 'campuses') {
+                    $campus = Campus::onlyTrashed()->findOrFail($id);
+                    // Null out foreign keys to allow clean deletion
+                    College::where('campus_id', $campus->id)->update(['campus_id' => null]);
+                    CollegeAdminProfile::where('campus_id', $campus->id)->update(['campus_id' => null]);
+                    $campus->forceDelete();
                 } else {
                     $this->modelFor($type)::onlyTrashed()->findOrFail($id)->forceDelete();
                 }
@@ -179,6 +292,8 @@ class ArchiveController extends Controller
             'supervisors' => SupervisorProfile::class,
             'interns' => InternProfile::class,
             'programs' => Program::class,
+            'colleges' => College::class,
+            'campuses' => Campus::class,
             default => abort(404),
         };
     }

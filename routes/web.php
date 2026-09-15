@@ -1,6 +1,10 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminManagementController;
 use App\Http\Controllers\Admin\ArchiveController;
+use App\Http\Controllers\Admin\CampusController;
+use App\Http\Controllers\Admin\CollegeAdminController;
+use App\Http\Controllers\Admin\CollegeController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\HteController;
 use App\Http\Controllers\Admin\InternApprovalController;
@@ -78,8 +82,35 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return redirect()->route(auth()->user()->homeRouteName());
     })->name('dashboard');
 
-    Route::middleware('role:'.User::ROLE_ADMIN)->prefix('admin')->name('admin.')->group(function () {
+    Route::middleware('role:'.User::ROLE_SUPER_ADMIN.','.User::ROLE_COLLEGE_ADMIN.','.User::ROLE_ADMIN)->prefix('admin')->name('admin.')->group(function () {
         Route::get('dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+        // Super Admin only: College Admin Management, Colleges & Campuses
+        Route::middleware('role:'.User::ROLE_SUPER_ADMIN)->group(function () {
+            Route::get('admins', [AdminManagementController::class, 'index'])->name('admins.index');
+            Route::post('admins', [AdminManagementController::class, 'store'])->name('admins.store');
+            Route::patch('admins/{user}', [AdminManagementController::class, 'update'])->name('admins.update');
+            Route::patch('admins/{user}/status', [AdminManagementController::class, 'updateStatus'])->name('admins.updateStatus');
+            Route::delete('admins/{user}', [AdminManagementController::class, 'destroy'])->name('admins.destroy');
+
+            Route::get('college-admins', [CollegeAdminController::class, 'index'])->name('college-admins.index');
+            Route::post('college-admins', [CollegeAdminController::class, 'store'])->name('college-admins.store');
+            Route::patch('college-admins/{user}', [CollegeAdminController::class, 'update'])->name('college-admins.update');
+            Route::patch('college-admins/{user}/status', [CollegeAdminController::class, 'updateStatus'])->name('college-admins.updateStatus');
+            Route::delete('college-admins/{user}', [CollegeAdminController::class, 'destroy'])->name('college-admins.destroy');
+
+            Route::get('colleges', [CollegeController::class, 'index'])->name('colleges.index');
+            Route::post('colleges', [CollegeController::class, 'store'])->name('colleges.store');
+            Route::patch('colleges/{college}', [CollegeController::class, 'update'])->name('colleges.update');
+            Route::patch('colleges/{college}/status', [CollegeController::class, 'updateStatus'])->name('colleges.updateStatus');
+            Route::delete('colleges/{college}', [CollegeController::class, 'destroy'])->name('colleges.destroy');
+
+            Route::get('campuses', [CampusController::class, 'index'])->name('campuses.index');
+            Route::post('campuses', [CampusController::class, 'store'])->name('campuses.store');
+            Route::patch('campuses/{campus}', [CampusController::class, 'update'])->name('campuses.update');
+            Route::patch('campuses/{campus}/status', [CampusController::class, 'updateStatus'])->name('campuses.updateStatus');
+            Route::delete('campuses/{campus}', [CampusController::class, 'destroy'])->name('campuses.destroy');
+        });
 
         Route::post('interns/{internProfile}/approve', [InternApprovalController::class, 'approve'])
             ->name('interns.approve');

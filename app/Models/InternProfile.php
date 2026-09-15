@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -29,6 +30,7 @@ class InternProfile extends Model
         'sex',
         'hte_id',
         'program_id',
+        'campus',
         'status',
         'qr_code_value',
         'profile_photo_path',
@@ -58,7 +60,7 @@ class InternProfile extends Model
      */
     public function hte(): BelongsTo
     {
-        return $this->belongsTo(Hte::class, 'hte_id', 'hte_id');
+        return $this->belongsTo(Hte::class, 'hte_id', 'hte_id')->withTrashed();
     }
 
     /**
@@ -66,7 +68,7 @@ class InternProfile extends Model
      */
     public function program(): BelongsTo
     {
-        return $this->belongsTo(Program::class, 'program_id', 'program_id');
+        return $this->belongsTo(Program::class, 'program_id', 'program_id')->withTrashed();
     }
 
     /**
@@ -100,5 +102,30 @@ class InternProfile extends Model
     public function internDocuments(): HasMany
     {
         return $this->hasMany(InternDocument::class, 'user_id', 'user_id');
+    }
+
+    /**
+     * Scope a query to only include intern profiles whose user account has verified their email.
+     *
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeVerified($query)
+    {
+        return $query->whereHas('user', fn ($q) => $q->whereNotNull('email_verified_at'));
+    }
+
+    /**
+     * Scope a query to only include intern profiles belonging to a given college (via program or user fallback).
+     *
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeForCollege($query, int $collegeId)
+    {
+        return $query->where(function ($q) use ($collegeId) {
+            $q->whereHas('program', fn ($pq) => $pq->withTrashed()->where('college_id', $collegeId))
+                ->orWhereHas('user', fn ($uq) => $uq->where('college_id', $collegeId));
+        });
     }
 }

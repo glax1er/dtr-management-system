@@ -7,8 +7,10 @@ import {
 } from '@/components/ui/tooltip';
 
 export interface ProgramActionsTarget {
-    program_id: number;
-    program_name: string;
+    program_id?: number;
+    id?: number;
+    program_name?: string;
+    name?: string;
     is_active: boolean;
 }
 
@@ -72,7 +74,7 @@ export function ProgramActions<T extends ProgramActionsTarget>({
                 </TooltipTrigger>
                 <TooltipContent>
                     {program.is_active
-                        ? 'Archive inactive programs only'
+                        ? 'Archive inactive only'
                         : 'Archive'}
                 </TooltipContent>
             </Tooltip>

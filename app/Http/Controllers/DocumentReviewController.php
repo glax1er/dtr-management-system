@@ -21,21 +21,27 @@ class DocumentReviewController extends Controller
         $user = $request->user();
         $internProfile = InternProfile::with(['user', 'hte', 'program'])->where('user_id', $internUserId)->firstOrFail();
 
-        if (! $user->isSupervisor()) {
-            abort(403, 'Unauthorized. Only supervisors can review intern documents.');
-        }
-        $supervisor = $user->supervisorProfile;
-        if (! $supervisor) {
-            abort(403, 'Supervisor profile not found.');
-        }
-        if ($supervisor->isOjtSupervisor()) {
-            if ($internProfile->program_id !== $supervisor->program_id) {
-                abort(403, 'Intern is not under your program.');
+        if ($user->isSuperAdmin()) {
+            // Super Admin has access across all colleges
+        } elseif ($user->isCollegeAdmin()) {
+            $internCollegeId = $internProfile->program?->college_id ?? $internProfile->user?->college_id;
+            abort_if($internCollegeId !== $user->college_id, 403, 'Unauthorized.');
+        } elseif ($user->isSupervisor()) {
+            $supervisor = $user->supervisorProfile;
+            if (! $supervisor) {
+                abort(403, 'Supervisor profile not found.');
+            }
+            if ($supervisor->isOjtSupervisor()) {
+                if ($internProfile->program_id !== $supervisor->program_id) {
+                    abort(403, 'Intern is not under your program.');
+                }
+            } else {
+                if ($internProfile->hte_id !== $supervisor->hte_id) {
+                    abort(403, 'Intern is not under your HTE.');
+                }
             }
         } else {
-            if ($internProfile->hte_id !== $supervisor->hte_id) {
-                abort(403, 'Intern is not under your HTE.');
-            }
+            abort(403, 'Unauthorized.');
         }
 
         $uploadedDocs = InternDocument::query()
@@ -80,6 +86,20 @@ class DocumentReviewController extends Controller
 
     private function canAccessDocument(User $user, InternDocument $internDocument): bool
     {
+        if ($user->isSuperAdmin()) {
+            return true;
+        }
+
+        if ($user->isCollegeAdmin()) {
+            $internProfile = InternProfile::withTrashed()->where('user_id', $internDocument->user_id)->first();
+            if (! $internProfile) {
+                return false;
+            }
+            $internCollegeId = $internProfile->program?->college_id ?? $internProfile->user?->college_id;
+
+            return $internCollegeId === $user->college_id;
+        }
+
         if ($user->isSupervisor()) {
             $supervisorProfile = $user->supervisorProfile;
             if (! $supervisorProfile) {

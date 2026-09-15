@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\EmailVerificationCode;
 use App\Models\User;
+use App\Notifications\NewInternRegistrationNotification;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -71,6 +73,25 @@ class EmailVerificationCodeController extends Controller
 
         $user->markEmailAsVerified();
         event(new Verified($user));
+
+        // When an intern verifies their email, notify admins that their account is pending approval
+        if ($user->isIntern() && $user->internProfile && $user->internProfile->status === 'pending') {
+            $internProfile = $user->internProfile;
+            $internCollegeId = $internProfile->program?->college_id;
+            $admins = User::whereIn('role', [User::ROLE_SUPER_ADMIN, User::ROLE_COLLEGE_ADMIN, User::ROLE_ADMIN])
+                ->where('is_active', true)
+                ->get()
+                ->filter(function (User $admin) use ($internCollegeId) {
+                    if ($admin->isCollegeAdmin() && $admin->college_id !== $internCollegeId) {
+                        return false;
+                    }
+
+                    return $admin->wantsNotification('intern_registrations');
+                });
+            if ($admins->isNotEmpty()) {
+                Notification::send($admins, new NewInternRegistrationNotification($internProfile));
+            }
+        }
 
         // If intern registration is still pending approval, ensure logged out and notify them
         if ($user->isIntern() && $user->internProfile?->status !== 'approved') {
