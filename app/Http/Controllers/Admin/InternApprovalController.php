@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\InternProfile;
 use App\Notifications\InternApprovalNotification;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -14,8 +15,9 @@ class InternApprovalController extends Controller
     private function authorizeCollege(Request $request, InternProfile $internProfile): void
     {
         if ($request->user()->isCollegeAdmin()) {
+            $internCollegeId = $internProfile->program?->college_id ?? $internProfile->user?->college_id;
             abort_if(
-                $internProfile->program?->college_id !== $request->user()->college_id,
+                $internCollegeId !== $request->user()->college_id,
                 403,
                 'Unauthorized action.'
             );
@@ -25,6 +27,12 @@ class InternApprovalController extends Controller
     public function approve(Request $request, InternProfile $internProfile): RedirectResponse
     {
         $this->authorizeCollege($request, $internProfile);
+
+        if (! $internProfile->user->hasVerifiedEmail()) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => 'The intern must verify their email address before approval.']);
+
+            return back();
+        }
 
         $internProfile->update([
             'status' => 'approved',
@@ -42,6 +50,12 @@ class InternApprovalController extends Controller
     public function reject(Request $request, InternProfile $internProfile): RedirectResponse
     {
         $this->authorizeCollege($request, $internProfile);
+
+        if (! $internProfile->user->hasVerifiedEmail()) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => 'The intern must verify their email address before rejection.']);
+
+            return back();
+        }
 
         $internProfile->update([
             'status' => 'rejected',

@@ -42,6 +42,7 @@ type Program = {
 type Hte = {
     hte_id: number;
     hte_name: string;
+    college_id?: number | null;
 };
 
 type Props = {
@@ -118,6 +119,14 @@ export default function Register({
     const availablePrograms = selectedCollege
         ? programs.filter((p) => String(p.college_id) === String(selectedCollege))
         : [];
+
+    const availableHtes = selectedCollege
+        ? htes.filter((h) => String(h.college_id) === String(selectedCollege))
+        : [];
+
+    const selectedCollegeObj = colleges.find(
+        (c) => String(c.id) === String(selectedCollege),
+    );
 
     /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => {
@@ -221,7 +230,7 @@ export default function Register({
                 <div className="grid gap-4">
                     {/* Name / Email */}
                     <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
-                        <div className="grid gap-2">
+                        <div className="grid min-w-0 gap-2">
                             <Label htmlFor="name">
                                 Full Name{' '}
                                 <span className="text-red-500">*</span>
@@ -240,7 +249,7 @@ export default function Register({
                             <InputError message={formErrors.name} />
                         </div>
 
-                        <div className="grid gap-2">
+                        <div className="grid min-w-0 gap-2">
                             <Label htmlFor="email">
                                 Email address{' '}
                                 <span className="text-red-500">*</span>
@@ -261,7 +270,7 @@ export default function Register({
 
                     {/* ID number / Contact number */}
                     <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
-                        <div className="grid gap-2">
+                        <div className="grid min-w-0 gap-2">
                             <Label htmlFor="id_number">
                                 ID number{' '}
                                 <span className="text-red-500">*</span>
@@ -279,7 +288,7 @@ export default function Register({
                             <InputError message={formErrors.id_number} />
                         </div>
 
-                        <div className="grid gap-2">
+                        <div className="grid min-w-0 gap-2">
                             <Label htmlFor="contact_number">
                                 Contact Number (optional)
                             </Label>
@@ -298,7 +307,7 @@ export default function Register({
 
                     {/* Sex & Campus */}
                     <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
-                        <div className="grid gap-2">
+                        <div className="grid min-w-0 gap-2">
                             <Label htmlFor="sex">
                                 Sex <span className="text-red-500">*</span>
                             </Label>
@@ -312,7 +321,7 @@ export default function Register({
                                 <SelectTrigger
                                     id="sex"
                                     tabIndex={5}
-                                    className="w-full"
+                                    className="w-full min-w-0 overflow-hidden"
                                 >
                                     <SelectValue placeholder="Select sex" />
                                 </SelectTrigger>
@@ -326,7 +335,7 @@ export default function Register({
                             <InputError message={formErrors.sex} />
                         </div>
 
-                        <div className="grid gap-2">
+                        <div className="grid min-w-0 gap-2">
                             <Label htmlFor="campus">
                                 Campus <span className="text-red-500">*</span>
                             </Label>
@@ -337,6 +346,7 @@ export default function Register({
                                     setSelectedCampus(val);
                                     setSelectedCollege('');
                                     setSelectedProgram('');
+                                    setSelectedHte('');
                                 }}
                                 required
                                 disabled={isSubmitting}
@@ -344,7 +354,7 @@ export default function Register({
                                 <SelectTrigger
                                     id="campus"
                                     tabIndex={6}
-                                    className="w-full"
+                                    className="w-full min-w-0 overflow-hidden"
                                 >
                                     <SelectValue placeholder="Select campus" />
                                 </SelectTrigger>
@@ -362,7 +372,7 @@ export default function Register({
 
                     {/* College / Program */}
                     <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
-                        <div className="grid gap-2">
+                        <div className="grid min-w-0 gap-2">
                             <Label htmlFor="college_id">
                                 College / Department{' '}
                                 <span className="text-red-500">*</span>
@@ -373,6 +383,7 @@ export default function Register({
                                 onValueChange={(value) => {
                                     setSelectedCollege(value);
                                     setSelectedProgram('');
+                                    setSelectedHte('');
                                 }}
                                 required
                                 disabled={isSubmitting || !selectedCampus}
@@ -380,7 +391,12 @@ export default function Register({
                                 <SelectTrigger
                                     id="college_id"
                                     tabIndex={7}
-                                    className="w-full"
+                                    className="w-full min-w-0 overflow-hidden"
+                                    title={
+                                        selectedCollegeObj
+                                            ? `${selectedCollegeObj.code} — ${selectedCollegeObj.name}`
+                                            : undefined
+                                    }
                                 >
                                     <SelectValue
                                         placeholder={
@@ -397,8 +413,11 @@ export default function Register({
                                         <SelectItem
                                             key={college.id}
                                             value={String(college.id)}
+                                            title={`${college.code} — ${college.name}`}
                                         >
-                                            {college.code} — {college.name}
+                                            <span className="truncate">
+                                                {college.code} — {college.name}
+                                            </span>
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -406,7 +425,7 @@ export default function Register({
                             <InputError message={formErrors.college_id} />
                         </div>
 
-                        <div className="grid gap-2">
+                        <div className="grid min-w-0 gap-2">
                             <Label htmlFor="program_id">
                                 Program <span className="text-red-500">*</span>
                             </Label>
@@ -420,7 +439,12 @@ export default function Register({
                                 <SelectTrigger
                                     id="program_id"
                                     tabIndex={8}
-                                    className="w-full"
+                                    className="w-full min-w-0 overflow-hidden"
+                                    title={
+                                        availablePrograms.find(
+                                            (p) => String(p.program_id) === String(selectedProgram),
+                                        )?.program_name
+                                    }
                                 >
                                     <SelectValue
                                         placeholder={
@@ -437,8 +461,11 @@ export default function Register({
                                         <SelectItem
                                             key={program.program_id}
                                             value={String(program.program_id)}
+                                            title={program.program_name}
                                         >
-                                            {program.program_name}
+                                            <span className="truncate">
+                                                {program.program_name}
+                                            </span>
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -448,7 +475,7 @@ export default function Register({
                     </div>
 
                     {/* HTE (full width) */}
-                    <div className="grid gap-2">
+                    <div className="grid min-w-0 gap-2">
                         <Label htmlFor="hte_id">
                             Host training establishment{' '}
                             <span className="text-red-500">*</span>
@@ -458,22 +485,38 @@ export default function Register({
                             value={selectedHte}
                             onValueChange={setSelectedHte}
                             required
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || !selectedCollege}
                         >
                             <SelectTrigger
                                 id="hte_id"
                                 tabIndex={9}
-                                className="w-full"
+                                className="w-full min-w-0 overflow-hidden"
+                                title={
+                                    availableHtes.find(
+                                        (h) => String(h.hte_id) === String(selectedHte),
+                                    )?.hte_name
+                                }
                             >
-                                <SelectValue placeholder="Select HTE" />
+                                <SelectValue
+                                    placeholder={
+                                        selectedCollege
+                                            ? availableHtes.length > 0
+                                                ? 'Select HTE'
+                                                : 'No HTEs under this college'
+                                            : 'Select college first'
+                                    }
+                                />
                             </SelectTrigger>
                             <SelectContent>
-                                {htes.map((hte) => (
+                                {availableHtes.map((hte) => (
                                     <SelectItem
                                         key={hte.hte_id}
                                         value={String(hte.hte_id)}
+                                        title={hte.hte_name}
                                     >
-                                        {hte.hte_name}
+                                        <span className="truncate">
+                                            {hte.hte_name}
+                                        </span>
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -483,7 +526,7 @@ export default function Register({
 
                     {/* Password / Confirm password */}
                     <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
-                        <div className="grid gap-2">
+                        <div className="grid min-w-0 gap-2">
                             <Label htmlFor="password">
                                 Password <span className="text-red-500">*</span>
                             </Label>
@@ -524,7 +567,7 @@ export default function Register({
                             <InputError message={formErrors.password} />
                         </div>
 
-                        <div className="grid gap-2">
+                        <div className="grid min-w-0 gap-2">
                             <Label htmlFor="password_confirmation">
                                 Confirm password{' '}
                                 <span className="text-red-500">*</span>

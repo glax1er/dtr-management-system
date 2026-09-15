@@ -48,6 +48,16 @@ class College extends Model
     }
 
     /**
+     * All HTEs partnered under this college.
+     *
+     * @return HasMany<Hte, $this>
+     */
+    public function htes(): HasMany
+    {
+        return $this->hasMany(Hte::class, 'college_id', 'id');
+    }
+
+    /**
      * College administrators assigned to this college.
      *
      * @return HasMany<User, $this>

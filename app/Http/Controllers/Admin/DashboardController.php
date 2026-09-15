@@ -37,11 +37,12 @@ class DashboardController extends Controller
         $perPage = (int) ($validated['per_page'] ?? self::DEFAULT_PER_PAGE);
 
         $query = InternProfile::query()
+            ->verified()
             ->with(['user:id,name,email', 'hte:hte_id,hte_name', 'program:program_id,program_name'])
             ->orderBy('registered_at', 'desc');
 
         if ($collegeId !== null) {
-            $query->whereHas('program', fn ($q) => $q->where('college_id', $collegeId));
+            $query->forCollege($collegeId);
         }
 
         $recentRegistrations = $query
@@ -59,27 +60,39 @@ class DashboardController extends Controller
                 'registered_at_full' => $profile->registered_at->format('M j, Y g:i A'),
             ]);
 
-        $approvedQuery = InternProfile::where('status', 'approved');
-        $pendingQuery = InternProfile::where('status', 'pending');
+        $approvedQuery = InternProfile::verified()->where('status', 'approved');
+        $pendingQuery = InternProfile::verified()->where('status', 'pending');
 
         if ($collegeId !== null) {
-            $approvedQuery->whereHas('program', fn ($q) => $q->where('college_id', $collegeId));
-            $pendingQuery->whereHas('program', fn ($q) => $q->where('college_id', $collegeId));
+            $approvedQuery->forCollege($collegeId);
+            $pendingQuery->forCollege($collegeId);
         }
 
         $totalInterns = $approvedQuery->count();
 
         $supervisorQuery = User::where('role', User::ROLE_SUPERVISOR);
         if ($collegeId !== null) {
-            $supervisorQuery->whereHas('supervisorProfile', fn ($q) => $q->where('supervisor_type', 'hte')
-                ->orWhereHas('program', fn ($pq) => $pq->where('college_id', $collegeId)));
+            $supervisorQuery->whereHas('supervisorProfile', fn ($q) => $q->where(function ($sq) use ($collegeId) {
+                $sq->where(function ($hq) use ($collegeId) {
+                    $hq->where('supervisor_type', 'hte')
+                        ->whereHas('hte', fn ($sub) => $sub->where('college_id', $collegeId));
+                })->orWhere(function ($pq) use ($collegeId) {
+                    $pq->where('supervisor_type', 'ojt')
+                        ->whereHas('program', fn ($sub) => $sub->where('college_id', $collegeId));
+                });
+            }));
+        }
+
+        $activeHtesQuery = Hte::where('status', 'active');
+        if ($collegeId !== null) {
+            $activeHtesQuery->where('college_id', $collegeId);
         }
 
         return Inertia::render('admin/dashboard', [
             'pendingApprovals' => $pendingQuery->count(),
             'totalInterns' => $totalInterns,
             'totalSupervisors' => $supervisorQuery->count(),
-            'activeHtes' => Hte::where('status', 'active')->count(),
+            'activeHtes' => $activeHtesQuery->count(),
             'recentRegistrations' => $recentRegistrations,
             'statusBreakdown' => $this->statusBreakdown($collegeId),
             'registrationsTrend' => $this->registrationsTrend($collegeId),
@@ -100,9 +113,9 @@ class DashboardController extends Controller
      */
     private function statusBreakdown(?int $collegeId = null): array
     {
-        $query = InternProfile::query();
+        $query = InternProfile::query()->verified();
         if ($collegeId !== null) {
-            $query->whereHas('program', fn ($q) => $q->where('college_id', $collegeId));
+            $query->forCollege($collegeId);
         }
 
         $counts = $query
@@ -129,9 +142,9 @@ class DashboardController extends Controller
         $today = Carbon::now($timezone)->startOfDay();
         $rangeStart = $today->clone()->subDays(self::TREND_DAYS - 1);
 
-        $query = InternProfile::query()->where('registered_at', '>=', $rangeStart);
+        $query = InternProfile::query()->verified()->where('registered_at', '>=', $rangeStart);
         if ($collegeId !== null) {
-            $query->whereHas('program', fn ($q) => $q->where('college_id', $collegeId));
+            $query->forCollege($collegeId);
         }
 
         $countsByDate = $query
@@ -162,12 +175,17 @@ class DashboardController extends Controller
      */
     private function topHtes(?int $collegeId = null): array
     {
-        return Hte::query()
+        $query = Hte::query();
+        if ($collegeId !== null) {
+            $query->where('college_id', $collegeId);
+        }
+
+        return $query
             ->withCount([
                 'internProfiles as interns_count' => function ($query) use ($collegeId) {
-                    $query->where('status', 'approved');
+                    $query->verified()->where('status', 'approved');
                     if ($collegeId !== null) {
-                        $query->whereHas('program', fn ($q) => $q->where('college_id', $collegeId));
+                        $query->forCollege($collegeId);
                     }
                 },
             ])
@@ -197,9 +215,9 @@ class DashboardController extends Controller
         $query = AttendanceLog::query()
             ->whereBetween('scan_timestamp', [$today->clone()->startOfDay(), $today->clone()->endOfDay()])
             ->whereHas('internProfile', function ($query) use ($collegeId) {
-                $query->where('status', 'approved');
+                $query->verified()->where('status', 'approved');
                 if ($collegeId !== null) {
-                    $query->whereHas('program', fn ($q) => $q->where('college_id', $collegeId));
+                    $query->forCollege($collegeId);
                 }
             });
 

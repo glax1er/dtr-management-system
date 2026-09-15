@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Campus;
 use App\Models\College;
 use App\Models\Program;
 use Illuminate\Database\Seeder;
@@ -53,7 +54,7 @@ class CollegeSeeder extends Seeder
         ];
 
         foreach ($colleges as $data) {
-            $campusId = \App\Models\Campus::where('name', $data['campus'])->value('id');
+            $campusId = Campus::where('name', $data['campus'])->value('id');
 
             $college = College::updateOrCreate(
                 ['code' => $data['code']],

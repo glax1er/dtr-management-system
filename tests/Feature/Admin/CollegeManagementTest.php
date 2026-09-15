@@ -35,6 +35,7 @@ test('super admin can view colleges index with assigned admin email', function (
         ->where('colleges.data', function ($colleges) {
             $college = collect($colleges)->firstWhere('id', $this->collegeA->id);
             expect($college['admin_email'])->toBe($this->collegeAdmin->email);
+
             return true;
         })
     );
@@ -102,6 +103,7 @@ test('super admin can filter colleges by campus and status', function () {
         ->where('filters.campus', 'Obrero')
         ->where('colleges.data', function ($colleges) use ($collegeObrero, $collegeTagum) {
             $ids = collect($colleges)->pluck('id');
+
             return $ids->contains($collegeObrero->id) && ! $ids->contains($collegeTagum->id);
         })
     );
@@ -172,7 +174,11 @@ test('intern registration requires matching program and college', function () {
         'program_name' => 'Prog In A '.uniqid(),
     ]);
 
-    $hte = Hte::create(['hte_name' => 'Test HTE '.uniqid(), 'status' => 'active']);
+    $hte = Hte::create([
+        'hte_name' => 'Test HTE '.uniqid(),
+        'status' => 'active',
+        'college_id' => $this->collegeA->id,
+    ]);
 
     // Attempt registration with program belonging to College A, but submitting College B -> validation error
     $response = $this->post(route('register.store'), [

@@ -181,7 +181,7 @@ class FortifyServiceProvider extends ServiceProvider
                     ->get(),
                 'htes' => Hte::query()
                     ->where('status', 'active')
-                    ->select(['hte_id', 'hte_name'])
+                    ->select(['hte_id', 'hte_name', 'college_id'])
                     ->orderBy('hte_name')
                     ->get(),
             ]);

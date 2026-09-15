@@ -4,12 +4,12 @@ namespace App\Actions\Fortify;
 
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
+use App\Models\College;
+use App\Models\Hte;
 use App\Models\InternProfile;
 use App\Models\Program;
 use App\Models\User;
-use App\Notifications\NewInternRegistrationNotification;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 
@@ -57,7 +57,7 @@ class CreateNewUser implements CreatesNewUsers
                 'exists:programs,program_id',
                 function ($attribute, $value, $fail) use ($input) {
                     if (! empty($input['college_id'])) {
-                        $program = Program::find($value);
+                        $program = Program::where('program_id', $value)->first();
                         if ($program && $program->college_id && (int) $program->college_id !== (int) $input['college_id']) {
                             $fail('The selected program does not belong to the selected college.');
                         }
@@ -65,7 +65,21 @@ class CreateNewUser implements CreatesNewUsers
                 },
             ],
 
-            'hte_id' => ['required', 'integer', 'exists:htes,hte_id'],
+            'hte_id' => [
+                'required',
+                'integer',
+                'exists:htes,hte_id',
+                function ($attribute, $value, $fail) use ($input) {
+                    $program = ! empty($input['program_id']) ? Program::where('program_id', $input['program_id'])->first() : null;
+                    $collegeId = ! empty($input['college_id']) ? (int) $input['college_id'] : $program?->college_id;
+                    if ($collegeId) {
+                        $hte = Hte::where('hte_id', $value)->first();
+                        if (! $hte || (int) $hte->college_id !== (int) $collegeId) {
+                            $fail('The selected HTE does not belong to the selected college.');
+                        }
+                    }
+                },
+            ],
 
             // ADDED — 'accepted' rule requires the field to be true/1/"on"/"yes";
             // missing or false both fail validation, so the checkbox is effectively required
@@ -89,7 +103,7 @@ class CreateNewUser implements CreatesNewUsers
 
             $campus = ! empty($input['campus'])
                 ? $input['campus']
-                : ($collegeId ? \App\Models\College::find($collegeId)?->campus : null);
+                : ($collegeId ? College::find($collegeId)?->campus : null);
 
             $user = User::create([
                 'role' => User::ROLE_INTERN,
@@ -112,22 +126,6 @@ class CreateNewUser implements CreatesNewUsers
                 'privacy_accepted_at' => now(),
                 'registered_at' => now(),
             ]);
-
-            // Notify super admins and the relevant college admin
-            $internCollegeId = $internProfile->program?->college_id;
-            $admins = User::whereIn('role', [User::ROLE_SUPER_ADMIN, User::ROLE_COLLEGE_ADMIN, User::ROLE_ADMIN])
-                ->where('is_active', true)
-                ->get()
-                ->filter(function (User $admin) use ($internCollegeId) {
-                    if ($admin->isCollegeAdmin() && $admin->college_id !== $internCollegeId) {
-                        return false;
-                    }
-
-                    return $admin->wantsNotification('intern_registrations');
-                });
-            if ($admins->isNotEmpty()) {
-                Notification::send($admins, new NewInternRegistrationNotification($internProfile));
-            }
 
             // Send 6-digit email verification code to the new intern
             $user->sendEmailVerificationNotification();

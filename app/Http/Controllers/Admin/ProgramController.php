@@ -36,7 +36,8 @@ class ProgramController extends Controller
         $status = $validated['status'] ?? '';
         $perPage = (int) ($validated['per_page'] ?? self::DEFAULT_PER_PAGE);
 
-        $approvedCounts = InternProfile::where('status', 'approved')
+        $approvedCounts = InternProfile::verified()
+            ->where('status', 'approved')
             ->selectRaw('program_id, count(*) as total')
             ->groupBy('program_id')
             ->pluck('total', 'program_id');

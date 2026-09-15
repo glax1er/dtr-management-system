@@ -85,7 +85,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
         // Super Admin only: College Admin Management, Colleges & Campuses
-        Route::middleware('role:'.User::ROLE_SUPER_ADMIN.','.User::ROLE_ADMIN)->group(function () {
+        Route::middleware('role:'.User::ROLE_SUPER_ADMIN)->group(function () {
             Route::get('admins', [AdminManagementController::class, 'index'])->name('admins.index');
             Route::post('admins', [AdminManagementController::class, 'store'])->name('admins.store');
             Route::patch('admins/{user}', [AdminManagementController::class, 'update'])->name('admins.update');
