@@ -121,7 +121,6 @@ export default function CollegeAdminManagement({
         filters.campus_id ? String(filters.campus_id) : 'all'
     );
     const [status, setStatus] = useState<string>(filters.status || 'all');
-    const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const debouncedSearch = useDebounce(search, 300);
     const isFirstRender = useRef(true);
 

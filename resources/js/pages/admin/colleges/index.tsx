@@ -97,7 +97,6 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
     const [search, setSearch] = useState(filters.search || '');
     const [status, setStatus] = useState(filters.status || '');
     const [campus, setCampus] = useState(filters.campus || '');
-    const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const debouncedSearch = useDebounce(search, 300);
     const isFirstRender = useRef(true);
 
@@ -222,6 +221,18 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
         });
     };
 
+    const clearAllFilters = () => {
+        setSearch('');
+        setStatus('');
+        setCampus('');
+        visit({
+            per_page: String(filters.per_page),
+            page: undefined,
+        });
+    };
+
+    const hasActiveFilters = Boolean(search || status || campus);
+
     const submitAdd = (e: FormEvent) => {
         e.preventDefault();
         if (!addName.trim() || !addCode.trim()) {
@@ -326,26 +337,39 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
         <>
             <Head title="College Departments" />
 
-            <div className="flex h-full flex-1 flex-col gap-4 p-4">
+            <div className="flex h-full flex-1 flex-col gap-4 sm:gap-6 p-4 md:p-6">
                 {/* Header */}
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
-                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-                            <Landmark className="size-5" />
-                        </span>
-                        College Departments
-                    </h1>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h1 className="flex items-center gap-2.5 text-xl font-bold tracking-tight sm:text-2xl text-foreground">
+                            <span className="flex size-9 sm:size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                                <Landmark className="size-4 sm:size-5" />
+                            </span>
+                            College Departments
+                        </h1>
+                        <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
+                            Manage university academic colleges, departments, and programs.
+                        </p>
+                    </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                        {/* Search */}
-                        <form onSubmit={applySearch} className="relative hidden sm:block">
+                    <Button onClick={() => setAddOpen(true)} className="w-full sm:w-auto gap-1.5 shadow-sm shrink-0">
+                        <Plus className="size-4" />
+                        Add College
+                    </Button>
+                </div>
+
+                {/* Controls Bar: Search, Filters, View toggle */}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-1 flex-wrap items-center gap-2 min-w-0">
+                        {/* Search Input */}
+                        <form onSubmit={applySearch} className="relative flex-1 min-w-[180px] sm:w-60 sm:flex-none">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                             <input
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 placeholder="Search colleges..."
-                                className="h-9 w-44 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
+                                className="h-9 w-full rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
                             {search && (
                                 <button
@@ -358,19 +382,9 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
                             )}
                         </form>
 
-                        {/* Mobile search toggle */}
-                        <button
-                            type="button"
-                            onClick={() => setMobileSearchOpen((o) => !o)}
-                            className="inline-flex size-9 shrink-0 items-center justify-center rounded-md border bg-background text-muted-foreground hover:text-foreground sm:hidden"
-                            aria-label="Toggle search"
-                        >
-                            {mobileSearchOpen ? <X className="size-4" /> : <Search className="size-4" />}
-                        </button>
-
-                        {/* Status Filter Dropdown */}
+                        {/* Status Filter */}
                         <Select value={status || 'all'} onValueChange={applyStatus}>
-                            <SelectTrigger className="h-9 w-32">
+                            <SelectTrigger className="h-9 w-[130px] sm:w-36">
                                 <SlidersHorizontal className="mr-1.5 size-3.5 shrink-0 text-muted-foreground" />
                                 <SelectValue placeholder="All Status" />
                             </SelectTrigger>
@@ -381,9 +395,9 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
                             </SelectContent>
                         </Select>
 
-                        {/* Campus Filter Dropdown */}
+                        {/* Campus Filter */}
                         <Select value={campus || 'all'} onValueChange={applyCampus}>
-                            <SelectTrigger className="h-9 w-36">
+                            <SelectTrigger className="h-9 w-[140px] sm:w-40">
                                 <MapPin className="mr-1.5 size-3.5 shrink-0 text-muted-foreground" />
                                 <SelectValue placeholder="All Campuses" />
                             </SelectTrigger>
@@ -397,59 +411,41 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
                             </SelectContent>
                         </Select>
 
-                        {/* View Switcher */}
-                        <div className="hidden sm:block">
-                            <div className="inline-flex rounded-md border p-0.5">
-                                <Button
-                                    variant={view === 'table' ? 'secondary' : 'ghost'}
-                                    size="icon"
-                                    className="size-8"
-                                    onClick={() => setView('table')}
-                                >
-                                    <TableIcon className="size-4" />
-                                </Button>
-                                <Button
-                                    variant={view === 'grid' ? 'secondary' : 'ghost'}
-                                    size="icon"
-                                    className="size-8"
-                                    onClick={() => setView('grid')}
-                                >
-                                    <LayoutGrid className="size-4" />
-                                </Button>
-                            </div>
-                        </div>
+                        {hasActiveFilters && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={clearAllFilters}
+                                className="h-9 gap-1 text-xs text-muted-foreground hover:text-foreground"
+                            >
+                                <X className="size-3.5" />
+                                Reset
+                            </Button>
+                        )}
+                    </div>
 
-                        {/* Add College Button */}
-                        <Button onClick={() => setAddOpen(true)} className="gap-1.5 shadow-sm">
-                            <Plus className="size-4" />
-                            Add College
+                    {/* View Switcher */}
+                    <div className="flex items-center justify-end rounded-md border bg-muted p-0.5 shrink-0">
+                        <Button
+                            variant={view === 'table' ? 'secondary' : 'ghost'}
+                            size="icon"
+                            className="size-8"
+                            onClick={() => setView('table')}
+                            aria-label="Table view"
+                        >
+                            <TableIcon className="size-4" />
+                        </Button>
+                        <Button
+                            variant={view === 'grid' ? 'secondary' : 'ghost'}
+                            size="icon"
+                            className="size-8"
+                            onClick={() => setView('grid')}
+                            aria-label="Grid view"
+                        >
+                            <LayoutGrid className="size-4" />
                         </Button>
                     </div>
                 </div>
-
-                {/* Mobile Search Bar */}
-                {mobileSearchOpen && (
-                    <form onSubmit={applySearch} className="relative sm:hidden">
-                        <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                        <input
-                            type="text"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search colleges..."
-                            className="h-9 w-full rounded-md border bg-background pr-8 pl-9 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
-                            autoFocus
-                        />
-                        {search && (
-                            <button
-                                type="button"
-                                onClick={clearSearch}
-                                className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            >
-                                <X className="size-3.5" />
-                            </button>
-                        )}
-                    </form>
-                )}
 
                 {/* Content */}
                 {colleges.data.length === 0 ? (
@@ -472,7 +468,8 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
                     </Card>
                 ) : view === 'table' ? (
                     <div className="overflow-hidden rounded-lg border bg-card shadow-xs">
-                        <Table>
+                        <div className="overflow-x-auto">
+                            <Table className="min-w-[850px]">
                             <TableHeader>
                                 <TableRow>
                                     <TableHead className="w-10 text-center" />
@@ -623,33 +620,34 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
                             </TableBody>
                         </Table>
                     </div>
+                </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {colleges.data.map((college) => {
                             const isExpanded = expandedColleges.has(college.id);
                             return (
-                                <Card key={college.id} className="flex flex-col justify-between shadow-xs">
-                                    <CardHeader className="pb-3">
+                                <Card key={college.id} className="flex flex-col justify-between shadow-xs overflow-hidden">
+                                    <CardHeader className="pb-3 min-w-0">
                                         <div className="flex items-start justify-between gap-2">
-                                            <Badge variant="outline" className="font-mono text-xs font-bold">
+                                            <Badge variant="outline" className="font-mono text-xs font-bold shrink-0">
                                                 {college.code}
                                             </Badge>
-                                            <StatusBadge status={college.is_active ? 'active' : 'inactive'} />
+                                            <StatusBadge status={college.is_active ? 'active' : 'inactive'} className="shrink-0" />
                                         </div>
-                                        <CardTitle className="mt-2 text-base font-semibold leading-snug">
+                                        <CardTitle className="mt-2 text-base font-semibold leading-snug break-words">
                                             {college.name}
                                         </CardTitle>
                                         {college.description && (
-                                            <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+                                            <p className="mt-1 text-xs text-muted-foreground line-clamp-2 break-words">
                                                 {college.description}
                                             </p>
                                         )}
                                         <div className="mt-2 flex flex-col gap-1 text-xs text-muted-foreground">
-                                            <div className="flex items-center gap-1.5">
+                                            <div className="flex items-center gap-1.5 min-w-0">
                                                 <MapPin className="size-3.5 shrink-0" />
-                                                <span>Campus: <span className="font-medium text-foreground">{college.campus ?? 'N/A'}</span></span>
+                                                <span className="truncate">Campus: <span className="font-medium text-foreground">{college.campus ?? 'N/A'}</span></span>
                                             </div>
-                                            <div>
+                                            <div className="min-w-0 truncate">
                                                 <span className="font-medium">Admin: </span>
                                                 {college.admin_email ? (
                                                     <span className="font-mono text-foreground">{college.admin_email}</span>
@@ -728,7 +726,7 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
 
             {/* Add College Dialog */}
             <Dialog open={addOpen} onOpenChange={setAddOpen}>
-                <DialogContent className="sm:max-w-md">
+                <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] sm:max-w-md p-4 sm:p-6">
                     <DialogHeader>
                         <DialogTitle>Add College / Department</DialogTitle>
                         <DialogDescription>
@@ -786,11 +784,11 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
                             />
                         </div>
 
-                        <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>
+                        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+                            <Button type="button" variant="outline" onClick={() => setAddOpen(false)} className="w-full sm:w-auto">
                                 Cancel
                             </Button>
-                            <Button type="submit">Create College</Button>
+                            <Button type="submit" className="w-full sm:w-auto">Create College</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -798,7 +796,7 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
 
             {/* Edit College Dialog */}
             <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                <DialogContent className="sm:max-w-md">
+                <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] sm:max-w-md p-4 sm:p-6">
                     <DialogHeader>
                         <DialogTitle>Edit College / Department</DialogTitle>
                         <DialogDescription>
@@ -853,11 +851,11 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
                             />
                         </div>
 
-                        <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>
+                        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+                            <Button type="button" variant="outline" onClick={() => setEditOpen(false)} className="w-full sm:w-auto">
                                 Cancel
                             </Button>
-                            <Button type="submit">Save Changes</Button>
+                            <Button type="submit" className="w-full sm:w-auto">Save Changes</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>

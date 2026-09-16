@@ -292,77 +292,83 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
         <>
             <Head title="Campuses" />
 
-            <div className="flex h-full flex-1 flex-col gap-4 p-4">
+            <div className="flex flex-1 flex-col gap-4 sm:gap-6 p-4 md:p-6">
                 {/* Header */}
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
-                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-                            <MapPin className="size-5" />
-                        </span>
-                        Campuses
-                    </h1>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
+                            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                                <MapPin className="size-5" />
+                            </span>
+                            Campuses
+                        </h1>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            Manage university campus branches and their associated colleges.
+                        </p>
+                    </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                        {/* Search */}
-                        <form onSubmit={applySearch} className="relative hidden sm:block">
-                            <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-                            <input
-                                type="text"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search campuses..."
-                                className="h-9 w-44 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
-                            />
-                            {search && (
-                                <button
-                                    type="button"
-                                    onClick={clearSearch}
-                                    className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    <Button onClick={openAdd} className="w-full sm:w-auto h-9 gap-1.5 shrink-0 justify-center">
+                        <Plus className="size-4" />
+                        Add Campus
+                    </Button>
+                </div>
+
+                {/* Filters & Search Toolbar */}
+                <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+                            {/* Search Input */}
+                            <form onSubmit={applySearch} className="relative flex-1 min-w-[180px] sm:w-60 sm:flex-none">
+                                <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                                <input
+                                    type="text"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="Search campuses..."
+                                    className="h-9 w-full rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
+                                />
+                                {search && (
+                                    <button
+                                        type="button"
+                                        onClick={clearSearch}
+                                        className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                    >
+                                        <X className="size-3.5" />
+                                    </button>
+                                )}
+                            </form>
+
+                            {/* Status Filter */}
+                            <Select
+                                value={status || 'all'}
+                                onValueChange={handleStatusFilterChange}
+                            >
+                                <SelectTrigger className="h-9 w-32 shrink-0">
+                                    <SelectValue placeholder="Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Status</SelectItem>
+                                    <SelectItem value="active">Active</SelectItem>
+                                    <SelectItem value="inactive">Inactive</SelectItem>
+                                </SelectContent>
+                            </Select>
+
+                            {/* Reset Filters */}
+                            {hasActiveFilters && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={clearAllFilters}
+                                    className="h-9 gap-1.5 text-xs text-muted-foreground hover:text-foreground shrink-0"
                                 >
                                     <X className="size-3.5" />
-                                </button>
+                                    Reset
+                                </Button>
                             )}
-                        </form>
-
-                        {/* Status Filter */}
-                        <Select
-                            value={status || 'all'}
-                            onValueChange={handleStatusFilterChange}
-                        >
-                            <SelectTrigger className="h-9 w-32">
-                                <SelectValue placeholder="Status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Status</SelectItem>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="inactive">Inactive</SelectItem>
-                            </SelectContent>
-                        </Select>
-
-                        {/* Reset Filters */}
-                        {hasActiveFilters && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={clearAllFilters}
-                                className="h-9 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-                            >
-                                <X className="size-3.5" />
-                                Reset
-                            </Button>
-                        )}
-
-                        {/* Mobile Search Toggle */}
-                        <button
-                            type="button"
-                            onClick={() => setMobileSearchOpen((o) => !o)}
-                            className="inline-flex size-9 shrink-0 items-center justify-center rounded-md border bg-background text-muted-foreground hover:text-foreground sm:hidden"
-                        >
-                            {mobileSearchOpen ? <X className="size-4" /> : <Search className="size-4" />}
-                        </button>
+                        </div>
 
                         {/* View Mode Toggle */}
-                        <div className="flex items-center rounded-md border bg-muted p-0.5">
+                        <div className="flex items-center justify-end rounded-md border bg-muted p-0.5 shrink-0 self-end sm:self-auto">
                             <button
                                 type="button"
                                 onClick={() => setView('table')}
@@ -371,6 +377,7 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                                         ? 'bg-background text-foreground shadow-xs'
                                         : 'text-muted-foreground hover:text-foreground'
                                 }`}
+                                aria-label="Table view"
                             >
                                 <TableIcon className="size-4" />
                             </button>
@@ -382,42 +389,13 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                                         ? 'bg-background text-foreground shadow-xs'
                                         : 'text-muted-foreground hover:text-foreground'
                                 }`}
+                                aria-label="Grid view"
                             >
                                 <LayoutGrid className="size-4" />
                             </button>
                         </div>
-
-                        {/* Add Campus Button */}
-                        <Button onClick={openAdd} className="h-9 gap-1.5">
-                            <Plus className="size-4" />
-                            Add Campus
-                        </Button>
                     </div>
                 </div>
-
-                {/* Mobile Search Input */}
-                {mobileSearchOpen && (
-                    <form onSubmit={applySearch} className="relative sm:hidden">
-                        <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                        <input
-                            type="text"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search campuses..."
-                            className="h-10 w-full rounded-md border bg-background pr-9 pl-9 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
-                            autoFocus
-                        />
-                        {search && (
-                            <button
-                                type="button"
-                                onClick={clearSearch}
-                                className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            >
-                                <X className="size-4" />
-                            </button>
-                        )}
-                    </form>
-                )}
 
                 {/* Content */}
                 {campuses.data.length === 0 ? (
@@ -442,8 +420,9 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                     </Card>
                 ) : view === 'table' ? (
                     <div className="overflow-hidden rounded-md border bg-card shadow-xs">
-                        <Table>
-                            <TableHeader>
+                        <div className="overflow-x-auto">
+                            <Table className="min-w-[780px]">
+                                <TableHeader>
                                 <TableRow>
                                     <TableHead className="w-[220px]">Name</TableHead>
                                     <TableHead className="w-[100px]">Code</TableHead>
@@ -541,22 +520,23 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                                 ))}
                             </TableBody>
                         </Table>
+                        </div>
                     </div>
                 ) : (
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {campuses.data.map((campus) => (
-                            <Card key={campus.id} className="flex flex-col justify-between">
+                            <Card key={campus.id} className="flex flex-col justify-between shadow-xs">
                                 <CardHeader className="pb-3">
-                                    <div className="flex items-start justify-between gap-2">
-                                        <div>
+                                    <div className="flex items-start justify-between gap-2 min-w-0">
+                                        <div className="min-w-0 flex-1">
                                             <Badge variant="outline" className="mb-1 font-mono text-xs">
                                                 {campus.code}
                                             </Badge>
-                                            <CardTitle className="text-base font-semibold leading-tight">
+                                            <CardTitle className="text-base font-semibold leading-tight truncate">
                                                 {campus.name}
                                             </CardTitle>
                                         </div>
-                                        <StatusBadge status={campus.is_active ? 'active' : 'inactive'} />
+                                        <StatusBadge status={campus.is_active ? 'active' : 'inactive'} className="shrink-0" />
                                     </div>
                                 </CardHeader>
                                 <CardContent className="space-y-3 pb-3 text-sm">
@@ -644,7 +624,7 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
 
             {/* Add Campus Modal */}
             <Dialog open={addOpen} onOpenChange={setAddOpen}>
-                <DialogContent className="sm:max-w-[480px]">
+                <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] sm:max-w-[480px] p-4 sm:p-6">
                     <DialogHeader>
                         <DialogTitle>Add Campus</DialogTitle>
                         <DialogDescription>
@@ -692,15 +672,16 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                                 rows={3}
                             />
                         </div>
-                        <DialogFooter className="pt-2">
+                        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-3">
                             <Button
                                 type="button"
                                 variant="outline"
                                 onClick={() => setAddOpen(false)}
+                                className="w-full sm:w-auto"
                             >
                                 Cancel
                             </Button>
-                            <Button type="submit">Save Campus</Button>
+                            <Button type="submit" className="w-full sm:w-auto">Save Campus</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -708,7 +689,7 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
 
             {/* Edit Campus Modal */}
             <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                <DialogContent className="sm:max-w-[480px]">
+                <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] sm:max-w-[480px] p-4 sm:p-6">
                     <DialogHeader>
                         <DialogTitle>Edit Campus</DialogTitle>
                         <DialogDescription>
@@ -756,15 +737,16 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                                 rows={3}
                             />
                         </div>
-                        <DialogFooter className="pt-2">
+                        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-3">
                             <Button
                                 type="button"
                                 variant="outline"
                                 onClick={() => setEditOpen(false)}
+                                className="w-full sm:w-auto"
                             >
                                 Cancel
                             </Button>
-                            <Button type="submit">Save Changes</Button>
+                            <Button type="submit" className="w-full sm:w-auto">Save Changes</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>

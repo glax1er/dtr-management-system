@@ -473,7 +473,7 @@ export default function AdminManagement({
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                             <h1 className="text-2xl font-bold tracking-tight">
                                 Administrators
                             </h1>
@@ -490,224 +490,242 @@ export default function AdminManagement({
                         </p>
                     </div>
 
-                    <Button onClick={handleOpenAdd} className="gap-2 shrink-0">
+                    <Button onClick={handleOpenAdd} className="w-full sm:w-auto gap-2 shrink-0 justify-center">
                         <Plus className="size-4" />
                         Add Administrator
                     </Button>
                 </div>
 
                 {/* Filters & Search Toolbar */}
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex flex-1 flex-wrap items-center gap-2">
-                        {/* Search Input */}
-                        <div className="relative w-full max-w-xs">
-                            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Search by name, email, ID..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="pl-9 pr-8"
-                            />
-                            {search && (
+                <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+                            {/* Search Input */}
+                            <div className="relative flex-1 min-w-[200px] sm:w-64 sm:flex-none">
+                                <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Search admins..."
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    className="pl-9 pr-8 h-9"
+                                />
+                                {search && (
+                                    <button
+                                        type="button"
+                                        onClick={handleClearSearch}
+                                        className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+                                    >
+                                        <X className="size-4" />
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Mobile Filters Toggle */}
+                            <Button
+                                variant={mobileFiltersOpen ? 'secondary' : 'outline'}
+                                size="sm"
+                                onClick={() => setMobileFiltersOpen((prev) => !prev)}
+                                className="h-9 gap-1.5 sm:hidden"
+                            >
+                                <Filter className="size-3.5" />
+                                Filters
+                                {hasActiveFilters && (
+                                    <span className="size-2 rounded-full bg-primary" />
+                                )}
+                            </Button>
+
+                            {/* Desktop Filters */}
+                            <div className="hidden sm:flex sm:items-center sm:gap-2">
+                                {/* College Filter */}
+                                <Select value={collegeId} onValueChange={handleCollegeChange}>
+                                    <SelectTrigger className="h-9 w-[180px]">
+                                        <SelectValue placeholder="All Colleges" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Colleges</SelectItem>
+                                        {colleges.map((college) => (
+                                            <SelectItem
+                                                key={college.id}
+                                                value={String(college.id)}
+                                            >
+                                                {college.code} — {college.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+
+                                {/* Campus Filter */}
+                                <Select value={campusId} onValueChange={handleCampusChange}>
+                                    <SelectTrigger className="h-9 w-[150px]">
+                                        <SelectValue placeholder="All Campuses" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Campuses</SelectItem>
+                                        {campuses.map((camp) => (
+                                            <SelectItem
+                                                key={camp.id}
+                                                value={String(camp.id)}
+                                            >
+                                                {camp.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+
+                                {/* Status Filter */}
+                                <Select
+                                    value={statusFilter}
+                                    onValueChange={handleStatusChange}
+                                >
+                                    <SelectTrigger className="h-9 w-[130px]">
+                                        <SelectValue placeholder="All Status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Status</SelectItem>
+                                        <SelectItem value="active">Active</SelectItem>
+                                        <SelectItem value="inactive">Inactive</SelectItem>
+                                    </SelectContent>
+                                </Select>
+
+                                {/* Reset Filters */}
+                                {hasActiveFilters && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleResetFilters}
+                                        className="h-9 px-2 text-xs text-muted-foreground hover:text-foreground"
+                                    >
+                                        <X className="mr-1 size-3.5" />
+                                        Reset
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Role Filter Tabs & View Toggle */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 sm:justify-end">
+                            <Tabs
+                                value={roleFilter}
+                                onValueChange={handleRoleChange}
+                                className="w-full sm:w-auto"
+                            >
+                                <TabsList className="grid grid-cols-3 w-full sm:w-[320px]">
+                                    <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
+                                    <TabsTrigger value="super_admin" className="text-xs">Super Admins</TabsTrigger>
+                                    <TabsTrigger value="college_admin" className="text-xs">College Admins</TabsTrigger>
+                                </TabsList>
+                            </Tabs>
+
+                            <div className="flex items-center rounded-md border bg-muted p-0.5 shrink-0 ml-auto sm:ml-0">
                                 <button
                                     type="button"
-                                    onClick={handleClearSearch}
-                                    className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+                                    onClick={() => setView('table')}
+                                    className={`rounded p-1.5 transition-colors ${
+                                        view === 'table'
+                                            ? 'bg-background text-foreground shadow-xs'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                                    aria-label="Table view"
                                 >
-                                    <X className="size-4" />
+                                    <TableIcon className="size-4" />
                                 </button>
-                            )}
-                        </div>
-
-                        {/* College Filter */}
-                        <div className="hidden sm:block">
-                            <Select value={collegeId} onValueChange={handleCollegeChange}>
-                                <SelectTrigger className="w-[180px]">
-                                    <SelectValue placeholder="All Colleges" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Colleges</SelectItem>
-                                    {colleges.map((college) => (
-                                        <SelectItem
-                                            key={college.id}
-                                            value={String(college.id)}
-                                        >
-                                            {college.code} — {college.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        {/* Campus Filter */}
-                        <div className="hidden sm:block">
-                            <Select value={campusId} onValueChange={handleCampusChange}>
-                                <SelectTrigger className="w-[150px]">
-                                    <SelectValue placeholder="All Campuses" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Campuses</SelectItem>
-                                    {campuses.map((camp) => (
-                                        <SelectItem
-                                            key={camp.id}
-                                            value={String(camp.id)}
-                                        >
-                                            {camp.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        {/* Status Filter */}
-                        <div className="hidden sm:block">
-                            <Select
-                                value={statusFilter}
-                                onValueChange={handleStatusChange}
-                            >
-                                <SelectTrigger className="w-[130px]">
-                                    <SelectValue placeholder="All Status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Status</SelectItem>
-                                    <SelectItem value="active">Active</SelectItem>
-                                    <SelectItem value="inactive">Inactive</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        {/* Reset Filters */}
-                        {hasActiveFilters && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleResetFilters}
-                                className="h-9 px-2 text-xs text-muted-foreground hover:text-foreground"
-                            >
-                                <X className="mr-1 size-3.5" />
-                                Reset
-                            </Button>
-                        )}
-
-                        {/* Mobile Filters Toggle */}
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setMobileFiltersOpen((prev) => !prev)}
-                            className="sm:hidden"
-                        >
-                            <Filter className="size-4 mr-1" />
-                            Filters
-                        </Button>
-                    </div>
-
-                    {/* Role Filter Tabs & View Toggle */}
-                    <div className="flex items-center justify-between gap-2 sm:justify-end">
-                        <Tabs
-                            value={roleFilter}
-                            onValueChange={handleRoleChange}
-                            className="w-auto"
-                        >
-                            <TabsList className="grid grid-cols-3 w-[300px]">
-                                <TabsTrigger value="all">All</TabsTrigger>
-                                <TabsTrigger value="super_admin">Super Admins</TabsTrigger>
-                                <TabsTrigger value="college_admin">College Admins</TabsTrigger>
-                            </TabsList>
-                        </Tabs>
-
-                        <div className="flex items-center rounded-md border bg-muted p-0.5">
-                            <button
-                                type="button"
-                                onClick={() => setView('table')}
-                                className={`rounded p-1.5 transition-colors ${
-                                    view === 'table'
-                                        ? 'bg-background text-foreground shadow-xs'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                }`}
-                            >
-                                <TableIcon className="size-4" />
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setView('grid')}
-                                className={`rounded p-1.5 transition-colors ${
-                                    view === 'grid'
-                                        ? 'bg-background text-foreground shadow-xs'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                }`}
-                            >
-                                <LayoutGrid className="size-4" />
-                            </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setView('grid')}
+                                    className={`rounded p-1.5 transition-colors ${
+                                        view === 'grid'
+                                            ? 'bg-background text-foreground shadow-xs'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                                    aria-label="Grid view"
+                                >
+                                    <LayoutGrid className="size-4" />
+                                </button>
+                            </div>
                         </div>
                     </div>
+
+                    {/* Mobile Filters Dropdown */}
+                    {mobileFiltersOpen && (
+                        <div className="flex flex-col gap-2.5 p-3.5 bg-muted/40 rounded-lg border sm:hidden">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                    Filters
+                                </Label>
+                                {hasActiveFilters && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleResetFilters}
+                                        className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                                    >
+                                        <X className="mr-1 size-3" />
+                                        Reset All
+                                    </Button>
+                                )}
+                            </div>
+                            <div className="grid grid-cols-1 gap-2">
+                                <Select value={collegeId} onValueChange={handleCollegeChange}>
+                                    <SelectTrigger className="h-9">
+                                        <SelectValue placeholder="All Colleges" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Colleges</SelectItem>
+                                        {colleges.map((college) => (
+                                            <SelectItem
+                                                key={college.id}
+                                                value={String(college.id)}
+                                            >
+                                                {college.code} — {college.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+
+                                <Select value={campusId} onValueChange={handleCampusChange}>
+                                    <SelectTrigger className="h-9">
+                                        <SelectValue placeholder="All Campuses" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Campuses</SelectItem>
+                                        {campuses.map((camp) => (
+                                            <SelectItem
+                                                key={camp.id}
+                                                value={String(camp.id)}
+                                            >
+                                                {camp.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+
+                                <Select
+                                    value={statusFilter}
+                                    onValueChange={handleStatusChange}
+                                >
+                                    <SelectTrigger className="h-9">
+                                        <SelectValue placeholder="All Status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Status</SelectItem>
+                                        <SelectItem value="active">Active</SelectItem>
+                                        <SelectItem value="inactive">Inactive</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    )}
                 </div>
-
-                {/* Mobile Filters Dropdown */}
-                {mobileFiltersOpen && (
-                    <div className="flex flex-col gap-2 p-3 bg-muted/50 rounded-lg border sm:hidden">
-                        <Label className="text-xs font-semibold text-muted-foreground uppercase">
-                            Filters
-                        </Label>
-                        <div className="grid grid-cols-1 gap-2">
-                            <Select value={collegeId} onValueChange={handleCollegeChange}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="All Colleges" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Colleges</SelectItem>
-                                    {colleges.map((college) => (
-                                        <SelectItem
-                                            key={college.id}
-                                            value={String(college.id)}
-                                        >
-                                            {college.code} — {college.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-
-                            <Select value={campusId} onValueChange={handleCampusChange}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="All Campuses" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Campuses</SelectItem>
-                                    {campuses.map((camp) => (
-                                        <SelectItem
-                                            key={camp.id}
-                                            value={String(camp.id)}
-                                        >
-                                            {camp.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-
-                            <Select
-                                value={statusFilter}
-                                onValueChange={handleStatusChange}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="All Status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Status</SelectItem>
-                                    <SelectItem value="active">Active</SelectItem>
-                                    <SelectItem value="inactive">Inactive</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                )}
 
                 {/* Content: Table View */}
                 {view === 'table' ? (
                     <div className="rounded-md border bg-card overflow-hidden">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-[240px]">Administrator</TableHead>
-                                    <TableHead className="w-[140px]">Role</TableHead>
+                        <div className="overflow-x-auto">
+                            <Table className="min-w-[920px]">
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="w-[240px]">Administrator</TableHead>
+                                        <TableHead className="w-[140px]">Role</TableHead>
                                     <TableHead className="w-[200px]">Assigned College</TableHead>
                                     <TableHead className="w-[130px]">Campus</TableHead>
                                     <TableHead className="w-[150px]">Designation / ID</TableHead>
@@ -908,6 +926,7 @@ export default function AdminManagement({
                                 )}
                             </TableBody>
                         </Table>
+                        </div>
                     </div>
                 ) : (
                     /* Content: Grid View */
@@ -924,15 +943,15 @@ export default function AdminManagement({
                                 return (
                                     <Card key={admin.id} className="flex flex-col justify-between">
                                         <CardHeader className="pb-3">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div className="flex items-center gap-3">
-                                                    <Avatar className="size-10">
+                                            <div className="flex items-start justify-between gap-2 min-w-0">
+                                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                    <Avatar className="size-10 shrink-0">
                                                         <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                                                             {getInitials(admin.name)}
                                                         </AvatarFallback>
                                                     </Avatar>
-                                                    <div>
-                                                        <CardTitle className="text-base font-semibold leading-tight">
+                                                    <div className="min-w-0 flex-1">
+                                                        <CardTitle className="text-base font-semibold leading-tight truncate">
                                                             {admin.name}
                                                         </CardTitle>
                                                         <span className="text-xs text-muted-foreground truncate block">
@@ -941,7 +960,7 @@ export default function AdminManagement({
                                                     </div>
                                                 </div>
 
-                                                <StatusBadge status={admin.is_active ? 'active' : 'inactive'} />
+                                                <StatusBadge status={admin.is_active ? 'active' : 'inactive'} className="shrink-0" />
                                             </div>
                                         </CardHeader>
 
@@ -968,14 +987,14 @@ export default function AdminManagement({
                                                     )}
                                                 </div>
 
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-muted-foreground">College:</span>
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className="text-muted-foreground shrink-0">College:</span>
                                                     {isSuper ? (
                                                         <span className="font-medium text-foreground">
                                                             University-Wide
                                                         </span>
                                                     ) : admin.college ? (
-                                                        <span className="font-semibold text-foreground">
+                                                        <span className="font-semibold text-foreground text-right truncate">
                                                             {admin.college.code} — {admin.college.name}
                                                         </span>
                                                     ) : (
@@ -993,9 +1012,9 @@ export default function AdminManagement({
                                                 </div>
 
                                                 {!isSuper && (
-                                                    <div className="flex items-center justify-between border-t pt-1.5">
-                                                        <span className="text-muted-foreground">Designation:</span>
-                                                        <span className="font-medium text-foreground">
+                                                    <div className="flex items-center justify-between gap-2 border-t pt-1.5">
+                                                        <span className="text-muted-foreground shrink-0">Designation:</span>
+                                                        <span className="font-medium text-foreground text-right truncate">
                                                             {admin.position || 'College Admin'}
                                                             {admin.employee_id && ` (${admin.employee_id})`}
                                                         </span>
@@ -1004,9 +1023,9 @@ export default function AdminManagement({
                                             </div>
                                         </CardContent>
 
-                                        <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2 text-xs text-muted-foreground">
+                                        <div className="flex flex-wrap items-center justify-between gap-2 border-t bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
                                             <span>Added {admin.created_at}</span>
-                                            <div className="flex items-center gap-1">
+                                            <div className="flex items-center gap-1 shrink-0 ml-auto">
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
                                                         <Button
@@ -1077,7 +1096,7 @@ export default function AdminManagement({
 
             {/* Add Administrator Dialog */}
             <Dialog open={addOpen} onOpenChange={setAddOpen}>
-                <DialogContent className="sm:max-w-[500px]">
+                <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] sm:max-w-[540px] p-4 sm:p-6">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <UserCog className="size-5 text-primary" />
@@ -1089,9 +1108,9 @@ export default function AdminManagement({
                     </DialogHeader>
 
                     <form onSubmit={handleAddSubmit} className="space-y-4 pt-2">
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {/* Role Selection */}
-                            <div className="space-y-1.5 col-span-2">
+                            <div className="space-y-1.5 sm:col-span-2">
                                 <Label htmlFor="add_role">Administrator Role <span className="text-destructive">*</span></Label>
                                 <Select
                                     value={addRole}
@@ -1111,7 +1130,7 @@ export default function AdminManagement({
                                 </Select>
                             </div>
 
-                            <div className="space-y-1.5 col-span-2">
+                            <div className="space-y-1.5 sm:col-span-2">
                                 <Label htmlFor="add-name">Full Name <span className="text-destructive">*</span></Label>
                                 <Input
                                     id="add-name"
@@ -1122,7 +1141,7 @@ export default function AdminManagement({
                                 />
                             </div>
 
-                            <div className="space-y-1.5 col-span-2">
+                            <div className="space-y-1.5 sm:col-span-2">
                                 <Label htmlFor="add-email">Email Address <span className="text-destructive">*</span></Label>
                                 <Input
                                     id="add-email"
@@ -1136,7 +1155,7 @@ export default function AdminManagement({
 
                             {addRole === 'college_admin' ? (
                                 <>
-                                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                                    <div className="space-y-1.5 col-span-1">
                                         <Label htmlFor="add-college">Assigned College <span className="text-destructive">*</span></Label>
                                         <Select
                                             value={addCollegeId}
@@ -1159,7 +1178,7 @@ export default function AdminManagement({
                                         </Select>
                                     </div>
 
-                                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                                    <div className="space-y-1.5 col-span-1">
                                         <Label htmlFor="add-campus">Campus</Label>
                                         <Select
                                             value={addCampusId || 'none'}
@@ -1179,7 +1198,7 @@ export default function AdminManagement({
                                         </Select>
                                     </div>
 
-                                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                                    <div className="space-y-1.5 col-span-1">
                                         <Label htmlFor="add-emp-id">Employee ID</Label>
                                         <Input
                                             id="add-emp-id"
@@ -1189,7 +1208,7 @@ export default function AdminManagement({
                                         />
                                     </div>
 
-                                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                                    <div className="space-y-1.5 col-span-1">
                                         <Label htmlFor="add-position">Designation / Position</Label>
                                         <Input
                                             id="add-position"
@@ -1200,7 +1219,7 @@ export default function AdminManagement({
                                     </div>
                                 </>
                             ) : (
-                                <div className="col-span-2 rounded-md bg-purple-50 p-3 text-xs text-purple-700 dark:bg-purple-950/40 dark:text-purple-300">
+                                <div className="sm:col-span-2 rounded-md bg-purple-50 p-3 text-xs text-purple-700 dark:bg-purple-950/40 dark:text-purple-300">
                                     <p className="font-semibold">Full System Privileges</p>
                                     <p className="mt-0.5">
                                         Super Administrators have unrestricted access to all colleges, campuses, programs, intern approvals, and system settings.
@@ -1208,7 +1227,7 @@ export default function AdminManagement({
                                 </div>
                             )}
 
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                            <div className="space-y-1.5 col-span-1">
                                 <Label htmlFor="add-password">Password <span className="text-destructive">*</span></Label>
                                 <Input
                                     id="add-password"
@@ -1220,7 +1239,7 @@ export default function AdminManagement({
                                 />
                             </div>
 
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                            <div className="space-y-1.5 col-span-1">
                                 <Label htmlFor="add-confirm-password">
                                     Confirm Password <span className="text-destructive">*</span>
                                 </Label>
@@ -1237,16 +1256,17 @@ export default function AdminManagement({
                             </div>
                         </div>
 
-                        <DialogFooter className="pt-2">
+                        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-3">
                             <Button
                                 type="button"
                                 variant="outline"
                                 onClick={() => setAddOpen(false)}
                                 disabled={addLoading}
+                                className="w-full sm:w-auto"
                             >
                                 Cancel
                             </Button>
-                            <Button type="submit" disabled={addLoading}>
+                            <Button type="submit" disabled={addLoading} className="w-full sm:w-auto">
                                 {addLoading ? 'Creating...' : 'Create Account'}
                             </Button>
                         </DialogFooter>
@@ -1256,7 +1276,7 @@ export default function AdminManagement({
 
             {/* Edit Admin Dialog */}
             <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                <DialogContent className="sm:max-w-[500px]">
+                <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] sm:max-w-[540px] p-4 sm:p-6">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <Pencil className="size-5 text-primary" />
@@ -1268,8 +1288,8 @@ export default function AdminManagement({
                     </DialogHeader>
 
                     <form onSubmit={handleEditSubmit} className="space-y-4 pt-2">
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5 col-span-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="space-y-1.5 sm:col-span-2">
                                 <Label htmlFor="edit-name">Full Name <span className="text-destructive">*</span></Label>
                                 <Input
                                     id="edit-name"
@@ -1279,7 +1299,7 @@ export default function AdminManagement({
                                 />
                             </div>
 
-                            <div className="space-y-1.5 col-span-2">
+                            <div className="space-y-1.5 sm:col-span-2">
                                 <Label htmlFor="edit-email">Email Address <span className="text-destructive">*</span></Label>
                                 <Input
                                     id="edit-email"
@@ -1292,7 +1312,7 @@ export default function AdminManagement({
 
                             {editingAdmin?.role === 'college_admin' && (
                                 <>
-                                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                                    <div className="space-y-1.5 col-span-1">
                                         <Label htmlFor="edit-college">Assigned College <span className="text-destructive">*</span></Label>
                                         <Select
                                             value={editCollegeId}
@@ -1314,7 +1334,7 @@ export default function AdminManagement({
                                         </Select>
                                     </div>
 
-                                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                                    <div className="space-y-1.5 col-span-1">
                                         <Label htmlFor="edit-campus">Campus</Label>
                                         <Select
                                             value={editCampusId || 'none'}
@@ -1334,7 +1354,7 @@ export default function AdminManagement({
                                         </Select>
                                     </div>
 
-                                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                                    <div className="space-y-1.5 col-span-1">
                                         <Label htmlFor="edit-emp-id">Employee ID</Label>
                                         <Input
                                             id="edit-emp-id"
@@ -1344,7 +1364,7 @@ export default function AdminManagement({
                                         />
                                     </div>
 
-                                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                                    <div className="space-y-1.5 col-span-1">
                                         <Label htmlFor="edit-position">Designation / Position</Label>
                                         <Input
                                             id="edit-position"
@@ -1356,11 +1376,11 @@ export default function AdminManagement({
                                 </>
                             )}
 
-                            <div className="col-span-2 border-t pt-2 text-xs text-muted-foreground">
+                            <div className="sm:col-span-2 border-t pt-2 text-xs text-muted-foreground">
                                 Leave password fields blank unless you wish to change the administrator's password.
                             </div>
 
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                            <div className="space-y-1.5 col-span-1">
                                 <Label htmlFor="edit-password">New Password</Label>
                                 <Input
                                     id="edit-password"
@@ -1373,7 +1393,7 @@ export default function AdminManagement({
                                 />
                             </div>
 
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                            <div className="space-y-1.5 col-span-1">
                                 <Label htmlFor="edit-confirm-password">
                                     Confirm Password
                                 </Label>
@@ -1389,16 +1409,17 @@ export default function AdminManagement({
                             </div>
                         </div>
 
-                        <DialogFooter className="pt-2">
+                        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-3">
                             <Button
                                 type="button"
                                 variant="outline"
                                 onClick={() => setEditOpen(false)}
                                 disabled={editLoading}
+                                className="w-full sm:w-auto"
                             >
                                 Cancel
                             </Button>
-                            <Button type="submit" disabled={editLoading}>
+                            <Button type="submit" disabled={editLoading} className="w-full sm:w-auto">
                                 {editLoading ? 'Saving...' : 'Save Changes'}
                             </Button>
                         </DialogFooter>
