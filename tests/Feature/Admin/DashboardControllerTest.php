@@ -19,6 +19,7 @@ function makeInternProfile(Hte $hte, Program $program, string $status = 'approve
         'hte_id' => $hte->hte_id,
         'program_id' => $program->program_id,
         'status' => $status,
+        'registered_at' => Carbon::now(config('dtr.timezone')),
         'privacy_accepted_at' => now(),
     ]);
 }

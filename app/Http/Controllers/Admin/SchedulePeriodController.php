@@ -83,15 +83,27 @@ class SchedulePeriodController extends Controller
 
     private function notifyScheduleChange(SchedulePeriod $schedulePeriod, string $action, ?User $actor = null): void
     {
-        // Notify HTE supervisors and interns when admin updates global schedule (OJT supervisors are excluded)
+        $collegeId = $actor?->isCollegeAdmin() ? $actor->college_id : null;
+
+        // Notify HTE supervisors and interns when admin updates schedule (OJT supervisors are excluded)
         $recipients = User::query()
-            ->where(function ($query) {
-                $query->where(function ($iq) {
+            ->where(function ($query) use ($collegeId) {
+                $query->where(function ($iq) use ($collegeId) {
                     $iq->where('role', User::ROLE_INTERN)
-                        ->whereHas('internProfile', fn ($q) => $q->verified()->where('status', 'approved'));
-                })->orWhere(function ($q) {
+                        ->whereHas('internProfile', function ($q) use ($collegeId) {
+                            $q->verified()->where('status', 'approved');
+                            if ($collegeId) {
+                                $q->forCollege($collegeId);
+                            }
+                        });
+                })->orWhere(function ($q) use ($collegeId) {
                     $q->where('role', User::ROLE_SUPERVISOR)
-                        ->whereHas('supervisorProfile', fn ($sp) => $sp->where('supervisor_type', 'hte'));
+                        ->whereHas('supervisorProfile', function ($sp) use ($collegeId) {
+                            $sp->where('supervisor_type', 'hte');
+                            if ($collegeId) {
+                                $sp->whereHas('hte', fn ($hq) => $hq->where('college_id', $collegeId));
+                            }
+                        });
                 });
             })
             ->get()
@@ -112,15 +124,27 @@ class SchedulePeriodController extends Controller
 
     private function notifyScheduleChangeDeleted(string $scheduleName, int $periodId, ?User $actor = null): void
     {
-        // Notify HTE supervisors and interns when admin deletes a global schedule (OJT supervisors are excluded)
+        $collegeId = $actor?->isCollegeAdmin() ? $actor->college_id : null;
+
+        // Notify HTE supervisors and interns when admin deletes a schedule (OJT supervisors are excluded)
         $recipients = User::query()
-            ->where(function ($query) {
-                $query->where(function ($iq) {
+            ->where(function ($query) use ($collegeId) {
+                $query->where(function ($iq) use ($collegeId) {
                     $iq->where('role', User::ROLE_INTERN)
-                        ->whereHas('internProfile', fn ($q) => $q->verified()->where('status', 'approved'));
-                })->orWhere(function ($q) {
+                        ->whereHas('internProfile', function ($q) use ($collegeId) {
+                            $q->verified()->where('status', 'approved');
+                            if ($collegeId) {
+                                $q->forCollege($collegeId);
+                            }
+                        });
+                })->orWhere(function ($q) use ($collegeId) {
                     $q->where('role', User::ROLE_SUPERVISOR)
-                        ->whereHas('supervisorProfile', fn ($sp) => $sp->where('supervisor_type', 'hte'));
+                        ->whereHas('supervisorProfile', function ($sp) use ($collegeId) {
+                            $sp->where('supervisor_type', 'hte');
+                            if ($collegeId) {
+                                $sp->whereHas('hte', fn ($hq) => $hq->where('college_id', $collegeId));
+                            }
+                        });
                 });
             })
             ->get()

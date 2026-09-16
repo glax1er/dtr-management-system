@@ -33,6 +33,7 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
 const CATEGORY_FILTERS: { value: CategoryFilter; label: string }[] = [
     { value: 'all', label: 'All types' },
     { value: 'registration', label: NOTIFICATION_CATEGORY_LABELS.registration },
+    { value: 'system', label: NOTIFICATION_CATEGORY_LABELS.system },
     { value: 'schedule', label: NOTIFICATION_CATEGORY_LABELS.schedule },
     { value: 'approved', label: NOTIFICATION_CATEGORY_LABELS.approved },
     { value: 'rejected', label: NOTIFICATION_CATEGORY_LABELS.rejected },
@@ -90,7 +91,11 @@ const GROUP_ORDER = [
 
 export default function NotificationsPage() {
     const { auth, notifications } = usePage<PageProps>().props;
-    const isAdmin = auth?.user?.role === 'admin';
+    const role = auth?.user?.role;
+    const isAdmin =
+        role === 'admin' ||
+        role === 'super_admin' ||
+        role === 'college_admin';
 
     const count = notifications?.count ?? 0;
     const items = useMemo(
@@ -178,7 +183,6 @@ export default function NotificationsPage() {
             }
 
             if (
-                !isAdmin &&
                 categoryFilter !== 'all' &&
                 getNotificationCategory(notification) !== categoryFilter
             ) {
@@ -195,7 +199,7 @@ export default function NotificationsPage() {
 
             return true;
         });
-    }, [items, statusFilter, categoryFilter, query, isAdmin]);
+    }, [items, statusFilter, categoryFilter, query]);
 
     const groups = useMemo(() => {
         const buckets = new Map<string, Notification[]>();
@@ -215,7 +219,7 @@ export default function NotificationsPage() {
 
     const isFiltering =
         statusFilter !== 'all' ||
-        (!isAdmin && categoryFilter !== 'all') ||
+        categoryFilter !== 'all' ||
         query !== '';
 
     return (
@@ -290,32 +294,28 @@ export default function NotificationsPage() {
                             ))}
                         </div>
 
-                        {!isAdmin && (
-                            <>
-                                <div className="hidden h-5 w-px bg-border lg:block" />
+                        <div className="hidden h-5 w-px bg-border lg:block" />
 
-                                {/* Category filter */}
-                                <div className="flex flex-wrap gap-1.5">
-                                    {CATEGORY_FILTERS.map((filter) => (
-                                        <button
-                                            key={filter.value}
-                                            type="button"
-                                            onClick={() =>
-                                                setCategoryFilter(filter.value)
-                                            }
-                                            className={cn(
-                                                'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-                                                categoryFilter === filter.value
-                                                    ? 'border-foreground/80 bg-foreground/5 text-foreground'
-                                                    : 'border-border bg-transparent text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-                                            )}
-                                        >
-                                            {filter.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </>
-                        )}
+                        {/* Category filter */}
+                        <div className="flex flex-wrap gap-1.5">
+                            {CATEGORY_FILTERS.map((filter) => (
+                                <button
+                                    key={filter.value}
+                                    type="button"
+                                    onClick={() =>
+                                        setCategoryFilter(filter.value)
+                                    }
+                                    className={cn(
+                                        'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+                                        categoryFilter === filter.value
+                                            ? 'border-foreground/80 bg-foreground/5 text-foreground'
+                                            : 'border-border bg-transparent text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                                    )}
+                                >
+                                    {filter.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
             )}

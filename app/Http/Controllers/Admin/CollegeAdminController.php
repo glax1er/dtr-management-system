@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Concerns\NotifiesSuperAdmins;
 use App\Http\Controllers\Controller;
 use App\Models\Campus;
 use App\Models\College;
 use App\Models\CollegeAdminProfile;
 use App\Models\User;
+use App\Notifications\CollegeAdminAccountNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +20,8 @@ use Inertia\Response;
 
 class CollegeAdminController extends Controller
 {
+    use NotifiesSuperAdmins;
+
     private const DEFAULT_PER_PAGE = 10;
 
     private const MAX_PER_PAGE = 100;
@@ -149,7 +153,7 @@ class CollegeAdminController extends Controller
             $campusName = $college->campus;
         }
 
-        DB::transaction(function () use ($validated, $campusId, $campusName) {
+        $createdUser = DB::transaction(function () use ($validated, $campusId, $campusName) {
             $user = User::create([
                 'role' => User::ROLE_COLLEGE_ADMIN,
                 'college_id' => $validated['college_id'],
@@ -168,7 +172,15 @@ class CollegeAdminController extends Controller
                 'employee_id' => $validated['employee_id'] ?? null,
                 'position' => $validated['position'] ?? null,
             ]);
+
+            return $user;
         });
+
+        $this->notifySuperAdminsOfAdminChange(
+            CollegeAdminAccountNotification::EVENT_CREATED,
+            $createdUser,
+            $request->user(),
+        );
 
         Inertia::flash('toast', [
             'type' => 'success',
@@ -239,6 +251,12 @@ class CollegeAdminController extends Controller
             );
         });
 
+        $this->notifySuperAdminsOfAdminChange(
+            CollegeAdminAccountNotification::EVENT_UPDATED,
+            $user->fresh()->loadMissing('college'),
+            $request->user(),
+        );
+
         Inertia::flash('toast', [
             'type' => 'success',
             'message' => 'College administrator updated successfully.',
@@ -262,6 +280,12 @@ class CollegeAdminController extends Controller
 
         $statusText = $user->is_active ? 'activated' : 'deactivated';
 
+        $event = $user->is_active
+            ? CollegeAdminAccountNotification::EVENT_ACTIVATED
+            : CollegeAdminAccountNotification::EVENT_DEACTIVATED;
+
+        $this->notifySuperAdminsOfAdminChange($event, $user->loadMissing('college'), $request->user());
+
         Inertia::flash('toast', [
             'type' => 'success',
             'message' => "College Admin {$user->name} has been {$statusText}.",
@@ -281,10 +305,20 @@ class CollegeAdminController extends Controller
             ]);
         }
 
+        // Snapshot before deletion so the notification still has name/college data
+        $deletedAdmin = $user->loadMissing('college');
+        $actor = $request->user();
+
         DB::transaction(function () use ($user) {
             $user->collegeAdminProfile?->delete();
             $user->delete();
         });
+
+        $this->notifySuperAdminsOfAdminChange(
+            CollegeAdminAccountNotification::EVENT_DELETED,
+            $deletedAdmin,
+            $actor,
+        );
 
         Inertia::flash('toast', [
             'type' => 'success',

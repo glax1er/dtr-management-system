@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Concerns\NotifiesSuperAdmins;
 use App\Http\Controllers\Controller;
 use App\Models\Campus;
 use App\Models\College;
 use App\Models\CollegeAdminProfile;
 use App\Models\User;
+use App\Notifications\CollegeAdminAccountNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +20,8 @@ use Inertia\Response;
 
 class AdminManagementController extends Controller
 {
+    use NotifiesSuperAdmins;
+
     private const DEFAULT_PER_PAGE = 10;
 
     private const MAX_PER_PAGE = 100;
@@ -194,7 +198,7 @@ class AdminManagementController extends Controller
             $campusName = $college->campus;
         }
 
-        DB::transaction(function () use ($validated, $campusId, $campusName) {
+        $createdUser = DB::transaction(function () use ($validated, $campusId, $campusName) {
             $user = User::create([
                 'role' => User::ROLE_COLLEGE_ADMIN,
                 'college_id' => $validated['college_id'],
@@ -215,7 +219,15 @@ class AdminManagementController extends Controller
                     'position' => $validated['position'] ?? null,
                 ]
             );
+
+            return $user;
         });
+
+        $this->notifySuperAdminsOfAdminChange(
+            CollegeAdminAccountNotification::EVENT_CREATED,
+            $createdUser,
+            $request->user(),
+        );
 
         return back()->with('toast', [
             'type' => 'success',
@@ -298,6 +310,14 @@ class AdminManagementController extends Controller
             $user->update($userData);
         });
 
+        if ($isCollege) {
+            $this->notifySuperAdminsOfAdminChange(
+                CollegeAdminAccountNotification::EVENT_UPDATED,
+                $user->fresh()->loadMissing('college'),
+                $request->user(),
+            );
+        }
+
         return back()->with('toast', [
             'type' => 'success',
             'message' => 'Administrator account updated successfully.',
@@ -319,6 +339,14 @@ class AdminManagementController extends Controller
 
         $statusText = $user->is_active ? 'activated' : 'deactivated';
 
+        if ($user->isCollegeAdmin()) {
+            $event = $user->is_active
+                ? CollegeAdminAccountNotification::EVENT_ACTIVATED
+                : CollegeAdminAccountNotification::EVENT_DEACTIVATED;
+
+            $this->notifySuperAdminsOfAdminChange($event, $user->loadMissing('college'), $request->user());
+        }
+
         return back()->with('toast', [
             'type' => 'success',
             'message' => "Admin {$user->name} has been {$statusText}.",
@@ -336,10 +364,21 @@ class AdminManagementController extends Controller
             ]);
         }
 
+        $deletedAdmin = $user->isCollegeAdmin() ? $user->loadMissing('college') : null;
+        $actor = $request->user();
+
         DB::transaction(function () use ($user) {
             $user->collegeAdminProfile?->delete();
             $user->delete();
         });
+
+        if ($deletedAdmin) {
+            $this->notifySuperAdminsOfAdminChange(
+                CollegeAdminAccountNotification::EVENT_DELETED,
+                $deletedAdmin,
+                $actor,
+            );
+        }
 
         return back()->with('toast', [
             'type' => 'success',
