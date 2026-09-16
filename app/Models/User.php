@@ -165,11 +165,23 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             ],
         ],
         self::ROLE_SUPER_ADMIN => [
-            'intern_registrations' => [
-                'key' => 'intern_registrations',
-                'label' => 'New Intern Registrations',
-                'description' => 'Receive alerts when new interns register and require account approval.',
+            'system_alerts' => [
+                'key' => 'system_alerts',
+                'label' => 'System & Platform Alerts',
+                'description' => 'Receive critical platform alerts, security events, and system notices.',
                 'default' => true,
+            ],
+            'admin_management' => [
+                'key' => 'admin_management',
+                'label' => 'College Admin Account Updates',
+                'description' => 'Receive notifications when college administrator accounts are created, updated, or deactivated.',
+                'default' => true,
+            ],
+            'all_intern_registrations' => [
+                'key' => 'all_intern_registrations',
+                'label' => 'Global Intern Registrations (All Colleges)',
+                'description' => 'Receive alerts whenever any new intern registers anywhere in the system (normally handled by College Admins).',
+                'default' => false,
             ],
         ],
         self::ROLE_COLLEGE_ADMIN => [
@@ -179,12 +191,30 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
                 'description' => 'Receive alerts when new interns register under your college programs and require account approval.',
                 'default' => true,
             ],
+            'intern_completions' => [
+                'key' => 'intern_completions',
+                'label' => 'Intern Hours Completion Alerts',
+                'description' => 'Get notified when an intern in your college completes 100% of their required training hours.',
+                'default' => true,
+            ],
+            'supervisor_updates' => [
+                'key' => 'supervisor_updates',
+                'label' => 'Supervisor & Program Updates',
+                'description' => 'Receive notifications about supervisor assignments and updates within your college.',
+                'default' => true,
+            ],
         ],
         self::ROLE_ADMIN => [
             'intern_registrations' => [
                 'key' => 'intern_registrations',
                 'label' => 'New Intern Registrations',
                 'description' => 'Receive alerts when new interns register and require account approval.',
+                'default' => true,
+            ],
+            'intern_completions' => [
+                'key' => 'intern_completions',
+                'label' => 'Intern Hours Completion Alerts',
+                'description' => 'Get notified when an assigned intern completes 100% of their required training hours.',
                 'default' => true,
             ],
         ],
@@ -208,6 +238,14 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
      */
     public function getAvailableNotificationOptions(): array
     {
+        if ($this->isSuperAdmin()) {
+            return self::ROLE_NOTIFICATION_PREFERENCES[self::ROLE_SUPER_ADMIN];
+        }
+
+        if ($this->isCollegeAdmin()) {
+            return self::ROLE_NOTIFICATION_PREFERENCES[self::ROLE_COLLEGE_ADMIN];
+        }
+
         if ($this->role === self::ROLE_SUPERVISOR) {
             if ($this->supervisorProfile?->isOjtSupervisor()) {
                 return self::ROLE_NOTIFICATION_PREFERENCES['supervisor_ojt'];

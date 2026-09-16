@@ -157,6 +157,8 @@ test('verified intern appears on its college admin approval and notifies college
     Notification::assertSentTo($this->collegeAdminA, NewInternRegistrationNotification::class);
     // College admin B should not be notified
     Notification::assertNotSentTo($this->collegeAdminB, NewInternRegistrationNotification::class);
+    // Super Admin should not be notified by default (prevents spam)
+    Notification::assertNotSentTo($this->superAdmin, NewInternRegistrationNotification::class);
 
     // Should appear in college A's pending approval list
     $responseA = $this->actingAs($this->collegeAdminA)->get(route('admin.interns.index', ['status' => 'pending']));
@@ -229,3 +231,76 @@ test('accepted intern appears on other records including supervisor and approved
         ->where('interns', fn ($data) => collect($data)->pluck('user_id')->contains($internUser->id))
     );
 });
+
+test('super admin receives registration notification when explicitly opted in', function () {
+    Notification::fake();
+
+    $this->superAdmin->update([
+        'notification_preferences' => ['all_intern_registrations' => true],
+    ]);
+
+    $internUser = User::factory()->create([
+        'role' => User::ROLE_INTERN,
+        'email_verified_at' => null,
+    ]);
+
+    InternProfile::create([
+        'user_id' => $internUser->id,
+        'program_id' => $this->programA->program_id,
+        'hte_id' => $this->hteA->hte_id,
+        'id_number' => '2026-99999',
+        'sex' => 'male',
+        'status' => 'pending',
+        'privacy_accepted_at' => now(),
+    ]);
+
+    $code = EmailVerificationCode::generateFor($internUser->email);
+
+    $this->post(route('verification.verify-code'), [
+        'code' => $code,
+        'email' => $internUser->email,
+    ]);
+
+    // Both the matching college admin and the opted-in super admin are notified
+    Notification::assertSentTo($this->collegeAdminA, NewInternRegistrationNotification::class);
+    Notification::assertSentTo($this->superAdmin, NewInternRegistrationNotification::class);
+    Notification::assertNotSentTo($this->collegeAdminB, NewInternRegistrationNotification::class);
+});
+
+test('super admin and college admin have distinct notification preferences', function () {
+    // Super admin options
+    $superAdminResponse = $this->actingAs($this->superAdmin)->get(route('notifications.edit'));
+    $superAdminResponse->assertOk();
+    $superAdminResponse->assertInertia(fn ($page) => $page
+        ->component('settings/notifications')
+        ->where('role', 'Super Administrator')
+        ->has('options', 3)
+        ->where('options.0.key', 'system_alerts')
+        ->where('options.1.key', 'admin_management')
+        ->where('options.2.key', 'all_intern_registrations')
+    );
+
+    // College admin options
+    $collegeAdminResponse = $this->actingAs($this->collegeAdminA)->get(route('notifications.edit'));
+    $collegeAdminResponse->assertOk();
+    $collegeAdminResponse->assertInertia(fn ($page) => $page
+        ->component('settings/notifications')
+        ->where('role', 'College Administrator')
+        ->has('options', 3)
+        ->where('options.0.key', 'intern_registrations')
+        ->where('options.1.key', 'intern_completions')
+        ->where('options.2.key', 'supervisor_updates')
+    );
+
+    // Super admin can update preferences
+    $updateResponse = $this->actingAs($this->superAdmin)->patch(route('notifications.update'), [
+        'system_alerts' => true,
+        'admin_management' => false,
+        'all_intern_registrations' => true,
+    ]);
+    $updateResponse->assertRedirect();
+
+    expect($this->superAdmin->fresh()->wantsNotification('all_intern_registrations'))->toBeTrue();
+    expect($this->superAdmin->fresh()->wantsNotification('admin_management'))->toBeFalse();
+});
+

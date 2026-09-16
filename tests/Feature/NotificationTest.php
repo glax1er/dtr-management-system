@@ -421,20 +421,46 @@ test('hte supervisor can view and update role-specific notification preferences'
     expect($supervisor->fresh()->wantsNotification('intern_completions'))->toBeFalse();
 });
 
-test('admin can view and update role-specific notification preferences', function () {
-    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+test('college admin can view and update role-specific notification preferences', function () {
+    $college = \App\Models\College::create(['name' => 'College of Arts', 'code' => 'CAS', 'is_active' => true]);
+    $admin = User::factory()->create([
+        'role' => User::ROLE_COLLEGE_ADMIN,
+        'college_id' => $college->id,
+    ]);
 
     $response = $this->actingAs($admin)->get(route('notifications.edit'));
     $response->assertOk();
 
     $response = $this->actingAs($admin)->patch(route('notifications.update'), [
         'intern_registrations' => false,
+        'intern_completions' => true,
+        'supervisor_updates' => true,
     ]);
 
     $response->assertRedirect();
     $response->assertSessionHasNoErrors();
 
     expect($admin->fresh()->wantsNotification('intern_registrations'))->toBeFalse();
+    expect($admin->fresh()->wantsNotification('intern_completions'))->toBeTrue();
+});
+
+test('super admin can view and update role-specific notification preferences', function () {
+    $superAdmin = User::factory()->create(['role' => User::ROLE_SUPER_ADMIN]);
+
+    $response = $this->actingAs($superAdmin)->get(route('notifications.edit'));
+    $response->assertOk();
+
+    $response = $this->actingAs($superAdmin)->patch(route('notifications.update'), [
+        'system_alerts' => true,
+        'admin_management' => false,
+        'all_intern_registrations' => true,
+    ]);
+
+    $response->assertRedirect();
+    $response->assertSessionHasNoErrors();
+
+    expect($superAdmin->fresh()->wantsNotification('all_intern_registrations'))->toBeTrue();
+    expect($superAdmin->fresh()->wantsNotification('admin_management'))->toBeFalse();
 });
 
 test('opted out ojt supervisor does not receive document submission notification', function () {

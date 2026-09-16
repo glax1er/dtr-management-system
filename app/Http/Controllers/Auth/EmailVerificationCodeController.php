@@ -77,19 +77,35 @@ class EmailVerificationCodeController extends Controller
         // When an intern verifies their email, notify admins that their account is pending approval
         if ($user->isIntern() && $user->internProfile && $user->internProfile->status === 'pending') {
             $internProfile = $user->internProfile;
-            $internCollegeId = $internProfile->program?->college_id;
-            $admins = User::whereIn('role', [User::ROLE_SUPER_ADMIN, User::ROLE_COLLEGE_ADMIN, User::ROLE_ADMIN])
-                ->where('is_active', true)
-                ->get()
-                ->filter(function (User $admin) use ($internCollegeId) {
-                    if ($admin->isCollegeAdmin() && $admin->college_id !== $internCollegeId) {
-                        return false;
-                    }
+            $internCollegeId = $internProfile->program?->college_id
+                ?? $internProfile->college_id
+                ?? $internProfile->user?->college_id;
 
-                    return $admin->wantsNotification('intern_registrations');
-                });
-            if ($admins->isNotEmpty()) {
-                Notification::send($admins, new NewInternRegistrationNotification($internProfile));
+            // Notify college admins responsible for this intern's college
+            $collegeAdmins = User::query()
+                ->where('is_active', true)
+                ->where(function ($query) {
+                    $query->where('role', User::ROLE_COLLEGE_ADMIN)
+                        ->orWhere(fn ($sub) => $sub->where('role', User::ROLE_ADMIN)->whereNotNull('college_id'));
+                })
+                ->when($internCollegeId, fn ($q) => $q->where('college_id', $internCollegeId))
+                ->get()
+                ->filter(fn (User $admin) => $admin->wantsNotification('intern_registrations'));
+
+            // Super admins only receive this if they explicitly opted into all_intern_registrations
+            $superAdmins = User::query()
+                ->where('is_active', true)
+                ->where(function ($query) {
+                    $query->where('role', User::ROLE_SUPER_ADMIN)
+                        ->orWhere(fn ($sub) => $sub->where('role', User::ROLE_ADMIN)->whereNull('college_id'));
+                })
+                ->get()
+                ->filter(fn (User $admin) => $admin->wantsNotification('all_intern_registrations'));
+
+            $recipients = $collegeAdmins->merge($superAdmins);
+
+            if ($recipients->isNotEmpty()) {
+                Notification::send($recipients, new NewInternRegistrationNotification($internProfile));
             }
         }
 

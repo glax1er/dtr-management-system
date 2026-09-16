@@ -32,6 +32,8 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
 
 const CATEGORY_FILTERS: { value: CategoryFilter; label: string }[] = [
     { value: 'all', label: 'All types' },
+    { value: 'registration', label: NOTIFICATION_CATEGORY_LABELS.registration },
+    { value: 'schedule', label: NOTIFICATION_CATEGORY_LABELS.schedule },
     { value: 'approved', label: NOTIFICATION_CATEGORY_LABELS.approved },
     { value: 'rejected', label: NOTIFICATION_CATEGORY_LABELS.rejected },
     { value: 'pending', label: NOTIFICATION_CATEGORY_LABELS.pending },
