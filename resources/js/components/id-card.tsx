@@ -140,8 +140,8 @@ export function IdCard({
                                 Official Credential
                             </p>
                             <p className="mt-1 max-w-[280px] text-[10px] font-medium text-zinc-600">
-                                Authorized {roleLabel} credential for
-                                USeP Internship Management System.
+                                Authorized {roleLabel} credential for USeP
+                                Internship Management System.
                             </p>
                             <p className="mt-2 font-mono text-[9px] text-zinc-500">
                                 {email}
@@ -151,8 +151,8 @@ export function IdCard({
 
                     {/* Back Footer */}
                     <div className="border-t border-zinc-200/80 pt-1.5 text-center text-[7.5px] font-medium tracking-wide text-zinc-500">
-                        Non-transferable • Property of USeP • If found,
-                        return to OJT Coordinator's office
+                        Non-transferable • Property of USeP • If found, return
+                        to OJT Coordinator's office
                     </div>
                 </>
             ) : (

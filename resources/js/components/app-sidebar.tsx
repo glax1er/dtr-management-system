@@ -100,8 +100,10 @@ export function AppSidebar() {
     const isSuperAdmin =
         auth.user.role === 'super_admin' || Boolean(auth.user.is_super_admin);
     const isCollegeAdmin =
-        auth.user.role === 'college_admin' || Boolean(auth.user.is_college_admin);
-    const isAdmin = isSuperAdmin || isCollegeAdmin || auth.user.role === 'admin';
+        auth.user.role === 'college_admin' ||
+        Boolean(auth.user.is_college_admin);
+    const isAdmin =
+        isSuperAdmin || isCollegeAdmin || auth.user.role === 'admin';
 
     const supervisorNavItems: NavItem[] = isOjtSupervisor
         ? ojtSupervisorNavItems
@@ -124,8 +126,13 @@ export function AppSidebar() {
           : internNavItems;
 
     // For super admins, pass group labels so NavMain can render a visual separator
-    const superAdminGroupLabel =
-        isSuperAdmin ? { startIndex: 1, endIndex: superAdminNavItems.length, label: 'Administration' } : undefined;
+    const superAdminGroupLabel = isSuperAdmin
+        ? {
+              startIndex: 1,
+              endIndex: superAdminNavItems.length,
+              label: 'Administration',
+          }
+        : undefined;
 
     return (
         <Sidebar collapsible="icon" variant="inset">

@@ -115,10 +115,10 @@ export default function CollegeAdminManagement({
     const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters.search || '');
     const [collegeId, setCollegeId] = useState<string>(
-        filters.college_id ? String(filters.college_id) : 'all'
+        filters.college_id ? String(filters.college_id) : 'all',
     );
     const [campusId, setCampusId] = useState<string>(
-        filters.campus_id ? String(filters.campus_id) : 'all'
+        filters.campus_id ? String(filters.campus_id) : 'all',
     );
     const [status, setStatus] = useState<string>(filters.status || 'all');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -139,7 +139,9 @@ export default function CollegeAdminManagement({
     });
 
     const [editOpen, setEditOpen] = useState(false);
-    const [editTarget, setEditTarget] = useState<CollegeAdminRecord | null>(null);
+    const [editTarget, setEditTarget] = useState<CollegeAdminRecord | null>(
+        null,
+    );
     const [editForm, setEditForm] = useState({
         name: '',
         email: '',
@@ -152,10 +154,14 @@ export default function CollegeAdminManagement({
     });
 
     const [statusConfirmOpen, setStatusConfirmOpen] = useState(false);
-    const [statusTarget, setStatusTarget] = useState<CollegeAdminRecord | null>(null);
+    const [statusTarget, setStatusTarget] = useState<CollegeAdminRecord | null>(
+        null,
+    );
 
     const [deleteOpen, setDeleteOpen] = useState(false);
-    const [deleteTarget, setDeleteTarget] = useState<CollegeAdminRecord | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<CollegeAdminRecord | null>(
+        null,
+    );
 
     const baseParams = () => ({
         search: search || undefined,
@@ -165,7 +171,10 @@ export default function CollegeAdminManagement({
         per_page: filters.per_page ? String(filters.per_page) : undefined,
     });
 
-    const visit = (params: Record<string, string | undefined>, replace = true) => {
+    const visit = (
+        params: Record<string, string | undefined>,
+        replace = true,
+    ) => {
         router.get('/admin/college-admins', params, {
             preserveState: true,
             preserveScroll: true,
@@ -245,14 +254,13 @@ export default function CollegeAdminManagement({
     };
 
     const hasActiveFilters = Boolean(
-        search ||
-        collegeId !== 'all' ||
-        campusId !== 'all' ||
-        status !== 'all'
+        search || collegeId !== 'all' || campusId !== 'all' || status !== 'all',
     );
 
-    const goToPage = (page: number) => visit({ ...baseParams(), page: String(page) }, false);
-    const changePerPage = (perPage: number) => visit({ ...baseParams(), per_page: String(perPage), page: undefined });
+    const goToPage = (page: number) =>
+        visit({ ...baseParams(), page: String(page) }, false);
+    const changePerPage = (perPage: number) =>
+        visit({ ...baseParams(), per_page: String(perPage), page: undefined });
 
     const openAdd = () => {
         setAddForm({
@@ -274,7 +282,10 @@ export default function CollegeAdminManagement({
         if (selCollege?.campus_id) {
             matchingCampusId = String(selCollege.campus_id);
         } else if (selCollege?.campus) {
-            const foundCamp = campuses.find((c) => c.name.toLowerCase() === selCollege.campus?.toLowerCase());
+            const foundCamp = campuses.find(
+                (c) =>
+                    c.name.toLowerCase() === selCollege.campus?.toLowerCase(),
+            );
             if (foundCamp) matchingCampusId = String(foundCamp.id);
         }
 
@@ -321,7 +332,7 @@ export default function CollegeAdminManagement({
                 onSuccess: () => {
                     setAddOpen(false);
                 },
-            }
+            },
         );
     };
 
@@ -346,7 +357,10 @@ export default function CollegeAdminManagement({
         if (selCollege?.campus_id) {
             matchingCampusId = String(selCollege.campus_id);
         } else if (selCollege?.campus) {
-            const foundCamp = campuses.find((c) => c.name.toLowerCase() === selCollege.campus?.toLowerCase());
+            const foundCamp = campuses.find(
+                (c) =>
+                    c.name.toLowerCase() === selCollege.campus?.toLowerCase(),
+            );
             if (foundCamp) matchingCampusId = String(foundCamp.id);
         }
 
@@ -367,7 +381,10 @@ export default function CollegeAdminManagement({
             toast.error('Please select an assigned college.');
             return;
         }
-        if (editForm.password && editForm.password !== editForm.password_confirmation) {
+        if (
+            editForm.password &&
+            editForm.password !== editForm.password_confirmation
+        ) {
             toast.error('Passwords do not match.');
             return;
         }
@@ -378,13 +395,17 @@ export default function CollegeAdminManagement({
                 name: editForm.name.trim(),
                 email: editForm.email.trim().toLowerCase(),
                 college_id: Number(editForm.college_id),
-                campus_id: editForm.campus_id ? Number(editForm.campus_id) : null,
+                campus_id: editForm.campus_id
+                    ? Number(editForm.campus_id)
+                    : null,
                 employee_id: editForm.employee_id.trim() || null,
                 position: editForm.position.trim() || null,
-                ...(editForm.password ? {
-                    password: editForm.password,
-                    password_confirmation: editForm.password_confirmation,
-                } : {}),
+                ...(editForm.password
+                    ? {
+                          password: editForm.password,
+                          password_confirmation: editForm.password_confirmation,
+                      }
+                    : {}),
             },
             {
                 preserveScroll: true,
@@ -392,7 +413,7 @@ export default function CollegeAdminManagement({
                     setEditOpen(false);
                     setEditTarget(null);
                 },
-            }
+            },
         );
     };
 
@@ -417,7 +438,7 @@ export default function CollegeAdminManagement({
                     setStatusConfirmOpen(false);
                     setStatusTarget(null);
                 },
-            }
+            },
         );
     };
 
@@ -458,7 +479,10 @@ export default function CollegeAdminManagement({
 
                     <div className="flex flex-wrap items-center gap-2">
                         {/* Search */}
-                        <form onSubmit={applySearch} className="relative hidden sm:block">
+                        <form
+                            onSubmit={applySearch}
+                            className="relative hidden sm:block"
+                        >
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                             <input
                                 type="text"
@@ -479,12 +503,17 @@ export default function CollegeAdminManagement({
                         </form>
 
                         {/* College Filter */}
-                        <Select value={collegeId} onValueChange={handleCollegeChange}>
+                        <Select
+                            value={collegeId}
+                            onValueChange={handleCollegeChange}
+                        >
                             <SelectTrigger className="h-9 w-40">
                                 <SelectValue placeholder="All Colleges" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All Colleges</SelectItem>
+                                <SelectItem value="all">
+                                    All Colleges
+                                </SelectItem>
                                 {colleges.map((c) => (
                                     <SelectItem key={c.id} value={String(c.id)}>
                                         {c.code} - {c.name}
@@ -494,14 +523,22 @@ export default function CollegeAdminManagement({
                         </Select>
 
                         {/* Campus Filter */}
-                        <Select value={campusId} onValueChange={handleCampusChange}>
+                        <Select
+                            value={campusId}
+                            onValueChange={handleCampusChange}
+                        >
                             <SelectTrigger className="h-9 w-36">
                                 <SelectValue placeholder="All Campuses" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All Campuses</SelectItem>
+                                <SelectItem value="all">
+                                    All Campuses
+                                </SelectItem>
                                 {campuses.map((camp) => (
-                                    <SelectItem key={camp.id} value={String(camp.id)}>
+                                    <SelectItem
+                                        key={camp.id}
+                                        value={String(camp.id)}
+                                    >
                                         {camp.name}
                                     </SelectItem>
                                 ))}
@@ -509,14 +546,19 @@ export default function CollegeAdminManagement({
                         </Select>
 
                         {/* Status Filter */}
-                        <Select value={status} onValueChange={handleStatusChange}>
+                        <Select
+                            value={status}
+                            onValueChange={handleStatusChange}
+                        >
                             <SelectTrigger className="h-9 w-32">
                                 <SelectValue placeholder="Status" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Status</SelectItem>
                                 <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="inactive">Inactive</SelectItem>
+                                <SelectItem value="inactive">
+                                    Inactive
+                                </SelectItem>
                             </SelectContent>
                         </Select>
 
@@ -539,7 +581,11 @@ export default function CollegeAdminManagement({
                             onClick={() => setMobileSearchOpen((o) => !o)}
                             className="inline-flex size-9 shrink-0 items-center justify-center rounded-md border bg-background text-muted-foreground hover:text-foreground sm:hidden"
                         >
-                            {mobileSearchOpen ? <X className="size-4" /> : <Search className="size-4" />}
+                            {mobileSearchOpen ? (
+                                <X className="size-4" />
+                            ) : (
+                                <Search className="size-4" />
+                            )}
                         </button>
 
                         {/* View Mode Toggle */}
@@ -604,18 +650,29 @@ export default function CollegeAdminManagement({
                 {collegeAdmins.data.length === 0 ? (
                     <Card className="flex flex-col items-center justify-center p-12 text-center">
                         <UserCog className="mb-4 size-12 text-muted-foreground/50" />
-                        <h3 className="text-lg font-medium text-foreground">No college administrators found</h3>
+                        <h3 className="text-lg font-medium text-foreground">
+                            No college administrators found
+                        </h3>
                         <p className="mt-1 text-sm text-muted-foreground">
                             {hasActiveFilters
                                 ? 'Try adjusting your search query or filters.'
                                 : 'Create college administrators to manage programs and intern approvals per college department.'}
                         </p>
                         {hasActiveFilters ? (
-                            <Button variant="outline" size="sm" onClick={clearAllFilters} className="mt-4">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={clearAllFilters}
+                                className="mt-4"
+                            >
                                 Clear Filters
                             </Button>
                         ) : (
-                            <Button size="sm" onClick={openAdd} className="mt-4 gap-1.5">
+                            <Button
+                                size="sm"
+                                onClick={openAdd}
+                                className="mt-4 gap-1.5"
+                            >
                                 <Plus className="size-4" />
                                 Add College Admin
                             </Button>
@@ -626,13 +683,27 @@ export default function CollegeAdminManagement({
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="w-[240px]">Administrator</TableHead>
-                                    <TableHead className="w-[180px]">Assigned College</TableHead>
-                                    <TableHead className="w-[140px]">Campus</TableHead>
-                                    <TableHead className="w-[140px]">Role / Position</TableHead>
-                                    <TableHead className="w-[100px] text-center">Status</TableHead>
-                                    <TableHead className="w-[120px]">Added</TableHead>
-                                    <TableHead className="w-[110px] text-center">Actions</TableHead>
+                                    <TableHead className="w-[240px]">
+                                        Administrator
+                                    </TableHead>
+                                    <TableHead className="w-[180px]">
+                                        Assigned College
+                                    </TableHead>
+                                    <TableHead className="w-[140px]">
+                                        Campus
+                                    </TableHead>
+                                    <TableHead className="w-[140px]">
+                                        Role / Position
+                                    </TableHead>
+                                    <TableHead className="w-[100px] text-center">
+                                        Status
+                                    </TableHead>
+                                    <TableHead className="w-[120px]">
+                                        Added
+                                    </TableHead>
+                                    <TableHead className="w-[110px] text-center">
+                                        Actions
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -642,7 +713,9 @@ export default function CollegeAdminManagement({
                                             <div className="flex items-center gap-3">
                                                 <Avatar className="size-9">
                                                     <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
-                                                        {getInitials(admin.name)}
+                                                        {getInitials(
+                                                            admin.name,
+                                                        )}
                                                     </AvatarFallback>
                                                 </Avatar>
                                                 <div className="min-w-0">
@@ -658,7 +731,10 @@ export default function CollegeAdminManagement({
                                         <TableCell>
                                             {admin.college ? (
                                                 <div>
-                                                    <Badge variant="secondary" className="font-semibold">
+                                                    <Badge
+                                                        variant="secondary"
+                                                        className="font-semibold"
+                                                    >
                                                         {admin.college.code}
                                                     </Badge>
                                                     <div className="line-clamp-1 text-xs text-muted-foreground">
@@ -674,12 +750,15 @@ export default function CollegeAdminManagement({
                                         <TableCell>
                                             <div className="flex items-center gap-1 text-sm text-foreground">
                                                 <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
-                                                <span>{admin.campus || '—'}</span>
+                                                <span>
+                                                    {admin.campus || '—'}
+                                                </span>
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             <div className="text-sm font-medium text-foreground">
-                                                {admin.position || 'College Admin'}
+                                                {admin.position ||
+                                                    'College Admin'}
                                             </div>
                                             {admin.employee_id && (
                                                 <div className="font-mono text-xs text-muted-foreground">
@@ -688,7 +767,13 @@ export default function CollegeAdminManagement({
                                             )}
                                         </TableCell>
                                         <TableCell className="text-center">
-                                            <StatusBadge status={admin.is_active ? 'active' : 'inactive'} />
+                                            <StatusBadge
+                                                status={
+                                                    admin.is_active
+                                                        ? 'active'
+                                                        : 'inactive'
+                                                }
+                                            />
                                         </TableCell>
                                         <TableCell className="text-xs text-muted-foreground">
                                             {admin.created_at}
@@ -700,12 +785,16 @@ export default function CollegeAdminManagement({
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            onClick={() => openEdit(admin)}
+                                                            onClick={() =>
+                                                                openEdit(admin)
+                                                            }
                                                         >
                                                             <Pencil className="size-4 text-blue-600" />
                                                         </Button>
                                                     </TooltipTrigger>
-                                                    <TooltipContent>Edit Admin</TooltipContent>
+                                                    <TooltipContent>
+                                                        Edit Admin
+                                                    </TooltipContent>
                                                 </Tooltip>
 
                                                 <Tooltip>
@@ -713,8 +802,15 @@ export default function CollegeAdminManagement({
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            disabled={admin.id === currentUserId}
-                                                            onClick={() => openStatusConfirm(admin)}
+                                                            disabled={
+                                                                admin.id ===
+                                                                currentUserId
+                                                            }
+                                                            onClick={() =>
+                                                                openStatusConfirm(
+                                                                    admin,
+                                                                )
+                                                            }
                                                         >
                                                             {admin.is_active ? (
                                                                 <PowerOff className="size-4 text-destructive" />
@@ -724,7 +820,9 @@ export default function CollegeAdminManagement({
                                                         </Button>
                                                     </TooltipTrigger>
                                                     <TooltipContent>
-                                                        {admin.is_active ? 'Deactivate' : 'Activate'}
+                                                        {admin.is_active
+                                                            ? 'Deactivate'
+                                                            : 'Activate'}
                                                     </TooltipContent>
                                                 </Tooltip>
 
@@ -733,13 +831,22 @@ export default function CollegeAdminManagement({
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            disabled={admin.id === currentUserId}
-                                                            onClick={() => openDelete(admin)}
+                                                            disabled={
+                                                                admin.id ===
+                                                                currentUserId
+                                                            }
+                                                            onClick={() =>
+                                                                openDelete(
+                                                                    admin,
+                                                                )
+                                                            }
                                                         >
                                                             <Trash2 className="size-4 text-destructive" />
                                                         </Button>
                                                     </TooltipTrigger>
-                                                    <TooltipContent>Delete Admin</TooltipContent>
+                                                    <TooltipContent>
+                                                        Delete Admin
+                                                    </TooltipContent>
                                                 </Tooltip>
                                             </div>
                                         </TableCell>
@@ -751,7 +858,10 @@ export default function CollegeAdminManagement({
                 ) : (
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {collegeAdmins.data.map((admin) => (
-                            <Card key={admin.id} className="flex flex-col justify-between">
+                            <Card
+                                key={admin.id}
+                                className="flex flex-col justify-between"
+                            >
                                 <CardHeader className="pb-3">
                                     <div className="flex items-start justify-between gap-2">
                                         <div className="flex items-center gap-3">
@@ -761,7 +871,7 @@ export default function CollegeAdminManagement({
                                                 </AvatarFallback>
                                             </Avatar>
                                             <div>
-                                                <CardTitle className="text-base font-semibold leading-tight">
+                                                <CardTitle className="text-base leading-tight font-semibold">
                                                     {admin.name}
                                                 </CardTitle>
                                                 <div className="text-xs text-muted-foreground">
@@ -769,22 +879,45 @@ export default function CollegeAdminManagement({
                                                 </div>
                                             </div>
                                         </div>
-                                        <StatusBadge status={admin.is_active ? 'active' : 'inactive'} />
+                                        <StatusBadge
+                                            status={
+                                                admin.is_active
+                                                    ? 'active'
+                                                    : 'inactive'
+                                            }
+                                        />
                                     </div>
                                 </CardHeader>
                                 <CardContent className="space-y-3 pb-3 text-sm">
                                     <div className="rounded-md border bg-muted/30 p-2 text-xs">
                                         <div className="font-medium text-foreground">
-                                            {admin.college ? `${admin.college.code} - ${admin.college.name}` : 'Unassigned College'}
+                                            {admin.college
+                                                ? `${admin.college.code} - ${admin.college.name}`
+                                                : 'Unassigned College'}
                                         </div>
                                         <div className="mt-1 flex items-center gap-1 text-muted-foreground">
                                             <MapPin className="size-3 shrink-0" />
-                                            <span>{admin.campus || 'No Campus'}</span>
+                                            <span>
+                                                {admin.campus || 'No Campus'}
+                                            </span>
                                         </div>
                                     </div>
                                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                        <span>Position: <strong className="font-medium text-foreground">{admin.position || 'College Admin'}</strong></span>
-                                        {admin.employee_id && <span>ID: <strong className="font-mono text-foreground">{admin.employee_id}</strong></span>}
+                                        <span>
+                                            Position:{' '}
+                                            <strong className="font-medium text-foreground">
+                                                {admin.position ||
+                                                    'College Admin'}
+                                            </strong>
+                                        </span>
+                                        {admin.employee_id && (
+                                            <span>
+                                                ID:{' '}
+                                                <strong className="font-mono text-foreground">
+                                                    {admin.employee_id}
+                                                </strong>
+                                            </span>
+                                        )}
                                     </div>
                                 </CardContent>
                                 <div className="flex items-center justify-end gap-1 border-t bg-muted/20 px-4 py-2">
@@ -798,7 +931,9 @@ export default function CollegeAdminManagement({
                                                 <Pencil className="size-4 text-blue-600" />
                                             </Button>
                                         </TooltipTrigger>
-                                        <TooltipContent>Edit Admin</TooltipContent>
+                                        <TooltipContent>
+                                            Edit Admin
+                                        </TooltipContent>
                                     </Tooltip>
 
                                     <Tooltip>
@@ -806,8 +941,12 @@ export default function CollegeAdminManagement({
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                disabled={admin.id === currentUserId}
-                                                onClick={() => openStatusConfirm(admin)}
+                                                disabled={
+                                                    admin.id === currentUserId
+                                                }
+                                                onClick={() =>
+                                                    openStatusConfirm(admin)
+                                                }
                                             >
                                                 {admin.is_active ? (
                                                     <PowerOff className="size-4 text-destructive" />
@@ -817,7 +956,9 @@ export default function CollegeAdminManagement({
                                             </Button>
                                         </TooltipTrigger>
                                         <TooltipContent>
-                                            {admin.is_active ? 'Deactivate' : 'Activate'}
+                                            {admin.is_active
+                                                ? 'Deactivate'
+                                                : 'Activate'}
                                         </TooltipContent>
                                     </Tooltip>
 
@@ -826,13 +967,19 @@ export default function CollegeAdminManagement({
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                disabled={admin.id === currentUserId}
-                                                onClick={() => openDelete(admin)}
+                                                disabled={
+                                                    admin.id === currentUserId
+                                                }
+                                                onClick={() =>
+                                                    openDelete(admin)
+                                                }
                                             >
                                                 <Trash2 className="size-4 text-destructive" />
                                             </Button>
                                         </TooltipTrigger>
-                                        <TooltipContent>Delete Admin</TooltipContent>
+                                        <TooltipContent>
+                                            Delete Admin
+                                        </TooltipContent>
                                     </Tooltip>
                                 </div>
                             </Card>
@@ -857,34 +1004,54 @@ export default function CollegeAdminManagement({
                     <DialogHeader>
                         <DialogTitle>Add College Administrator</DialogTitle>
                         <DialogDescription>
-                            Create a college admin account assigned to a specific college department and campus.
+                            Create a college admin account assigned to a
+                            specific college department and campus.
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={submitAdd} className="space-y-4 pt-2">
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5 col-span-2">
-                                <Label htmlFor="add_name">Full Name <span className="text-destructive">*</span></Label>
+                            <div className="col-span-2 space-y-1.5">
+                                <Label htmlFor="add_name">
+                                    Full Name{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
                                 <Input
                                     id="add_name"
                                     value={addForm.name}
-                                    onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))}
+                                    onChange={(e) =>
+                                        setAddForm((f) => ({
+                                            ...f,
+                                            name: e.target.value,
+                                        }))
+                                    }
                                     placeholder="e.g. Dr. Juan Dela Cruz"
                                     required
                                 />
                             </div>
-                            <div className="space-y-1.5 col-span-2">
-                                <Label htmlFor="add_email">Email Address <span className="text-destructive">*</span></Label>
+                            <div className="col-span-2 space-y-1.5">
+                                <Label htmlFor="add_email">
+                                    Email Address{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
                                 <Input
                                     id="add_email"
                                     type="email"
                                     value={addForm.email}
-                                    onChange={(e) => setAddForm((f) => ({ ...f, email: e.target.value }))}
+                                    onChange={(e) =>
+                                        setAddForm((f) => ({
+                                            ...f,
+                                            email: e.target.value,
+                                        }))
+                                    }
                                     placeholder="e.g. juan.delacruz@usep.edu.ph"
                                     required
                                 />
                             </div>
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
-                                <Label htmlFor="add_college">Assigned College <span className="text-destructive">*</span></Label>
+                            <div className="col-span-2 space-y-1.5 sm:col-span-1">
+                                <Label htmlFor="add_college">
+                                    Assigned College{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
                                 <Select
                                     value={addForm.college_id}
                                     onValueChange={handleAddCollegeChange}
@@ -894,68 +1061,111 @@ export default function CollegeAdminManagement({
                                     </SelectTrigger>
                                     <SelectContent>
                                         {colleges.map((c) => (
-                                            <SelectItem key={c.id} value={String(c.id)}>
+                                            <SelectItem
+                                                key={c.id}
+                                                value={String(c.id)}
+                                            >
                                                 {c.code} - {c.name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                            <div className="col-span-2 space-y-1.5 sm:col-span-1">
                                 <Label htmlFor="add_campus">Campus</Label>
                                 <Select
                                     value={addForm.campus_id || 'none'}
-                                    onValueChange={(val) => setAddForm((f) => ({ ...f, campus_id: val === 'none' ? '' : val }))}
+                                    onValueChange={(val) =>
+                                        setAddForm((f) => ({
+                                            ...f,
+                                            campus_id:
+                                                val === 'none' ? '' : val,
+                                        }))
+                                    }
                                 >
                                     <SelectTrigger id="add_campus">
                                         <SelectValue placeholder="Select campus" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="none">Use College Campus</SelectItem>
+                                        <SelectItem value="none">
+                                            Use College Campus
+                                        </SelectItem>
                                         {campuses.map((camp) => (
-                                            <SelectItem key={camp.id} value={String(camp.id)}>
+                                            <SelectItem
+                                                key={camp.id}
+                                                value={String(camp.id)}
+                                            >
                                                 {camp.name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                            <div className="col-span-2 space-y-1.5 sm:col-span-1">
                                 <Label htmlFor="add_emp_id">Employee ID</Label>
                                 <Input
                                     id="add_emp_id"
                                     value={addForm.employee_id}
-                                    onChange={(e) => setAddForm((f) => ({ ...f, employee_id: e.target.value }))}
+                                    onChange={(e) =>
+                                        setAddForm((f) => ({
+                                            ...f,
+                                            employee_id: e.target.value,
+                                        }))
+                                    }
                                     placeholder="e.g. EMP-2024-001"
                                 />
                             </div>
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
-                                <Label htmlFor="add_position">Designation / Position</Label>
+                            <div className="col-span-2 space-y-1.5 sm:col-span-1">
+                                <Label htmlFor="add_position">
+                                    Designation / Position
+                                </Label>
                                 <Input
                                     id="add_position"
                                     value={addForm.position}
-                                    onChange={(e) => setAddForm((f) => ({ ...f, position: e.target.value }))}
+                                    onChange={(e) =>
+                                        setAddForm((f) => ({
+                                            ...f,
+                                            position: e.target.value,
+                                        }))
+                                    }
                                     placeholder="e.g. Dean / OJT Coordinator"
                                 />
                             </div>
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
-                                <Label htmlFor="add_pwd">Password <span className="text-destructive">*</span></Label>
+                            <div className="col-span-2 space-y-1.5 sm:col-span-1">
+                                <Label htmlFor="add_pwd">
+                                    Password{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
                                 <Input
                                     id="add_pwd"
                                     type="password"
                                     value={addForm.password}
-                                    onChange={(e) => setAddForm((f) => ({ ...f, password: e.target.value }))}
+                                    onChange={(e) =>
+                                        setAddForm((f) => ({
+                                            ...f,
+                                            password: e.target.value,
+                                        }))
+                                    }
                                     placeholder="••••••••"
                                     required
                                 />
                             </div>
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
-                                <Label htmlFor="add_pwd_conf">Confirm Password <span className="text-destructive">*</span></Label>
+                            <div className="col-span-2 space-y-1.5 sm:col-span-1">
+                                <Label htmlFor="add_pwd_conf">
+                                    Confirm Password{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
                                 <Input
                                     id="add_pwd_conf"
                                     type="password"
                                     value={addForm.password_confirmation}
-                                    onChange={(e) => setAddForm((f) => ({ ...f, password_confirmation: e.target.value }))}
+                                    onChange={(e) =>
+                                        setAddForm((f) => ({
+                                            ...f,
+                                            password_confirmation:
+                                                e.target.value,
+                                        }))
+                                    }
                                     placeholder="••••••••"
                                     required
                                 />
@@ -981,34 +1191,54 @@ export default function CollegeAdminManagement({
                     <DialogHeader>
                         <DialogTitle>Edit College Administrator</DialogTitle>
                         <DialogDescription>
-                            Update administrator details, assigned college, campus, or credentials.
+                            Update administrator details, assigned college,
+                            campus, or credentials.
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={submitEdit} className="space-y-4 pt-2">
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5 col-span-2">
-                                <Label htmlFor="edit_name">Full Name <span className="text-destructive">*</span></Label>
+                            <div className="col-span-2 space-y-1.5">
+                                <Label htmlFor="edit_name">
+                                    Full Name{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
                                 <Input
                                     id="edit_name"
                                     value={editForm.name}
-                                    onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                                    onChange={(e) =>
+                                        setEditForm((f) => ({
+                                            ...f,
+                                            name: e.target.value,
+                                        }))
+                                    }
                                     placeholder="e.g. Dr. Juan Dela Cruz"
                                     required
                                 />
                             </div>
-                            <div className="space-y-1.5 col-span-2">
-                                <Label htmlFor="edit_email">Email Address <span className="text-destructive">*</span></Label>
+                            <div className="col-span-2 space-y-1.5">
+                                <Label htmlFor="edit_email">
+                                    Email Address{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
                                 <Input
                                     id="edit_email"
                                     type="email"
                                     value={editForm.email}
-                                    onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
+                                    onChange={(e) =>
+                                        setEditForm((f) => ({
+                                            ...f,
+                                            email: e.target.value,
+                                        }))
+                                    }
                                     placeholder="e.g. juan.delacruz@usep.edu.ph"
                                     required
                                 />
                             </div>
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
-                                <Label htmlFor="edit_college">Assigned College <span className="text-destructive">*</span></Label>
+                            <div className="col-span-2 space-y-1.5 sm:col-span-1">
+                                <Label htmlFor="edit_college">
+                                    Assigned College{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
                                 <Select
                                     value={editForm.college_id}
                                     onValueChange={handleEditCollegeChange}
@@ -1018,70 +1248,110 @@ export default function CollegeAdminManagement({
                                     </SelectTrigger>
                                     <SelectContent>
                                         {colleges.map((c) => (
-                                            <SelectItem key={c.id} value={String(c.id)}>
+                                            <SelectItem
+                                                key={c.id}
+                                                value={String(c.id)}
+                                            >
                                                 {c.code} - {c.name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                            <div className="col-span-2 space-y-1.5 sm:col-span-1">
                                 <Label htmlFor="edit_campus">Campus</Label>
                                 <Select
                                     value={editForm.campus_id || 'none'}
-                                    onValueChange={(val) => setEditForm((f) => ({ ...f, campus_id: val === 'none' ? '' : val }))}
+                                    onValueChange={(val) =>
+                                        setEditForm((f) => ({
+                                            ...f,
+                                            campus_id:
+                                                val === 'none' ? '' : val,
+                                        }))
+                                    }
                                 >
                                     <SelectTrigger id="edit_campus">
                                         <SelectValue placeholder="Select campus" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="none">Use College Campus</SelectItem>
+                                        <SelectItem value="none">
+                                            Use College Campus
+                                        </SelectItem>
                                         {campuses.map((camp) => (
-                                            <SelectItem key={camp.id} value={String(camp.id)}>
+                                            <SelectItem
+                                                key={camp.id}
+                                                value={String(camp.id)}
+                                            >
                                                 {camp.name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                            <div className="col-span-2 space-y-1.5 sm:col-span-1">
                                 <Label htmlFor="edit_emp_id">Employee ID</Label>
                                 <Input
                                     id="edit_emp_id"
                                     value={editForm.employee_id}
-                                    onChange={(e) => setEditForm((f) => ({ ...f, employee_id: e.target.value }))}
+                                    onChange={(e) =>
+                                        setEditForm((f) => ({
+                                            ...f,
+                                            employee_id: e.target.value,
+                                        }))
+                                    }
                                     placeholder="e.g. EMP-2024-001"
                                 />
                             </div>
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
-                                <Label htmlFor="edit_position">Designation / Position</Label>
+                            <div className="col-span-2 space-y-1.5 sm:col-span-1">
+                                <Label htmlFor="edit_position">
+                                    Designation / Position
+                                </Label>
                                 <Input
                                     id="edit_position"
                                     value={editForm.position}
-                                    onChange={(e) => setEditForm((f) => ({ ...f, position: e.target.value }))}
+                                    onChange={(e) =>
+                                        setEditForm((f) => ({
+                                            ...f,
+                                            position: e.target.value,
+                                        }))
+                                    }
                                     placeholder="e.g. Dean / OJT Coordinator"
                                 />
                             </div>
-                            <div className="col-span-2 pt-2 border-t text-xs text-muted-foreground">
-                                Leave password fields blank unless you want to change the administrator's password.
+                            <div className="col-span-2 border-t pt-2 text-xs text-muted-foreground">
+                                Leave password fields blank unless you want to
+                                change the administrator's password.
                             </div>
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                            <div className="col-span-2 space-y-1.5 sm:col-span-1">
                                 <Label htmlFor="edit_pwd">New Password</Label>
                                 <Input
                                     id="edit_pwd"
                                     type="password"
                                     value={editForm.password}
-                                    onChange={(e) => setEditForm((f) => ({ ...f, password: e.target.value }))}
+                                    onChange={(e) =>
+                                        setEditForm((f) => ({
+                                            ...f,
+                                            password: e.target.value,
+                                        }))
+                                    }
                                     placeholder="••••••••"
                                 />
                             </div>
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
-                                <Label htmlFor="edit_pwd_conf">Confirm Password</Label>
+                            <div className="col-span-2 space-y-1.5 sm:col-span-1">
+                                <Label htmlFor="edit_pwd_conf">
+                                    Confirm Password
+                                </Label>
                                 <Input
                                     id="edit_pwd_conf"
                                     type="password"
                                     value={editForm.password_confirmation}
-                                    onChange={(e) => setEditForm((f) => ({ ...f, password_confirmation: e.target.value }))}
+                                    onChange={(e) =>
+                                        setEditForm((f) => ({
+                                            ...f,
+                                            password_confirmation:
+                                                e.target.value,
+                                        }))
+                                    }
                                     placeholder="••••••••"
                                 />
                             </div>
@@ -1104,13 +1374,19 @@ export default function CollegeAdminManagement({
             <ConfirmationDialog
                 open={statusConfirmOpen}
                 onOpenChange={setStatusConfirmOpen}
-                title={statusTarget?.is_active ? 'Deactivate Administrator' : 'Activate Administrator'}
+                title={
+                    statusTarget?.is_active
+                        ? 'Deactivate Administrator'
+                        : 'Activate Administrator'
+                }
                 description={
                     statusTarget?.is_active
                         ? `Are you sure you want to deactivate "${statusTarget?.name}"? They will no longer be able to log in.`
                         : `Are you sure you want to activate "${statusTarget?.name}"?`
                 }
-                confirmText={statusTarget?.is_active ? 'Deactivate' : 'Activate'}
+                confirmText={
+                    statusTarget?.is_active ? 'Deactivate' : 'Activate'
+                }
                 isDestructive={Boolean(statusTarget?.is_active)}
                 onConfirm={submitStatusToggle}
             />

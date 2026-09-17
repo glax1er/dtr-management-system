@@ -12,12 +12,7 @@ import { useRef, useState } from 'react';
 import { CountUp } from '@/components/dashboard-analytics';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
@@ -123,15 +118,28 @@ function ScrollList({
 
 // ─── Sticky summary row ───────────────────────────────────────────────────────
 
-function SummaryRow({ stats }: { stats: { label: string; value: number | string }[] }) {
+function SummaryRow({
+    stats,
+}: {
+    stats: { label: string; value: number | string }[];
+}) {
     return (
         <div className="sticky top-0 z-10 flex items-stretch divide-x divide-border border-b bg-muted/30 backdrop-blur-sm">
             {stats.map(({ label, value }) => (
-                <div key={label} className="flex flex-1 flex-col gap-0.5 px-3 py-2 sm:px-5 sm:py-3">
-                    <span className="text-base sm:text-lg font-bold tabular-nums text-foreground">
-                        {typeof value === 'number' ? <CountUp value={value} /> : value}
+                <div
+                    key={label}
+                    className="flex flex-1 flex-col gap-0.5 px-3 py-2 sm:px-5 sm:py-3"
+                >
+                    <span className="text-base font-bold text-foreground tabular-nums sm:text-lg">
+                        {typeof value === 'number' ? (
+                            <CountUp value={value} />
+                        ) : (
+                            value
+                        )}
                     </span>
-                    <span className="truncate text-[10px] sm:text-xs text-muted-foreground">{label}</span>
+                    <span className="truncate text-[10px] text-muted-foreground sm:text-xs">
+                        {label}
+                    </span>
                 </div>
             ))}
         </div>
@@ -153,11 +161,11 @@ function ListRow({
             tabIndex={0}
             onClick={onClick}
             onKeyDown={(e) => e.key === 'Enter' && onClick()}
-            className="group relative flex cursor-pointer flex-col gap-2 px-3.5 py-3 sm:px-5 sm:py-3.5 outline-none transition-colors hover:bg-muted/50 active:bg-muted focus-visible:bg-muted/50"
+            className="group relative flex cursor-pointer flex-col gap-2 px-3.5 py-3 transition-colors outline-none hover:bg-muted/50 focus-visible:bg-muted/50 active:bg-muted sm:px-5 sm:py-3.5"
         >
             {children}
             {/* Hover arrow — appears at the right edge */}
-            <ArrowRight className="absolute right-3 sm:right-4 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground opacity-0 transition-all duration-150 group-hover:opacity-100 group-hover:translate-x-0.5" />
+            <ArrowRight className="absolute top-1/2 right-3 size-3.5 -translate-y-1/2 text-muted-foreground opacity-0 transition-all duration-150 group-hover:translate-x-0.5 group-hover:opacity-100 sm:right-4" />
         </div>
     );
 }
@@ -192,7 +200,13 @@ function ManageFooter({ label, href }: { label: string; href: string }) {
 
 // ─── Campus tab panel ─────────────────────────────────────────────────────────
 
-function CampusesTab({ data, mounted }: { data: CampusAnalytics; mounted: boolean }) {
+function CampusesTab({
+    data,
+    mounted,
+}: {
+    data: CampusAnalytics;
+    mounted: boolean;
+}) {
     const maxInterns = Math.max(1, ...data.items.map((c) => c.interns_count));
     const totalInterns = data.items.reduce((s, c) => s + c.interns_count, 0);
 
@@ -211,15 +225,21 @@ function CampusesTab({ data, mounted }: { data: CampusAnalytics; mounted: boolea
                     <EmptyState message="No campuses registered yet." />
                 ) : (
                     data.items.map((campus, index) => {
-                        const pct = maxInterns > 0
-                            ? Math.max((campus.interns_count / maxInterns) * 100, 3)
-                            : 3;
+                        const pct =
+                            maxInterns > 0
+                                ? Math.max(
+                                      (campus.interns_count / maxInterns) * 100,
+                                      3,
+                                  )
+                                : 3;
 
                         return (
                             <ListRow
                                 key={campus.id}
                                 onClick={() =>
-                                    router.visit(`/admin/colleges?campus=${encodeURIComponent(campus.name)}`)
+                                    router.visit(
+                                        `/admin/colleges?campus=${encodeURIComponent(campus.name)}`,
+                                    )
                                 }
                             >
                                 {/* Top row */}
@@ -236,11 +256,16 @@ function CampusesTab({ data, mounted }: { data: CampusAnalytics; mounted: boolea
                                         </span>
                                     </div>
                                     <div className="shrink-0 text-right">
-                                        <span className="text-sm font-semibold tabular-nums text-foreground">
-                                            <CountUp value={campus.interns_count} />
+                                        <span className="text-sm font-semibold text-foreground tabular-nums">
+                                            <CountUp
+                                                value={campus.interns_count}
+                                            />
                                         </span>
                                         <span className="ml-1 text-xs text-muted-foreground">
-                                            intern{campus.interns_count !== 1 ? 's' : ''}
+                                            intern
+                                            {campus.interns_count !== 1
+                                                ? 's'
+                                                : ''}
                                         </span>
                                     </div>
                                 </div>
@@ -251,19 +276,33 @@ function CampusesTab({ data, mounted }: { data: CampusAnalytics; mounted: boolea
                                         <div
                                             className="h-full rounded-full bg-foreground/20 transition-all duration-700 ease-out group-hover:bg-foreground/40"
                                             style={{
-                                                width: mounted ? `${pct}%` : '0%',
+                                                width: mounted
+                                                    ? `${pct}%`
+                                                    : '0%',
                                                 transitionDelay: `${index * 50}ms`,
                                             }}
                                         />
                                     </div>
                                     <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                                        <span>{campus.colleges_count} college{campus.colleges_count !== 1 ? 's' : ''}</span>
+                                        <span>
+                                            {campus.colleges_count} college
+                                            {campus.colleges_count !== 1
+                                                ? 's'
+                                                : ''}
+                                        </span>
                                         <span>·</span>
-                                        <span>{campus.admins_count} admin{campus.admins_count !== 1 ? 's' : ''}</span>
+                                        <span>
+                                            {campus.admins_count} admin
+                                            {campus.admins_count !== 1
+                                                ? 's'
+                                                : ''}
+                                        </span>
                                         {!campus.is_active && (
                                             <>
                                                 <span>·</span>
-                                                <span className="italic text-muted-foreground/50">Inactive</span>
+                                                <span className="text-muted-foreground/50 italic">
+                                                    Inactive
+                                                </span>
                                             </>
                                         )}
                                     </div>
@@ -281,7 +320,13 @@ function CampusesTab({ data, mounted }: { data: CampusAnalytics; mounted: boolea
 
 // ─── Colleges tab panel ───────────────────────────────────────────────────────
 
-function CollegesTab({ data, mounted }: { data: CollegeAnalytics; mounted: boolean }) {
+function CollegesTab({
+    data,
+    mounted,
+}: {
+    data: CollegeAnalytics;
+    mounted: boolean;
+}) {
     const maxInterns = Math.max(1, ...data.items.map((c) => c.interns_count));
     const noAdminCount = data.items.filter((c) => !c.has_admin).length;
     const totalInterns = data.items.reduce((s, c) => s + c.interns_count, 0);
@@ -302,15 +347,22 @@ function CollegesTab({ data, mounted }: { data: CollegeAnalytics; mounted: boole
                     <EmptyState message="No colleges registered yet." />
                 ) : (
                     data.items.map((college, index) => {
-                        const pct = maxInterns > 0
-                            ? Math.max((college.interns_count / maxInterns) * 100, 3)
-                            : 3;
+                        const pct =
+                            maxInterns > 0
+                                ? Math.max(
+                                      (college.interns_count / maxInterns) *
+                                          100,
+                                      3,
+                                  )
+                                : 3;
 
                         return (
                             <ListRow
                                 key={college.id}
                                 onClick={() =>
-                                    router.visit(`/admin/colleges?search=${encodeURIComponent(college.code)}`)
+                                    router.visit(
+                                        `/admin/colleges?search=${encodeURIComponent(college.code)}`,
+                                    )
                                 }
                             >
                                 {/* Top row */}
@@ -336,11 +388,18 @@ function CollegesTab({ data, mounted }: { data: CollegeAnalytics; mounted: boole
                                             </span>
                                         )}
                                         <div className="text-right">
-                                            <span className="text-sm font-semibold tabular-nums text-foreground">
-                                                <CountUp value={college.interns_count} />
+                                            <span className="text-sm font-semibold text-foreground tabular-nums">
+                                                <CountUp
+                                                    value={
+                                                        college.interns_count
+                                                    }
+                                                />
                                             </span>
                                             <span className="ml-1 text-xs text-muted-foreground">
-                                                intern{college.interns_count !== 1 ? 's' : ''}
+                                                intern
+                                                {college.interns_count !== 1
+                                                    ? 's'
+                                                    : ''}
                                             </span>
                                         </div>
                                     </div>
@@ -352,13 +411,20 @@ function CollegesTab({ data, mounted }: { data: CollegeAnalytics; mounted: boole
                                         <div
                                             className="h-full rounded-full bg-foreground/20 transition-all duration-700 ease-out group-hover:bg-foreground/40"
                                             style={{
-                                                width: mounted ? `${pct}%` : '0%',
+                                                width: mounted
+                                                    ? `${pct}%`
+                                                    : '0%',
                                                 transitionDelay: `${index * 50}ms`,
                                             }}
                                         />
                                     </div>
                                     <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                                        <span>{college.programs_count} program{college.programs_count !== 1 ? 's' : ''}</span>
+                                        <span>
+                                            {college.programs_count} program
+                                            {college.programs_count !== 1
+                                                ? 's'
+                                                : ''}
+                                        </span>
                                         {college.campus && (
                                             <>
                                                 <span>·</span>
@@ -380,7 +446,13 @@ function CollegesTab({ data, mounted }: { data: CollegeAnalytics; mounted: boole
 
 // ─── Admin Coverage tab panel ─────────────────────────────────────────────────
 
-function AdminCoverageTab({ data, mounted }: { data: AdminAnalytics; mounted: boolean }) {
+function AdminCoverageTab({
+    data,
+    mounted,
+}: {
+    data: AdminAnalytics;
+    mounted: boolean;
+}) {
     const isFullCoverage = data.coverage_percent >= 100;
 
     return (
@@ -398,7 +470,9 @@ function AdminCoverageTab({ data, mounted }: { data: AdminAnalytics; mounted: bo
                 {/* Coverage meter */}
                 <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium text-foreground">College Coverage</span>
+                        <span className="font-medium text-foreground">
+                            College Coverage
+                        </span>
                         <span
                             className={cn(
                                 'font-bold tabular-nums',
@@ -414,13 +488,22 @@ function AdminCoverageTab({ data, mounted }: { data: AdminAnalytics; mounted: bo
                         <div
                             className={cn(
                                 'h-full rounded-full transition-all duration-700 ease-out',
-                                isFullCoverage ? 'bg-emerald-500' : 'bg-amber-500',
+                                isFullCoverage
+                                    ? 'bg-emerald-500'
+                                    : 'bg-amber-500',
                             )}
-                            style={{ width: mounted ? `${Math.min(data.coverage_percent, 100)}%` : '0%' }}
+                            style={{
+                                width: mounted
+                                    ? `${Math.min(data.coverage_percent, 100)}%`
+                                    : '0%',
+                            }}
                         />
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>{data.colleges_with_admin} of {data.colleges_count} colleges assigned</span>
+                        <span>
+                            {data.colleges_with_admin} of {data.colleges_count}{' '}
+                            colleges assigned
+                        </span>
                         {isFullCoverage ? (
                             <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
                                 <CheckCircle2 className="size-3" />
@@ -428,7 +511,8 @@ function AdminCoverageTab({ data, mounted }: { data: AdminAnalytics; mounted: bo
                             </span>
                         ) : (
                             <span className="text-amber-600 dark:text-amber-400">
-                                {data.colleges_count - data.colleges_with_admin} unassigned
+                                {data.colleges_count - data.colleges_with_admin}{' '}
+                                unassigned
                             </span>
                         )}
                     </div>
@@ -439,7 +523,9 @@ function AdminCoverageTab({ data, mounted }: { data: AdminAnalytics; mounted: bo
                     <div className="flex flex-col gap-2.5 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/20 dark:bg-amber-500/5">
                         <div className="flex items-center gap-2 text-xs font-medium text-amber-700 dark:text-amber-400">
                             <AlertCircle className="size-3.5 shrink-0" />
-                            {data.unassigned_colleges.length} college{data.unassigned_colleges.length !== 1 ? 's' : ''} without an administrator
+                            {data.unassigned_colleges.length} college
+                            {data.unassigned_colleges.length !== 1 ? 's' : ''}{' '}
+                            without an administrator
                         </div>
                         <div className="flex flex-wrap gap-1.5">
                             {data.unassigned_colleges.map((col) => (
@@ -447,7 +533,11 @@ function AdminCoverageTab({ data, mounted }: { data: AdminAnalytics; mounted: bo
                                     key={col.id}
                                     type="button"
                                     title={`Assign admin to ${col.name}`}
-                                    onClick={() => router.visit(`/admin/admins?college_id=${col.id}`)}
+                                    onClick={() =>
+                                        router.visit(
+                                            `/admin/admins?college_id=${col.id}`,
+                                        )
+                                    }
                                     className="group flex items-center gap-1 rounded border border-amber-300 bg-white px-2 py-1 font-mono text-[11px] font-medium text-amber-700 transition-all hover:border-amber-400 hover:bg-amber-50 hover:shadow-sm active:scale-95 dark:border-amber-500/30 dark:bg-background dark:text-amber-300 dark:hover:bg-amber-500/10"
                                 >
                                     {col.code}
@@ -468,7 +558,9 @@ function AdminCoverageTab({ data, mounted }: { data: AdminAnalytics; mounted: bo
                 {/* Inactive note */}
                 {data.inactive > 0 && (
                     <p className="text-xs text-muted-foreground">
-                        {data.inactive} inactive admin{data.inactive !== 1 ? 's' : ''} not included in active count.
+                        {data.inactive} inactive admin
+                        {data.inactive !== 1 ? 's' : ''} not included in active
+                        count.
                     </p>
                 )}
             </div>
@@ -491,18 +583,20 @@ export function InstitutionalOverviewCard({
     data: SuperAdminAnalytics;
     mounted: boolean;
 }) {
-    const [tab, setTab] = useState<'campuses' | 'colleges' | 'coverage'>('campuses');
+    const [tab, setTab] = useState<'campuses' | 'colleges' | 'coverage'>(
+        'campuses',
+    );
 
     return (
         <Card className="overflow-hidden shadow-xs">
-            <CardHeader className="border-b px-3.5 pb-0 pt-3.5 sm:px-5 sm:pt-4">
+            <CardHeader className="border-b px-3.5 pt-3.5 pb-0 sm:px-5 sm:pt-4">
                 <div className="flex flex-wrap items-center justify-between gap-3 pb-3">
                     <div className="flex items-center gap-2.5">
                         <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                             <Landmark className="size-4" />
                         </span>
                         <div>
-                            <CardTitle className="text-sm font-semibold leading-none">
+                            <CardTitle className="text-sm leading-none font-semibold">
                                 Institutional Overview
                             </CardTitle>
                             <p className="mt-1 text-xs text-muted-foreground">
@@ -513,27 +607,42 @@ export function InstitutionalOverviewCard({
 
                     {/* Quick summary badges */}
                     <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                        <Badge variant="outline" className="gap-1 text-xs font-normal">
+                        <Badge
+                            variant="outline"
+                            className="gap-1 text-xs font-normal"
+                        >
                             <MapPin className="size-3 text-muted-foreground" />
-                            {data.campuses.active} campus{data.campuses.active !== 1 ? 'es' : ''}
+                            {data.campuses.active} campus
+                            {data.campuses.active !== 1 ? 'es' : ''}
                         </Badge>
-                        <Badge variant="outline" className="gap-1 text-xs font-normal">
+                        <Badge
+                            variant="outline"
+                            className="gap-1 text-xs font-normal"
+                        >
                             <Landmark className="size-3 text-muted-foreground" />
-                            {data.colleges.active} college{data.colleges.active !== 1 ? 's' : ''}
+                            {data.colleges.active} college
+                            {data.colleges.active !== 1 ? 's' : ''}
                         </Badge>
-                        <Badge variant="outline" className="gap-1 text-xs font-normal">
+                        <Badge
+                            variant="outline"
+                            className="gap-1 text-xs font-normal"
+                        >
                             <Users className="size-3 text-muted-foreground" />
-                            {data.admins.active} admin{data.admins.active !== 1 ? 's' : ''}
+                            {data.admins.active} admin
+                            {data.admins.active !== 1 ? 's' : ''}
                         </Badge>
                     </div>
                 </div>
 
                 {/* Underline-style tab bar */}
-                <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
+                <Tabs
+                    value={tab}
+                    onValueChange={(v) => setTab(v as typeof tab)}
+                >
                     <TabsList className="h-9 w-full rounded-none border-0 bg-transparent p-0 shadow-none">
                         <TabsTrigger
                             value="campuses"
-                            className="relative h-full flex-1 rounded-none border-0 bg-transparent px-2 text-[11px] shadow-none data-[state=active]:bg-transparent data-[state=active]:font-semibold data-[state=active]:text-foreground data-[state=active]:shadow-none sm:text-xs after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-t-full after:transition-colors data-[state=active]:after:bg-foreground"
+                            className="relative h-full flex-1 rounded-none border-0 bg-transparent px-2 text-[11px] shadow-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-t-full after:transition-colors data-[state=active]:bg-transparent data-[state=active]:font-semibold data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:after:bg-foreground sm:text-xs"
                         >
                             <MapPin className="mr-1 size-3 sm:mr-1.5 sm:size-3.5" />
                             <span>Campuses</span>
@@ -543,7 +652,7 @@ export function InstitutionalOverviewCard({
                         </TabsTrigger>
                         <TabsTrigger
                             value="colleges"
-                            className="relative h-full flex-1 rounded-none border-0 bg-transparent px-2 text-[11px] shadow-none data-[state=active]:bg-transparent data-[state=active]:font-semibold data-[state=active]:text-foreground data-[state=active]:shadow-none sm:text-xs after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-t-full after:transition-colors data-[state=active]:after:bg-foreground"
+                            className="relative h-full flex-1 rounded-none border-0 bg-transparent px-2 text-[11px] shadow-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-t-full after:transition-colors data-[state=active]:bg-transparent data-[state=active]:font-semibold data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:after:bg-foreground sm:text-xs"
                         >
                             <Landmark className="mr-1 size-3 sm:mr-1.5 sm:size-3.5" />
                             <span>Colleges</span>
@@ -553,13 +662,13 @@ export function InstitutionalOverviewCard({
                         </TabsTrigger>
                         <TabsTrigger
                             value="coverage"
-                            className="relative h-full flex-1 rounded-none border-0 bg-transparent px-2 text-[11px] shadow-none data-[state=active]:bg-transparent data-[state=active]:font-semibold data-[state=active]:text-foreground data-[state=active]:shadow-none sm:text-xs after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-t-full after:transition-colors data-[state=active]:after:bg-foreground"
+                            className="relative h-full flex-1 rounded-none border-0 bg-transparent px-2 text-[11px] shadow-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-t-full after:transition-colors data-[state=active]:bg-transparent data-[state=active]:font-semibold data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:after:bg-foreground sm:text-xs"
                         >
                             <ShieldCheck className="mr-1 size-3 sm:mr-1.5 sm:size-3.5" />
                             <span>Coverage</span>
                             <span
                                 className={cn(
-                                    'ml-1 sm:ml-1.5 rounded px-1.5 py-0.5 font-mono text-[10px] font-normal',
+                                    'ml-1 rounded px-1.5 py-0.5 font-mono text-[10px] font-normal sm:ml-1.5',
                                     data.admins.coverage_percent >= 100
                                         ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                                         : 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
@@ -574,13 +683,19 @@ export function InstitutionalOverviewCard({
 
             {/* Tab panels — animate in on switch */}
             <CardContent className="p-0">
-                <div
-                    key={tab}
-                    className="animate-in fade-in-0 duration-150"
-                >
-                    {tab === 'campuses' && <CampusesTab data={data.campuses} mounted={mounted} />}
-                    {tab === 'colleges' && <CollegesTab data={data.colleges} mounted={mounted} />}
-                    {tab === 'coverage' && <AdminCoverageTab data={data.admins} mounted={mounted} />}
+                <div key={tab} className="animate-in duration-150 fade-in-0">
+                    {tab === 'campuses' && (
+                        <CampusesTab data={data.campuses} mounted={mounted} />
+                    )}
+                    {tab === 'colleges' && (
+                        <CollegesTab data={data.colleges} mounted={mounted} />
+                    )}
+                    {tab === 'coverage' && (
+                        <AdminCoverageTab
+                            data={data.admins}
+                            mounted={mounted}
+                        />
+                    )}
                 </div>
             </CardContent>
         </Card>

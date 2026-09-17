@@ -117,7 +117,9 @@ export default function Register({
         : colleges;
 
     const availablePrograms = selectedCollege
-        ? programs.filter((p) => String(p.college_id) === String(selectedCollege))
+        ? programs.filter(
+              (p) => String(p.college_id) === String(selectedCollege),
+          )
         : [];
 
     const availableHtes = selectedCollege
@@ -169,7 +171,8 @@ export default function Register({
             contact_number: formData.get('contact_number') ?? '',
             sex: selectedSex || (formData.get('sex') as string) || '',
             campus: selectedCampus || (formData.get('campus') as string) || '',
-            college_id: selectedCollege || (formData.get('college_id') as string) || '',
+            college_id:
+                selectedCollege || (formData.get('college_id') as string) || '',
             program_id:
                 selectedProgram || (formData.get('program_id') as string) || '',
             hte_id: selectedHte || (formData.get('hte_id') as string) || '',
@@ -442,7 +445,9 @@ export default function Register({
                                     className="w-full min-w-0 overflow-hidden"
                                     title={
                                         availablePrograms.find(
-                                            (p) => String(p.program_id) === String(selectedProgram),
+                                            (p) =>
+                                                String(p.program_id) ===
+                                                String(selectedProgram),
                                         )?.program_name
                                     }
                                 >
@@ -493,7 +498,9 @@ export default function Register({
                                 className="w-full min-w-0 overflow-hidden"
                                 title={
                                     availableHtes.find(
-                                        (h) => String(h.hte_id) === String(selectedHte),
+                                        (h) =>
+                                            String(h.hte_id) ===
+                                            String(selectedHte),
                                     )?.hte_name
                                 }
                             >
@@ -681,7 +688,7 @@ export default function Register({
 
                     <div
                         onScroll={handlePolicyScroll}
-                        className="max-h-[30vh] overflow-y-auto pr-2 text-sm text-justify text-muted-foreground"
+                        className="max-h-[30vh] overflow-y-auto pr-2 text-justify text-sm text-muted-foreground"
                     >
                         <p className="mb-3">
                             This DTR Management System collects your name, email

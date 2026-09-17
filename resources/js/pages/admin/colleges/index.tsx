@@ -90,9 +90,14 @@ interface CollegeIndexProps {
 
 type ViewMode = 'table' | 'grid';
 
-export default function CollegesIndex({ colleges, filters, campuses = [] }: CollegeIndexProps) {
+export default function CollegesIndex({
+    colleges,
+    filters,
+    campuses = [],
+}: CollegeIndexProps) {
     const defaultCampuses = ['Mabini', 'Malabog', 'Mintal', 'Obrero', 'Tagum'];
-    const campusList = campuses && campuses.length > 0 ? campuses : defaultCampuses;
+    const campusList =
+        campuses && campuses.length > 0 ? campuses : defaultCampuses;
 
     const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters.search || '');
@@ -102,7 +107,9 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
     const isFirstRender = useRef(true);
 
     // Accordion / Expanded rows state for viewing programs
-    const [expandedColleges, setExpandedColleges] = useState<Set<number>>(new Set());
+    const [expandedColleges, setExpandedColleges] = useState<Set<number>>(
+        new Set(),
+    );
 
     const toggleExpand = (collegeId: number) => {
         setExpandedColleges((prev) => {
@@ -133,10 +140,14 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
 
     // Confirmation dialog states
     const [statusConfirmOpen, setStatusConfirmOpen] = useState(false);
-    const [statusTarget, setStatusTarget] = useState<CollegeRecord | null>(null);
+    const [statusTarget, setStatusTarget] = useState<CollegeRecord | null>(
+        null,
+    );
 
     const [archiveOpen, setArchiveOpen] = useState(false);
-    const [archiveTarget, setArchiveTarget] = useState<CollegeRecord | null>(null);
+    const [archiveTarget, setArchiveTarget] = useState<CollegeRecord | null>(
+        null,
+    );
 
     const baseParams = () => ({
         search: search || undefined,
@@ -145,7 +156,10 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
         per_page: filters.per_page ? String(filters.per_page) : undefined,
     });
 
-    const visit = (params: Record<string, string | undefined>, replace = true) => {
+    const visit = (
+        params: Record<string, string | undefined>,
+        replace = true,
+    ) => {
         router.get('/admin/colleges', params, {
             preserveState: true,
             preserveScroll: true,
@@ -258,7 +272,7 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
                     setAddCampus('');
                     setAddDescription('');
                 },
-            }
+            },
         );
     };
 
@@ -292,7 +306,7 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
                     setEditOpen(false);
                     setEditTarget(null);
                 },
-            }
+            },
         );
     };
 
@@ -313,7 +327,7 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
                     setStatusConfirmOpen(false);
                     setStatusTarget(null);
                 },
-            }
+            },
         );
     };
 
@@ -338,23 +352,27 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
         <>
             <Head title="College Departments" />
 
-            <div className="flex h-full flex-1 flex-col gap-4 sm:gap-6 p-4 md:p-6">
+            <div className="flex h-full flex-1 flex-col gap-4 p-4 sm:gap-6 md:p-6">
                 {/* Header */}
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="flex items-center gap-2.5 text-xl font-bold tracking-tight sm:text-2xl text-foreground">
-                            <span className="flex size-9 sm:size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                        <h1 className="flex items-center gap-2.5 text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+                            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm sm:size-10">
                                 <Landmark className="size-4 sm:size-5" />
                             </span>
                             College Departments
                         </h1>
-                        <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
-                            Manage university academic colleges, departments, and programs.
+                        <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+                            Manage university academic colleges, departments,
+                            and programs.
                         </p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                        <form onSubmit={applySearch} className="relative hidden sm:block">
+                        <form
+                            onSubmit={applySearch}
+                            className="relative hidden sm:block"
+                        >
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                             <input
                                 type="text"
@@ -373,7 +391,10 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
                                 </button>
                             )}
                         </form>
-                        <Button onClick={() => setAddOpen(true)} className="w-full gap-1.5 shadow-sm sm:w-auto">
+                        <Button
+                            onClick={() => setAddOpen(true)}
+                            className="w-full gap-1.5 shadow-sm sm:w-auto"
+                        >
                             <Plus className="size-4" />
                             Add College
                         </Button>
@@ -382,9 +403,12 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
 
                 {/* Controls Bar: Search, Filters, View toggle */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex flex-1 flex-wrap items-center gap-2 min-w-0">
+                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
                         {/* Search Input */}
-                        <form onSubmit={applySearch} className="relative flex-1 min-w-[180px] sm:hidden">
+                        <form
+                            onSubmit={applySearch}
+                            className="relative min-w-[180px] flex-1 sm:hidden"
+                        >
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                             <input
                                 type="text"
@@ -405,7 +429,10 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
                         </form>
 
                         {/* Status Filter */}
-                        <Select value={status || 'all'} onValueChange={applyStatus}>
+                        <Select
+                            value={status || 'all'}
+                            onValueChange={applyStatus}
+                        >
                             <SelectTrigger className="h-9 w-[130px] sm:w-36">
                                 <SlidersHorizontal className="mr-1.5 size-3.5 shrink-0 text-muted-foreground" />
                                 <SelectValue placeholder="All Status" />
@@ -413,18 +440,25 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
                             <SelectContent>
                                 <SelectItem value="all">All Status</SelectItem>
                                 <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="inactive">Inactive</SelectItem>
+                                <SelectItem value="inactive">
+                                    Inactive
+                                </SelectItem>
                             </SelectContent>
                         </Select>
 
                         {/* Campus Filter */}
-                        <Select value={campus || 'all'} onValueChange={applyCampus}>
+                        <Select
+                            value={campus || 'all'}
+                            onValueChange={applyCampus}
+                        >
                             <SelectTrigger className="h-9 w-[140px] sm:w-40">
                                 <MapPin className="mr-1.5 size-3.5 shrink-0 text-muted-foreground" />
                                 <SelectValue placeholder="All Campuses" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All Campuses</SelectItem>
+                                <SelectItem value="all">
+                                    All Campuses
+                                </SelectItem>
                                 {campusList.map((c) => (
                                     <SelectItem key={c} value={c}>
                                         {c}
@@ -468,14 +502,20 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
                         <div className="flex size-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
                             <Landmark className="size-7" />
                         </div>
-                        <h3 className="mt-4 text-base font-semibold">No colleges found</h3>
+                        <h3 className="mt-4 text-base font-semibold">
+                            No colleges found
+                        </h3>
                         <p className="mt-1 text-sm text-muted-foreground">
                             {search
                                 ? 'No college departments matched your search query.'
                                 : 'Get started by creating the university colleges/departments.'}
                         </p>
                         {!search && (
-                            <Button onClick={() => setAddOpen(true)} className="mt-4 gap-1.5" size="sm">
+                            <Button
+                                onClick={() => setAddOpen(true)}
+                                className="mt-4 gap-1.5"
+                                size="sm"
+                            >
                                 <Plus className="size-4" />
                                 Add College
                             </Button>
@@ -485,189 +525,305 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
                     <div className="overflow-hidden rounded-lg border bg-card shadow-xs">
                         <div className="overflow-x-auto">
                             <Table className="min-w-[850px]">
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-10 text-center" />
-                                    <TableHead className="w-24">Code</TableHead>
-                                    <TableHead className="min-w-[220px]">College Name</TableHead>
-                                    <TableHead className="w-32">Campus</TableHead>
-                                    <TableHead className="min-w-[200px]">Admin Email</TableHead>
-                                    <TableHead className="w-28 text-center">Status</TableHead>
-                                    <TableHead className="w-32 text-center">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {colleges.data.map((college) => {
-                                    const isExpanded = expandedColleges.has(college.id);
-                                    return (
-                                        <>
-                                            <TableRow
-                                                key={college.id}
-                                                className="cursor-pointer transition-colors hover:bg-muted/40"
-                                                onClick={() => toggleExpand(college.id)}
-                                            >
-                                                <TableCell className="text-center p-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            toggleExpand(college.id);
-                                                        }}
-                                                        className="inline-flex size-6 items-center justify-center rounded-md hover:bg-muted text-muted-foreground"
-                                                        aria-label={isExpanded ? 'Collapse programs' : 'Expand programs'}
-                                                    >
-                                                        {isExpanded ? (
-                                                            <ChevronDown className="size-4 transition-transform text-primary" />
-                                                        ) : (
-                                                            <ChevronRight className="size-4 transition-transform" />
-                                                        )}
-                                                    </button>
-                                                </TableCell>
-
-                                                <TableCell className="font-semibold text-primary">
-                                                    <Badge variant="outline" className="font-mono text-xs font-bold">
-                                                        {college.code}
-                                                    </Badge>
-                                                </TableCell>
-
-                                                <TableCell>
-                                                    <div className="font-medium text-foreground">{college.name}</div>
-                                                    {college.description && (
-                                                        <div className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
-                                                            {college.description}
-                                                        </div>
-                                                    )}
-                                                </TableCell>
-
-                                                <TableCell>
-                                                    {college.campus ? (
-                                                        <Badge variant="secondary" className="text-xs">
-                                                            <MapPin className="mr-1 size-3 text-muted-foreground" />
-                                                            {college.campus}
-                                                        </Badge>
-                                                    ) : (
-                                                        <span className="text-xs text-muted-foreground italic">
-                                                            N/A
-                                                        </span>
-                                                    )}
-                                                </TableCell>
-
-                                                <TableCell>
-                                                    {college.admin_email ? (
-                                                        <span className="font-mono text-xs text-foreground font-medium">
-                                                            {college.admin_email}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-xs text-muted-foreground italic">
-                                                            N/A
-                                                        </span>
-                                                    )}
-                                                </TableCell>
-
-                                                <TableCell className="text-center">
-                                                    <StatusBadge status={college.is_active ? 'active' : 'inactive'} />
-                                                </TableCell>
-
-                                                <TableCell
-                                                    className="text-center"
-                                                    onClick={(e) => e.stopPropagation()}
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="w-10 text-center" />
+                                        <TableHead className="w-24">
+                                            Code
+                                        </TableHead>
+                                        <TableHead className="min-w-[220px]">
+                                            College Name
+                                        </TableHead>
+                                        <TableHead className="w-32">
+                                            Campus
+                                        </TableHead>
+                                        <TableHead className="min-w-[200px]">
+                                            Admin Email
+                                        </TableHead>
+                                        <TableHead className="w-28 text-center">
+                                            Status
+                                        </TableHead>
+                                        <TableHead className="w-32 text-center">
+                                            Actions
+                                        </TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {colleges.data.map((college) => {
+                                        const isExpanded = expandedColleges.has(
+                                            college.id,
+                                        );
+                                        return (
+                                            <>
+                                                <TableRow
+                                                    key={college.id}
+                                                    className="cursor-pointer transition-colors hover:bg-muted/40"
+                                                    onClick={() =>
+                                                        toggleExpand(college.id)
+                                                    }
                                                 >
-                                                    <ProgramActions
-                                                        program={college}
-                                                        onEdit={() => openEdit(college)}
-                                                        onToggleActive={() => openStatusConfirm(college)}
-                                                        onArchive={() => openArchive(college)}
-                                                    />
-                                                </TableCell>
-                                            </TableRow>
-
-                                            {/* Dropdown / Expandable Row for Programs */}
-                                            {isExpanded && (
-                                                <TableRow className="bg-muted/25 hover:bg-muted/30">
-                                                    <TableCell colSpan={7} className="px-6 py-4">
-                                                        <div className="rounded-lg border bg-background/80 p-3.5 shadow-2xs">
-                                                            <div className="flex items-center gap-2 border-b pb-2.5 mb-2.5">
-                                                                <BookOpen className="size-4 text-primary" />
-                                                                <span className="text-xs font-semibold uppercase tracking-wider text-foreground">
-                                                                    Programs Offered ({college.programs.length})
-                                                                </span>
-                                                            </div>
-
-                                                            {college.programs.length === 0 ? (
-                                                                <div className="py-3 text-center text-xs text-muted-foreground italic">
-                                                                    No programs configured under this college yet.
-                                                                </div>
+                                                    <TableCell className="p-2 text-center">
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                toggleExpand(
+                                                                    college.id,
+                                                                );
+                                                            }}
+                                                            className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
+                                                            aria-label={
+                                                                isExpanded
+                                                                    ? 'Collapse programs'
+                                                                    : 'Expand programs'
+                                                            }
+                                                        >
+                                                            {isExpanded ? (
+                                                                <ChevronDown className="size-4 text-primary transition-transform" />
                                                             ) : (
-                                                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
-                                                                    {college.programs.map((p) => (
-                                                                        <div
-                                                                            key={p.program_id ?? p.program_name}
-                                                                            className="flex items-center justify-between rounded-md border bg-card px-3 py-2 text-xs shadow-2xs"
-                                                                        >
-                                                                            <div className="flex items-center gap-2">
-                                                                                <GraduationCap className="size-3.5 text-muted-foreground shrink-0" />
-                                                                                <span className="font-medium text-foreground">
-                                                                                    {p.program_name}
-                                                                                </span>
-                                                                            </div>
-                                                                            <div className="flex items-center gap-1.5 shrink-0">
-                                                                                <span className="text-[11px] text-muted-foreground">
-                                                                                    {p.required_hours} hrs
-                                                                                </span>
-                                                                                {p.is_active !== undefined && (
-                                                                                    <StatusBadge
-                                                                                        status={p.is_active ? 'active' : 'inactive'}
-                                                                                        className="text-[10px] px-1.5 py-0"
-                                                                                    />
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
+                                                                <ChevronRight className="size-4 transition-transform" />
                                                             )}
+                                                        </button>
+                                                    </TableCell>
+
+                                                    <TableCell className="font-semibold text-primary">
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="font-mono text-xs font-bold"
+                                                        >
+                                                            {college.code}
+                                                        </Badge>
+                                                    </TableCell>
+
+                                                    <TableCell>
+                                                        <div className="font-medium text-foreground">
+                                                            {college.name}
                                                         </div>
+                                                        {college.description && (
+                                                            <div className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+                                                                {
+                                                                    college.description
+                                                                }
+                                                            </div>
+                                                        )}
+                                                    </TableCell>
+
+                                                    <TableCell>
+                                                        {college.campus ? (
+                                                            <Badge
+                                                                variant="secondary"
+                                                                className="text-xs"
+                                                            >
+                                                                <MapPin className="mr-1 size-3 text-muted-foreground" />
+                                                                {college.campus}
+                                                            </Badge>
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground italic">
+                                                                N/A
+                                                            </span>
+                                                        )}
+                                                    </TableCell>
+
+                                                    <TableCell>
+                                                        {college.admin_email ? (
+                                                            <span className="font-mono text-xs font-medium text-foreground">
+                                                                {
+                                                                    college.admin_email
+                                                                }
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground italic">
+                                                                N/A
+                                                            </span>
+                                                        )}
+                                                    </TableCell>
+
+                                                    <TableCell className="text-center">
+                                                        <StatusBadge
+                                                            status={
+                                                                college.is_active
+                                                                    ? 'active'
+                                                                    : 'inactive'
+                                                            }
+                                                        />
+                                                    </TableCell>
+
+                                                    <TableCell
+                                                        className="text-center"
+                                                        onClick={(e) =>
+                                                            e.stopPropagation()
+                                                        }
+                                                    >
+                                                        <ProgramActions
+                                                            program={college}
+                                                            onEdit={() =>
+                                                                openEdit(
+                                                                    college,
+                                                                )
+                                                            }
+                                                            onToggleActive={() =>
+                                                                openStatusConfirm(
+                                                                    college,
+                                                                )
+                                                            }
+                                                            onArchive={() =>
+                                                                openArchive(
+                                                                    college,
+                                                                )
+                                                            }
+                                                        />
                                                     </TableCell>
                                                 </TableRow>
-                                            )}
-                                        </>
-                                    );
-                                })}
-                            </TableBody>
-                        </Table>
+
+                                                {/* Dropdown / Expandable Row for Programs */}
+                                                {isExpanded && (
+                                                    <TableRow className="bg-muted/25 hover:bg-muted/30">
+                                                        <TableCell
+                                                            colSpan={7}
+                                                            className="px-6 py-4"
+                                                        >
+                                                            <div className="rounded-lg border bg-background/80 p-3.5 shadow-2xs">
+                                                                <div className="mb-2.5 flex items-center gap-2 border-b pb-2.5">
+                                                                    <BookOpen className="size-4 text-primary" />
+                                                                    <span className="text-xs font-semibold tracking-wider text-foreground uppercase">
+                                                                        Programs
+                                                                        Offered
+                                                                        (
+                                                                        {
+                                                                            college
+                                                                                .programs
+                                                                                .length
+                                                                        }
+                                                                        )
+                                                                    </span>
+                                                                </div>
+
+                                                                {college
+                                                                    .programs
+                                                                    .length ===
+                                                                0 ? (
+                                                                    <div className="py-3 text-center text-xs text-muted-foreground italic">
+                                                                        No
+                                                                        programs
+                                                                        configured
+                                                                        under
+                                                                        this
+                                                                        college
+                                                                        yet.
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 md:grid-cols-3">
+                                                                        {college.programs.map(
+                                                                            (
+                                                                                p,
+                                                                            ) => (
+                                                                                <div
+                                                                                    key={
+                                                                                        p.program_id ??
+                                                                                        p.program_name
+                                                                                    }
+                                                                                    className="flex items-center justify-between rounded-md border bg-card px-3 py-2 text-xs shadow-2xs"
+                                                                                >
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <GraduationCap className="size-3.5 shrink-0 text-muted-foreground" />
+                                                                                        <span className="font-medium text-foreground">
+                                                                                            {
+                                                                                                p.program_name
+                                                                                            }
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <div className="flex shrink-0 items-center gap-1.5">
+                                                                                        <span className="text-[11px] text-muted-foreground">
+                                                                                            {
+                                                                                                p.required_hours
+                                                                                            }{' '}
+                                                                                            hrs
+                                                                                        </span>
+                                                                                        {p.is_active !==
+                                                                                            undefined && (
+                                                                                            <StatusBadge
+                                                                                                status={
+                                                                                                    p.is_active
+                                                                                                        ? 'active'
+                                                                                                        : 'inactive'
+                                                                                                }
+                                                                                                className="px-1.5 py-0 text-[10px]"
+                                                                                            />
+                                                                                        )}
+                                                                                    </div>
+                                                                                </div>
+                                                                            ),
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )}
+                                            </>
+                                        );
+                                    })}
+                                </TableBody>
+                            </Table>
+                        </div>
                     </div>
-                </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {colleges.data.map((college) => {
                             const isExpanded = expandedColleges.has(college.id);
                             return (
-                                <Card key={college.id} className="flex flex-col justify-between shadow-xs overflow-hidden">
-                                    <CardHeader className="pb-3 min-w-0">
+                                <Card
+                                    key={college.id}
+                                    className="flex flex-col justify-between overflow-hidden shadow-xs"
+                                >
+                                    <CardHeader className="min-w-0 pb-3">
                                         <div className="flex items-start justify-between gap-2">
-                                            <Badge variant="outline" className="font-mono text-xs font-bold shrink-0">
+                                            <Badge
+                                                variant="outline"
+                                                className="shrink-0 font-mono text-xs font-bold"
+                                            >
                                                 {college.code}
                                             </Badge>
-                                            <StatusBadge status={college.is_active ? 'active' : 'inactive'} className="shrink-0" />
+                                            <StatusBadge
+                                                status={
+                                                    college.is_active
+                                                        ? 'active'
+                                                        : 'inactive'
+                                                }
+                                                className="shrink-0"
+                                            />
                                         </div>
-                                        <CardTitle className="mt-2 text-base font-semibold leading-snug break-words">
+                                        <CardTitle className="mt-2 text-base leading-snug font-semibold break-words">
                                             {college.name}
                                         </CardTitle>
                                         {college.description && (
-                                            <p className="mt-1 text-xs text-muted-foreground line-clamp-2 break-words">
+                                            <p className="mt-1 line-clamp-2 text-xs break-words text-muted-foreground">
                                                 {college.description}
                                             </p>
                                         )}
                                         <div className="mt-2 flex flex-col gap-1 text-xs text-muted-foreground">
-                                            <div className="flex items-center gap-1.5 min-w-0">
+                                            <div className="flex min-w-0 items-center gap-1.5">
                                                 <MapPin className="size-3.5 shrink-0" />
-                                                <span className="truncate">Campus: <span className="font-medium text-foreground">{college.campus ?? 'N/A'}</span></span>
+                                                <span className="truncate">
+                                                    Campus:{' '}
+                                                    <span className="font-medium text-foreground">
+                                                        {college.campus ??
+                                                            'N/A'}
+                                                    </span>
+                                                </span>
                                             </div>
                                             <div className="min-w-0 truncate">
-                                                <span className="font-medium">Admin: </span>
+                                                <span className="font-medium">
+                                                    Admin:{' '}
+                                                </span>
                                                 {college.admin_email ? (
-                                                    <span className="font-mono text-foreground">{college.admin_email}</span>
+                                                    <span className="font-mono text-foreground">
+                                                        {college.admin_email}
+                                                    </span>
                                                 ) : (
-                                                    <span className="italic">N/A</span>
+                                                    <span className="italic">
+                                                        N/A
+                                                    </span>
                                                 )}
                                             </div>
                                         </div>
@@ -676,12 +832,15 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
                                         <div className="border-t pt-3">
                                             <button
                                                 type="button"
-                                                onClick={() => toggleExpand(college.id)}
-                                                className="flex w-full items-center justify-between text-xs text-muted-foreground hover:text-foreground font-medium mb-2"
+                                                onClick={() =>
+                                                    toggleExpand(college.id)
+                                                }
+                                                className="mb-2 flex w-full items-center justify-between text-xs font-medium text-muted-foreground hover:text-foreground"
                                             >
                                                 <span className="flex items-center gap-1.5">
                                                     <BookOpen className="size-3.5 text-primary" />
-                                                    Programs Offered ({college.programs.length})
+                                                    Programs Offered (
+                                                    {college.programs.length})
                                                 </span>
                                                 {isExpanded ? (
                                                     <ChevronDown className="size-3.5 text-primary" />
@@ -691,21 +850,37 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
                                             </button>
 
                                             {isExpanded && (
-                                                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                                                    {college.programs.length === 0 ? (
+                                                <div className="max-h-48 space-y-1.5 overflow-y-auto pr-1">
+                                                    {college.programs.length ===
+                                                    0 ? (
                                                         <div className="py-1 text-xs text-muted-foreground italic">
-                                                            No programs configured yet.
+                                                            No programs
+                                                            configured yet.
                                                         </div>
                                                     ) : (
-                                                        college.programs.map((p) => (
-                                                            <div
-                                                                key={p.program_id ?? p.program_name}
-                                                                className="flex items-center justify-between rounded border bg-muted/40 px-2 py-1 text-[11px]"
-                                                            >
-                                                                <span className="font-medium">{p.program_name}</span>
-                                                                <span className="text-muted-foreground">{p.required_hours} hrs</span>
-                                                            </div>
-                                                        ))
+                                                        college.programs.map(
+                                                            (p) => (
+                                                                <div
+                                                                    key={
+                                                                        p.program_id ??
+                                                                        p.program_name
+                                                                    }
+                                                                    className="flex items-center justify-between rounded border bg-muted/40 px-2 py-1 text-[11px]"
+                                                                >
+                                                                    <span className="font-medium">
+                                                                        {
+                                                                            p.program_name
+                                                                        }
+                                                                    </span>
+                                                                    <span className="text-muted-foreground">
+                                                                        {
+                                                                            p.required_hours
+                                                                        }{' '}
+                                                                        hrs
+                                                                    </span>
+                                                                </div>
+                                                            ),
+                                                        )
                                                     )}
                                                 </div>
                                             )}
@@ -715,8 +890,12 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
                                             <ProgramActions
                                                 program={college}
                                                 onEdit={() => openEdit(college)}
-                                                onToggleActive={() => openStatusConfirm(college)}
-                                                onArchive={() => openArchive(college)}
+                                                onToggleActive={() =>
+                                                    openStatusConfirm(college)
+                                                }
+                                                onArchive={() =>
+                                                    openArchive(college)
+                                                }
                                             />
                                         </div>
                                     </CardContent>
@@ -741,7 +920,7 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
 
             {/* Add College Dialog */}
             <Dialog open={addOpen} onOpenChange={setAddOpen}>
-                <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] sm:max-w-md p-4 sm:p-6">
+                <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto p-4 sm:max-w-md sm:p-6">
                     <DialogHeader>
                         <DialogTitle>Add College / Department</DialogTitle>
                         <DialogDescription>
@@ -773,12 +952,19 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
 
                         <div className="grid gap-2">
                             <Label htmlFor="add-campus">Campus</Label>
-                            <Select value={addCampus || 'none'} onValueChange={(val) => setAddCampus(val === 'none' ? '' : val)}>
+                            <Select
+                                value={addCampus || 'none'}
+                                onValueChange={(val) =>
+                                    setAddCampus(val === 'none' ? '' : val)
+                                }
+                            >
                                 <SelectTrigger id="add-campus">
                                     <SelectValue placeholder="Select campus" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="none">None / Unassigned</SelectItem>
+                                    <SelectItem value="none">
+                                        None / Unassigned
+                                    </SelectItem>
                                     {campusList.map((c) => (
                                         <SelectItem key={c} value={c}>
                                             {c}
@@ -789,21 +975,32 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="add-desc">Description (optional)</Label>
+                            <Label htmlFor="add-desc">
+                                Description (optional)
+                            </Label>
                             <Textarea
                                 id="add-desc"
                                 placeholder="Brief description of the college..."
                                 value={addDescription}
-                                onChange={(e) => setAddDescription(e.target.value)}
+                                onChange={(e) =>
+                                    setAddDescription(e.target.value)
+                                }
                                 rows={2}
                             />
                         </div>
 
-                        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
-                            <Button type="button" variant="outline" onClick={() => setAddOpen(false)} className="w-full sm:w-auto">
+                        <DialogFooter className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setAddOpen(false)}
+                                className="w-full sm:w-auto"
+                            >
                                 Cancel
                             </Button>
-                            <Button type="submit" className="w-full sm:w-auto">Create College</Button>
+                            <Button type="submit" className="w-full sm:w-auto">
+                                Create College
+                            </Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -811,7 +1008,7 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
 
             {/* Edit College Dialog */}
             <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] sm:max-w-md p-4 sm:p-6">
+                <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto p-4 sm:max-w-md sm:p-6">
                     <DialogHeader>
                         <DialogTitle>Edit College / Department</DialogTitle>
                         <DialogDescription>
@@ -841,12 +1038,19 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
 
                         <div className="grid gap-2">
                             <Label htmlFor="edit-campus">Campus</Label>
-                            <Select value={editCampus || 'none'} onValueChange={(val) => setEditCampus(val === 'none' ? '' : val)}>
+                            <Select
+                                value={editCampus || 'none'}
+                                onValueChange={(val) =>
+                                    setEditCampus(val === 'none' ? '' : val)
+                                }
+                            >
                                 <SelectTrigger id="edit-campus">
                                     <SelectValue placeholder="Select campus" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="none">None / Unassigned</SelectItem>
+                                    <SelectItem value="none">
+                                        None / Unassigned
+                                    </SelectItem>
                                     {campusList.map((c) => (
                                         <SelectItem key={c} value={c}>
                                             {c}
@@ -857,20 +1061,31 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="edit-desc">Description (optional)</Label>
+                            <Label htmlFor="edit-desc">
+                                Description (optional)
+                            </Label>
                             <Textarea
                                 id="edit-desc"
                                 value={editDescription}
-                                onChange={(e) => setEditDescription(e.target.value)}
+                                onChange={(e) =>
+                                    setEditDescription(e.target.value)
+                                }
                                 rows={2}
                             />
                         </div>
 
-                        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
-                            <Button type="button" variant="outline" onClick={() => setEditOpen(false)} className="w-full sm:w-auto">
+                        <DialogFooter className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setEditOpen(false)}
+                                className="w-full sm:w-auto"
+                            >
                                 Cancel
                             </Button>
-                            <Button type="submit" className="w-full sm:w-auto">Save Changes</Button>
+                            <Button type="submit" className="w-full sm:w-auto">
+                                Save Changes
+                            </Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -880,7 +1095,11 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
             <ConfirmationDialog
                 open={statusConfirmOpen}
                 onOpenChange={setStatusConfirmOpen}
-                title={statusTarget?.is_active ? 'Deactivate College' : 'Activate College'}
+                title={
+                    statusTarget?.is_active
+                        ? 'Deactivate College'
+                        : 'Activate College'
+                }
                 description={`Are you sure you want to ${
                     statusTarget?.is_active ? 'deactivate' : 'activate'
                 } "${statusTarget?.name}"? ${
@@ -889,7 +1108,9 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
                         : 'This college and its programs will become available for intern registration.'
                 }`}
                 onConfirm={submitStatusToggle}
-                confirmText={statusTarget?.is_active ? 'Deactivate' : 'Activate'}
+                confirmText={
+                    statusTarget?.is_active ? 'Deactivate' : 'Activate'
+                }
             />
 
             {/* Archive Confirmation Dialog */}

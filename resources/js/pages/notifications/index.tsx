@@ -93,9 +93,7 @@ export default function NotificationsPage() {
     const { auth, notifications } = usePage<PageProps>().props;
     const role = auth?.user?.role;
     const isAdmin =
-        role === 'admin' ||
-        role === 'super_admin' ||
-        role === 'college_admin';
+        role === 'admin' || role === 'super_admin' || role === 'college_admin';
 
     const count = notifications?.count ?? 0;
     const items = useMemo(
@@ -218,9 +216,7 @@ export default function NotificationsPage() {
     }, [filteredItems]);
 
     const isFiltering =
-        statusFilter !== 'all' ||
-        categoryFilter !== 'all' ||
-        query !== '';
+        statusFilter !== 'all' || categoryFilter !== 'all' || query !== '';
 
     return (
         <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 p-4">

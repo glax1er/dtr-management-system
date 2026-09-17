@@ -396,19 +396,25 @@ function PeriodRow({
                                 Updated / Focus
                             </Badge>
                         )}
-                        {readOnly && (
-                            period.scope === 'college' || period.college_id ? (
+                        {readOnly &&
+                            (period.scope === 'college' || period.college_id ? (
                                 <Badge className="gap-1 border border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
                                     <GraduationCap className="size-3" />
-                                    College Schedule ({period.college?.code ?? period.college?.name ?? 'College'})
+                                    College Schedule (
+                                    {period.college?.code ??
+                                        period.college?.name ??
+                                        'College'}
+                                    )
                                 </Badge>
                             ) : (
-                                <Badge variant="secondary" className="gap-1 font-normal">
+                                <Badge
+                                    variant="secondary"
+                                    className="gap-1 font-normal"
+                                >
                                     <Globe className="size-3" />
                                     University Baseline
                                 </Badge>
-                            )
-                        )}
+                            ))}
                     </div>
                     <p className="text-xs text-muted-foreground">
                         {period.start_date} – {period.end_date}
@@ -626,8 +632,9 @@ export default function SupervisorSchedule({
                             HTE Schedule
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            University baseline and college schedules apply to your interns
-                            by default. Add an override if your HTE differs.
+                            University baseline and college schedules apply to
+                            your interns by default. Add an override if your HTE
+                            differs.
                         </p>
                     </div>
 
@@ -648,7 +655,9 @@ export default function SupervisorSchedule({
                                 </CardTitle>
                             </div>
                             <p className="text-xs text-muted-foreground">
-                                College-wide schedule set by your college admin. Takes precedence over the university baseline unless overridden by your HTE below.
+                                College-wide schedule set by your college admin.
+                                Takes precedence over the university baseline
+                                unless overridden by your HTE below.
                             </p>
                         </CardHeader>
                         <CardContent>

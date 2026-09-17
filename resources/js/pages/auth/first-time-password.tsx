@@ -119,7 +119,7 @@ export default function FirstTimePassword({
             <Dialog open={open} onOpenChange={handleOpenChange}>
                 <DialogContent
                     onPointerDownOutside={(e) => e.preventDefault()}
-                    className="max-h-[92vh] overflow-y-auto scrollbar-none p-6 sm:max-w-md"
+                    className="scrollbar-none max-h-[92vh] overflow-y-auto p-6 sm:max-w-md"
                 >
                     <DialogHeader className="flex flex-col items-center space-y-3 text-center">
                         <div className="rounded-full bg-primary/10 p-3 text-primary ring-8 ring-primary/5">
@@ -131,13 +131,16 @@ export default function FirstTimePassword({
                                 Set your password
                             </DialogTitle>
                             <DialogDescription className="mx-auto max-w-xs text-center text-xs text-muted-foreground">
-                                Because this is your first time logging in, please create a new private password to continue.
+                                Because this is your first time logging in,
+                                please create a new private password to
+                                continue.
                             </DialogDescription>
                         </div>
 
                         {(name || email) && (
                             <p className="mt-1 inline-block max-w-[280px] truncate rounded-md border border-border/50 bg-muted/60 px-3 py-1 text-xs font-medium text-foreground">
-                                {name ? `${name} ` : ''}{email ? `(${email})` : ''}
+                                {name ? `${name} ` : ''}
+                                {email ? `(${email})` : ''}
                             </p>
                         )}
                     </DialogHeader>
@@ -333,7 +336,9 @@ export default function FirstTimePassword({
                                 disabled={processing}
                                 className="h-10"
                             />
-                            <InputError message={errors.password_confirmation} />
+                            <InputError
+                                message={errors.password_confirmation}
+                            />
 
                             {data.password_confirmation.length > 0 && (
                                 <div className="pt-0.5">

@@ -740,7 +740,18 @@ export default function AdminPrograms({
                                                                 variant="outline"
                                                                 className="text-xs"
                                                             >
-                                                                {program.college.code} ({program.college.name})
+                                                                {
+                                                                    program
+                                                                        .college
+                                                                        .code
+                                                                }{' '}
+                                                                (
+                                                                {
+                                                                    program
+                                                                        .college
+                                                                        .name
+                                                                }
+                                                                )
                                                             </Badge>
                                                         ) : (
                                                             '—'

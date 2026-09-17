@@ -73,9 +73,7 @@ export function ProgramActions<T extends ProgramActionsTarget>({
                     </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                    {program.is_active
-                        ? 'Archive inactive only'
-                        : 'Archive'}
+                    {program.is_active ? 'Archive inactive only' : 'Archive'}
                 </TooltipContent>
             </Tooltip>
         </div>

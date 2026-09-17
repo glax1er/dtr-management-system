@@ -136,7 +136,9 @@ export default function AdminManagement({
 
     // Add dialog state
     const [addOpen, setAddOpen] = useState(false);
-    const [addRole, setAddRole] = useState<'college_admin' | 'super_admin'>('college_admin');
+    const [addRole, setAddRole] = useState<'college_admin' | 'super_admin'>(
+        'college_admin',
+    );
     const [addName, setAddName] = useState('');
     const [addEmail, setAddEmail] = useState('');
     const [addCollegeId, setAddCollegeId] = useState('');
@@ -157,7 +159,8 @@ export default function AdminManagement({
     const [editEmployeeId, setEditEmployeeId] = useState('');
     const [editPosition, setEditPosition] = useState('');
     const [editPassword, setEditPassword] = useState('');
-    const [editPasswordConfirmation, setEditPasswordConfirmation] = useState('');
+    const [editPasswordConfirmation, setEditPasswordConfirmation] =
+        useState('');
     const [editLoading, setEditLoading] = useState(false);
 
     // Status toggle confirmation
@@ -277,8 +280,10 @@ export default function AdminManagement({
         statusFilter !== 'all',
     );
 
-    const goToPage = (page: number) => visit({ ...baseParams(), page: String(page) }, false);
-    const changePerPage = (perPage: number) => visit({ ...baseParams(), per_page: String(perPage), page: undefined });
+    const goToPage = (page: number) =>
+        visit({ ...baseParams(), page: String(page) }, false);
+    const changePerPage = (perPage: number) =>
+        visit({ ...baseParams(), per_page: String(perPage), page: undefined });
 
     const handleOpenAdd = () => {
         setAddRole('college_admin');
@@ -299,7 +304,10 @@ export default function AdminManagement({
         if (selCollege?.campus_id) {
             setAddCampusId(String(selCollege.campus_id));
         } else if (selCollege?.campus) {
-            const foundCamp = campuses.find((c) => c.name.toLowerCase() === selCollege.campus?.toLowerCase());
+            const foundCamp = campuses.find(
+                (c) =>
+                    c.name.toLowerCase() === selCollege.campus?.toLowerCase(),
+            );
             if (foundCamp) setAddCampusId(String(foundCamp.id));
         }
     };
@@ -372,7 +380,10 @@ export default function AdminManagement({
         if (selCollege?.campus_id) {
             setEditCampusId(String(selCollege.campus_id));
         } else if (selCollege?.campus) {
-            const foundCamp = campuses.find((c) => c.name.toLowerCase() === selCollege.campus?.toLowerCase());
+            const foundCamp = campuses.find(
+                (c) =>
+                    c.name.toLowerCase() === selCollege.campus?.toLowerCase(),
+            );
             if (foundCamp) setEditCampusId(String(foundCamp.id));
         }
     };
@@ -491,7 +502,9 @@ export default function AdminManagement({
                             </div>
                         </div>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Manage Super Administrators and College Administrators across all USeP colleges and campuses.
+                            Manage Super Administrators and College
+                            Administrators across all USeP colleges and
+                            campuses.
                         </p>
                     </div>
 
@@ -514,7 +527,10 @@ export default function AdminManagement({
                                 </button>
                             )}
                         </div>
-                        <Button onClick={handleOpenAdd} className="w-full shrink-0 justify-center gap-2 sm:w-auto">
+                        <Button
+                            onClick={handleOpenAdd}
+                            className="w-full shrink-0 justify-center gap-2 sm:w-auto"
+                        >
                             <Plus className="size-4" />
                             Add Administrator
                         </Button>
@@ -526,19 +542,19 @@ export default function AdminManagement({
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                             {/* Search Input */}
-                            <div className="relative flex-1 min-w-[200px] sm:hidden">
-                                <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+                            <div className="relative min-w-[200px] flex-1 sm:hidden">
+                                <Search className="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
                                 <Input
                                     placeholder="Search admins..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    className="pl-9 pr-8 h-9"
+                                    className="h-9 pr-8 pl-9"
                                 />
                                 {search && (
                                     <button
                                         type="button"
                                         onClick={handleClearSearch}
-                                        className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+                                        className="absolute top-2.5 right-2.5 text-muted-foreground hover:text-foreground"
                                     >
                                         <X className="size-4" />
                                     </button>
@@ -547,9 +563,13 @@ export default function AdminManagement({
 
                             {/* Mobile Filters Toggle */}
                             <Button
-                                variant={mobileFiltersOpen ? 'secondary' : 'outline'}
+                                variant={
+                                    mobileFiltersOpen ? 'secondary' : 'outline'
+                                }
                                 size="sm"
-                                onClick={() => setMobileFiltersOpen((prev) => !prev)}
+                                onClick={() =>
+                                    setMobileFiltersOpen((prev) => !prev)
+                                }
                                 className="h-9 gap-1.5 sm:hidden"
                             >
                                 <Filter className="size-3.5" />
@@ -562,12 +582,17 @@ export default function AdminManagement({
                             {/* Desktop Filters */}
                             <div className="hidden sm:flex sm:items-center sm:gap-2">
                                 {/* College Filter */}
-                                <Select value={collegeId} onValueChange={handleCollegeChange}>
+                                <Select
+                                    value={collegeId}
+                                    onValueChange={handleCollegeChange}
+                                >
                                     <SelectTrigger className="h-9 w-[180px]">
                                         <SelectValue placeholder="All Colleges" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Colleges</SelectItem>
+                                        <SelectItem value="all">
+                                            All Colleges
+                                        </SelectItem>
                                         {colleges.map((college) => (
                                             <SelectItem
                                                 key={college.id}
@@ -580,12 +605,17 @@ export default function AdminManagement({
                                 </Select>
 
                                 {/* Campus Filter */}
-                                <Select value={campusId} onValueChange={handleCampusChange}>
+                                <Select
+                                    value={campusId}
+                                    onValueChange={handleCampusChange}
+                                >
                                     <SelectTrigger className="h-9 w-[150px]">
                                         <SelectValue placeholder="All Campuses" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Campuses</SelectItem>
+                                        <SelectItem value="all">
+                                            All Campuses
+                                        </SelectItem>
                                         {campuses.map((camp) => (
                                             <SelectItem
                                                 key={camp.id}
@@ -606,9 +636,15 @@ export default function AdminManagement({
                                         <SelectValue placeholder="All Status" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Status</SelectItem>
-                                        <SelectItem value="active">Active</SelectItem>
-                                        <SelectItem value="inactive">Inactive</SelectItem>
+                                        <SelectItem value="all">
+                                            All Status
+                                        </SelectItem>
+                                        <SelectItem value="active">
+                                            Active
+                                        </SelectItem>
+                                        <SelectItem value="inactive">
+                                            Inactive
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
 
@@ -634,22 +670,45 @@ export default function AdminManagement({
                                 onValueChange={handleRoleChange}
                                 className="w-full sm:w-auto"
                             >
-                                <TabsList className="grid grid-cols-3 w-full sm:w-[320px]">
-                                    <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
-                                    <TabsTrigger value="super_admin" className="text-xs">Super Admins</TabsTrigger>
-                                    <TabsTrigger value="college_admin" className="text-xs">College Admins</TabsTrigger>
+                                <TabsList className="grid w-full grid-cols-3 sm:w-[320px]">
+                                    <TabsTrigger
+                                        value="all"
+                                        className="text-xs"
+                                    >
+                                        All
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                        value="super_admin"
+                                        className="text-xs"
+                                    >
+                                        Super Admins
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                        value="college_admin"
+                                        className="text-xs"
+                                    >
+                                        College Admins
+                                    </TabsTrigger>
                                 </TabsList>
                             </Tabs>
 
                             <Tabs
                                 value={view}
-                                onValueChange={(value) => setView(value as ViewMode)}
+                                onValueChange={(value) =>
+                                    setView(value as ViewMode)
+                                }
                             >
                                 <TabsList>
-                                    <TabsTrigger value="table" aria-label="Table view">
+                                    <TabsTrigger
+                                        value="table"
+                                        aria-label="Table view"
+                                    >
                                         <TableIcon className="size-4" />
                                     </TabsTrigger>
-                                    <TabsTrigger value="grid" aria-label="Grid view">
+                                    <TabsTrigger
+                                        value="grid"
+                                        aria-label="Grid view"
+                                    >
                                         <LayoutGrid className="size-4" />
                                     </TabsTrigger>
                                 </TabsList>
@@ -659,9 +718,9 @@ export default function AdminManagement({
 
                     {/* Mobile Filters Dropdown */}
                     {mobileFiltersOpen && (
-                        <div className="flex flex-col gap-2.5 p-3.5 bg-muted/40 rounded-lg border sm:hidden">
+                        <div className="flex flex-col gap-2.5 rounded-lg border bg-muted/40 p-3.5 sm:hidden">
                             <div className="flex items-center justify-between">
-                                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                <Label className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                                     Filters
                                 </Label>
                                 {hasActiveFilters && (
@@ -677,12 +736,17 @@ export default function AdminManagement({
                                 )}
                             </div>
                             <div className="grid grid-cols-1 gap-2">
-                                <Select value={collegeId} onValueChange={handleCollegeChange}>
+                                <Select
+                                    value={collegeId}
+                                    onValueChange={handleCollegeChange}
+                                >
                                     <SelectTrigger className="h-9">
                                         <SelectValue placeholder="All Colleges" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Colleges</SelectItem>
+                                        <SelectItem value="all">
+                                            All Colleges
+                                        </SelectItem>
                                         {colleges.map((college) => (
                                             <SelectItem
                                                 key={college.id}
@@ -694,12 +758,17 @@ export default function AdminManagement({
                                     </SelectContent>
                                 </Select>
 
-                                <Select value={campusId} onValueChange={handleCampusChange}>
+                                <Select
+                                    value={campusId}
+                                    onValueChange={handleCampusChange}
+                                >
                                     <SelectTrigger className="h-9">
                                         <SelectValue placeholder="All Campuses" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Campuses</SelectItem>
+                                        <SelectItem value="all">
+                                            All Campuses
+                                        </SelectItem>
                                         {campuses.map((camp) => (
                                             <SelectItem
                                                 key={camp.id}
@@ -719,9 +788,15 @@ export default function AdminManagement({
                                         <SelectValue placeholder="All Status" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Status</SelectItem>
-                                        <SelectItem value="active">Active</SelectItem>
-                                        <SelectItem value="inactive">Inactive</SelectItem>
+                                        <SelectItem value="all">
+                                            All Status
+                                        </SelectItem>
+                                        <SelectItem value="active">
+                                            Active
+                                        </SelectItem>
+                                        <SelectItem value="inactive">
+                                            Inactive
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -736,208 +811,289 @@ export default function AdminManagement({
                             <Table className="min-w-[920px]">
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="w-[240px]">Administrator</TableHead>
-                                        <TableHead className="w-[140px]">Role</TableHead>
-                                    <TableHead className="w-[200px]">Assigned College</TableHead>
-                                    <TableHead className="w-[130px]">Campus</TableHead>
-                                    <TableHead className="w-[150px]">Designation / ID</TableHead>
-                                    <TableHead className="w-[100px] text-center">Status</TableHead>
-                                    <TableHead className="w-[110px]">Added</TableHead>
-                                    <TableHead className="w-[110px] text-center">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {admins.data.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell
-                                            colSpan={8}
-                                            className="h-32 text-center text-muted-foreground"
-                                        >
-                                            No administrators found.
-                                        </TableCell>
+                                        <TableHead className="w-[240px]">
+                                            Administrator
+                                        </TableHead>
+                                        <TableHead className="w-[140px]">
+                                            Role
+                                        </TableHead>
+                                        <TableHead className="w-[200px]">
+                                            Assigned College
+                                        </TableHead>
+                                        <TableHead className="w-[130px]">
+                                            Campus
+                                        </TableHead>
+                                        <TableHead className="w-[150px]">
+                                            Designation / ID
+                                        </TableHead>
+                                        <TableHead className="w-[100px] text-center">
+                                            Status
+                                        </TableHead>
+                                        <TableHead className="w-[110px]">
+                                            Added
+                                        </TableHead>
+                                        <TableHead className="w-[110px] text-center">
+                                            Actions
+                                        </TableHead>
                                     </TableRow>
-                                ) : (
-                                    admins.data.map((admin) => {
-                                        const isCurrent = admin.id === currentUserId;
-                                        const isSuper = admin.role === 'super_admin';
+                                </TableHeader>
+                                <TableBody>
+                                    {admins.data.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell
+                                                colSpan={8}
+                                                className="h-32 text-center text-muted-foreground"
+                                            >
+                                                No administrators found.
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        admins.data.map((admin) => {
+                                            const isCurrent =
+                                                admin.id === currentUserId;
+                                            const isSuper =
+                                                admin.role === 'super_admin';
 
-                                        return (
-                                            <TableRow key={admin.id}>
-                                                {/* User Info */}
-                                                <TableCell>
-                                                    <div className="flex items-center gap-3">
-                                                        <Avatar className="size-9">
-                                                            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                                                                {getInitials(admin.name)}
-                                                            </AvatarFallback>
-                                                        </Avatar>
-                                                        <div className="flex flex-col min-w-0">
-                                                            <div className="flex items-center gap-1.5 font-medium">
-                                                                <span className="truncate">{admin.name}</span>
-                                                                {isCurrent && (
-                                                                    <Badge
-                                                                        variant="secondary"
-                                                                        className="text-[10px] py-0 px-1 shrink-0"
-                                                                    >
-                                                                        You
-                                                                    </Badge>
+                                            return (
+                                                <TableRow key={admin.id}>
+                                                    {/* User Info */}
+                                                    <TableCell>
+                                                        <div className="flex items-center gap-3">
+                                                            <Avatar className="size-9">
+                                                                <AvatarFallback className="bg-primary/10 font-semibold text-primary">
+                                                                    {getInitials(
+                                                                        admin.name,
+                                                                    )}
+                                                                </AvatarFallback>
+                                                            </Avatar>
+                                                            <div className="flex min-w-0 flex-col">
+                                                                <div className="flex items-center gap-1.5 font-medium">
+                                                                    <span className="truncate">
+                                                                        {
+                                                                            admin.name
+                                                                        }
+                                                                    </span>
+                                                                    {isCurrent && (
+                                                                        <Badge
+                                                                            variant="secondary"
+                                                                            className="shrink-0 px-1 py-0 text-[10px]"
+                                                                        >
+                                                                            You
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+                                                                <span className="truncate text-xs text-muted-foreground">
+                                                                    {
+                                                                        admin.email
+                                                                    }
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </TableCell>
+
+                                                    {/* Role */}
+                                                    <TableCell>
+                                                        {isSuper ? (
+                                                            <Badge
+                                                                variant="outline"
+                                                                className="border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-800 dark:bg-purple-950/40 dark:text-purple-300"
+                                                            >
+                                                                <Shield className="mr-1 size-3" />
+                                                                Super Admin
+                                                            </Badge>
+                                                        ) : (
+                                                            <Badge
+                                                                variant="outline"
+                                                                className="border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300"
+                                                            >
+                                                                <Building2 className="mr-1 size-3" />
+                                                                College Admin
+                                                            </Badge>
+                                                        )}
+                                                    </TableCell>
+
+                                                    {/* College */}
+                                                    <TableCell>
+                                                        {isSuper ? (
+                                                            <span className="text-xs font-medium text-muted-foreground">
+                                                                University-Wide
+                                                                (All)
+                                                            </span>
+                                                        ) : admin.college ? (
+                                                            <div>
+                                                                <Badge
+                                                                    variant="secondary"
+                                                                    className="font-semibold"
+                                                                >
+                                                                    {
+                                                                        admin
+                                                                            .college
+                                                                            .code
+                                                                    }
+                                                                </Badge>
+                                                                <div
+                                                                    className="line-clamp-1 text-xs text-muted-foreground"
+                                                                    title={
+                                                                        admin
+                                                                            .college
+                                                                            .name
+                                                                    }
+                                                                >
+                                                                    {
+                                                                        admin
+                                                                            .college
+                                                                            .name
+                                                                    }
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground italic">
+                                                                Unassigned
+                                                            </span>
+                                                        )}
+                                                    </TableCell>
+
+                                                    {/* Campus */}
+                                                    <TableCell>
+                                                        {admin.campus ? (
+                                                            <Badge
+                                                                variant="secondary"
+                                                                className="text-xs font-normal"
+                                                            >
+                                                                <MapPin className="mr-1 size-3 shrink-0" />
+                                                                {admin.campus}
+                                                            </Badge>
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground italic">
+                                                                N/A
+                                                            </span>
+                                                        )}
+                                                    </TableCell>
+
+                                                    {/* Designation / ID */}
+                                                    <TableCell>
+                                                        {isSuper ? (
+                                                            <span className="text-xs text-muted-foreground">
+                                                                —
+                                                            </span>
+                                                        ) : (
+                                                            <div>
+                                                                <div className="text-xs font-medium text-foreground">
+                                                                    {admin.position ||
+                                                                        'College Admin'}
+                                                                </div>
+                                                                {admin.employee_id && (
+                                                                    <div className="font-mono text-[11px] text-muted-foreground">
+                                                                        ID:{' '}
+                                                                        {
+                                                                            admin.employee_id
+                                                                        }
+                                                                    </div>
                                                                 )}
                                                             </div>
-                                                            <span className="text-xs text-muted-foreground truncate">
-                                                                {admin.email}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </TableCell>
+                                                        )}
+                                                    </TableCell>
 
-                                                {/* Role */}
-                                                <TableCell>
-                                                    {isSuper ? (
-                                                        <Badge
-                                                            variant="outline"
-                                                            className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800"
-                                                        >
-                                                            <Shield className="mr-1 size-3" />
-                                                            Super Admin
-                                                        </Badge>
-                                                    ) : (
-                                                        <Badge
-                                                            variant="outline"
-                                                            className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800"
-                                                        >
-                                                            <Building2 className="mr-1 size-3" />
-                                                            College Admin
-                                                        </Badge>
-                                                    )}
-                                                </TableCell>
+                                                    {/* Status */}
+                                                    <TableCell className="text-center">
+                                                        <StatusBadge
+                                                            status={
+                                                                admin.is_active
+                                                                    ? 'active'
+                                                                    : 'inactive'
+                                                            }
+                                                        />
+                                                    </TableCell>
 
-                                                {/* College */}
-                                                <TableCell>
-                                                    {isSuper ? (
-                                                        <span className="text-xs font-medium text-muted-foreground">
-                                                            University-Wide (All)
-                                                        </span>
-                                                    ) : admin.college ? (
-                                                        <div>
-                                                            <Badge variant="secondary" className="font-semibold">
-                                                                {admin.college.code}
-                                                            </Badge>
-                                                            <div className="line-clamp-1 text-xs text-muted-foreground" title={admin.college.name}>
-                                                                {admin.college.name}
-                                                            </div>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-xs text-muted-foreground italic">
-                                                            Unassigned
-                                                        </span>
-                                                    )}
-                                                </TableCell>
+                                                    {/* Added Date */}
+                                                    <TableCell className="text-xs text-muted-foreground">
+                                                        {admin.created_at}
+                                                    </TableCell>
 
-                                                {/* Campus */}
-                                                <TableCell>
-                                                    {admin.campus ? (
-                                                        <Badge variant="secondary" className="text-xs font-normal">
-                                                            <MapPin className="mr-1 size-3 shrink-0" />
-                                                            {admin.campus}
-                                                        </Badge>
-                                                    ) : (
-                                                        <span className="text-xs text-muted-foreground italic">N/A</span>
-                                                    )}
-                                                </TableCell>
+                                                    {/* Actions */}
+                                                    <TableCell className="text-center">
+                                                        <div className="flex justify-center gap-1">
+                                                            <Tooltip>
+                                                                <TooltipTrigger
+                                                                    asChild
+                                                                >
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        onClick={() =>
+                                                                            handleOpenEdit(
+                                                                                admin,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <Pencil className="size-4 text-blue-600" />
+                                                                    </Button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    Edit Admin
+                                                                </TooltipContent>
+                                                            </Tooltip>
 
-                                                {/* Designation / ID */}
-                                                <TableCell>
-                                                    {isSuper ? (
-                                                        <span className="text-xs text-muted-foreground">—</span>
-                                                    ) : (
-                                                        <div>
-                                                            <div className="text-xs font-medium text-foreground">
-                                                                {admin.position || 'College Admin'}
-                                                            </div>
-                                                            {admin.employee_id && (
-                                                                <div className="font-mono text-[11px] text-muted-foreground">
-                                                                    ID: {admin.employee_id}
-                                                                </div>
+                                                            {!isCurrent && (
+                                                                <>
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger
+                                                                            asChild
+                                                                        >
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                onClick={() =>
+                                                                                    handleToggleStatusClick(
+                                                                                        admin,
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                {admin.is_active ? (
+                                                                                    <PowerOff className="size-4 text-destructive" />
+                                                                                ) : (
+                                                                                    <Power className="size-4 text-emerald-600" />
+                                                                                )}
+                                                                            </Button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                            {admin.is_active
+                                                                                ? 'Deactivate'
+                                                                                : 'Activate'}
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger
+                                                                            asChild
+                                                                        >
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                onClick={() =>
+                                                                                    handleDeleteClick(
+                                                                                        admin,
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                <Trash2 className="size-4 text-destructive" />
+                                                                            </Button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                            Delete
+                                                                            Admin
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+                                                                </>
                                                             )}
                                                         </div>
-                                                    )}
-                                                </TableCell>
-
-                                                {/* Status */}
-                                                <TableCell className="text-center">
-                                                    <StatusBadge status={admin.is_active ? 'active' : 'inactive'} />
-                                                </TableCell>
-
-                                                {/* Added Date */}
-                                                <TableCell className="text-xs text-muted-foreground">
-                                                    {admin.created_at}
-                                                </TableCell>
-
-                                                {/* Actions */}
-                                                <TableCell className="text-center">
-                                                    <div className="flex justify-center gap-1">
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    onClick={() => handleOpenEdit(admin)}
-                                                                >
-                                                                    <Pencil className="size-4 text-blue-600" />
-                                                                </Button>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent>Edit Admin</TooltipContent>
-                                                        </Tooltip>
-
-                                                        {!isCurrent && (
-                                                            <>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger asChild>
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="icon"
-                                                                            onClick={() =>
-                                                                                handleToggleStatusClick(admin)
-                                                                            }
-                                                                        >
-                                                                            {admin.is_active ? (
-                                                                                <PowerOff className="size-4 text-destructive" />
-                                                                            ) : (
-                                                                                <Power className="size-4 text-emerald-600" />
-                                                                            )}
-                                                                        </Button>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        {admin.is_active
-                                                                            ? 'Deactivate'
-                                                                            : 'Activate'}
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-
-                                                                <Tooltip>
-                                                                    <TooltipTrigger asChild>
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="icon"
-                                                                            onClick={() =>
-                                                                                handleDeleteClick(admin)
-                                                                            }
-                                                                        >
-                                                                            <Trash2 className="size-4 text-destructive" />
-                                                                        </Button>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>Delete Admin</TooltipContent>
-                                                                </Tooltip>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        );
-                                    })
-                                )}
-                            </TableBody>
-                        </Table>
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })
+                                    )}
+                                </TableBody>
+                            </Table>
                         </div>
                     </div>
                 ) : (
@@ -953,37 +1109,51 @@ export default function AdminManagement({
                                 const isSuper = admin.role === 'super_admin';
 
                                 return (
-                                    <Card key={admin.id} className="flex flex-col justify-between">
+                                    <Card
+                                        key={admin.id}
+                                        className="flex flex-col justify-between"
+                                    >
                                         <CardHeader className="pb-3">
-                                            <div className="flex items-start justify-between gap-2 min-w-0">
-                                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                            <div className="flex min-w-0 items-start justify-between gap-2">
+                                                <div className="flex min-w-0 flex-1 items-center gap-3">
                                                     <Avatar className="size-10 shrink-0">
-                                                        <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                                                            {getInitials(admin.name)}
+                                                        <AvatarFallback className="bg-primary/10 font-semibold text-primary">
+                                                            {getInitials(
+                                                                admin.name,
+                                                            )}
                                                         </AvatarFallback>
                                                     </Avatar>
                                                     <div className="min-w-0 flex-1">
-                                                        <CardTitle className="text-base font-semibold leading-tight truncate">
+                                                        <CardTitle className="truncate text-base leading-tight font-semibold">
                                                             {admin.name}
                                                         </CardTitle>
-                                                        <span className="text-xs text-muted-foreground truncate block">
+                                                        <span className="block truncate text-xs text-muted-foreground">
                                                             {admin.email}
                                                         </span>
                                                     </div>
                                                 </div>
 
-                                                <StatusBadge status={admin.is_active ? 'active' : 'inactive'} className="shrink-0" />
+                                                <StatusBadge
+                                                    status={
+                                                        admin.is_active
+                                                            ? 'active'
+                                                            : 'inactive'
+                                                    }
+                                                    className="shrink-0"
+                                                />
                                             </div>
                                         </CardHeader>
 
                                         <CardContent className="space-y-3 pb-3 text-sm">
                                             <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3 text-xs">
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-muted-foreground">Role:</span>
+                                                    <span className="text-muted-foreground">
+                                                        Role:
+                                                    </span>
                                                     {isSuper ? (
                                                         <Badge
                                                             variant="outline"
-                                                            className="bg-purple-50 text-purple-700 border-purple-200"
+                                                            className="border-purple-200 bg-purple-50 text-purple-700"
                                                         >
                                                             <Shield className="mr-1 size-3" />
                                                             Super Admin
@@ -991,7 +1161,7 @@ export default function AdminManagement({
                                                     ) : (
                                                         <Badge
                                                             variant="outline"
-                                                            className="bg-blue-50 text-blue-700 border-blue-200"
+                                                            className="border-blue-200 bg-blue-50 text-blue-700"
                                                         >
                                                             <Building2 className="mr-1 size-3" />
                                                             College Admin
@@ -1000,24 +1170,30 @@ export default function AdminManagement({
                                                 </div>
 
                                                 <div className="flex items-center justify-between gap-2">
-                                                    <span className="text-muted-foreground shrink-0">College:</span>
+                                                    <span className="shrink-0 text-muted-foreground">
+                                                        College:
+                                                    </span>
                                                     {isSuper ? (
                                                         <span className="font-medium text-foreground">
                                                             University-Wide
                                                         </span>
                                                     ) : admin.college ? (
-                                                        <span className="font-semibold text-foreground text-right truncate">
-                                                            {admin.college.code} — {admin.college.name}
+                                                        <span className="truncate text-right font-semibold text-foreground">
+                                                            {admin.college.code}{' '}
+                                                            —{' '}
+                                                            {admin.college.name}
                                                         </span>
                                                     ) : (
-                                                        <span className="italic text-muted-foreground">
+                                                        <span className="text-muted-foreground italic">
                                                             None
                                                         </span>
                                                     )}
                                                 </div>
 
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-muted-foreground">Campus:</span>
+                                                    <span className="text-muted-foreground">
+                                                        Campus:
+                                                    </span>
                                                     <span className="font-medium text-foreground">
                                                         {admin.campus ?? 'N/A'}
                                                     </span>
@@ -1025,10 +1201,14 @@ export default function AdminManagement({
 
                                                 {!isSuper && (
                                                     <div className="flex items-center justify-between gap-2 border-t pt-1.5">
-                                                        <span className="text-muted-foreground shrink-0">Designation:</span>
-                                                        <span className="font-medium text-foreground text-right truncate">
-                                                            {admin.position || 'College Admin'}
-                                                            {admin.employee_id && ` (${admin.employee_id})`}
+                                                        <span className="shrink-0 text-muted-foreground">
+                                                            Designation:
+                                                        </span>
+                                                        <span className="truncate text-right font-medium text-foreground">
+                                                            {admin.position ||
+                                                                'College Admin'}
+                                                            {admin.employee_id &&
+                                                                ` (${admin.employee_id})`}
                                                         </span>
                                                     </div>
                                                 )}
@@ -1036,29 +1216,43 @@ export default function AdminManagement({
                                         </CardContent>
 
                                         <div className="flex flex-wrap items-center justify-between gap-2 border-t bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
-                                            <span>Added {admin.created_at}</span>
-                                            <div className="flex items-center gap-1 shrink-0 ml-auto">
+                                            <span>
+                                                Added {admin.created_at}
+                                            </span>
+                                            <div className="ml-auto flex shrink-0 items-center gap-1">
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            onClick={() => handleOpenEdit(admin)}
+                                                            onClick={() =>
+                                                                handleOpenEdit(
+                                                                    admin,
+                                                                )
+                                                            }
                                                         >
                                                             <Pencil className="size-4 text-blue-600" />
                                                         </Button>
                                                     </TooltipTrigger>
-                                                    <TooltipContent>Edit Admin</TooltipContent>
+                                                    <TooltipContent>
+                                                        Edit Admin
+                                                    </TooltipContent>
                                                 </Tooltip>
 
                                                 {!isCurrent && (
                                                     <>
                                                         <Tooltip>
-                                                            <TooltipTrigger asChild>
+                                                            <TooltipTrigger
+                                                                asChild
+                                                            >
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="icon"
-                                                                    onClick={() => handleToggleStatusClick(admin)}
+                                                                    onClick={() =>
+                                                                        handleToggleStatusClick(
+                                                                            admin,
+                                                                        )
+                                                                    }
                                                                 >
                                                                     {admin.is_active ? (
                                                                         <PowerOff className="size-4 text-destructive" />
@@ -1068,21 +1262,31 @@ export default function AdminManagement({
                                                                 </Button>
                                                             </TooltipTrigger>
                                                             <TooltipContent>
-                                                                {admin.is_active ? 'Deactivate' : 'Activate'}
+                                                                {admin.is_active
+                                                                    ? 'Deactivate'
+                                                                    : 'Activate'}
                                                             </TooltipContent>
                                                         </Tooltip>
 
                                                         <Tooltip>
-                                                            <TooltipTrigger asChild>
+                                                            <TooltipTrigger
+                                                                asChild
+                                                            >
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="icon"
-                                                                    onClick={() => handleDeleteClick(admin)}
+                                                                    onClick={() =>
+                                                                        handleDeleteClick(
+                                                                            admin,
+                                                                        )
+                                                                    }
                                                                 >
                                                                     <Trash2 className="size-4 text-destructive" />
                                                                 </Button>
                                                             </TooltipTrigger>
-                                                            <TooltipContent>Delete Admin</TooltipContent>
+                                                            <TooltipContent>
+                                                                Delete Admin
+                                                            </TooltipContent>
                                                         </Tooltip>
                                                     </>
                                                 )}
@@ -1108,42 +1312,53 @@ export default function AdminManagement({
 
             {/* Add Administrator Dialog */}
             <Dialog open={addOpen} onOpenChange={setAddOpen}>
-                <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] sm:max-w-[540px] p-4 sm:p-6">
+                <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto p-4 sm:max-w-[540px] sm:p-6">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <UserCog className="size-5 text-primary" />
                             Add Administrator
                         </DialogTitle>
                         <DialogDescription>
-                            Create a new administrator account with system-wide or college-scoped permissions.
+                            Create a new administrator account with system-wide
+                            or college-scoped permissions.
                         </DialogDescription>
                     </DialogHeader>
 
                     <form onSubmit={handleAddSubmit} className="space-y-4 pt-2">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                             {/* Role Selection */}
                             <div className="space-y-1.5 sm:col-span-2">
-                                <Label htmlFor="add_role">Administrator Role <span className="text-destructive">*</span></Label>
+                                <Label htmlFor="add_role">
+                                    Administrator Role{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
                                 <Select
                                     value={addRole}
-                                    onValueChange={(val: 'college_admin' | 'super_admin') => setAddRole(val)}
+                                    onValueChange={(
+                                        val: 'college_admin' | 'super_admin',
+                                    ) => setAddRole(val)}
                                 >
                                     <SelectTrigger id="add_role">
                                         <SelectValue placeholder="Select role" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="college_admin">
-                                            College Administrator (College Scoped)
+                                            College Administrator (College
+                                            Scoped)
                                         </SelectItem>
                                         <SelectItem value="super_admin">
-                                            Super Administrator (System-Wide Access)
+                                            Super Administrator (System-Wide
+                                            Access)
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
 
                             <div className="space-y-1.5 sm:col-span-2">
-                                <Label htmlFor="add-name">Full Name <span className="text-destructive">*</span></Label>
+                                <Label htmlFor="add-name">
+                                    Full Name{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
                                 <Input
                                     id="add-name"
                                     placeholder="e.g. Maria Santos"
@@ -1154,24 +1369,36 @@ export default function AdminManagement({
                             </div>
 
                             <div className="space-y-1.5 sm:col-span-2">
-                                <Label htmlFor="add-email">Email Address <span className="text-destructive">*</span></Label>
+                                <Label htmlFor="add-email">
+                                    Email Address{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
                                 <Input
                                     id="add-email"
                                     type="email"
                                     placeholder="e.g. maria.santos@usep.edu.ph"
                                     value={addEmail}
-                                    onChange={(e) => setAddEmail(e.target.value)}
+                                    onChange={(e) =>
+                                        setAddEmail(e.target.value)
+                                    }
                                     required
                                 />
                             </div>
 
                             {addRole === 'college_admin' ? (
                                 <>
-                                    <div className="space-y-1.5 col-span-1">
-                                        <Label htmlFor="add-college">Assigned College <span className="text-destructive">*</span></Label>
+                                    <div className="col-span-1 space-y-1.5">
+                                        <Label htmlFor="add-college">
+                                            Assigned College{' '}
+                                            <span className="text-destructive">
+                                                *
+                                            </span>
+                                        </Label>
                                         <Select
                                             value={addCollegeId}
-                                            onValueChange={handleAddCollegeChange}
+                                            onValueChange={
+                                                handleAddCollegeChange
+                                            }
                                             required
                                         >
                                             <SelectTrigger id="add-college">
@@ -1181,28 +1408,42 @@ export default function AdminManagement({
                                                 {colleges.map((college) => (
                                                     <SelectItem
                                                         key={college.id}
-                                                        value={String(college.id)}
+                                                        value={String(
+                                                            college.id,
+                                                        )}
                                                     >
-                                                        {college.code} — {college.name}
+                                                        {college.code} —{' '}
+                                                        {college.name}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
                                     </div>
 
-                                    <div className="space-y-1.5 col-span-1">
-                                        <Label htmlFor="add-campus">Campus</Label>
+                                    <div className="col-span-1 space-y-1.5">
+                                        <Label htmlFor="add-campus">
+                                            Campus
+                                        </Label>
                                         <Select
                                             value={addCampusId || 'none'}
-                                            onValueChange={(val) => setAddCampusId(val === 'none' ? '' : val)}
+                                            onValueChange={(val) =>
+                                                setAddCampusId(
+                                                    val === 'none' ? '' : val,
+                                                )
+                                            }
                                         >
                                             <SelectTrigger id="add-campus">
                                                 <SelectValue placeholder="Select campus" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="none">Use College Campus</SelectItem>
+                                                <SelectItem value="none">
+                                                    Use College Campus
+                                                </SelectItem>
                                                 {campuses.map((camp) => (
-                                                    <SelectItem key={camp.id} value={String(camp.id)}>
+                                                    <SelectItem
+                                                        key={camp.id}
+                                                        value={String(camp.id)}
+                                                    >
                                                         {camp.name}
                                                     </SelectItem>
                                                 ))}
@@ -1210,50 +1451,69 @@ export default function AdminManagement({
                                         </Select>
                                     </div>
 
-                                    <div className="space-y-1.5 col-span-1">
-                                        <Label htmlFor="add-emp-id">Employee ID</Label>
+                                    <div className="col-span-1 space-y-1.5">
+                                        <Label htmlFor="add-emp-id">
+                                            Employee ID
+                                        </Label>
                                         <Input
                                             id="add-emp-id"
                                             placeholder="e.g. EMP-2024-001"
                                             value={addEmployeeId}
-                                            onChange={(e) => setAddEmployeeId(e.target.value)}
+                                            onChange={(e) =>
+                                                setAddEmployeeId(e.target.value)
+                                            }
                                         />
                                     </div>
 
-                                    <div className="space-y-1.5 col-span-1">
-                                        <Label htmlFor="add-position">Designation / Position</Label>
+                                    <div className="col-span-1 space-y-1.5">
+                                        <Label htmlFor="add-position">
+                                            Designation / Position
+                                        </Label>
                                         <Input
                                             id="add-position"
                                             placeholder="e.g. Dean / OJT Coordinator"
                                             value={addPosition}
-                                            onChange={(e) => setAddPosition(e.target.value)}
+                                            onChange={(e) =>
+                                                setAddPosition(e.target.value)
+                                            }
                                         />
                                     </div>
                                 </>
                             ) : (
-                                <div className="sm:col-span-2 rounded-md bg-purple-50 p-3 text-xs text-purple-700 dark:bg-purple-950/40 dark:text-purple-300">
-                                    <p className="font-semibold">Full System Privileges</p>
+                                <div className="rounded-md bg-purple-50 p-3 text-xs text-purple-700 sm:col-span-2 dark:bg-purple-950/40 dark:text-purple-300">
+                                    <p className="font-semibold">
+                                        Full System Privileges
+                                    </p>
                                     <p className="mt-0.5">
-                                        Super Administrators have unrestricted access to all colleges, campuses, programs, intern approvals, and system settings.
+                                        Super Administrators have unrestricted
+                                        access to all colleges, campuses,
+                                        programs, intern approvals, and system
+                                        settings.
                                     </p>
                                 </div>
                             )}
 
-                            <div className="space-y-1.5 col-span-1">
-                                <Label htmlFor="add-password">Password <span className="text-destructive">*</span></Label>
+                            <div className="col-span-1 space-y-1.5">
+                                <Label htmlFor="add-password">
+                                    Password{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
                                 <Input
                                     id="add-password"
                                     type="password"
                                     placeholder="••••••••"
                                     value={addPassword}
-                                    onChange={(e) => setAddPassword(e.target.value)}
+                                    onChange={(e) =>
+                                        setAddPassword(e.target.value)
+                                    }
                                     required
                                 />
                             </div>
 
-                            <div className="space-y-1.5 col-span-1">
+                            <div className="col-span-1 space-y-1.5">
                                 <Label htmlFor="add-confirm-password">
-                                    Confirm Password <span className="text-destructive">*</span>
+                                    Confirm Password{' '}
+                                    <span className="text-destructive">*</span>
                                 </Label>
                                 <Input
                                     id="add-confirm-password"
@@ -1261,14 +1521,16 @@ export default function AdminManagement({
                                     placeholder="••••••••"
                                     value={addPasswordConfirmation}
                                     onChange={(e) =>
-                                        setAddPasswordConfirmation(e.target.value)
+                                        setAddPasswordConfirmation(
+                                            e.target.value,
+                                        )
                                     }
                                     required
                                 />
                             </div>
                         </div>
 
-                        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-3">
+                        <DialogFooter className="flex flex-col-reverse gap-2 pt-3 sm:flex-row sm:justify-end">
                             <Button
                                 type="button"
                                 variant="outline"
@@ -1278,7 +1540,11 @@ export default function AdminManagement({
                             >
                                 Cancel
                             </Button>
-                            <Button type="submit" disabled={addLoading} className="w-full sm:w-auto">
+                            <Button
+                                type="submit"
+                                disabled={addLoading}
+                                className="w-full sm:w-auto"
+                            >
                                 {addLoading ? 'Creating...' : 'Create Account'}
                             </Button>
                         </DialogFooter>
@@ -1288,47 +1554,68 @@ export default function AdminManagement({
 
             {/* Edit Admin Dialog */}
             <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] sm:max-w-[540px] p-4 sm:p-6">
+                <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto p-4 sm:max-w-[540px] sm:p-6">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <Pencil className="size-5 text-primary" />
                             Edit Administrator
                         </DialogTitle>
                         <DialogDescription>
-                            Update administrator details, college assignment, campus, or credentials.
+                            Update administrator details, college assignment,
+                            campus, or credentials.
                         </DialogDescription>
                     </DialogHeader>
 
-                    <form onSubmit={handleEditSubmit} className="space-y-4 pt-2">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <form
+                        onSubmit={handleEditSubmit}
+                        className="space-y-4 pt-2"
+                    >
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <div className="space-y-1.5 sm:col-span-2">
-                                <Label htmlFor="edit-name">Full Name <span className="text-destructive">*</span></Label>
+                                <Label htmlFor="edit-name">
+                                    Full Name{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
                                 <Input
                                     id="edit-name"
                                     value={editName}
-                                    onChange={(e) => setEditName(e.target.value)}
+                                    onChange={(e) =>
+                                        setEditName(e.target.value)
+                                    }
                                     required
                                 />
                             </div>
 
                             <div className="space-y-1.5 sm:col-span-2">
-                                <Label htmlFor="edit-email">Email Address <span className="text-destructive">*</span></Label>
+                                <Label htmlFor="edit-email">
+                                    Email Address{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
                                 <Input
                                     id="edit-email"
                                     type="email"
                                     value={editEmail}
-                                    onChange={(e) => setEditEmail(e.target.value)}
+                                    onChange={(e) =>
+                                        setEditEmail(e.target.value)
+                                    }
                                     required
                                 />
                             </div>
 
                             {editingAdmin?.role === 'college_admin' && (
                                 <>
-                                    <div className="space-y-1.5 col-span-1">
-                                        <Label htmlFor="edit-college">Assigned College <span className="text-destructive">*</span></Label>
+                                    <div className="col-span-1 space-y-1.5">
+                                        <Label htmlFor="edit-college">
+                                            Assigned College{' '}
+                                            <span className="text-destructive">
+                                                *
+                                            </span>
+                                        </Label>
                                         <Select
                                             value={editCollegeId}
-                                            onValueChange={handleEditCollegeChange}
+                                            onValueChange={
+                                                handleEditCollegeChange
+                                            }
                                         >
                                             <SelectTrigger id="edit-college">
                                                 <SelectValue placeholder="Select a college" />
@@ -1337,28 +1624,42 @@ export default function AdminManagement({
                                                 {colleges.map((college) => (
                                                     <SelectItem
                                                         key={college.id}
-                                                        value={String(college.id)}
+                                                        value={String(
+                                                            college.id,
+                                                        )}
                                                     >
-                                                        {college.code} — {college.name}
+                                                        {college.code} —{' '}
+                                                        {college.name}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
                                     </div>
 
-                                    <div className="space-y-1.5 col-span-1">
-                                        <Label htmlFor="edit-campus">Campus</Label>
+                                    <div className="col-span-1 space-y-1.5">
+                                        <Label htmlFor="edit-campus">
+                                            Campus
+                                        </Label>
                                         <Select
                                             value={editCampusId || 'none'}
-                                            onValueChange={(val) => setEditCampusId(val === 'none' ? '' : val)}
+                                            onValueChange={(val) =>
+                                                setEditCampusId(
+                                                    val === 'none' ? '' : val,
+                                                )
+                                            }
                                         >
                                             <SelectTrigger id="edit-campus">
                                                 <SelectValue placeholder="Select campus" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="none">Use College Campus</SelectItem>
+                                                <SelectItem value="none">
+                                                    Use College Campus
+                                                </SelectItem>
                                                 {campuses.map((camp) => (
-                                                    <SelectItem key={camp.id} value={String(camp.id)}>
+                                                    <SelectItem
+                                                        key={camp.id}
+                                                        value={String(camp.id)}
+                                                    >
                                                         {camp.name}
                                                     </SelectItem>
                                                 ))}
@@ -1366,34 +1667,47 @@ export default function AdminManagement({
                                         </Select>
                                     </div>
 
-                                    <div className="space-y-1.5 col-span-1">
-                                        <Label htmlFor="edit-emp-id">Employee ID</Label>
+                                    <div className="col-span-1 space-y-1.5">
+                                        <Label htmlFor="edit-emp-id">
+                                            Employee ID
+                                        </Label>
                                         <Input
                                             id="edit-emp-id"
                                             placeholder="e.g. EMP-2024-001"
                                             value={editEmployeeId}
-                                            onChange={(e) => setEditEmployeeId(e.target.value)}
+                                            onChange={(e) =>
+                                                setEditEmployeeId(
+                                                    e.target.value,
+                                                )
+                                            }
                                         />
                                     </div>
 
-                                    <div className="space-y-1.5 col-span-1">
-                                        <Label htmlFor="edit-position">Designation / Position</Label>
+                                    <div className="col-span-1 space-y-1.5">
+                                        <Label htmlFor="edit-position">
+                                            Designation / Position
+                                        </Label>
                                         <Input
                                             id="edit-position"
                                             placeholder="e.g. Dean / OJT Coordinator"
                                             value={editPosition}
-                                            onChange={(e) => setEditPosition(e.target.value)}
+                                            onChange={(e) =>
+                                                setEditPosition(e.target.value)
+                                            }
                                         />
                                     </div>
                                 </>
                             )}
 
-                            <div className="sm:col-span-2 border-t pt-2 text-xs text-muted-foreground">
-                                Leave password fields blank unless you wish to change the administrator's password.
+                            <div className="border-t pt-2 text-xs text-muted-foreground sm:col-span-2">
+                                Leave password fields blank unless you wish to
+                                change the administrator's password.
                             </div>
 
-                            <div className="space-y-1.5 col-span-1">
-                                <Label htmlFor="edit-password">New Password</Label>
+                            <div className="col-span-1 space-y-1.5">
+                                <Label htmlFor="edit-password">
+                                    New Password
+                                </Label>
                                 <Input
                                     id="edit-password"
                                     type="password"
@@ -1405,7 +1719,7 @@ export default function AdminManagement({
                                 />
                             </div>
 
-                            <div className="space-y-1.5 col-span-1">
+                            <div className="col-span-1 space-y-1.5">
                                 <Label htmlFor="edit-confirm-password">
                                     Confirm Password
                                 </Label>
@@ -1415,13 +1729,15 @@ export default function AdminManagement({
                                     placeholder="••••••••"
                                     value={editPasswordConfirmation}
                                     onChange={(e) =>
-                                        setEditPasswordConfirmation(e.target.value)
+                                        setEditPasswordConfirmation(
+                                            e.target.value,
+                                        )
                                     }
                                 />
                             </div>
                         </div>
 
-                        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-3">
+                        <DialogFooter className="flex flex-col-reverse gap-2 pt-3 sm:flex-row sm:justify-end">
                             <Button
                                 type="button"
                                 variant="outline"
@@ -1431,7 +1747,11 @@ export default function AdminManagement({
                             >
                                 Cancel
                             </Button>
-                            <Button type="submit" disabled={editLoading} className="w-full sm:w-auto">
+                            <Button
+                                type="submit"
+                                disabled={editLoading}
+                                className="w-full sm:w-auto"
+                            >
                                 {editLoading ? 'Saving...' : 'Save Changes'}
                             </Button>
                         </DialogFooter>
@@ -1453,9 +1773,7 @@ export default function AdminManagement({
                         ? `Are you sure you want to deactivate ${statusAdmin?.name}? They will no longer be able to log in.`
                         : `Are you sure you want to activate ${statusAdmin?.name}? They will be able to log in.`
                 }
-                confirmText={
-                    statusAdmin?.is_active ? 'Deactivate' : 'Activate'
-                }
+                confirmText={statusAdmin?.is_active ? 'Deactivate' : 'Activate'}
                 isDestructive={Boolean(statusAdmin?.is_active)}
                 onConfirm={handleConfirmStatusToggle}
             />

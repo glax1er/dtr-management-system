@@ -48,7 +48,13 @@ interface Filters {
 
 interface ArchivesIndexProps {
     records: Paginated<ArchivedRecord>;
-    currentType: 'htes' | 'supervisors' | 'interns' | 'programs' | 'colleges' | 'campuses';
+    currentType:
+        | 'htes'
+        | 'supervisors'
+        | 'interns'
+        | 'programs'
+        | 'colleges'
+        | 'campuses';
     filters?: Filters;
     flash?: {
         success?: string | null;
@@ -60,7 +66,13 @@ type ViewMode = 'table' | 'grid';
 
 const TABS: {
     label: string;
-    value: 'htes' | 'supervisors' | 'interns' | 'programs' | 'colleges' | 'campuses';
+    value:
+        | 'htes'
+        | 'supervisors'
+        | 'interns'
+        | 'programs'
+        | 'colleges'
+        | 'campuses';
     detailLabel: string;
 }[] = [
     { label: 'Interns', value: 'interns', detailLabel: 'ID Number' },
@@ -111,7 +123,8 @@ export default function ArchivesIndex({
     const [forceDeleteTarget, setForceDeleteTarget] =
         useState<ArchivedRecord | null>(null);
 
-    const activeTab = availableTabs.find((t) => t.value === currentType) ?? availableTabs[0];
+    const activeTab =
+        availableTabs.find((t) => t.value === currentType) ?? availableTabs[0];
 
     // -- Navigation & Query Handling ------------------------------------------
     const baseParams = () => ({

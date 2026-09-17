@@ -107,7 +107,9 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
     const [statusTarget, setStatusTarget] = useState<CampusRecord | null>(null);
 
     const [archiveOpen, setArchiveOpen] = useState(false);
-    const [archiveTarget, setArchiveTarget] = useState<CampusRecord | null>(null);
+    const [archiveTarget, setArchiveTarget] = useState<CampusRecord | null>(
+        null,
+    );
 
     const baseParams = () => ({
         search: search || undefined,
@@ -115,7 +117,10 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
         per_page: filters.per_page ? String(filters.per_page) : undefined,
     });
 
-    const visit = (params: Record<string, string | undefined>, replace = true) => {
+    const visit = (
+        params: Record<string, string | undefined>,
+        replace = true,
+    ) => {
         router.get('/admin/campuses', params, {
             preserveState: true,
             preserveScroll: true,
@@ -177,8 +182,10 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
 
     const hasActiveFilters = Boolean(search || status);
 
-    const goToPage = (page: number) => visit({ ...baseParams(), page: String(page) }, false);
-    const changePerPage = (perPage: number) => visit({ ...baseParams(), per_page: String(perPage), page: undefined });
+    const goToPage = (page: number) =>
+        visit({ ...baseParams(), page: String(page) }, false);
+    const changePerPage = (perPage: number) =>
+        visit({ ...baseParams(), per_page: String(perPage), page: undefined });
 
     const openAdd = () => {
         setAddName('');
@@ -212,7 +219,7 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                     setAddAddress('');
                     setAddDescription('');
                 },
-            }
+            },
         );
     };
 
@@ -246,7 +253,7 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                     setEditOpen(false);
                     setEditTarget(null);
                 },
-            }
+            },
         );
     };
 
@@ -267,7 +274,7 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                     setStatusConfirmOpen(false);
                     setStatusTarget(null);
                 },
-            }
+            },
         );
     };
 
@@ -292,7 +299,7 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
         <>
             <Head title="Campuses" />
 
-            <div className="flex flex-1 flex-col gap-4 sm:gap-6 p-4 md:p-6">
+            <div className="flex flex-1 flex-col gap-4 p-4 sm:gap-6 md:p-6">
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -302,13 +309,17 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                             </span>
                             Campuses
                         </h1>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            Manage university campus branches and their associated colleges.
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            Manage university campus branches and their
+                            associated colleges.
                         </p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                        <form onSubmit={applySearch} className="relative hidden sm:block">
+                        <form
+                            onSubmit={applySearch}
+                            className="relative hidden sm:block"
+                        >
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                             <input
                                 type="text"
@@ -327,7 +338,10 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                                 </button>
                             )}
                         </form>
-                        <Button onClick={openAdd} className="h-9 w-full shrink-0 justify-center gap-1.5 sm:w-auto">
+                        <Button
+                            onClick={openAdd}
+                            className="h-9 w-full shrink-0 justify-center gap-1.5 sm:w-auto"
+                        >
                             <Plus className="size-4" />
                             Add Campus
                         </Button>
@@ -339,7 +353,10 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                             {/* Search Input */}
-                            <form onSubmit={applySearch} className="relative flex-1 min-w-[180px] sm:hidden">
+                            <form
+                                onSubmit={applySearch}
+                                className="relative min-w-[180px] flex-1 sm:hidden"
+                            >
                                 <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                                 <input
                                     type="text"
@@ -368,9 +385,15 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                                     <SelectValue placeholder="Status" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">All Status</SelectItem>
-                                    <SelectItem value="active">Active</SelectItem>
-                                    <SelectItem value="inactive">Inactive</SelectItem>
+                                    <SelectItem value="all">
+                                        All Status
+                                    </SelectItem>
+                                    <SelectItem value="active">
+                                        Active
+                                    </SelectItem>
+                                    <SelectItem value="inactive">
+                                        Inactive
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
 
@@ -380,7 +403,7 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                                     variant="ghost"
                                     size="sm"
                                     onClick={clearAllFilters}
-                                    className="h-9 gap-1.5 text-xs text-muted-foreground hover:text-foreground shrink-0"
+                                    className="h-9 shrink-0 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
                                 >
                                     <X className="size-3.5" />
                                     Reset
@@ -389,7 +412,7 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                         </div>
 
                         {/* View Mode Toggle */}
-                        <div className="flex items-center justify-end rounded-md border bg-muted p-0.5 shrink-0 self-end sm:self-auto">
+                        <div className="flex shrink-0 items-center justify-end self-end rounded-md border bg-muted p-0.5 sm:self-auto">
                             <button
                                 type="button"
                                 onClick={() => setView('table')}
@@ -422,18 +445,29 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                 {campuses.data.length === 0 ? (
                     <Card className="flex flex-col items-center justify-center p-12 text-center">
                         <MapPin className="mb-4 size-12 text-muted-foreground/50" />
-                        <h3 className="text-lg font-medium text-foreground">No campuses found</h3>
+                        <h3 className="text-lg font-medium text-foreground">
+                            No campuses found
+                        </h3>
                         <p className="mt-1 text-sm text-muted-foreground">
                             {hasActiveFilters
                                 ? 'Try adjusting your search query or filters.'
                                 : 'Get started by creating your first university campus.'}
                         </p>
                         {hasActiveFilters ? (
-                            <Button variant="outline" size="sm" onClick={clearAllFilters} className="mt-4">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={clearAllFilters}
+                                className="mt-4"
+                            >
                                 Clear Filters
                             </Button>
                         ) : (
-                            <Button size="sm" onClick={openAdd} className="mt-4 gap-1.5">
+                            <Button
+                                size="sm"
+                                onClick={openAdd}
+                                className="mt-4 gap-1.5"
+                            >
                                 <Plus className="size-4" />
                                 Add Campus
                             </Button>
@@ -444,120 +478,177 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                         <div className="overflow-x-auto">
                             <Table className="min-w-[780px]">
                                 <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-[220px]">Name</TableHead>
-                                    <TableHead className="w-[100px]">Code</TableHead>
-                                    <TableHead>Address</TableHead>
-                                    <TableHead className="w-[120px] text-center">Colleges</TableHead>
-                                    <TableHead className="w-[110px] text-center">Status</TableHead>
-                                    <TableHead className="w-[130px]">Created</TableHead>
-                                    <TableHead className="w-[110px] text-center">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {campuses.data.map((campus) => (
-                                    <TableRow key={campus.id}>
-                                        <TableCell>
-                                            <div className="font-semibold text-foreground">
-                                                {campus.name}
-                                            </div>
-                                            {campus.description && (
-                                                <div className="line-clamp-1 text-xs text-muted-foreground">
-                                                    {campus.description}
-                                                </div>
-                                            )}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant="outline" className="font-mono text-xs">
-                                                {campus.code}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            <span className="text-sm text-muted-foreground">
-                                                {campus.address || '—'}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <Badge variant="secondary" className="text-xs">
-                                                {campus.colleges_count}{' '}
-                                                {campus.colleges_count === 1 ? 'college' : 'colleges'}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <StatusBadge status={campus.is_active ? 'active' : 'inactive'} />
-                                        </TableCell>
-                                        <TableCell className="text-xs text-muted-foreground">
-                                            {campus.created_at || '—'}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex justify-center gap-1">
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => openEdit(campus)}
-                                                        >
-                                                            <Pencil className="size-4 text-blue-600" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>Edit Campus</TooltipContent>
-                                                </Tooltip>
-
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => openStatusConfirm(campus)}
-                                                        >
-                                                            {campus.is_active ? (
-                                                                <PowerOff className="size-4 text-destructive" />
-                                                            ) : (
-                                                                <Power className="size-4 text-emerald-600" />
-                                                            )}
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        {campus.is_active ? 'Deactivate' : 'Activate'}
-                                                    </TooltipContent>
-                                                </Tooltip>
-
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => openArchive(campus)}
-                                                        >
-                                                            <Trash2 className="size-4 text-destructive" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>Archive Campus</TooltipContent>
-                                                </Tooltip>
-                                            </div>
-                                        </TableCell>
+                                    <TableRow>
+                                        <TableHead className="w-[220px]">
+                                            Name
+                                        </TableHead>
+                                        <TableHead className="w-[100px]">
+                                            Code
+                                        </TableHead>
+                                        <TableHead>Address</TableHead>
+                                        <TableHead className="w-[120px] text-center">
+                                            Colleges
+                                        </TableHead>
+                                        <TableHead className="w-[110px] text-center">
+                                            Status
+                                        </TableHead>
+                                        <TableHead className="w-[130px]">
+                                            Created
+                                        </TableHead>
+                                        <TableHead className="w-[110px] text-center">
+                                            Actions
+                                        </TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {campuses.data.map((campus) => (
+                                        <TableRow key={campus.id}>
+                                            <TableCell>
+                                                <div className="font-semibold text-foreground">
+                                                    {campus.name}
+                                                </div>
+                                                {campus.description && (
+                                                    <div className="line-clamp-1 text-xs text-muted-foreground">
+                                                        {campus.description}
+                                                    </div>
+                                                )}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge
+                                                    variant="outline"
+                                                    className="font-mono text-xs"
+                                                >
+                                                    {campus.code}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <span className="text-sm text-muted-foreground">
+                                                    {campus.address || '—'}
+                                                </span>
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                <Badge
+                                                    variant="secondary"
+                                                    className="text-xs"
+                                                >
+                                                    {campus.colleges_count}{' '}
+                                                    {campus.colleges_count === 1
+                                                        ? 'college'
+                                                        : 'colleges'}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                <StatusBadge
+                                                    status={
+                                                        campus.is_active
+                                                            ? 'active'
+                                                            : 'inactive'
+                                                    }
+                                                />
+                                            </TableCell>
+                                            <TableCell className="text-xs text-muted-foreground">
+                                                {campus.created_at || '—'}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex justify-center gap-1">
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() =>
+                                                                    openEdit(
+                                                                        campus,
+                                                                    )
+                                                                }
+                                                            >
+                                                                <Pencil className="size-4 text-blue-600" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            Edit Campus
+                                                        </TooltipContent>
+                                                    </Tooltip>
+
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() =>
+                                                                    openStatusConfirm(
+                                                                        campus,
+                                                                    )
+                                                                }
+                                                            >
+                                                                {campus.is_active ? (
+                                                                    <PowerOff className="size-4 text-destructive" />
+                                                                ) : (
+                                                                    <Power className="size-4 text-emerald-600" />
+                                                                )}
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            {campus.is_active
+                                                                ? 'Deactivate'
+                                                                : 'Activate'}
+                                                        </TooltipContent>
+                                                    </Tooltip>
+
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() =>
+                                                                    openArchive(
+                                                                        campus,
+                                                                    )
+                                                                }
+                                                            >
+                                                                <Trash2 className="size-4 text-destructive" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            Archive Campus
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
                         </div>
                     </div>
                 ) : (
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {campuses.data.map((campus) => (
-                            <Card key={campus.id} className="flex flex-col justify-between shadow-xs">
+                            <Card
+                                key={campus.id}
+                                className="flex flex-col justify-between shadow-xs"
+                            >
                                 <CardHeader className="pb-3">
-                                    <div className="flex items-start justify-between gap-2 min-w-0">
+                                    <div className="flex min-w-0 items-start justify-between gap-2">
                                         <div className="min-w-0 flex-1">
-                                            <Badge variant="outline" className="mb-1 font-mono text-xs">
+                                            <Badge
+                                                variant="outline"
+                                                className="mb-1 font-mono text-xs"
+                                            >
                                                 {campus.code}
                                             </Badge>
-                                            <CardTitle className="text-base font-semibold leading-tight truncate">
+                                            <CardTitle className="truncate text-base leading-tight font-semibold">
                                                 {campus.name}
                                             </CardTitle>
                                         </div>
-                                        <StatusBadge status={campus.is_active ? 'active' : 'inactive'} className="shrink-0" />
+                                        <StatusBadge
+                                            status={
+                                                campus.is_active
+                                                    ? 'active'
+                                                    : 'inactive'
+                                            }
+                                            className="shrink-0"
+                                        />
                                     </div>
                                 </CardHeader>
                                 <CardContent className="space-y-3 pb-3 text-sm">
@@ -576,9 +667,13 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                                         <span className="flex items-center gap-1 font-medium">
                                             <Building2 className="size-3.5" />
                                             {campus.colleges_count}{' '}
-                                            {campus.colleges_count === 1 ? 'College' : 'Colleges'}
+                                            {campus.colleges_count === 1
+                                                ? 'College'
+                                                : 'Colleges'}
                                         </span>
-                                        <span>Added {campus.created_at || '—'}</span>
+                                        <span>
+                                            Added {campus.created_at || '—'}
+                                        </span>
                                     </div>
                                 </CardContent>
                                 <div className="flex items-center justify-end gap-1 border-t bg-muted/20 px-4 py-2">
@@ -592,7 +687,9 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                                                 <Pencil className="size-4 text-blue-600" />
                                             </Button>
                                         </TooltipTrigger>
-                                        <TooltipContent>Edit Campus</TooltipContent>
+                                        <TooltipContent>
+                                            Edit Campus
+                                        </TooltipContent>
                                     </Tooltip>
 
                                     <Tooltip>
@@ -600,7 +697,9 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={() => openStatusConfirm(campus)}
+                                                onClick={() =>
+                                                    openStatusConfirm(campus)
+                                                }
                                             >
                                                 {campus.is_active ? (
                                                     <PowerOff className="size-4 text-destructive" />
@@ -610,7 +709,9 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                                             </Button>
                                         </TooltipTrigger>
                                         <TooltipContent>
-                                            {campus.is_active ? 'Deactivate' : 'Activate'}
+                                            {campus.is_active
+                                                ? 'Deactivate'
+                                                : 'Activate'}
                                         </TooltipContent>
                                     </Tooltip>
 
@@ -619,12 +720,16 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={() => openArchive(campus)}
+                                                onClick={() =>
+                                                    openArchive(campus)
+                                                }
                                             >
                                                 <Trash2 className="size-4 text-destructive" />
                                             </Button>
                                         </TooltipTrigger>
-                                        <TooltipContent>Archive Campus</TooltipContent>
+                                        <TooltipContent>
+                                            Archive Campus
+                                        </TooltipContent>
                                     </Tooltip>
                                 </div>
                             </Card>
@@ -645,16 +750,20 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
 
             {/* Add Campus Modal */}
             <Dialog open={addOpen} onOpenChange={setAddOpen}>
-                <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] sm:max-w-[480px] p-4 sm:p-6">
+                <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto p-4 sm:max-w-[480px] sm:p-6">
                     <DialogHeader>
                         <DialogTitle>Add Campus</DialogTitle>
                         <DialogDescription>
-                            Create a new university campus branch to organize colleges and students.
+                            Create a new university campus branch to organize
+                            colleges and students.
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={submitAdd} className="space-y-4 pt-2">
                         <div className="space-y-1.5">
-                            <Label htmlFor="add_name">Campus Name <span className="text-destructive">*</span></Label>
+                            <Label htmlFor="add_name">
+                                Campus Name{' '}
+                                <span className="text-destructive">*</span>
+                            </Label>
                             <Input
                                 id="add_name"
                                 value={addName}
@@ -664,13 +773,16 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <Label htmlFor="add_code">Campus Code <span className="text-destructive">*</span></Label>
+                            <Label htmlFor="add_code">
+                                Campus Code{' '}
+                                <span className="text-destructive">*</span>
+                            </Label>
                             <Input
                                 id="add_code"
                                 value={addCode}
                                 onChange={(e) => setAddCode(e.target.value)}
                                 placeholder="e.g. OBR"
-                                className="uppercase font-mono"
+                                className="font-mono uppercase"
                                 required
                             />
                         </div>
@@ -688,12 +800,14 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                             <Textarea
                                 id="add_description"
                                 value={addDescription}
-                                onChange={(e) => setAddDescription(e.target.value)}
+                                onChange={(e) =>
+                                    setAddDescription(e.target.value)
+                                }
                                 placeholder="Brief description or notes about this campus..."
                                 rows={3}
                             />
                         </div>
-                        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-3">
+                        <DialogFooter className="flex flex-col-reverse gap-2 pt-3 sm:flex-row sm:justify-end">
                             <Button
                                 type="button"
                                 variant="outline"
@@ -702,7 +816,9 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                             >
                                 Cancel
                             </Button>
-                            <Button type="submit" className="w-full sm:w-auto">Save Campus</Button>
+                            <Button type="submit" className="w-full sm:w-auto">
+                                Save Campus
+                            </Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -710,7 +826,7 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
 
             {/* Edit Campus Modal */}
             <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] sm:max-w-[480px] p-4 sm:p-6">
+                <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto p-4 sm:max-w-[480px] sm:p-6">
                     <DialogHeader>
                         <DialogTitle>Edit Campus</DialogTitle>
                         <DialogDescription>
@@ -719,7 +835,10 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                     </DialogHeader>
                     <form onSubmit={submitEdit} className="space-y-4 pt-2">
                         <div className="space-y-1.5">
-                            <Label htmlFor="edit_name">Campus Name <span className="text-destructive">*</span></Label>
+                            <Label htmlFor="edit_name">
+                                Campus Name{' '}
+                                <span className="text-destructive">*</span>
+                            </Label>
                             <Input
                                 id="edit_name"
                                 value={editName}
@@ -729,13 +848,16 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <Label htmlFor="edit_code">Campus Code <span className="text-destructive">*</span></Label>
+                            <Label htmlFor="edit_code">
+                                Campus Code{' '}
+                                <span className="text-destructive">*</span>
+                            </Label>
                             <Input
                                 id="edit_code"
                                 value={editCode}
                                 onChange={(e) => setEditCode(e.target.value)}
                                 placeholder="e.g. OBR"
-                                className="uppercase font-mono"
+                                className="font-mono uppercase"
                                 required
                             />
                         </div>
@@ -749,16 +871,20 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <Label htmlFor="edit_description">Description</Label>
+                            <Label htmlFor="edit_description">
+                                Description
+                            </Label>
                             <Textarea
                                 id="edit_description"
                                 value={editDescription}
-                                onChange={(e) => setEditDescription(e.target.value)}
+                                onChange={(e) =>
+                                    setEditDescription(e.target.value)
+                                }
                                 placeholder="Brief description or notes about this campus..."
                                 rows={3}
                             />
                         </div>
-                        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-3">
+                        <DialogFooter className="flex flex-col-reverse gap-2 pt-3 sm:flex-row sm:justify-end">
                             <Button
                                 type="button"
                                 variant="outline"
@@ -767,7 +893,9 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                             >
                                 Cancel
                             </Button>
-                            <Button type="submit" className="w-full sm:w-auto">Save Changes</Button>
+                            <Button type="submit" className="w-full sm:w-auto">
+                                Save Changes
+                            </Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -777,13 +905,19 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
             <ConfirmationDialog
                 open={statusConfirmOpen}
                 onOpenChange={setStatusConfirmOpen}
-                title={statusTarget?.is_active ? 'Deactivate Campus' : 'Activate Campus'}
+                title={
+                    statusTarget?.is_active
+                        ? 'Deactivate Campus'
+                        : 'Activate Campus'
+                }
                 description={
                     statusTarget?.is_active
                         ? `Are you sure you want to deactivate "${statusTarget?.name}"? Colleges under this campus may not be selectable for new registrations.`
                         : `Are you sure you want to activate "${statusTarget?.name}"?`
                 }
-                confirmText={statusTarget?.is_active ? 'Deactivate' : 'Activate'}
+                confirmText={
+                    statusTarget?.is_active ? 'Deactivate' : 'Activate'
+                }
                 isDestructive={Boolean(statusTarget?.is_active)}
                 onConfirm={submitStatusToggle}
             />

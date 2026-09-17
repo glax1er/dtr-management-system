@@ -110,13 +110,7 @@ export function NavMain({
 
 // ─── NavMenuItem ──────────────────────────────────────────────────────────────
 
-function NavMenuItem({
-    item,
-    isActive,
-}: {
-    item: NavItem;
-    isActive: boolean;
-}) {
+function NavMenuItem({ item, isActive }: { item: NavItem; isActive: boolean }) {
     return (
         <SidebarMenuItem>
             <SidebarMenuButton

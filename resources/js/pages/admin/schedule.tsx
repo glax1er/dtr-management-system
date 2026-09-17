@@ -197,13 +197,11 @@ function PeriodForm({
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="global">
-                                    🌐 University-Wide Global (Applies to all colleges)
+                                    🌐 University-Wide Global (Applies to all
+                                    colleges)
                                 </SelectItem>
                                 {colleges.map((c) => (
-                                    <SelectItem
-                                        key={c.id}
-                                        value={String(c.id)}
-                                    >
+                                    <SelectItem key={c.id} value={String(c.id)}>
                                         🎓 {c.code} - {c.name}
                                     </SelectItem>
                                 ))}
@@ -484,20 +482,18 @@ export default function AdminSchedule({
         };
 
         if (isSuperAdmin) {
-            payload.college_id = addForm.collegeId ? Number(addForm.collegeId) : null;
+            payload.college_id = addForm.collegeId
+                ? Number(addForm.collegeId)
+                : null;
         }
 
-        router.post(
-            '/admin/schedule',
-            payload,
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    setAddOpen(false);
-                    setAddForm(emptyForm());
-                },
+        router.post('/admin/schedule', payload, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setAddOpen(false);
+                setAddForm(emptyForm());
             },
-        );
+        });
     };
 
     const openEdit = (period: SchedulePeriod) => {
@@ -521,20 +517,18 @@ export default function AdminSchedule({
         };
 
         if (isSuperAdmin) {
-            payload.college_id = editForm.collegeId ? Number(editForm.collegeId) : null;
+            payload.college_id = editForm.collegeId
+                ? Number(editForm.collegeId)
+                : null;
         }
 
-        router.patch(
-            `/admin/schedule/${editingId}`,
-            payload,
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    setEditOpen(false);
-                    setEditingId(null);
-                },
+        router.patch(`/admin/schedule/${editingId}`, payload, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setEditOpen(false);
+                setEditingId(null);
             },
-        );
+        });
     };
 
     const openDelete = (period: SchedulePeriod) => {
@@ -573,7 +567,10 @@ export default function AdminSchedule({
                         </h1>
                         {!isSuperAdmin && userCollege && (
                             <p className="mt-1 text-xs text-muted-foreground">
-                                Manage schedule periods for {userCollege.name}. Schedules you create override the university-wide baseline for your college&apos;s interns.
+                                Manage schedule periods for {userCollege.name}.
+                                Schedules you create override the
+                                university-wide baseline for your college&apos;s
+                                interns.
                             </p>
                         )}
                     </div>
@@ -596,9 +593,13 @@ export default function AdminSchedule({
                                     3-Tier Scheduling Architecture Active
                                 </h3>
                                 <p className="mt-0.5 text-xs text-muted-foreground">
-                                    <strong>Tier 1:</strong> University-Wide Global &bull;{' '}
-                                    <strong>Tier 2:</strong> College-Wide Global &bull;{' '}
-                                    <strong>Tier 3:</strong> HTE Overrides. Schedules set for a specific college override the university baseline for that college&apos;s interns.
+                                    <strong>Tier 1:</strong> University-Wide
+                                    Global &bull; <strong>Tier 2:</strong>{' '}
+                                    College-Wide Global &bull;{' '}
+                                    <strong>Tier 3:</strong> HTE Overrides.
+                                    Schedules set for a specific college
+                                    override the university baseline for that
+                                    college&apos;s interns.
                                 </p>
                             </div>
                         </div>
@@ -608,14 +609,22 @@ export default function AdminSchedule({
                                 className="gap-1.5 border-sky-300 bg-sky-50 text-sky-800 dark:border-sky-800 dark:bg-sky-950/60 dark:text-sky-300"
                             >
                                 <Globe className="size-3.5 text-sky-600 dark:text-sky-400" />
-                                {periods.filter((p) => p.college_id === null).length} University Baseline
+                                {
+                                    periods.filter((p) => p.college_id === null)
+                                        .length
+                                }{' '}
+                                University Baseline
                             </Badge>
                             <Badge
                                 variant="outline"
                                 className="gap-1.5 border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
                             >
                                 <GraduationCap className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-                                {periods.filter((p) => p.college_id !== null).length} College Schedules
+                                {
+                                    periods.filter((p) => p.college_id !== null)
+                                        .length
+                                }{' '}
+                                College Schedules
                             </Badge>
                         </div>
                     </div>
@@ -629,7 +638,9 @@ export default function AdminSchedule({
                                 Schedule Periods
                             </CardTitle>
                             <p className="mt-0.5 text-xs text-muted-foreground">
-                                Showing {filteredPeriods.length} of {periods.length} schedule period{periods.length === 1 ? '' : 's'}.
+                                Showing {filteredPeriods.length} of{' '}
+                                {periods.length} schedule period
+                                {periods.length === 1 ? '' : 's'}.
                             </p>
                         </div>
 
@@ -638,7 +649,7 @@ export default function AdminSchedule({
                             <div className="flex items-center gap-2">
                                 <Label
                                     htmlFor="college-filter"
-                                    className="text-xs text-muted-foreground whitespace-nowrap"
+                                    className="text-xs whitespace-nowrap text-muted-foreground"
                                 >
                                     Filter Scope:
                                 </Label>
@@ -657,7 +668,14 @@ export default function AdminSchedule({
                                             All Schedules ({periods.length})
                                         </SelectItem>
                                         <SelectItem value="global">
-                                            🌐 University-Wide ({periods.filter((p) => p.college_id === null).length})
+                                            🌐 University-Wide (
+                                            {
+                                                periods.filter(
+                                                    (p) =>
+                                                        p.college_id === null,
+                                                ).length
+                                            }
+                                            )
                                         </SelectItem>
                                         {colleges.map((c) => {
                                             const count = periods.filter(
@@ -708,11 +726,20 @@ export default function AdminSchedule({
                                                     <Badge className="gap-1.5 border border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
                                                         <GraduationCap className="size-3.5 text-emerald-600 dark:text-emerald-400" />
                                                         <span className="font-semibold">
-                                                            Global schedule set by {period.college?.name ?? 'College'}
+                                                            Global schedule set
+                                                            by{' '}
+                                                            {period.college
+                                                                ?.name ??
+                                                                'College'}
                                                         </span>
-                                                        {period.college?.code && (
-                                                            <span className="rounded bg-emerald-200/80 px-1 py-0.2 text-[10px] font-bold text-emerald-900 dark:bg-emerald-900/80 dark:text-emerald-200">
-                                                                {period.college.code}
+                                                        {period.college
+                                                            ?.code && (
+                                                            <span className="py-0.2 rounded bg-emerald-200/80 px-1 text-[10px] font-bold text-emerald-900 dark:bg-emerald-900/80 dark:text-emerald-200">
+                                                                {
+                                                                    period
+                                                                        .college
+                                                                        .code
+                                                                }
                                                             </span>
                                                         )}
                                                     </Badge>
@@ -720,9 +747,10 @@ export default function AdminSchedule({
                                                     <Badge className="gap-1.5 border border-sky-300 bg-sky-100 text-sky-800 dark:border-sky-800 dark:bg-sky-950/60 dark:text-sky-300">
                                                         <Globe className="size-3.5 text-sky-600 dark:text-sky-400" />
                                                         <span className="font-semibold">
-                                                            University-Wide Global Schedule
+                                                            University-Wide
+                                                            Global Schedule
                                                         </span>
-                                                        <span className="rounded bg-sky-200/80 px-1 py-0.2 text-[10px] font-bold text-sky-900 dark:bg-sky-900/80 dark:text-sky-200">
+                                                        <span className="py-0.2 rounded bg-sky-200/80 px-1 text-[10px] font-bold text-sky-900 dark:bg-sky-900/80 dark:text-sky-200">
                                                             Baseline
                                                         </span>
                                                     </Badge>
@@ -767,7 +795,8 @@ export default function AdminSchedule({
                                                     </p>
                                                 </div>
                                                 {!isPast(period.end_date) &&
-                                                    period.is_owner !== false && (
+                                                    period.is_owner !==
+                                                        false && (
                                                         <div className="flex shrink-0 gap-1">
                                                             <Tooltip>
                                                                 <TooltipTrigger
@@ -893,7 +922,8 @@ export default function AdminSchedule({
                             Edit Schedule Period
                         </DialogTitle>
                         <DialogDescription className="text-xs text-muted-foreground sm:text-sm">
-                            Update the scope, date range, or expected start times for each day.
+                            Update the scope, date range, or expected start
+                            times for each day.
                         </DialogDescription>
                     </DialogHeader>
                     <PeriodForm

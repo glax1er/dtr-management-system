@@ -49,8 +49,10 @@ export function CountUp({
 const VARIANT_STYLES = {
     default: 'bg-muted text-muted-foreground group-hover:text-foreground',
     primary: 'bg-primary/10 text-primary group-hover:bg-primary/15',
-    success: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-500/15',
-    warning: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:bg-amber-500/15',
+    success:
+        'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-500/15',
+    warning:
+        'bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:bg-amber-500/15',
     purple: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 group-hover:bg-purple-500/15',
     info: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 group-hover:bg-blue-500/15',
 } as const;
@@ -92,7 +94,7 @@ export function StatCard({
     return (
         <Card
             className={cn(
-                'group relative overflow-hidden transition-all duration-200 shadow-xs hover:shadow-sm',
+                'group relative overflow-hidden shadow-xs transition-all duration-200 hover:shadow-sm',
                 BORDER_ACCENT[variant] ?? '',
                 onClick &&
                     'cursor-pointer hover:border-primary/40 active:scale-[0.99]',
@@ -191,7 +193,7 @@ export function AttendanceRing({
                     <span className="text-2xl leading-none font-bold tracking-tight text-foreground tabular-nums sm:text-3xl">
                         <CountUp value={clamped} />%
                     </span>
-                    <span className="mt-1 text-xs font-semibold tabular-nums text-muted-foreground">
+                    <span className="mt-1 text-xs font-semibold text-muted-foreground tabular-nums">
                         {checkedIn} / {total}
                     </span>
                 </div>
@@ -332,7 +334,8 @@ export function RankedList({
             {items.length > 5 && (
                 <div className="flex items-center justify-between border-b border-border/50 pb-2">
                     <span className="text-xs font-medium text-muted-foreground">
-                        Showing {displayedItems.length} of {items.length} establishments
+                        Showing {displayedItems.length} of {items.length}{' '}
+                        establishments
                     </span>
                     <div className="flex items-center rounded-lg border border-border/70 bg-muted/40 p-0.5 text-xs">
                         <button
@@ -367,7 +370,7 @@ export function RankedList({
             <div className="relative">
                 <div
                     className={cn(
-                        'max-h-[350px] overflow-y-auto pr-1 scrollbar-thin transition-all',
+                        'max-h-[350px] scrollbar-thin overflow-y-auto pr-1 transition-all',
                         isTwoColumn
                             ? 'grid grid-cols-1 gap-2 md:grid-cols-2'
                             : 'flex flex-col gap-2',
@@ -418,7 +421,7 @@ export function RankedList({
                                         {/* Initials avatar */}
                                         <div
                                             className={cn(
-                                                'flex size-7 shrink-0 select-none items-center justify-center rounded-lg font-mono text-[11px] font-semibold',
+                                                'flex size-7 shrink-0 items-center justify-center rounded-lg font-mono text-[11px] font-semibold select-none',
                                                 index === 0
                                                     ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
                                                     : 'bg-primary/10 text-primary',
@@ -436,14 +439,17 @@ export function RankedList({
                                                 >
                                                     {item.name}
                                                 </span>
-                                                {index === 0 && !isTwoColumn && (
-                                                    <span className="hidden rounded bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700 dark:text-amber-400 sm:inline-flex">
-                                                        Top Partner
-                                                    </span>
-                                                )}
+                                                {index === 0 &&
+                                                    !isTwoColumn && (
+                                                        <span className="hidden rounded bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700 sm:inline-flex dark:text-amber-400">
+                                                            Top Partner
+                                                        </span>
+                                                    )}
                                             </div>
                                             <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                                                <span>{share}% of placements</span>
+                                                <span>
+                                                    {share}% of placements
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -451,7 +457,7 @@ export function RankedList({
                                     {/* Count & Arrow */}
                                     <div className="flex shrink-0 items-center gap-1.5 text-right">
                                         <div>
-                                            <span className="text-xs font-bold tabular-nums text-foreground sm:text-sm">
+                                            <span className="text-xs font-bold text-foreground tabular-nums sm:text-sm">
                                                 <CountUp value={item.count} />
                                             </span>
                                             <span className="ml-1 text-[11px] font-normal text-muted-foreground">
@@ -550,9 +556,7 @@ export function StatusPieChart({
     let accumulatedOffset = 0;
     const segments = activeItems.map((item) => {
         const sliceLength =
-            total > 0
-                ? (item.count / total) * availableCircumference
-                : 0;
+            total > 0 ? (item.count / total) * availableCircumference : 0;
         const offset = accumulatedOffset;
         accumulatedOffset += sliceLength + gap;
         return {
@@ -595,7 +599,11 @@ export function StatusPieChart({
                                     cx={center}
                                     cy={center}
                                     r={radius}
-                                    strokeWidth={isHovered ? strokeWidth + 3 : strokeWidth}
+                                    strokeWidth={
+                                        isHovered
+                                            ? strokeWidth + 3
+                                            : strokeWidth
+                                    }
                                     stroke={config.color}
                                     strokeDasharray={`${mounted ? seg.sliceLength : 0} ${circumference}`}
                                     strokeDashoffset={-seg.offset}
@@ -606,7 +614,9 @@ export function StatusPieChart({
                                             ? `drop-shadow(0 0 6px ${config.color}90)`
                                             : undefined,
                                     }}
-                                    onMouseEnter={() => setHoveredStatus(seg.status)}
+                                    onMouseEnter={() =>
+                                        setHoveredStatus(seg.status)
+                                    }
                                     onMouseLeave={() => setHoveredStatus(null)}
                                     onClick={() => onStatusClick?.(seg.status)}
                                 />
@@ -618,13 +628,14 @@ export function StatusPieChart({
                 <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-1 text-center">
                     {activeHoverItem ? (
                         <>
-                            <span className="text-2xl font-bold leading-none tabular-nums text-foreground">
+                            <span className="text-2xl leading-none font-bold text-foreground tabular-nums">
                                 <CountUp value={activeHoverItem.count} />
                             </span>
                             <span
                                 className={cn(
-                                    'mt-1 text-[11px] font-semibold leading-none',
-                                    STATUS_CONFIG[activeHoverItem.status].textColor,
+                                    'mt-1 text-[11px] leading-none font-semibold',
+                                    STATUS_CONFIG[activeHoverItem.status]
+                                        .textColor,
                                 )}
                             >
                                 {STATUS_CONFIG[activeHoverItem.status].label}
@@ -640,10 +651,10 @@ export function StatusPieChart({
                         </>
                     ) : (
                         <>
-                            <span className="text-2xl font-bold leading-none tabular-nums text-foreground">
+                            <span className="text-2xl leading-none font-bold text-foreground tabular-nums">
                                 <CountUp value={total} />
                             </span>
-                            <span className="mt-1 text-[11px] font-medium leading-none text-muted-foreground">
+                            <span className="mt-1 text-[11px] leading-none font-medium text-muted-foreground">
                                 Total
                             </span>
                             <span className="mt-0.5 text-[10px] text-muted-foreground/80">
@@ -689,7 +700,7 @@ export function StatusPieChart({
                                 </span>
                             </div>
                             <div className="flex shrink-0 items-center gap-2">
-                                <span className="font-semibold tabular-nums text-foreground">
+                                <span className="font-semibold text-foreground tabular-nums">
                                     <CountUp value={item.count} />
                                 </span>
                                 <span className="w-8 text-right font-mono text-[11px] text-muted-foreground">
@@ -704,4 +715,3 @@ export function StatusPieChart({
         </div>
     );
 }
-

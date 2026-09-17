@@ -50,7 +50,11 @@ export interface CalendarDay {
     is_workday: boolean;
     expected_start_time: string | null;
     expected_start_time_formatted: string | null;
-    source_type: 'hte_override' | 'college_schedule' | 'global_schedule' | 'default_schedule';
+    source_type:
+        | 'hte_override'
+        | 'college_schedule'
+        | 'global_schedule'
+        | 'default_schedule';
     source_label: string;
     period_id: number | null;
     period_name: string | null;
@@ -279,7 +283,10 @@ export default function InternSchedule({
                 return false;
             }
 
-            if (!showCollegeSchedule && day.source_type === 'college_schedule') {
+            if (
+                !showCollegeSchedule &&
+                day.source_type === 'college_schedule'
+            ) {
                 return false;
             }
 
@@ -472,8 +479,8 @@ export default function InternSchedule({
                                                     d.is_workday
                                                       ? 'font-semibold text-purple-700 hover:bg-purple-100 dark:text-purple-300 dark:hover:bg-purple-950/50'
                                                       : d.source_type ===
-                                                            'college_schedule' &&
-                                                        d.is_workday
+                                                              'college_schedule' &&
+                                                          d.is_workday
                                                         ? 'font-semibold text-emerald-700 hover:bg-emerald-100 dark:text-emerald-300 dark:hover:bg-emerald-950/50'
                                                         : 'text-foreground hover:bg-muted/70'
                                                   : 'text-muted-foreground/35 hover:bg-muted/20',

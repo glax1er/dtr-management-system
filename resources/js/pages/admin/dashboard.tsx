@@ -23,9 +23,7 @@ import {
 } from '@/components/dashboard-analytics';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
-import {
-    InstitutionalOverviewCard,
-} from '@/components/super-admin-analytics';
+import { InstitutionalOverviewCard } from '@/components/super-admin-analytics';
 import type { SuperAdminAnalytics } from '@/components/super-admin-analytics';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
@@ -122,7 +120,9 @@ export default function AdminDashboard({
         auth.user?.role === 'super_admin' ||
         Boolean(superAdminAnalytics);
 
-    const [activeTab, setActiveTab] = useState<'overview' | 'operations' | 'institution'>('overview');
+    const [activeTab, setActiveTab] = useState<
+        'overview' | 'operations' | 'institution'
+    >('overview');
 
     const [mounted, setMounted] = useState(false);
     useEffect(() => {
@@ -179,7 +179,8 @@ export default function AdminDashboard({
                   variant: 'purple' as const,
                   badge: (
                       <span className="text-[10px] text-muted-foreground">
-                          {superAdminAnalytics.admins.super_admins}S · {superAdminAnalytics.admins.college_admins}C
+                          {superAdminAnalytics.admins.super_admins}S ·{' '}
+                          {superAdminAnalytics.admins.college_admins}C
                       </span>
                   ),
                   onClick: () => router.visit('/admin/admins'),
@@ -218,7 +219,8 @@ export default function AdminDashboard({
                           : ('warning' as const),
                   badge: (
                       <span className="text-[10px] text-muted-foreground">
-                          {superAdminAnalytics.admins.colleges_with_admin}/{superAdminAnalytics.admins.colleges_count}
+                          {superAdminAnalytics.admins.colleges_with_admin}/
+                          {superAdminAnalytics.admins.colleges_count}
                       </span>
                   ),
                   onClick: () => router.visit('/admin/admins'),
@@ -255,16 +257,20 @@ export default function AdminDashboard({
     );
     const totalHteInterns = topHtes.reduce((sum, hte) => sum + hte.count, 0);
 
-    const showOperations = activeTab === 'overview' || activeTab === 'operations';
-    const showInstitution = isSuperAdmin && superAdminAnalytics && (activeTab === 'overview' || activeTab === 'institution');
-    const unassignedColleges = superAdminAnalytics?.admins?.unassigned_colleges ?? [];
+    const showOperations =
+        activeTab === 'overview' || activeTab === 'operations';
+    const showInstitution =
+        isSuperAdmin &&
+        superAdminAnalytics &&
+        (activeTab === 'overview' || activeTab === 'institution');
+    const unassignedColleges =
+        superAdminAnalytics?.admins?.unassigned_colleges ?? [];
 
     return (
         <>
             <Head title="Admin Dashboard" />
 
             <div className="flex h-full flex-1 flex-col gap-3 p-3 sm:gap-4 sm:p-4 md:p-6">
-
                 {/* ── Header ─────────────────────────────────────────────── */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-black sm:gap-3 sm:text-2xl dark:text-white">
@@ -293,20 +299,33 @@ export default function AdminDashboard({
                 {isSuperAdmin && (
                     <Tabs
                         value={activeTab}
-                        onValueChange={(val) => setActiveTab(val as typeof activeTab)}
+                        onValueChange={(val) =>
+                            setActiveTab(val as typeof activeTab)
+                        }
                         className="w-full"
                     >
-                        <TabsList className="h-9 w-full grid grid-cols-3 sm:w-auto sm:inline-flex">
-                            <TabsTrigger value="overview" className="gap-1 px-1.5 text-xs sm:gap-1.5 sm:px-3 sm:text-sm">
+                        <TabsList className="grid h-9 w-full grid-cols-3 sm:inline-flex sm:w-auto">
+                            <TabsTrigger
+                                value="overview"
+                                className="gap-1 px-1.5 text-xs sm:gap-1.5 sm:px-3 sm:text-sm"
+                            >
                                 <LayoutGrid className="size-3.5 shrink-0" />
                                 <span className="truncate">Overview</span>
                             </TabsTrigger>
-                            <TabsTrigger value="operations" className="gap-1 px-1.5 text-xs sm:gap-1.5 sm:px-3 sm:text-sm">
+                            <TabsTrigger
+                                value="operations"
+                                className="gap-1 px-1.5 text-xs sm:gap-1.5 sm:px-3 sm:text-sm"
+                            >
                                 <GraduationCap className="size-3.5 shrink-0" />
                                 <span className="truncate">Interns</span>
-                                <span className="hidden sm:inline">&nbsp;&amp; Attendance</span>
+                                <span className="hidden sm:inline">
+                                    &nbsp;&amp; Attendance
+                                </span>
                             </TabsTrigger>
-                            <TabsTrigger value="institution" className="gap-1 px-1.5 text-xs sm:gap-1.5 sm:px-3 sm:text-sm">
+                            <TabsTrigger
+                                value="institution"
+                                className="gap-1 px-1.5 text-xs sm:gap-1.5 sm:px-3 sm:text-sm"
+                            >
                                 <Landmark className="size-3.5 shrink-0" />
                                 <span className="truncate">Institution</span>
                             </TabsTrigger>
@@ -328,7 +347,9 @@ export default function AdminDashboard({
                                         : `${unassignedColleges.length} colleges do not have an assigned administrator`}
                                 </div>
                                 <div className="flex flex-wrap items-center gap-1.5 text-xs text-amber-800/90 dark:text-amber-300/90">
-                                    <span className="font-medium">Unassigned:</span>
+                                    <span className="font-medium">
+                                        Unassigned:
+                                    </span>
                                     {unassignedColleges.map((col) => (
                                         <button
                                             key={col.id}
@@ -351,7 +372,7 @@ export default function AdminDashboard({
                         <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 w-full shrink-0 justify-center border-amber-500/40 bg-background text-xs font-medium text-amber-800 hover:bg-amber-500/15 hover:text-amber-900 dark:text-amber-300 dark:hover:bg-amber-500/20 sm:w-auto"
+                            className="h-8 w-full shrink-0 justify-center border-amber-500/40 bg-background text-xs font-medium text-amber-800 hover:bg-amber-500/15 hover:text-amber-900 sm:w-auto dark:text-amber-300 dark:hover:bg-amber-500/20"
                             onClick={() => router.visit('/admin/admins')}
                         >
                             <span>Manage Admins</span>
@@ -361,23 +382,26 @@ export default function AdminDashboard({
                 )}
 
                 {/* ── Institutional KPIs (Institution tab) ───────────────── */}
-                {activeTab === 'institution' && institutionalStats.length > 0 && (
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
-                        {institutionalStats.map((stat, i) => (
-                            <StatCard
-                                key={stat.label}
-                                label={stat.label}
-                                value={'value' in stat ? stat.value : undefined}
-                                displayValue={stat.displayValue}
-                                icon={stat.icon}
-                                variant={stat.variant}
-                                badge={stat.badge}
-                                onClick={stat.onClick}
-                                index={i}
-                            />
-                        ))}
-                    </div>
-                )}
+                {activeTab === 'institution' &&
+                    institutionalStats.length > 0 && (
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+                            {institutionalStats.map((stat, i) => (
+                                <StatCard
+                                    key={stat.label}
+                                    label={stat.label}
+                                    value={
+                                        'value' in stat ? stat.value : undefined
+                                    }
+                                    displayValue={stat.displayValue}
+                                    icon={stat.icon}
+                                    variant={stat.variant}
+                                    badge={stat.badge}
+                                    onClick={stat.onClick}
+                                    index={i}
+                                />
+                            ))}
+                        </div>
+                    )}
 
                 {/* ── Operational KPI Cards ──────────────────────────────── */}
                 {showOperations && (
@@ -412,7 +436,10 @@ export default function AdminDashboard({
                                             Registration Trend
                                         </CardTitle>
                                     </div>
-                                    <Badge variant="outline" className="font-mono text-xs font-normal">
+                                    <Badge
+                                        variant="outline"
+                                        className="font-mono text-xs font-normal"
+                                    >
                                         {registrationsTotal} new
                                     </Badge>
                                 </CardHeader>
@@ -444,8 +471,14 @@ export default function AdminDashboard({
                                         </div>
                                     ) : (
                                         <AttendanceRing
-                                            percent={mounted ? todayAttendance.percent : 0}
-                                            checkedIn={todayAttendance.checked_in}
+                                            percent={
+                                                mounted
+                                                    ? todayAttendance.percent
+                                                    : 0
+                                            }
+                                            checkedIn={
+                                                todayAttendance.checked_in
+                                            }
                                             total={todayAttendance.total}
                                             subtitle="Live check-in progress"
                                         />
@@ -469,7 +502,8 @@ export default function AdminDashboard({
                                                     Approval Status
                                                 </CardTitle>
                                                 <CardDescription className="text-xs">
-                                                    Registration verification breakdown
+                                                    Registration verification
+                                                    breakdown
                                                 </CardDescription>
                                             </div>
                                         </div>
@@ -506,7 +540,8 @@ export default function AdminDashboard({
                                                 Top Establishments
                                             </CardTitle>
                                             <CardDescription className="text-xs">
-                                                Leading host partners by approved intern placement
+                                                Leading host partners by
+                                                approved intern placement
                                             </CardDescription>
                                         </div>
                                     </div>
@@ -523,7 +558,9 @@ export default function AdminDashboard({
                                             variant="ghost"
                                             size="sm"
                                             className="h-8 gap-1 text-xs text-muted-foreground hover:text-foreground"
-                                            onClick={() => router.visit('/admin/htes')}
+                                            onClick={() =>
+                                                router.visit('/admin/htes')
+                                            }
                                         >
                                             <span>Manage HTEs</span>
                                             <ArrowRight className="size-3.5" />
@@ -555,7 +592,7 @@ export default function AdminDashboard({
                         {activeTab === 'overview' && (
                             <div className="flex items-center gap-4">
                                 <div className="h-px flex-1 bg-border/60" />
-                                <span className="flex shrink-0 items-center gap-2 rounded-full border bg-muted/60 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                                <span className="flex shrink-0 items-center gap-2 rounded-full border bg-muted/60 px-3 py-1 text-[11px] font-semibold tracking-widest text-muted-foreground uppercase">
                                     <Landmark className="size-3" />
                                     Institutional Overview
                                 </span>
@@ -584,7 +621,8 @@ export default function AdminDashboard({
                                             Recent Registrations
                                         </CardTitle>
                                         <CardDescription className="text-xs">
-                                            Latest student intern sign-ups awaiting approval
+                                            Latest student intern sign-ups
+                                            awaiting approval
                                         </CardDescription>
                                     </div>
                                 </div>
@@ -656,7 +694,7 @@ export default function AdminDashboard({
                                                                 {intern.email}
                                                             </div>
                                                         </TableCell>
-                                                        <TableCell className="text-center text-xs tabular-nums text-muted-foreground">
+                                                        <TableCell className="text-center text-xs text-muted-foreground tabular-nums">
                                                             {intern.id_number}
                                                         </TableCell>
                                                         <TableCell
@@ -665,21 +703,27 @@ export default function AdminDashboard({
                                                                 intern.program_name
                                                             }
                                                         >
-                                                            {intern.program_name}
+                                                            {
+                                                                intern.program_name
+                                                            }
                                                         </TableCell>
                                                         <TableCell
                                                             className="max-w-[180px] truncate text-center text-xs"
-                                                            title={intern.hte_name}
+                                                            title={
+                                                                intern.hte_name
+                                                            }
                                                         >
                                                             {intern.hte_name}
                                                         </TableCell>
                                                         <TableCell
-                                                            className="whitespace-nowrap text-center text-xs text-muted-foreground"
+                                                            className="text-center text-xs whitespace-nowrap text-muted-foreground"
                                                             title={
                                                                 intern.registered_at_full
                                                             }
                                                         >
-                                                            {intern.registered_at}
+                                                            {
+                                                                intern.registered_at
+                                                            }
                                                         </TableCell>
                                                         <TableCell className="text-center">
                                                             <StatusBadge
