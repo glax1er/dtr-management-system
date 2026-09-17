@@ -473,24 +473,29 @@ export default function AdminManagement({
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                            <h1 className="text-2xl font-bold tracking-tight">
-                                Administrators
-                            </h1>
-                            <Badge
-                                variant="outline"
-                                className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800"
-                            >
-                                <ShieldCheck className="mr-1 size-3.5" />
-                                Super Admin Control
-                            </Badge>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                                <ShieldCheck className="size-5" />
+                            </span>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <h1 className="text-2xl font-bold tracking-tight">
+                                    Administrators
+                                </h1>
+                                <Badge
+                                    variant="outline"
+                                    className="border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-800 dark:bg-purple-950/40 dark:text-purple-300"
+                                >
+                                    <ShieldCheck className="mr-1 size-3.5" />
+                                    Super Admin Control
+                                </Badge>
+                            </div>
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1">
+                        <p className="mt-1 text-sm text-muted-foreground">
                             Manage Super Administrators and College Administrators across all USeP colleges and campuses.
                         </p>
                     </div>
 
-                    <Button onClick={handleOpenAdd} className="w-full sm:w-auto gap-2 shrink-0 justify-center">
+                    <Button onClick={handleOpenAdd} className="w-full shrink-0 justify-center gap-2 sm:w-auto">
                         <Plus className="size-4" />
                         Add Administrator
                     </Button>

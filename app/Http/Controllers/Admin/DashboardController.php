@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceLog;
+use App\Models\Campus;
+use App\Models\College;
 use App\Models\Hte;
 use App\Models\InternProfile;
 use App\Models\User;
@@ -22,7 +24,7 @@ class DashboardController extends Controller
     private const TREND_DAYS = 14;
 
     /** How many HTEs to surface in the "Top HTEs" ranking. */
-    private const TOP_HTE_LIMIT = 5;
+    private const TOP_HTE_LIMIT = 10;
 
     public function index(Request $request): Response
     {
@@ -88,6 +90,8 @@ class DashboardController extends Controller
             $activeHtesQuery->where('college_id', $collegeId);
         }
 
+        $isSuperAdmin = $user->isSuperAdmin();
+
         return Inertia::render('admin/dashboard', [
             'pendingApprovals' => $pendingQuery->count(),
             'totalInterns' => $totalInterns,
@@ -103,7 +107,248 @@ class DashboardController extends Controller
                 'name' => $user->college->name,
                 'code' => $user->college->code,
             ] : null,
+            'superAdminAnalytics' => $isSuperAdmin ? $this->superAdminAnalytics() : null,
         ]);
+    }
+
+    /**
+     * Aggregated analytics for super administrators (campuses, colleges, admins).
+     *
+     * @return array{
+     *     campuses: array{
+     *         total: int,
+     *         active: int,
+     *         items: array<int, array{
+     *             id: int,
+     *             name: string,
+     *             code: string,
+     *             is_active: bool,
+     *             colleges_count: int,
+     *             interns_count: int,
+     *             admins_count: int
+     *         }>
+     *     },
+     *     colleges: array{
+     *         total: int,
+     *         active: int,
+     *         items: array<int, array{
+     *             id: int,
+     *             name: string,
+     *             code: string,
+     *             campus: ?string,
+     *             is_active: bool,
+     *             programs_count: int,
+     *             interns_count: int,
+     *             admins_count: int,
+     *             has_admin: bool,
+     *             admin_names: ?string
+     *         }>
+     *     },
+     *     admins: array{
+     *         total: int,
+     *         active: int,
+     *         inactive: int,
+     *         super_admins: int,
+     *         college_admins: int,
+     *         colleges_count: int,
+     *         colleges_with_admin: int,
+     *         coverage_percent: int,
+     *         unassigned_colleges: array<int, array{id: int, name: string, code: string}>
+     *     }
+     * }
+     */
+    private function superAdminAnalytics(): array
+    {
+        return [
+            'campuses' => $this->campusAnalytics(),
+            'colleges' => $this->collegeAnalytics(),
+            'admins' => $this->adminAnalytics(),
+        ];
+    }
+
+    /**
+     * Campuses with college counts, intern counts, and admin counts
+     *
+     * @return array{
+     *     total: int,
+     *     active: int,
+     *     items: array<int, array{
+     *         id: int,
+     *         name: string,
+     *         code: string,
+     *         is_active: bool,
+     *         colleges_count: int,
+     *         interns_count: int,
+     *         admins_count: int
+     *     }>
+     * }
+     */
+    private function campusAnalytics(): array
+    {
+        $campuses = Campus::query()
+            ->withCount('colleges')
+            ->orderBy('name')
+            ->get();
+
+        $items = $campuses->map(function (Campus $campus) {
+            $internsCount = InternProfile::verified()
+                ->where('status', 'approved')
+                ->where(function ($q) use ($campus) {
+                    $q->whereHas('program.college', fn ($cq) => $cq->where('campus_id', $campus->id))
+                        ->orWhere('campus', $campus->name);
+                })
+                ->count();
+
+            $adminsCount = User::whereIn('role', [User::ROLE_COLLEGE_ADMIN, User::ROLE_ADMIN])
+                ->where(function ($q) use ($campus) {
+                    $q->whereHas('collegeAdminProfile', fn ($pq) => $pq->where('campus_id', $campus->id))
+                        ->orWhereHas('college', fn ($cq) => $cq->where('campus_id', $campus->id))
+                        ->orWhere('campus', $campus->name);
+                })
+                ->count();
+
+            return [
+                'id' => $campus->id,
+                'name' => $campus->name,
+                'code' => $campus->code,
+                'is_active' => (bool) $campus->is_active,
+                'colleges_count' => (int) $campus->colleges_count,
+                'interns_count' => $internsCount,
+                'admins_count' => $adminsCount,
+            ];
+        })->all();
+
+        return [
+            'total' => count($items),
+            'active' => collect($items)->where('is_active', true)->count(),
+            'items' => $items,
+        ];
+    }
+
+    /**
+     * Colleges with programs, interns, and admin assignment status
+     *
+     * @return array{
+     *     total: int,
+     *     active: int,
+     *     items: array<int, array{
+     *         id: int,
+     *         name: string,
+     *         code: string,
+     *         campus: ?string,
+     *         is_active: bool,
+     *         programs_count: int,
+     *         interns_count: int,
+     *         admins_count: int,
+     *         has_admin: bool,
+     *         admin_names: ?string
+     *     }>
+     * }
+     */
+    private function collegeAnalytics(): array
+    {
+        $colleges = College::query()
+            ->withCount([
+                'programs',
+                'admins',
+                'internProfiles as interns_count' => function ($query) {
+                    $query->verified()->where('status', 'approved');
+                },
+            ])
+            ->with([
+                'campus:id,name',
+                'admins:id,name,email,college_id',
+            ])
+            ->orderByDesc('interns_count')
+            ->orderBy('name')
+            ->get();
+
+        $items = $colleges->map(function (College $college) {
+            $adminNames = $college->admins->isNotEmpty()
+                ? $college->admins->pluck('name')->join(', ')
+                : null;
+
+            return [
+                'id' => $college->id,
+                'name' => $college->name,
+                'code' => $college->code,
+                'campus' => $college->campus?->name ?? $college->campus,
+                'is_active' => (bool) $college->is_active,
+                'programs_count' => (int) $college->programs_count,
+                'interns_count' => (int) $college->interns_count,
+                'admins_count' => (int) $college->admins_count,
+                'has_admin' => $college->admins_count > 0,
+                'admin_names' => $adminNames,
+            ];
+        })->all();
+
+        return [
+            'total' => count($items),
+            'active' => collect($items)->where('is_active', true)->count(),
+            'items' => $items,
+        ];
+    }
+
+    /**
+     * Overview of super admins and college admins across the system
+     *
+     * @return array{
+     *     total: int,
+     *     active: int,
+     *     inactive: int,
+     *     super_admins: int,
+     *     college_admins: int,
+     *     colleges_count: int,
+     *     colleges_with_admin: int,
+     *     coverage_percent: int,
+     *     unassigned_colleges: array<int, array{id: int, name: string, code: string}>
+     * }
+     */
+    private function adminAnalytics(): array
+    {
+        $admins = User::query()
+            ->whereIn('role', [User::ROLE_SUPER_ADMIN, User::ROLE_COLLEGE_ADMIN, User::ROLE_ADMIN])
+            ->get(['id', 'role', 'college_id', 'is_active']);
+
+        $totalAdmins = $admins->count();
+        $activeAdmins = $admins->where('is_active', true)->count();
+        $inactiveAdmins = $totalAdmins - $activeAdmins;
+
+        $superAdmins = $admins->filter(fn (User $u) => $u->isSuperAdmin())->count();
+        $collegeAdmins = $admins->filter(fn (User $u) => $u->isCollegeAdmin())->count();
+
+        $activeColleges = College::where('is_active', true)
+            ->withCount('admins')
+            ->get(['id', 'name', 'code']);
+
+        $totalActiveColleges = $activeColleges->count();
+        $collegesWithAdmin = $activeColleges->where('admins_count', '>', 0)->count();
+
+        $unassignedColleges = $activeColleges
+            ->where('admins_count', 0)
+            ->map(fn (College $c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'code' => $c->code,
+            ])
+            ->values()
+            ->all();
+
+        $coveragePercent = $totalActiveColleges > 0
+            ? (int) round(($collegesWithAdmin / $totalActiveColleges) * 100)
+            : 0;
+
+        return [
+            'total' => $totalAdmins,
+            'active' => $activeAdmins,
+            'inactive' => $inactiveAdmins,
+            'super_admins' => $superAdmins,
+            'college_admins' => $collegeAdmins,
+            'colleges_count' => $totalActiveColleges,
+            'colleges_with_admin' => $collegesWithAdmin,
+            'coverage_percent' => $coveragePercent,
+            'unassigned_colleges' => $unassignedColleges,
+        ];
     }
 
     /**
