@@ -43,14 +43,26 @@ class ScheduleController extends Controller
             $month = $now->copy()->startOfMonth();
         }
 
+        $collegeId = $profile?->program?->college_id ?? $user->college_id;
+
         $defaultExpectedStartTime = config('dtr.expected_start_time', '08:00');
 
-        // Fetch Global Schedule Periods (Admin managed)
+        // Fetch Global Schedule Periods (University-wide, Tier 1)
         $globalPeriods = SchedulePeriod::whereNull('hte_id')
+            ->whereNull('college_id')
             ->orderByDesc('start_date')
             ->get();
 
-        // Fetch HTE Schedule Override Periods (Supervisor managed for this intern's HTE)
+        // Fetch College Schedule Periods (Tier 2, specific to intern's college)
+        $collegePeriods = $collegeId
+            ? SchedulePeriod::where('college_id', $collegeId)
+                ->whereNull('hte_id')
+                ->with('college:id,name,code')
+                ->orderByDesc('start_date')
+                ->get()
+            : collect();
+
+        // Fetch HTE Schedule Override Periods (Supervisor managed for this intern's HTE, Tier 3)
         $htePeriods = $hteId
             ? SchedulePeriod::where('hte_id', $hteId)
                 ->with('hte')
@@ -93,12 +105,17 @@ class ScheduleController extends Controller
             $dayName = strtolower($cursor->englishDayOfWeek);
             $isCurrentMonth = $cursor->month === $month->month && $cursor->year === $month->year;
 
-            // 1. Check for HTE override covering this date
+            // 1. Check for HTE override covering this date (Tier 3)
             $matchingHtePeriod = $htePeriods->first(function (SchedulePeriod $p) use ($dateStr) {
                 return $p->start_date->toDateString() <= $dateStr && $p->end_date->toDateString() >= $dateStr;
             });
 
-            // 2. Check for Global schedule covering this date
+            // 2. Check for College schedule covering this date (Tier 2)
+            $matchingCollegePeriod = $collegePeriods->first(function (SchedulePeriod $p) use ($dateStr) {
+                return $p->start_date->toDateString() <= $dateStr && $p->end_date->toDateString() >= $dateStr;
+            });
+
+            // 3. Check for Global schedule covering this date (Tier 1)
             $matchingGlobalPeriod = $globalPeriods->first(function (SchedulePeriod $p) use ($dateStr) {
                 return $p->start_date->toDateString() <= $dateStr && $p->end_date->toDateString() >= $dateStr;
             });
@@ -108,6 +125,13 @@ class ScheduleController extends Controller
                 $sourceType = 'hte_override';
                 $sourceLabel = 'HTE Time Schedule';
                 $activePeriod = $matchingHtePeriod;
+                $isWorkday = ! empty($dayTime);
+                $expectedTime = $dayTime;
+            } elseif ($matchingCollegePeriod !== null) {
+                $dayTime = $matchingCollegePeriod->day_schedule[$dayName] ?? null;
+                $sourceType = 'college_schedule';
+                $sourceLabel = ($matchingCollegePeriod->college?->name ?? 'College').' Schedule';
+                $activePeriod = $matchingCollegePeriod;
                 $isWorkday = ! empty($dayTime);
                 $expectedTime = $dayTime;
             } elseif ($matchingGlobalPeriod !== null) {
@@ -180,12 +204,19 @@ class ScheduleController extends Controller
             $isUpcoming = $period->start_date->copy()->startOfDay()->isFuture();
             $isActive = ! $isPast && ! $isUpcoming;
 
+            $scopeLabel = match ($scope) {
+                'hte' => 'HTE Time Schedule',
+                'college' => ($period->college?->name ?? 'College').' Schedule',
+                default => 'Global OJT Schedule',
+            };
+
             return [
                 'id' => $period->id,
-                'name' => $period->name ?: ($scope === 'hte' ? 'HTE Time Schedule' : 'Global OJT Schedule'),
+                'name' => $period->name ?: $scopeLabel,
                 'scope' => $scope,
-                'scope_label' => $scope === 'hte' ? 'HTE Time Schedule' : 'Global OJT Schedule',
+                'scope_label' => $scopeLabel,
                 'hte_name' => $period->hte?->hte_name,
+                'college_name' => $period->college?->name,
                 'start_date' => $period->start_date->toDateString(),
                 'end_date' => $period->end_date->toDateString(),
                 'formatted_range' => $period->start_date->format('M d, Y').' – '.$period->end_date->format('M d, Y'),
@@ -199,6 +230,7 @@ class ScheduleController extends Controller
         };
 
         $formattedGlobalPeriods = $globalPeriods->map(fn ($p) => $mapPeriod($p, 'global'))->values();
+        $formattedCollegePeriods = $collegePeriods->map(fn ($p) => $mapPeriod($p, 'college'))->values();
         $formattedHtePeriods = $htePeriods->map(fn ($p) => $mapPeriod($p, 'hte'))->values();
 
         // Recent schedule notifications for this intern
@@ -216,6 +248,7 @@ class ScheduleController extends Controller
                     'scope' => $n->data['scope'] ?? 'global',
                     'schedule_name' => $n->data['schedule_name'] ?? null,
                     'hte_name' => $n->data['hte_name'] ?? null,
+                    'college_name' => $n->data['college_name'] ?? null,
                     'schedule_period_id' => $n->data['schedule_period_id'] ?? null,
                     'created_at' => $n->created_at->toIso8601String(),
                     'created_at_human' => $n->created_at->diffForHumans(),
@@ -236,6 +269,7 @@ class ScheduleController extends Controller
                 'restdays_count' => $monthRestdayCount,
                 'total_days' => $month->daysInMonth,
                 'hte_overrides_count' => $formattedHtePeriods->where('status', '!=', 'past')->count(),
+                'college_periods_count' => $formattedCollegePeriods->where('status', '!=', 'past')->count(),
                 'global_periods_count' => $formattedGlobalPeriods->where('status', '!=', 'past')->count(),
             ],
             'hte' => $hte ? [
@@ -243,6 +277,7 @@ class ScheduleController extends Controller
                 'name' => $hte->hte_name,
             ] : null,
             'globalPeriods' => $formattedGlobalPeriods,
+            'collegePeriods' => $formattedCollegePeriods,
             'htePeriods' => $formattedHtePeriods,
             'recentNotifications' => $recentNotifications,
             'defaultExpectedStartTime' => $defaultExpectedStartTime,

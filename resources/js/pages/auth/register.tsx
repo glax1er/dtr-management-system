@@ -681,7 +681,7 @@ export default function Register({
 
                     <div
                         onScroll={handlePolicyScroll}
-                        className="max-h-[30vh] overflow-y-auto pr-2 text-sm text-muted-foreground"
+                        className="max-h-[30vh] overflow-y-auto pr-2 text-sm text-justify text-muted-foreground"
                     >
                         <p className="mb-3">
                             This DTR Management System collects your name, email
