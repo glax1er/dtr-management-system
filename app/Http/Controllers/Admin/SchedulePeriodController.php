@@ -25,15 +25,25 @@ class SchedulePeriodController extends Controller
             ? College::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code'])
             : [];
 
-        $query = SchedulePeriod::whereNull('hte_id')
-            ->with('college:id,name,code')
-            ->orderByDesc('start_date');
+        $query = SchedulePeriod::with([
+            'college:id,name,code',
+            'hte:hte_id,hte_name,college_id',
+            'hte.college:id,name,code',
+        ])->orderByDesc('start_date');
 
         if (! $isSuperAdmin && $collegeId !== null) {
-            // College Admin sees their college's schedules AND the university global baseline schedule
+            // College Admin sees their college's schedules, the university global baseline, and schedules of their college's HTEs
             $query->where(function ($q) use ($collegeId) {
-                $q->where('college_id', $collegeId)
-                    ->orWhereNull('college_id');
+                $q->where(function ($sub) use ($collegeId) {
+                    $sub->whereNull('hte_id')
+                        ->where(function ($cq) use ($collegeId) {
+                            $cq->where('college_id', $collegeId)
+                                ->orWhereNull('college_id');
+                        });
+                })->orWhere(function ($sub) use ($collegeId) {
+                    $sub->whereNotNull('hte_id')
+                        ->whereHas('hte', fn ($hq) => $hq->where('college_id', $collegeId));
+                });
             });
         }
 
@@ -270,8 +280,18 @@ class SchedulePeriodController extends Controller
 
     private function toArray(SchedulePeriod $period, User $viewer): array
     {
-        $isGlobal = $period->college_id === null;
-        $isOwner = $viewer->isSuperAdmin() || ($period->college_id !== null && $period->college_id === $viewer->college_id);
+        $isGlobal = $period->college_id === null && $period->hte_id === null;
+        $isHte = $period->hte_id !== null;
+        $isOwner = ! $isHte && ($viewer->isSuperAdmin() || ($period->college_id !== null && $period->college_id === $viewer->college_id));
+
+        $college = $period->college ?? $period->hte?->college;
+
+        $scope = $isGlobal ? 'global' : ($isHte ? 'hte' : 'college');
+        $scopeLabel = $isGlobal
+            ? 'University-wide Global Schedule'
+            : ($isHte
+                ? 'HTE Override set by '.($period->hte?->hte_name ?? 'HTE')
+                : 'Global schedule set by '.($college?->name ?? 'College'));
 
         return [
             'id' => $period->id,
@@ -279,16 +299,19 @@ class SchedulePeriodController extends Controller
             'start_date' => $period->start_date->toDateString(),
             'end_date' => $period->end_date->toDateString(),
             'day_schedule' => $period->day_schedule,
-            'college_id' => $period->college_id,
-            'college' => $period->college ? [
-                'id' => $period->college->id,
-                'name' => $period->college->name,
-                'code' => $period->college->code,
+            'college_id' => $period->college_id ?? $college?->id,
+            'college' => $college ? [
+                'id' => $college->id,
+                'name' => $college->name,
+                'code' => $college->code,
             ] : null,
-            'scope' => $isGlobal ? 'global' : 'college',
-            'scope_label' => $isGlobal
-                ? 'University-wide Global Schedule'
-                : 'Global schedule set by '.($period->college?->name ?? 'College'),
+            'hte_id' => $period->hte_id,
+            'hte' => $period->hte ? [
+                'id' => $period->hte->hte_id,
+                'name' => $period->hte->hte_name,
+            ] : null,
+            'scope' => $scope,
+            'scope_label' => $scopeLabel,
             'is_owner' => $isOwner,
         ];
     }
