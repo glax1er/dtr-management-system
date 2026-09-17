@@ -39,7 +39,8 @@ class HandleInertiaRequests extends Middleware
 
         // DB-backed notification items for all roles (uses Laravel's database notification channel).
         $dbItems = $user
-            ? $user->unreadNotifications()
+            ? $user->visibleNotifications()
+                ->whereNull('read_at')
                 ->latest()
                 ->limit(5)
                 ->get()
@@ -58,7 +59,9 @@ class HandleInertiaRequests extends Middleware
             : [];
 
         $notifications = [
-            'count' => $user ? $user->unreadNotifications()->count() : 0,
+            'count' => $user
+                ? $user->visibleNotifications()->whereNull('read_at')->count()
+                : 0,
             'items' => $dbItems,
         ];
 

@@ -19,6 +19,7 @@ use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 beforeEach(function () {
     Storage::fake('local');
@@ -49,6 +50,41 @@ test('user can view notifications list', function () {
     $response = $this->actingAs($user)->get(route('notifications.index'));
 
     $response->assertOk();
+});
+
+test('cleared resolution ticket notifications are hidden from the notification list', function () {
+    [$user] = createTestInternProfile();
+
+    $user->notifications()->create([
+        'id' => (string) Str::uuid(),
+        'type' => 'resolution_ticket',
+        'data' => [
+            'type' => 'resolution_ticket',
+            'title' => 'Old resolution request',
+            'message' => 'This notification was cleared.',
+        ],
+        'created_at' => now()->subMinute(),
+    ]);
+
+    $user->update(['notifications_cleared_at' => now()]);
+
+    $visible = $user->notifications()->create([
+        'id' => (string) Str::uuid(),
+        'type' => 'intern_document',
+        'data' => [
+            'type' => 'intern_document',
+            'title' => 'Visible document update',
+            'message' => 'This notification remains visible.',
+        ],
+    ]);
+
+    $response = $this->actingAs($user)->get(route('notifications.index'));
+
+    $response->assertInertia(fn ($page) => $page
+        ->where('notifications.count', 1)
+        ->has('notifications.items', 1)
+        ->where('notifications.items.0.id', $visible->id)
+    );
 });
 
 test('user can mark a single notification as read', function () {

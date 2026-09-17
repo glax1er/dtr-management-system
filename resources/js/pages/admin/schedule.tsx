@@ -1,13 +1,12 @@
+import type { RequestPayload } from '@inertiajs/core';
 import { Head, router } from '@inertiajs/react';
 import {
-    Building2,
     Calendar,
     CalendarDays,
     CalendarClock,
     Clock,
     Globe,
     GraduationCap,
-    Info,
     Layers,
     Lock,
     Pencil,
@@ -461,6 +460,7 @@ export default function AdminSchedule({
         if (filterCollege === 'all') {
             return true;
         }
+
         if (filterCollege === 'global') {
             return period.college_id === null;
         }
@@ -476,7 +476,7 @@ export default function AdminSchedule({
             return;
         }
 
-        const payload: Record<string, unknown> = {
+        const payload: RequestPayload = {
             name: addForm.name || undefined,
             start_date: addForm.startDate,
             end_date: addForm.endDate,
@@ -513,7 +513,7 @@ export default function AdminSchedule({
             return;
         }
 
-        const payload: Record<string, unknown> = {
+        const payload: RequestPayload = {
             name: editForm.name || undefined,
             start_date: editForm.startDate,
             end_date: editForm.endDate,

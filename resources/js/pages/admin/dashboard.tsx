@@ -16,7 +16,6 @@ import {
 import { useEffect, useState } from 'react';
 import {
     AttendanceRing,
-    CountUp,
     RankedList,
     StatCard,
     StatusPieChart,
@@ -26,11 +25,11 @@ import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
 import {
     InstitutionalOverviewCard,
-    type SuperAdminAnalytics,
 } from '@/components/super-admin-analytics';
+import type { SuperAdminAnalytics } from '@/components/super-admin-analytics';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
+import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
@@ -47,7 +46,6 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import type { PageProps } from '@/types';
 
@@ -103,27 +101,6 @@ interface AdminDashboardProps {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const STATUS_META: Record<
-    StatusCount['status'],
-    { label: string; barClass: string; dotClass: string }
-> = {
-    approved: {
-        label: 'Approved',
-        barClass: 'bg-emerald-500',
-        dotClass: 'bg-emerald-500',
-    },
-    pending: {
-        label: 'Pending',
-        barClass: 'bg-amber-500',
-        dotClass: 'bg-amber-500',
-    },
-    rejected: {
-        label: 'Rejected',
-        barClass: 'bg-destructive',
-        dotClass: 'bg-destructive',
-    },
-};
-
 // ─── Dashboard Component ──────────────────────────────────────────────────────
 
 export default function AdminDashboard({
@@ -150,6 +127,7 @@ export default function AdminDashboard({
     const [mounted, setMounted] = useState(false);
     useEffect(() => {
         const id = requestAnimationFrame(() => setMounted(true));
+
         return () => cancelAnimationFrame(id);
     }, []);
 
@@ -293,7 +271,12 @@ export default function AdminDashboard({
                         <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm sm:size-10">
                             <LayoutGrid className="size-4 sm:size-5" />
                         </span>
-                        Dashboard
+                        <span>
+                            Welcome, {auth.user?.name || 'User'}
+                            <span className="mt-0.5 block text-xs font-normal text-muted-foreground sm:text-sm">
+                                Dashboard overview
+                            </span>
+                        </span>
                         {isSuperAdmin && (
                             <Badge
                                 variant="secondary"

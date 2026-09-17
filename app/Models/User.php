@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -42,6 +43,27 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+
+    /**
+     * Notifications visible after the user's resolution-ticket clear point.
+     *
+     * @return MorphMany<\Illuminate\Notifications\DatabaseNotification, $this>
+     */
+    public function visibleNotifications(): MorphMany
+    {
+        $notifications = $this->notifications();
+
+        if ($this->notifications_cleared_at !== null) {
+            $notifications->where(function ($query) {
+                $query
+                    ->where('created_at', '>=', $this->notifications_cleared_at)
+                    ->orWhereNull('data->type')
+                    ->orWhere('data->type', '!=', 'resolution_ticket');
+            });
+        }
+
+        return $notifications;
+    }
 
     /**
      * The attributes that are mass assignable.
