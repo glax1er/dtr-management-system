@@ -97,4 +97,14 @@ class College extends Model
             'program_id'  // Local key on programs table...
         );
     }
+
+    /**
+     * Schedule periods defined for this college (Tier 2).
+     *
+     * @return HasMany<SchedulePeriod, $this>
+     */
+    public function schedulePeriods(): HasMany
+    {
+        return $this->hasMany(SchedulePeriod::class, 'college_id', 'id');
+    }
 }

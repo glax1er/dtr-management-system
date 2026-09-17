@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\College;
 use App\Models\SchedulePeriod;
 use App\Models\User;
 use App\Notifications\ScheduleUpdatedNotification;
@@ -14,33 +15,70 @@ use Inertia\Response;
 
 class SchedulePeriodController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $periods = SchedulePeriod::whereNull('hte_id')
-            ->orderByDesc('start_date')
-            ->get()
-            ->map(fn (SchedulePeriod $period) => $this->toArray($period));
+        $user = $request->user();
+        $isSuperAdmin = $user->isSuperAdmin();
+        $collegeId = $user->isCollegeAdmin() ? $user->college_id : null;
+
+        $colleges = $isSuperAdmin
+            ? College::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code'])
+            : [];
+
+        $query = SchedulePeriod::whereNull('hte_id')
+            ->with('college:id,name,code')
+            ->orderByDesc('start_date');
+
+        if (! $isSuperAdmin && $collegeId !== null) {
+            // College Admin sees their college's schedules AND the university global baseline schedule
+            $query->where(function ($q) use ($collegeId) {
+                $q->where('college_id', $collegeId)
+                    ->orWhereNull('college_id');
+            });
+        }
+
+        $periods = $query->get()->map(fn (SchedulePeriod $period) => $this->toArray($period, $user));
 
         return Inertia::render('admin/schedule', [
             'periods' => $periods,
+            'isSuperAdmin' => $isSuperAdmin,
+            'colleges' => $colleges,
+            'userCollege' => $user->college ? [
+                'id' => $user->college->id,
+                'name' => $user->college->name,
+                'code' => $user->college->code,
+            ] : null,
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $validated = $this->validatePayload($request);
+        $user = $request->user();
+        $isSuperAdmin = $user->isSuperAdmin();
+        $validated = $this->validatePayload($request, $isSuperAdmin);
+
+        $collegeId = $isSuperAdmin
+            ? ($validated['college_id'] ?? null)
+            : $user->college_id;
 
         $schedulePeriod = SchedulePeriod::create([
             'hte_id' => null,
+            'college_id' => $collegeId,
             'name' => $validated['name'] ?? null,
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'],
             'day_schedule' => $validated['day_schedule'],
         ]);
 
-        $this->notifyScheduleChange($schedulePeriod, ScheduleUpdatedNotification::ACTION_CREATED, $request->user());
+        $schedulePeriod->load('college:id,name,code');
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Global schedule period created.']);
+        $this->notifyScheduleChange($schedulePeriod, ScheduleUpdatedNotification::ACTION_CREATED, $user);
+
+        $flashMessage = $collegeId === null
+            ? 'University-wide global schedule period created.'
+            : 'Global schedule period for '.($schedulePeriod->college?->name ?? 'college').' created.';
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => $flashMessage]);
 
         return back();
     }
@@ -49,18 +87,36 @@ class SchedulePeriodController extends Controller
     {
         abort_if($schedulePeriod->hte_id !== null, 404);
 
-        $validated = $this->validatePayload($request);
+        $user = $request->user();
+        $isSuperAdmin = $user->isSuperAdmin();
 
-        $schedulePeriod->update([
+        if ($user->isCollegeAdmin()) {
+            abort_if(
+                $schedulePeriod->college_id !== $user->college_id,
+                403,
+                'Unauthorized. You can only update schedules for your own college.'
+            );
+        }
+
+        $validated = $this->validatePayload($request, $isSuperAdmin);
+
+        $updateData = [
             'name' => $validated['name'] ?? null,
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'],
             'day_schedule' => $validated['day_schedule'],
-        ]);
+        ];
 
-        $this->notifyScheduleChange($schedulePeriod, ScheduleUpdatedNotification::ACTION_UPDATED, $request->user());
+        if ($isSuperAdmin) {
+            $updateData['college_id'] = $validated['college_id'] ?? null;
+        }
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Global schedule period updated.']);
+        $schedulePeriod->update($updateData);
+        $schedulePeriod->load('college:id,name,code');
+
+        $this->notifyScheduleChange($schedulePeriod, ScheduleUpdatedNotification::ACTION_UPDATED, $user);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Schedule period updated.']);
 
         return back();
     }
@@ -69,12 +125,24 @@ class SchedulePeriodController extends Controller
     {
         abort_if($schedulePeriod->hte_id !== null, 404);
 
+        $user = $request->user();
+
+        if ($user->isCollegeAdmin()) {
+            abort_if(
+                $schedulePeriod->college_id !== $user->college_id,
+                403,
+                'Unauthorized. You can only delete schedules for your own college.'
+            );
+        }
+
         $scheduleName = $schedulePeriod->name ?? "{$schedulePeriod->start_date->format('M d, Y')} - {$schedulePeriod->end_date->format('M d, Y')}";
         $periodId = $schedulePeriod->id;
+        $collegeId = $schedulePeriod->college_id;
+        $collegeName = $schedulePeriod->college?->name;
 
         $schedulePeriod->delete();
 
-        $this->notifyScheduleChangeDeleted($scheduleName, $periodId, $request->user());
+        $this->notifyScheduleChangeDeleted($scheduleName, $periodId, $collegeId, $collegeName, $user);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Schedule period deleted.']);
 
@@ -83,38 +151,48 @@ class SchedulePeriodController extends Controller
 
     private function notifyScheduleChange(SchedulePeriod $schedulePeriod, string $action, ?User $actor = null): void
     {
-        $collegeId = $actor?->isCollegeAdmin() ? $actor->college_id : null;
+        $collegeId = $schedulePeriod->college_id;
+        $collegeName = $schedulePeriod->college?->name;
+        $scope = $collegeId === null ? ScheduleUpdatedNotification::SCOPE_GLOBAL : ScheduleUpdatedNotification::SCOPE_COLLEGE;
 
-        // Notify HTE supervisors and interns when admin updates schedule (OJT supervisors are excluded)
-        $recipients = User::query()
-            ->where(function ($query) use ($collegeId) {
-                $query->where(function ($iq) use ($collegeId) {
+        $query = User::query();
+
+        if ($collegeId === null) {
+            // University-wide schedule: notify all verified approved interns and HTE supervisors
+            $query->where(function ($q) {
+                $q->where(function ($iq) {
                     $iq->where('role', User::ROLE_INTERN)
-                        ->whereHas('internProfile', function ($q) use ($collegeId) {
-                            $q->verified()->where('status', 'approved');
-                            if ($collegeId) {
-                                $q->forCollege($collegeId);
-                            }
-                        });
-                })->orWhere(function ($q) use ($collegeId) {
-                    $q->where('role', User::ROLE_SUPERVISOR)
-                        ->whereHas('supervisorProfile', function ($sp) use ($collegeId) {
-                            $sp->where('supervisor_type', 'hte');
-                            if ($collegeId) {
-                                $sp->whereHas('hte', fn ($hq) => $hq->where('college_id', $collegeId));
-                            }
-                        });
+                        ->whereHas('internProfile', fn ($sub) => $sub->verified()->where('status', 'approved'));
+                })->orWhere(function ($sq) {
+                    $sq->where('role', User::ROLE_SUPERVISOR)
+                        ->whereHas('supervisorProfile', fn ($sp) => $sp->where('supervisor_type', 'hte'));
                 });
-            })
-            ->get()
-            ->filter(fn (User $user) => $user->wantsNotification('schedule_alerts'));
+            });
+        } else {
+            // College-specific schedule: notify interns and supervisors belonging to this college
+            $query->where(function ($q) use ($collegeId) {
+                $q->where(function ($iq) use ($collegeId) {
+                    $iq->where('role', User::ROLE_INTERN)
+                        ->whereHas('internProfile', fn ($sub) => $sub->verified()->where('status', 'approved')->forCollege($collegeId));
+                })->orWhere(function ($sq) use ($collegeId) {
+                    $sq->where('role', User::ROLE_SUPERVISOR)
+                        ->whereHas('supervisorProfile', fn ($sp) => $sp->where(function ($sub) use ($collegeId) {
+                            $sub->where(fn ($hq) => $hq->where('supervisor_type', 'hte')->whereHas('hte', fn ($h) => $h->where('college_id', $collegeId)))
+                                ->orWhere(fn ($pq) => $pq->where('supervisor_type', 'ojt')->whereHas('program', fn ($p) => $p->where('college_id', $collegeId)));
+                        }));
+                });
+            });
+        }
+
+        $recipients = $query->get()->filter(fn (User $user) => $user->wantsNotification('schedule_alerts'));
 
         if ($recipients->isNotEmpty()) {
             $scheduleName = $schedulePeriod->name ?? "{$schedulePeriod->start_date->format('M d, Y')} - {$schedulePeriod->end_date->format('M d, Y')}";
             Notification::send($recipients, new ScheduleUpdatedNotification(
                 action: $action,
-                scope: ScheduleUpdatedNotification::SCOPE_GLOBAL,
+                scope: $scope,
                 scheduleName: $scheduleName,
+                collegeName: $collegeName,
                 actor: $actor,
                 schedulePeriodId: $schedulePeriod->id,
                 startDate: $schedulePeriod->start_date?->toDateString(),
@@ -122,48 +200,54 @@ class SchedulePeriodController extends Controller
         }
     }
 
-    private function notifyScheduleChangeDeleted(string $scheduleName, int $periodId, ?User $actor = null): void
+    private function notifyScheduleChangeDeleted(string $scheduleName, int $periodId, ?int $collegeId = null, ?string $collegeName = null, ?User $actor = null): void
     {
-        $collegeId = $actor?->isCollegeAdmin() ? $actor->college_id : null;
+        $scope = $collegeId === null ? ScheduleUpdatedNotification::SCOPE_GLOBAL : ScheduleUpdatedNotification::SCOPE_COLLEGE;
 
-        // Notify HTE supervisors and interns when admin deletes a schedule (OJT supervisors are excluded)
-        $recipients = User::query()
-            ->where(function ($query) use ($collegeId) {
-                $query->where(function ($iq) use ($collegeId) {
+        $query = User::query();
+
+        if ($collegeId === null) {
+            $query->where(function ($q) {
+                $q->where(function ($iq) {
                     $iq->where('role', User::ROLE_INTERN)
-                        ->whereHas('internProfile', function ($q) use ($collegeId) {
-                            $q->verified()->where('status', 'approved');
-                            if ($collegeId) {
-                                $q->forCollege($collegeId);
-                            }
-                        });
-                })->orWhere(function ($q) use ($collegeId) {
-                    $q->where('role', User::ROLE_SUPERVISOR)
-                        ->whereHas('supervisorProfile', function ($sp) use ($collegeId) {
-                            $sp->where('supervisor_type', 'hte');
-                            if ($collegeId) {
-                                $sp->whereHas('hte', fn ($hq) => $hq->where('college_id', $collegeId));
-                            }
-                        });
+                        ->whereHas('internProfile', fn ($sub) => $sub->verified()->where('status', 'approved'));
+                })->orWhere(function ($sq) {
+                    $sq->where('role', User::ROLE_SUPERVISOR)
+                        ->whereHas('supervisorProfile', fn ($sp) => $sp->where('supervisor_type', 'hte'));
                 });
-            })
-            ->get()
-            ->filter(fn (User $user) => $user->wantsNotification('schedule_alerts'));
+            });
+        } else {
+            $query->where(function ($q) use ($collegeId) {
+                $q->where(function ($iq) use ($collegeId) {
+                    $iq->where('role', User::ROLE_INTERN)
+                        ->whereHas('internProfile', fn ($sub) => $sub->verified()->where('status', 'approved')->forCollege($collegeId));
+                })->orWhere(function ($sq) use ($collegeId) {
+                    $sq->where('role', User::ROLE_SUPERVISOR)
+                        ->whereHas('supervisorProfile', fn ($sp) => $sp->where(function ($sub) use ($collegeId) {
+                            $sub->where(fn ($hq) => $hq->where('supervisor_type', 'hte')->whereHas('hte', fn ($h) => $h->where('college_id', $collegeId)))
+                                ->orWhere(fn ($pq) => $pq->where('supervisor_type', 'ojt')->whereHas('program', fn ($p) => $p->where('college_id', $collegeId)));
+                        }));
+                });
+            });
+        }
+
+        $recipients = $query->get()->filter(fn (User $user) => $user->wantsNotification('schedule_alerts'));
 
         if ($recipients->isNotEmpty()) {
             Notification::send($recipients, new ScheduleUpdatedNotification(
                 action: ScheduleUpdatedNotification::ACTION_DELETED,
-                scope: ScheduleUpdatedNotification::SCOPE_GLOBAL,
+                scope: $scope,
                 scheduleName: $scheduleName,
+                collegeName: $collegeName,
                 actor: $actor,
                 schedulePeriodId: $periodId,
             ));
         }
     }
 
-    private function validatePayload(Request $request): array
+    private function validatePayload(Request $request, bool $isSuperAdmin = false): array
     {
-        return $request->validate([
+        $rules = [
             'name' => ['nullable', 'string', 'max:255'],
             'start_date' => ['required', 'date_format:Y-m-d'],
             'end_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:start_date'],
@@ -175,18 +259,37 @@ class SchedulePeriodController extends Controller
             'day_schedule.friday' => ['nullable', 'date_format:H:i'],
             'day_schedule.saturday' => ['nullable', 'date_format:H:i'],
             'day_schedule.sunday' => ['nullable', 'date_format:H:i'],
-        ]);
+        ];
+
+        if ($isSuperAdmin) {
+            $rules['college_id'] = ['nullable', 'integer', 'exists:colleges,id'];
+        }
+
+        return $request->validate($rules);
     }
 
-    private function toArray(SchedulePeriod $period): array
+    private function toArray(SchedulePeriod $period, User $viewer): array
     {
+        $isGlobal = $period->college_id === null;
+        $isOwner = $viewer->isSuperAdmin() || ($period->college_id !== null && $period->college_id === $viewer->college_id);
+
         return [
             'id' => $period->id,
             'name' => $period->name,
             'start_date' => $period->start_date->toDateString(),
             'end_date' => $period->end_date->toDateString(),
             'day_schedule' => $period->day_schedule,
-            'scope' => 'global',
+            'college_id' => $period->college_id,
+            'college' => $period->college ? [
+                'id' => $period->college->id,
+                'name' => $period->college->name,
+                'code' => $period->college->code,
+            ] : null,
+            'scope' => $isGlobal ? 'global' : 'college',
+            'scope_label' => $isGlobal
+                ? 'University-wide Global Schedule'
+                : 'Global schedule set by '.($period->college?->name ?? 'College'),
+            'is_owner' => $isOwner,
         ];
     }
 }

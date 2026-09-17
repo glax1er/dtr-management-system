@@ -16,16 +16,27 @@ class SchedulePeriodController extends Controller
 {
     public function index(Request $request): Response
     {
-        $hteId = $request->user()->supervisorProfile->hte_id;
+        $supervisorProfile = $request->user()->supervisorProfile;
+        $hteId = $supervisorProfile->hte_id;
+        $collegeId = $supervisorProfile->hte?->college_id;
         $highlightId = $request->input('highlight') ?? $request->input('highlight_id');
 
-        // Global periods first (read-only reference for the supervisor),
-        // then this HTE's own overrides — both shown together so the
-        // supervisor can see exactly what they're overriding.
+        // Global periods (read-only university baseline)
         $globalPeriods = SchedulePeriod::whereNull('hte_id')
+            ->whereNull('college_id')
             ->orderByDesc('start_date')
             ->get()
             ->map(fn (SchedulePeriod $period) => $this->toArray($period, 'global'));
+
+        // College periods (read-only college baseline)
+        $collegePeriods = $collegeId
+            ? SchedulePeriod::whereNull('hte_id')
+                ->where('college_id', $collegeId)
+                ->with('college:id,name,code')
+                ->orderByDesc('start_date')
+                ->get()
+                ->map(fn (SchedulePeriod $period) => $this->toArray($period, 'college'))
+            : collect();
 
         $ownPeriods = SchedulePeriod::where('hte_id', $hteId)
             ->orderByDesc('start_date')
@@ -34,6 +45,7 @@ class SchedulePeriodController extends Controller
 
         return Inertia::render('supervisor/schedule', [
             'globalPeriods' => $globalPeriods,
+            'collegePeriods' => $collegePeriods,
             'periods' => $ownPeriods,
             'highlightId' => $highlightId ? (int) $highlightId : null,
         ]);
@@ -167,6 +179,12 @@ class SchedulePeriodController extends Controller
             'end_date' => $period->end_date->toDateString(),
             'day_schedule' => $period->day_schedule,
             'scope' => $scope,
+            'college_id' => $period->college_id,
+            'college' => $period->college ? [
+                'id' => $period->college->id,
+                'name' => $period->college->name,
+                'code' => $period->college->code,
+            ] : null,
         ];
     }
 }
