@@ -260,9 +260,9 @@ export default function NotificationsPage() {
             </div>
 
             {items.length > 0 && (
-                <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="rounded-2xl border border-border bg-card p-4">
                     {/* Search */}
-                    <div className="relative lg:max-w-xs lg:flex-1">
+                    <div className="relative w-full sm:max-w-md">
                         <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             value={query}
@@ -272,7 +272,7 @@ export default function NotificationsPage() {
                         />
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="mt-4 flex min-w-0 flex-wrap items-center gap-3 border-t border-border pt-4">
                         {/* Status filter */}
                         <div className="flex flex-wrap gap-1.5">
                             {STATUS_FILTERS.map((filter) => (

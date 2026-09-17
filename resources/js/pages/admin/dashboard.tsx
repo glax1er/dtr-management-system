@@ -285,13 +285,13 @@ export default function AdminDashboard({
         <>
             <Head title="Admin Dashboard" />
 
-            <div className="flex h-full flex-1 flex-col gap-4 p-4 sm:p-6">
+            <div className="flex h-full flex-1 flex-col gap-3 p-3 sm:gap-4 sm:p-4 md:p-6">
 
                 {/* ── Header ─────────────────────────────────────────────── */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
-                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-                            <LayoutGrid className="size-5" />
+                    <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-black sm:gap-3 sm:text-2xl dark:text-white">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm sm:size-10">
+                            <LayoutGrid className="size-4 sm:size-5" />
                         </span>
                         Dashboard
                         {isSuperAdmin && (
@@ -379,7 +379,7 @@ export default function AdminDashboard({
 
                 {/* ── Institutional KPIs (Institution tab) ───────────────── */}
                 {activeTab === 'institution' && institutionalStats.length > 0 && (
-                    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
                         {institutionalStats.map((stat, i) => (
                             <StatCard
                                 key={stat.label}
@@ -398,7 +398,7 @@ export default function AdminDashboard({
 
                 {/* ── Operational KPI Cards ──────────────────────────────── */}
                 {showOperations && (
-                    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
                         {operationalStats.map((stat, i) => (
                             <StatCard
                                 key={stat.label}

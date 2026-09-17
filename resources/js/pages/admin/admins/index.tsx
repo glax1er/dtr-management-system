@@ -469,7 +469,7 @@ export default function AdminManagement({
         <>
             <Head title="Admin Management" />
 
-            <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
+            <div className="flex h-full flex-1 flex-col gap-4 p-4 sm:gap-6 md:p-6">
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -478,7 +478,7 @@ export default function AdminManagement({
                                 <ShieldCheck className="size-5" />
                             </span>
                             <div className="flex flex-wrap items-center gap-2">
-                                <h1 className="text-2xl font-bold tracking-tight">
+                                <h1 className="text-2xl font-semibold tracking-tight text-black dark:text-white">
                                     Administrators
                                 </h1>
                                 <Badge
@@ -495,10 +495,30 @@ export default function AdminManagement({
                         </p>
                     </div>
 
-                    <Button onClick={handleOpenAdd} className="w-full shrink-0 justify-center gap-2 sm:w-auto">
-                        <Plus className="size-4" />
-                        Add Administrator
-                    </Button>
+                    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                        <div className="relative hidden sm:block">
+                            <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                                placeholder="Search admins..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="h-9 w-44 pr-8 pl-8"
+                            />
+                            {search && (
+                                <button
+                                    type="button"
+                                    onClick={handleClearSearch}
+                                    className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                >
+                                    <X className="size-3.5" />
+                                </button>
+                            )}
+                        </div>
+                        <Button onClick={handleOpenAdd} className="w-full shrink-0 justify-center gap-2 sm:w-auto">
+                            <Plus className="size-4" />
+                            Add Administrator
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Filters & Search Toolbar */}
@@ -506,7 +526,7 @@ export default function AdminManagement({
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                             {/* Search Input */}
-                            <div className="relative flex-1 min-w-[200px] sm:w-64 sm:flex-none">
+                            <div className="relative flex-1 min-w-[200px] sm:hidden">
                                 <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
                                 <Input
                                     placeholder="Search admins..."
@@ -621,32 +641,19 @@ export default function AdminManagement({
                                 </TabsList>
                             </Tabs>
 
-                            <div className="flex items-center rounded-md border bg-muted p-0.5 shrink-0 ml-auto sm:ml-0">
-                                <button
-                                    type="button"
-                                    onClick={() => setView('table')}
-                                    className={`rounded p-1.5 transition-colors ${
-                                        view === 'table'
-                                            ? 'bg-background text-foreground shadow-xs'
-                                            : 'text-muted-foreground hover:text-foreground'
-                                    }`}
-                                    aria-label="Table view"
-                                >
-                                    <TableIcon className="size-4" />
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setView('grid')}
-                                    className={`rounded p-1.5 transition-colors ${
-                                        view === 'grid'
-                                            ? 'bg-background text-foreground shadow-xs'
-                                            : 'text-muted-foreground hover:text-foreground'
-                                    }`}
-                                    aria-label="Grid view"
-                                >
-                                    <LayoutGrid className="size-4" />
-                                </button>
-                            </div>
+                            <Tabs
+                                value={view}
+                                onValueChange={(value) => setView(value as ViewMode)}
+                            >
+                                <TabsList>
+                                    <TabsTrigger value="table" aria-label="Table view">
+                                        <TableIcon className="size-4" />
+                                    </TabsTrigger>
+                                    <TabsTrigger value="grid" aria-label="Grid view">
+                                        <LayoutGrid className="size-4" />
+                                    </TabsTrigger>
+                                </TabsList>
+                            </Tabs>
                         </div>
                     </div>
 
@@ -724,7 +731,7 @@ export default function AdminManagement({
 
                 {/* Content: Table View */}
                 {view === 'table' ? (
-                    <div className="rounded-md border bg-card overflow-hidden">
+                    <div className="overflow-hidden rounded-lg border bg-card shadow-xs">
                         <div className="overflow-x-auto">
                             <Table className="min-w-[920px]">
                                 <TableHeader>

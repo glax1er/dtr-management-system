@@ -307,10 +307,31 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                         </p>
                     </div>
 
-                    <Button onClick={openAdd} className="w-full sm:w-auto h-9 gap-1.5 shrink-0 justify-center">
-                        <Plus className="size-4" />
-                        Add Campus
-                    </Button>
+                    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                        <form onSubmit={applySearch} className="relative hidden sm:block">
+                            <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                            <input
+                                type="text"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder="Search campuses..."
+                                className="h-9 w-44 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
+                            />
+                            {search && (
+                                <button
+                                    type="button"
+                                    onClick={clearSearch}
+                                    className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                >
+                                    <X className="size-3.5" />
+                                </button>
+                            )}
+                        </form>
+                        <Button onClick={openAdd} className="h-9 w-full shrink-0 justify-center gap-1.5 sm:w-auto">
+                            <Plus className="size-4" />
+                            Add Campus
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Filters & Search Toolbar */}
@@ -318,7 +339,7 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                             {/* Search Input */}
-                            <form onSubmit={applySearch} className="relative flex-1 min-w-[180px] sm:w-60 sm:flex-none">
+                            <form onSubmit={applySearch} className="relative flex-1 min-w-[180px] sm:hidden">
                                 <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                                 <input
                                     type="text"

@@ -49,6 +49,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useDebounce } from '@/hooks/use-debounce';
 import { dashboard } from '@/routes';
@@ -352,17 +353,38 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
                         </p>
                     </div>
 
-                    <Button onClick={() => setAddOpen(true)} className="w-full sm:w-auto gap-1.5 shadow-sm shrink-0">
-                        <Plus className="size-4" />
-                        Add College
-                    </Button>
+                    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                        <form onSubmit={applySearch} className="relative hidden sm:block">
+                            <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                            <input
+                                type="text"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder="Search colleges..."
+                                className="h-9 w-44 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
+                            />
+                            {search && (
+                                <button
+                                    type="button"
+                                    onClick={clearSearch}
+                                    className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                >
+                                    <X className="size-3.5" />
+                                </button>
+                            )}
+                        </form>
+                        <Button onClick={() => setAddOpen(true)} className="w-full gap-1.5 shadow-sm sm:w-auto">
+                            <Plus className="size-4" />
+                            Add College
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Controls Bar: Search, Filters, View toggle */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex flex-1 flex-wrap items-center gap-2 min-w-0">
                         {/* Search Input */}
-                        <form onSubmit={applySearch} className="relative flex-1 min-w-[180px] sm:w-60 sm:flex-none">
+                        <form onSubmit={applySearch} className="relative flex-1 min-w-[180px] sm:hidden">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                             <input
                                 type="text"
@@ -425,26 +447,19 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
                     </div>
 
                     {/* View Switcher */}
-                    <div className="flex items-center justify-end rounded-md border bg-muted p-0.5 shrink-0">
-                        <Button
-                            variant={view === 'table' ? 'secondary' : 'ghost'}
-                            size="icon"
-                            className="size-8"
-                            onClick={() => setView('table')}
-                            aria-label="Table view"
-                        >
-                            <TableIcon className="size-4" />
-                        </Button>
-                        <Button
-                            variant={view === 'grid' ? 'secondary' : 'ghost'}
-                            size="icon"
-                            className="size-8"
-                            onClick={() => setView('grid')}
-                            aria-label="Grid view"
-                        >
-                            <LayoutGrid className="size-4" />
-                        </Button>
-                    </div>
+                    <Tabs
+                        value={view}
+                        onValueChange={(value) => setView(value as ViewMode)}
+                    >
+                        <TabsList>
+                            <TabsTrigger value="table" aria-label="Table view">
+                                <TableIcon className="size-4" />
+                            </TabsTrigger>
+                            <TabsTrigger value="grid" aria-label="Grid view">
+                                <LayoutGrid className="size-4" />
+                            </TabsTrigger>
+                        </TabsList>
+                    </Tabs>
                 </div>
 
                 {/* Content */}
