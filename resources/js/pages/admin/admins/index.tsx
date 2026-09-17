@@ -1,9 +1,7 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import {
     Building2,
-    Check,
     Filter,
-    Landmark,
     LayoutGrid,
     MapPin,
     Pencil,
@@ -12,14 +10,10 @@ import {
     PowerOff,
     Search,
     Shield,
-    ShieldAlert,
     ShieldCheck,
-    SlidersHorizontal,
     Table as TableIcon,
     Trash2,
-    UserCheck,
     UserCog,
-    UserX,
     X,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -66,7 +60,6 @@ import {
 } from '@/components/ui/tooltip';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useInitials } from '@/hooks/use-initials';
-import { dashboard } from '@/routes';
 import type { Campus, College, PageProps } from '@/types';
 
 interface AdminUser {
@@ -194,6 +187,7 @@ export default function AdminManagement({
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
+
             return;
         }
 
@@ -204,6 +198,7 @@ export default function AdminManagement({
                 page: undefined,
             });
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch]);
 
     const handleSearchSubmit = (e: FormEvent) => {
@@ -301,6 +296,7 @@ export default function AdminManagement({
     const handleAddCollegeChange = (colId: string) => {
         setAddCollegeId(colId);
         const selCollege = colleges.find((c) => String(c.id) === colId);
+
         if (selCollege?.campus_id) {
             setAddCampusId(String(selCollege.campus_id));
         } else if (selCollege?.campus) {
@@ -308,7 +304,10 @@ export default function AdminManagement({
                 (c) =>
                     c.name.toLowerCase() === selCollege.campus?.toLowerCase(),
             );
-            if (foundCamp) setAddCampusId(String(foundCamp.id));
+
+            if (foundCamp) {
+setAddCampusId(String(foundCamp.id));
+}
         }
     };
 
@@ -317,21 +316,25 @@ export default function AdminManagement({
 
         if (!addName.trim() || !addEmail.trim()) {
             toast.error('Name and email are required.');
+
             return;
         }
 
         if (addRole === 'college_admin' && !addCollegeId) {
             toast.error('Please select an assigned college.');
+
             return;
         }
 
         if (!addPassword) {
             toast.error('Password is required.');
+
             return;
         }
 
         if (addPassword !== addPasswordConfirmation) {
             toast.error('Passwords do not match.');
+
             return;
         }
 
@@ -377,6 +380,7 @@ export default function AdminManagement({
     const handleEditCollegeChange = (colId: string) => {
         setEditCollegeId(colId);
         const selCollege = colleges.find((c) => String(c.id) === colId);
+
         if (selCollege?.campus_id) {
             setEditCampusId(String(selCollege.campus_id));
         } else if (selCollege?.campus) {
@@ -384,7 +388,10 @@ export default function AdminManagement({
                 (c) =>
                     c.name.toLowerCase() === selCollege.campus?.toLowerCase(),
             );
-            if (foundCamp) setEditCampusId(String(foundCamp.id));
+
+            if (foundCamp) {
+setEditCampusId(String(foundCamp.id));
+}
         }
     };
 
@@ -393,11 +400,13 @@ export default function AdminManagement({
 
         if (!editingAdmin || !editName.trim() || !editEmail.trim()) {
             toast.error('Name and email are required.');
+
             return;
         }
 
         if (editPassword && editPassword !== editPasswordConfirmation) {
             toast.error('Passwords do not match.');
+
             return;
         }
 
@@ -433,14 +442,18 @@ export default function AdminManagement({
     const handleToggleStatusClick = (admin: AdminUser) => {
         if (admin.id === currentUserId) {
             toast.error('You cannot change your own active status.');
+
             return;
         }
+
         setStatusAdmin(admin);
         setStatusConfirmOpen(true);
     };
 
     const handleConfirmStatusToggle = () => {
-        if (!statusAdmin) return;
+        if (!statusAdmin) {
+return;
+}
 
         router.patch(
             `/admin/admins/${statusAdmin.id}/status`,
@@ -458,14 +471,18 @@ export default function AdminManagement({
     const handleDeleteClick = (admin: AdminUser) => {
         if (admin.id === currentUserId) {
             toast.error('You cannot delete your own account.');
+
             return;
         }
+
         setDeleteAdmin(admin);
         setDeleteConfirmOpen(true);
     };
 
     const handleConfirmDelete = () => {
-        if (!deleteAdmin) return;
+        if (!deleteAdmin) {
+return;
+}
 
         router.delete(`/admin/admins/${deleteAdmin.id}`, {
             preserveScroll: true,
@@ -509,7 +526,10 @@ export default function AdminManagement({
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                        <div className="relative hidden sm:block">
+                        <form
+                            onSubmit={handleSearchSubmit}
+                            className="relative hidden sm:block"
+                        >
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
                                 placeholder="Search admins..."
@@ -526,7 +546,7 @@ export default function AdminManagement({
                                     <X className="size-3.5" />
                                 </button>
                             )}
-                        </div>
+                        </form>
                         <Button
                             onClick={handleOpenAdd}
                             className="w-full shrink-0 justify-center gap-2 sm:w-auto"
@@ -542,7 +562,10 @@ export default function AdminManagement({
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                             {/* Search Input */}
-                            <div className="relative min-w-[200px] flex-1 sm:hidden">
+                            <form
+                                onSubmit={handleSearchSubmit}
+                                className="relative min-w-[200px] flex-1 sm:hidden"
+                            >
                                 <Search className="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
                                 <Input
                                     placeholder="Search admins..."
@@ -559,7 +582,7 @@ export default function AdminManagement({
                                         <X className="size-4" />
                                     </button>
                                 )}
-                            </div>
+                            </form>
 
                             {/* Mobile Filters Toggle */}
                             <Button

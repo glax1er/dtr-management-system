@@ -347,9 +347,11 @@ export default function HtesIndex({
         addForm.reset();
         addForm.clearErrors();
         setAddBgPreview(null);
+
         if (addFileInputRef.current) {
             addFileInputRef.current.value = '';
         }
+
         setAddOpen(true);
     };
 
@@ -358,6 +360,7 @@ export default function HtesIndex({
         addForm.reset();
         addForm.clearErrors();
         setAddBgPreview(null);
+
         if (addFileInputRef.current) {
             addFileInputRef.current.value = '';
         }
@@ -386,9 +389,11 @@ export default function HtesIndex({
             remove_id_bg: false,
         });
         setEditBgPreview(null);
+
         if (editFileInputRef.current) {
             editFileInputRef.current.value = '';
         }
+
         setEditingHte(hte);
     };
 
@@ -396,6 +401,7 @@ export default function HtesIndex({
         setEditingHte(null);
         editForm.clearErrors();
         setEditBgPreview(null);
+
         if (editFileInputRef.current) {
             editFileInputRef.current.value = '';
         }
@@ -1028,6 +1034,7 @@ export default function HtesIndex({
                                                     remove_id_bg: true,
                                                 }));
                                                 setEditBgPreview(null);
+
                                                 if (editFileInputRef.current) {
                                                     editFileInputRef.current.value =
                                                         '';
@@ -1075,6 +1082,7 @@ export default function HtesIndex({
                                     onChange={(e) => {
                                         const file =
                                             e.target.files?.[0] || null;
+
                                         if (file) {
                                             editForm.setData((prev) => ({
                                                 ...prev,
@@ -1230,6 +1238,7 @@ export default function HtesIndex({
                                         onClick={() => {
                                             addForm.setData('id_bg', null);
                                             setAddBgPreview(null);
+
                                             if (addFileInputRef.current) {
                                                 addFileInputRef.current.value =
                                                     '';
@@ -1251,6 +1260,7 @@ export default function HtesIndex({
                                 onChange={(e) => {
                                     const file = e.target.files?.[0] || null;
                                     addForm.setData('id_bg', file);
+
                                     if (file) {
                                         setAddBgPreview(
                                             URL.createObjectURL(file),

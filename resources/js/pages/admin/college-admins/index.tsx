@@ -1,10 +1,5 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import {
-    Building,
-    Check,
-    Filter,
-    GraduationCap,
-    Landmark,
     LayoutGrid,
     MapPin,
     Pencil,
@@ -12,12 +7,9 @@ import {
     Power,
     PowerOff,
     Search,
-    SlidersHorizontal,
     Table as TableIcon,
     Trash2,
-    UserCheck,
     UserCog,
-    UserX,
     X,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -63,7 +55,6 @@ import {
 } from '@/components/ui/tooltip';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useInitials } from '@/hooks/use-initials';
-import { dashboard } from '@/routes';
 import type { Campus, College, PageProps } from '@/types';
 
 interface CollegeAdminRecord {
@@ -185,6 +176,7 @@ export default function CollegeAdminManagement({
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
+
             return;
         }
 
@@ -195,6 +187,7 @@ export default function CollegeAdminManagement({
                 page: undefined,
             });
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch]);
 
     const applySearch = (e: FormEvent) => {
@@ -279,6 +272,7 @@ export default function CollegeAdminManagement({
     const handleAddCollegeChange = (colId: string) => {
         const selCollege = colleges.find((c) => String(c.id) === colId);
         let matchingCampusId = '';
+
         if (selCollege?.campus_id) {
             matchingCampusId = String(selCollege.campus_id);
         } else if (selCollege?.campus) {
@@ -286,7 +280,10 @@ export default function CollegeAdminManagement({
                 (c) =>
                     c.name.toLowerCase() === selCollege.campus?.toLowerCase(),
             );
-            if (foundCamp) matchingCampusId = String(foundCamp.id);
+
+            if (foundCamp) {
+matchingCampusId = String(foundCamp.id);
+}
         }
 
         setAddForm((prev) => ({
@@ -298,20 +295,28 @@ export default function CollegeAdminManagement({
 
     const submitAdd = (e: FormEvent) => {
         e.preventDefault();
+
         if (!addForm.name.trim() || !addForm.email.trim()) {
             toast.error('Name and email are required.');
+
             return;
         }
+
         if (!addForm.college_id) {
             toast.error('Please select an assigned college.');
+
             return;
         }
+
         if (!addForm.password) {
             toast.error('Password is required.');
+
             return;
         }
+
         if (addForm.password !== addForm.password_confirmation) {
             toast.error('Passwords do not match.');
+
             return;
         }
 
@@ -354,6 +359,7 @@ export default function CollegeAdminManagement({
     const handleEditCollegeChange = (colId: string) => {
         const selCollege = colleges.find((c) => String(c.id) === colId);
         let matchingCampusId = '';
+
         if (selCollege?.campus_id) {
             matchingCampusId = String(selCollege.campus_id);
         } else if (selCollege?.campus) {
@@ -361,7 +367,10 @@ export default function CollegeAdminManagement({
                 (c) =>
                     c.name.toLowerCase() === selCollege.campus?.toLowerCase(),
             );
-            if (foundCamp) matchingCampusId = String(foundCamp.id);
+
+            if (foundCamp) {
+matchingCampusId = String(foundCamp.id);
+}
         }
 
         setEditForm((prev) => ({
@@ -373,19 +382,25 @@ export default function CollegeAdminManagement({
 
     const submitEdit = (e: FormEvent) => {
         e.preventDefault();
+
         if (!editTarget || !editForm.name.trim() || !editForm.email.trim()) {
             toast.error('Name and email are required.');
+
             return;
         }
+
         if (!editForm.college_id) {
             toast.error('Please select an assigned college.');
+
             return;
         }
+
         if (
             editForm.password &&
             editForm.password !== editForm.password_confirmation
         ) {
             toast.error('Passwords do not match.');
+
             return;
         }
 
@@ -420,14 +435,18 @@ export default function CollegeAdminManagement({
     const openStatusConfirm = (admin: CollegeAdminRecord) => {
         if (admin.id === currentUserId) {
             toast.error('You cannot deactivate your own account.');
+
             return;
         }
+
         setStatusTarget(admin);
         setStatusConfirmOpen(true);
     };
 
     const submitStatusToggle = () => {
-        if (!statusTarget) return;
+        if (!statusTarget) {
+return;
+}
 
         router.patch(
             `/admin/college-admins/${statusTarget.id}/status`,
@@ -445,14 +464,18 @@ export default function CollegeAdminManagement({
     const openDelete = (admin: CollegeAdminRecord) => {
         if (admin.id === currentUserId) {
             toast.error('You cannot delete your own account.');
+
             return;
         }
+
         setDeleteTarget(admin);
         setDeleteOpen(true);
     };
 
     const submitDelete = () => {
-        if (!deleteTarget) return;
+        if (!deleteTarget) {
+return;
+}
 
         router.delete(`/admin/college-admins/${deleteTarget.id}`, {
             preserveScroll: true,

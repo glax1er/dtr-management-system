@@ -139,7 +139,6 @@ export default function InternSchedule({
     paginatedDays,
     stats,
     hte,
-    collegePeriods = [],
 }: InternScheduleProps) {
     const [view, setView] = useState<ViewMode>('grid');
     const [selectedDay, setSelectedDay] = useState<CalendarDay | null>(null);
@@ -326,6 +325,7 @@ export default function InternSchedule({
     }, [
         paginatedDays.data,
         showHteSchedule,
+        showCollegeSchedule,
         showGlobalSchedule,
         showStandardSchedule,
         showRestDays,

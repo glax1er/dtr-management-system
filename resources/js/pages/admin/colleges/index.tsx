@@ -114,11 +114,13 @@ export default function CollegesIndex({
     const toggleExpand = (collegeId: number) => {
         setExpandedColleges((prev) => {
             const next = new Set(prev);
+
             if (next.has(collegeId)) {
                 next.delete(collegeId);
             } else {
                 next.add(collegeId);
             }
+
             return next;
         });
     };
@@ -185,6 +187,7 @@ export default function CollegesIndex({
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
+
             return;
         }
 
@@ -195,6 +198,7 @@ export default function CollegesIndex({
                 page: undefined,
             });
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch]);
 
     const applySearch = (e: FormEvent) => {
@@ -250,8 +254,10 @@ export default function CollegesIndex({
 
     const submitAdd = (e: FormEvent) => {
         e.preventDefault();
+
         if (!addName.trim() || !addCode.trim()) {
             toast.error('College name and code are required.');
+
             return;
         }
 
@@ -287,8 +293,10 @@ export default function CollegesIndex({
 
     const submitEdit = (e: FormEvent) => {
         e.preventDefault();
+
         if (!editTarget || !editName.trim() || !editCode.trim()) {
             toast.error('College name and code are required.');
+
             return;
         }
 
@@ -316,7 +324,9 @@ export default function CollegesIndex({
     };
 
     const submitStatusToggle = () => {
-        if (!statusTarget) return;
+        if (!statusTarget) {
+return;
+}
 
         router.patch(
             `/admin/colleges/${statusTarget.id}/status`,
@@ -337,7 +347,9 @@ export default function CollegesIndex({
     };
 
     const submitArchive = () => {
-        if (!archiveTarget) return;
+        if (!archiveTarget) {
+return;
+}
 
         router.delete(`/admin/colleges/${archiveTarget.id}`, {
             preserveScroll: true,
@@ -553,6 +565,7 @@ export default function CollegesIndex({
                                         const isExpanded = expandedColleges.has(
                                             college.id,
                                         );
+
                                         return (
                                             <>
                                                 <TableRow
@@ -771,6 +784,7 @@ export default function CollegesIndex({
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {colleges.data.map((college) => {
                             const isExpanded = expandedColleges.has(college.id);
+
                             return (
                                 <Card
                                     key={college.id}

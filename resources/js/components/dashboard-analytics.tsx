@@ -1,4 +1,5 @@
-import { ArrowRight, Trophy, type LucideIcon } from 'lucide-react';
+import { ArrowRight, Trophy  } from 'lucide-react';
+import type {LucideIcon} from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -283,8 +284,15 @@ export function TrendBarChart({
 
 function getInitials(name: string): string {
     const parts = name.trim().split(/\s+/).filter(Boolean);
-    if (parts.length === 0) return 'HT';
-    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+
+    if (parts.length === 0) {
+return 'HT';
+}
+
+    if (parts.length === 1) {
+return parts[0].slice(0, 2).toUpperCase();
+}
+
     return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
@@ -559,6 +567,7 @@ export function StatusPieChart({
             total > 0 ? (item.count / total) * availableCircumference : 0;
         const offset = accumulatedOffset;
         accumulatedOffset += sliceLength + gap;
+
         return {
             ...item,
             sliceLength,

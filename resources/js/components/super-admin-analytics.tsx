@@ -91,7 +91,11 @@ function ScrollList({
 
     const handleScroll = () => {
         const el = ref.current;
-        if (!el) return;
+
+        if (!el) {
+return;
+}
+
         setAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 8);
     };
 
@@ -705,34 +709,32 @@ export function InstitutionalOverviewCard({
 // ─── Legacy named exports (kept for any other consumers) ──────────────────────
 
 /** @deprecated Use InstitutionalOverviewCard instead */
-export function CampusDistributionCard({
-    data: _data,
-    mounted: _mounted,
-}: {
+export function CampusDistributionCard(props: {
     data: CampusAnalytics;
     mounted: boolean;
 }) {
+    void props;
+
     return null;
 }
 
 /** @deprecated Use InstitutionalOverviewCard instead */
-export function CollegeEnrollmentCard({
-    data: _data,
-    mounted: _mounted,
-}: {
+export function CollegeEnrollmentCard(props: {
     data: CollegeAnalytics;
     mounted: boolean;
 }) {
+    void props;
+
     return null;
 }
 
 /** @deprecated Use InstitutionalOverviewCard instead */
-export function AdminCoverageCard({
-    data: _data,
-    mounted: _mounted,
-}: {
+export function AdminCoverageCard(props: {
     data: AdminAnalytics;
     mounted: boolean;
 }) {
+    void props;
+
     return null;
 }
+

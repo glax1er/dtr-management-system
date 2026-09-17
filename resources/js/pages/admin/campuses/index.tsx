@@ -8,7 +8,6 @@ import {
     Power,
     PowerOff,
     Search,
-    SlidersHorizontal,
     Table as TableIcon,
     Trash2,
     X,
@@ -55,7 +54,6 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useDebounce } from '@/hooks/use-debounce';
-import { dashboard } from '@/routes';
 
 interface CampusRecord {
     id: number;
@@ -85,7 +83,6 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
     const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters.search || '');
     const [status, setStatus] = useState(filters.status || '');
-    const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const debouncedSearch = useDebounce(search, 300);
     const isFirstRender = useRef(true);
 
@@ -131,6 +128,7 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
+
             return;
         }
 
@@ -141,6 +139,7 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                 page: undefined,
             });
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch]);
 
     const applySearch = (e: FormEvent) => {
@@ -197,8 +196,10 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
 
     const submitAdd = (e: FormEvent) => {
         e.preventDefault();
+
         if (!addName.trim() || !addCode.trim()) {
             toast.error('Campus name and code are required.');
+
             return;
         }
 
@@ -234,8 +235,10 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
 
     const submitEdit = (e: FormEvent) => {
         e.preventDefault();
+
         if (!editTarget || !editName.trim() || !editCode.trim()) {
             toast.error('Campus name and code are required.');
+
             return;
         }
 
@@ -263,7 +266,9 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
     };
 
     const submitStatusToggle = () => {
-        if (!statusTarget) return;
+        if (!statusTarget) {
+return;
+}
 
         router.patch(
             `/admin/campuses/${statusTarget.id}/status`,
@@ -284,7 +289,9 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
     };
 
     const submitArchive = () => {
-        if (!archiveTarget) return;
+        if (!archiveTarget) {
+return;
+}
 
         router.delete(`/admin/campuses/${archiveTarget.id}`, {
             preserveScroll: true,
