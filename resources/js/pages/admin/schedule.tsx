@@ -1,9 +1,14 @@
+import type { RequestPayload } from '@inertiajs/core';
 import { Head, router } from '@inertiajs/react';
 import {
     Calendar,
     CalendarDays,
     CalendarClock,
     Clock,
+    Globe,
+    GraduationCap,
+    Layers,
+    Lock,
     Pencil,
     Plus,
     Sparkles,
@@ -27,6 +32,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import {
     Tooltip,
     TooltipContent,
@@ -62,6 +74,22 @@ interface SchedulePeriod {
     start_date: string;
     end_date: string;
     day_schedule: Record<string, string | null>;
+    college_id?: number | null;
+    college?: {
+        id: number;
+        name: string;
+        code: string;
+    } | null;
+    scope?: 'global' | 'college';
+    scope_label?: string;
+    is_owner?: boolean;
+}
+
+interface ScheduleProps {
+    periods: SchedulePeriod[];
+    isSuperAdmin?: boolean;
+    colleges?: Array<{ id: number; name: string; code: string }>;
+    userCollege?: { id: number; name: string; code: string } | null;
 }
 
 interface FormState {
@@ -69,6 +97,7 @@ interface FormState {
     startDate: string;
     endDate: string;
     daySchedule: Record<string, string>;
+    collegeId: string;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -77,6 +106,7 @@ const emptyForm = (): FormState => ({
     startDate: '',
     endDate: '',
     daySchedule: Object.fromEntries(DAYS.map((d) => [d, ''])),
+    collegeId: '',
 });
 
 const formFromPeriod = (p: SchedulePeriod): FormState => ({
@@ -86,6 +116,7 @@ const formFromPeriod = (p: SchedulePeriod): FormState => ({
     daySchedule: Object.fromEntries(
         DAYS.map((d) => [d, p.day_schedule[d] ?? '']),
     ),
+    collegeId: p.college_id ? String(p.college_id) : '',
 });
 
 const buildPayload = (form: FormState) =>
@@ -109,9 +140,15 @@ const isPast = (dateStr: string) =>
 function PeriodForm({
     form,
     onChange,
+    isSuperAdmin = false,
+    colleges = [],
+    userCollege = null,
 }: {
     form: FormState;
     onChange: (patch: Partial<FormState>) => void;
+    isSuperAdmin?: boolean;
+    colleges?: Array<{ id: number; name: string; code: string }>;
+    userCollege?: { id: number; name: string; code: string } | null;
 }) {
     const handleSetAllWeekdays = (time: string) => {
         const updated = { ...form.daySchedule };
@@ -136,6 +173,58 @@ function PeriodForm({
                     <Calendar className="size-3.5" />
                     <span>Period Details</span>
                 </div>
+
+                {/* Scope selector for Super Admin or College notice for College Admin */}
+                {isSuperAdmin ? (
+                    <div className="grid gap-1.5">
+                        <Label
+                            htmlFor="target-scope"
+                            className="text-sm font-medium"
+                        >
+                            Schedule Scope{' '}
+                            <span className="text-destructive">*</span>
+                        </Label>
+                        <Select
+                            value={form.collegeId || 'global'}
+                            onValueChange={(val) =>
+                                onChange({
+                                    collegeId: val === 'global' ? '' : val,
+                                })
+                            }
+                        >
+                            <SelectTrigger id="target-scope" className="h-9">
+                                <SelectValue placeholder="Select target scope" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="global">
+                                    🌐 University-Wide Global (Applies to all
+                                    colleges)
+                                </SelectItem>
+                                {colleges.map((c) => (
+                                    <SelectItem key={c.id} value={String(c.id)}>
+                                        🎓 {c.code} - {c.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <p className="text-[11px] text-muted-foreground">
+                            {form.collegeId
+                                ? 'This schedule will apply to interns enrolled in this college, overriding the university-wide baseline.'
+                                : 'University-wide baseline schedule. Colleges without their own global schedule will follow this.'}
+                        </p>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50/70 p-3 text-xs text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300">
+                        <GraduationCap className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                        <span>
+                            This schedule will apply to all interns in{' '}
+                            <strong>
+                                {userCollege?.name ?? 'your college'}
+                            </strong>
+                            , overriding the university-wide baseline.
+                        </span>
+                    </div>
+                )}
 
                 {/* Period Name */}
                 <div className="grid gap-1.5">
@@ -320,9 +409,10 @@ function PeriodForm({
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function AdminSchedule({
     periods,
-}: {
-    periods: SchedulePeriod[];
-}) {
+    isSuperAdmin = false,
+    colleges = [],
+    userCollege = null,
+}: ScheduleProps) {
     const [addOpen, setAddOpen] = useState(false);
     const [addForm, setAddForm] = useState<FormState>(emptyForm);
 
@@ -333,6 +423,8 @@ export default function AdminSchedule({
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [deleteName, setDeleteName] = useState('');
+
+    const [filterCollege, setFilterCollege] = useState<string>('all');
 
     const highlightId =
         typeof window !== 'undefined'
@@ -361,6 +453,19 @@ export default function AdminSchedule({
         return () => cancelAnimationFrame(raf);
     }, [highlightId, periods]);
 
+    // Filter periods based on user selection
+    const filteredPeriods = periods.filter((period) => {
+        if (filterCollege === 'all') {
+            return true;
+        }
+
+        if (filterCollege === 'global') {
+            return period.college_id === null;
+        }
+
+        return String(period.college_id) === filterCollege;
+    });
+
     // ── Handlers ───────────────────────────────────────────────────────────
     const submitAdd = () => {
         if (!addForm.startDate || !addForm.endDate) {
@@ -369,22 +474,26 @@ export default function AdminSchedule({
             return;
         }
 
-        router.post(
-            '/admin/schedule',
-            {
-                name: addForm.name || undefined,
-                start_date: addForm.startDate,
-                end_date: addForm.endDate,
-                day_schedule: buildPayload(addForm),
+        const payload: RequestPayload = {
+            name: addForm.name || undefined,
+            start_date: addForm.startDate,
+            end_date: addForm.endDate,
+            day_schedule: buildPayload(addForm),
+        };
+
+        if (isSuperAdmin) {
+            payload.college_id = addForm.collegeId
+                ? Number(addForm.collegeId)
+                : null;
+        }
+
+        router.post('/admin/schedule', payload, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setAddOpen(false);
+                setAddForm(emptyForm());
             },
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    setAddOpen(false);
-                    setAddForm(emptyForm());
-                },
-            },
-        );
+        });
     };
 
     const openEdit = (period: SchedulePeriod) => {
@@ -400,22 +509,26 @@ export default function AdminSchedule({
             return;
         }
 
-        router.patch(
-            `/admin/schedule/${editingId}`,
-            {
-                name: editForm.name || undefined,
-                start_date: editForm.startDate,
-                end_date: editForm.endDate,
-                day_schedule: buildPayload(editForm),
+        const payload: RequestPayload = {
+            name: editForm.name || undefined,
+            start_date: editForm.startDate,
+            end_date: editForm.endDate,
+            day_schedule: buildPayload(editForm),
+        };
+
+        if (isSuperAdmin) {
+            payload.college_id = editForm.collegeId
+                ? Number(editForm.collegeId)
+                : null;
+        }
+
+        router.patch(`/admin/schedule/${editingId}`, payload, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setEditOpen(false);
+                setEditingId(null);
             },
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    setEditOpen(false);
-                    setEditingId(null);
-                },
-            },
-        );
+        });
     };
 
     const openDelete = (period: SchedulePeriod) => {
@@ -443,12 +556,24 @@ export default function AdminSchedule({
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
                 {/* Header */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
-                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-                            <CalendarClock className="size-5" />
-                        </span>
-                        Global Schedule
-                    </h1>
+                    <div>
+                        <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
+                            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                                <CalendarClock className="size-5" />
+                            </span>
+                            {isSuperAdmin
+                                ? 'Global Schedule'
+                                : `${userCollege?.code ?? 'College'} Schedule`}
+                        </h1>
+                        {!isSuperAdmin && userCollege && (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                                Manage schedule periods for {userCollege.name}.
+                                Schedules you create override the
+                                university-wide baseline for your college&apos;s
+                                interns.
+                            </p>
+                        )}
+                    </div>
 
                     <Button onClick={() => setAddOpen(true)}>
                         <Plus className="size-4" />
@@ -456,21 +581,131 @@ export default function AdminSchedule({
                     </Button>
                 </div>
 
+                {/* 3-Tier Architecture Information Banner for Super Admin */}
+                {isSuperAdmin && (
+                    <div className="flex flex-col gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-start gap-3">
+                            <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                                <Layers className="size-4.5" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-semibold text-foreground">
+                                    3-Tier Scheduling Architecture Active
+                                </h3>
+                                <p className="mt-0.5 text-xs text-muted-foreground">
+                                    <strong>Tier 1:</strong> University-Wide
+                                    Global &bull; <strong>Tier 2:</strong>{' '}
+                                    College-Wide Global &bull;{' '}
+                                    <strong>Tier 3:</strong> HTE Overrides.
+                                    Schedules set for a specific college
+                                    override the university baseline for that
+                                    college&apos;s interns.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 text-xs">
+                            <Badge
+                                variant="outline"
+                                className="gap-1.5 border-sky-300 bg-sky-50 text-sky-800 dark:border-sky-800 dark:bg-sky-950/60 dark:text-sky-300"
+                            >
+                                <Globe className="size-3.5 text-sky-600 dark:text-sky-400" />
+                                {
+                                    periods.filter((p) => p.college_id === null)
+                                        .length
+                                }{' '}
+                                University Baseline
+                            </Badge>
+                            <Badge
+                                variant="outline"
+                                className="gap-1.5 border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                            >
+                                <GraduationCap className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                                {
+                                    periods.filter((p) => p.college_id !== null)
+                                        .length
+                                }{' '}
+                                College Schedules
+                            </Badge>
+                        </div>
+                    </div>
+                )}
+
                 {/* Existing periods */}
                 <Card className="flex-1">
-                    <CardHeader>
-                        <CardTitle className="text-base">
-                            Schedule Periods
-                        </CardTitle>
+                    <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <CardTitle className="text-base">
+                                Schedule Periods
+                            </CardTitle>
+                            <p className="mt-0.5 text-xs text-muted-foreground">
+                                Showing {filteredPeriods.length} of{' '}
+                                {periods.length} schedule period
+                                {periods.length === 1 ? '' : 's'}.
+                            </p>
+                        </div>
+
+                        {/* Scope Filter for Super Admin */}
+                        {isSuperAdmin && colleges.length > 0 && (
+                            <div className="flex items-center gap-2">
+                                <Label
+                                    htmlFor="college-filter"
+                                    className="text-xs whitespace-nowrap text-muted-foreground"
+                                >
+                                    Filter Scope:
+                                </Label>
+                                <Select
+                                    value={filterCollege}
+                                    onValueChange={setFilterCollege}
+                                >
+                                    <SelectTrigger
+                                        id="college-filter"
+                                        className="h-8 w-[230px] text-xs"
+                                    >
+                                        <SelectValue placeholder="All Schedules" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">
+                                            All Schedules ({periods.length})
+                                        </SelectItem>
+                                        <SelectItem value="global">
+                                            🌐 University-Wide (
+                                            {
+                                                periods.filter(
+                                                    (p) =>
+                                                        p.college_id === null,
+                                                ).length
+                                            }
+                                            )
+                                        </SelectItem>
+                                        {colleges.map((c) => {
+                                            const count = periods.filter(
+                                                (p) => p.college_id === c.id,
+                                            ).length;
+
+                                            return (
+                                                <SelectItem
+                                                    key={c.id}
+                                                    value={String(c.id)}
+                                                >
+                                                    🎓 {c.code} ({count})
+                                                </SelectItem>
+                                            );
+                                        })}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
                     </CardHeader>
                     <CardContent>
-                        {periods.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">
-                                No schedule periods configured yet.
+                        {filteredPeriods.length === 0 ? (
+                            <p className="py-6 text-center text-sm text-muted-foreground">
+                                {filterCollege !== 'all'
+                                    ? 'No schedule periods found for the selected scope.'
+                                    : 'No schedule periods configured yet.'}
                             </p>
                         ) : (
                             <div className="flex flex-col gap-3">
-                                {periods.map((period) => {
+                                {filteredPeriods.map((period) => {
                                     const isHighlighted =
                                         highlightId === period.id;
 
@@ -485,6 +720,53 @@ export default function AdminSchedule({
                                                     : 'bg-card',
                                             )}
                                         >
+                                            {/* Scope Label Badge */}
+                                            <div className="mb-2.5 flex flex-wrap items-center gap-2">
+                                                {period.college_id !== null ? (
+                                                    <Badge className="gap-1.5 border border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                                                        <GraduationCap className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                                                        <span className="font-semibold">
+                                                            Global schedule set
+                                                            by{' '}
+                                                            {period.college
+                                                                ?.name ??
+                                                                'College'}
+                                                        </span>
+                                                        {period.college
+                                                            ?.code && (
+                                                            <span className="py-0.2 rounded bg-emerald-200/80 px-1 text-[10px] font-bold text-emerald-900 dark:bg-emerald-900/80 dark:text-emerald-200">
+                                                                {
+                                                                    period
+                                                                        .college
+                                                                        .code
+                                                                }
+                                                            </span>
+                                                        )}
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge className="gap-1.5 border border-sky-300 bg-sky-100 text-sky-800 dark:border-sky-800 dark:bg-sky-950/60 dark:text-sky-300">
+                                                        <Globe className="size-3.5 text-sky-600 dark:text-sky-400" />
+                                                        <span className="font-semibold">
+                                                            University-Wide
+                                                            Global Schedule
+                                                        </span>
+                                                        <span className="py-0.2 rounded bg-sky-200/80 px-1 text-[10px] font-bold text-sky-900 dark:bg-sky-900/80 dark:text-sky-200">
+                                                            Baseline
+                                                        </span>
+                                                    </Badge>
+                                                )}
+
+                                                {period.is_owner === false && (
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="gap-1 border-dashed text-xs text-muted-foreground"
+                                                    >
+                                                        <Lock className="size-3" />
+                                                        Read-only Baseline
+                                                    </Badge>
+                                                )}
+                                            </div>
+
                                             {/* Period header */}
                                             <div className="mb-3 flex items-start justify-between gap-2">
                                                 <div>
@@ -512,50 +794,52 @@ export default function AdminSchedule({
                                                         )}
                                                     </p>
                                                 </div>
-                                                {!isPast(period.end_date) && (
-                                                    <div className="flex shrink-0 gap-1">
-                                                        <Tooltip>
-                                                            <TooltipTrigger
-                                                                asChild
-                                                            >
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    onClick={() =>
-                                                                        openEdit(
-                                                                            period,
-                                                                        )
-                                                                    }
+                                                {!isPast(period.end_date) &&
+                                                    period.is_owner !==
+                                                        false && (
+                                                        <div className="flex shrink-0 gap-1">
+                                                            <Tooltip>
+                                                                <TooltipTrigger
+                                                                    asChild
                                                                 >
-                                                                    <Pencil className="size-4 text-blue-600" />
-                                                                </Button>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent>
-                                                                Edit
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                        <Tooltip>
-                                                            <TooltipTrigger
-                                                                asChild
-                                                            >
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    onClick={() =>
-                                                                        openDelete(
-                                                                            period,
-                                                                        )
-                                                                    }
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        onClick={() =>
+                                                                            openEdit(
+                                                                                period,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <Pencil className="size-4 text-blue-600" />
+                                                                    </Button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    Edit
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                            <Tooltip>
+                                                                <TooltipTrigger
+                                                                    asChild
                                                                 >
-                                                                    <Trash2 className="size-4 text-destructive" />
-                                                                </Button>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent>
-                                                                Delete
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    </div>
-                                                )}
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        onClick={() =>
+                                                                            openDelete(
+                                                                                period,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <Trash2 className="size-4 text-destructive" />
+                                                                    </Button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    Delete
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </div>
+                                                    )}
                                             </div>
 
                                             {/* Day schedule grid */}
@@ -601,8 +885,9 @@ export default function AdminSchedule({
                             Add Schedule Period
                         </DialogTitle>
                         <DialogDescription className="text-xs text-muted-foreground sm:text-sm">
-                            Set the effective date range and expected arrival
-                            time for each workday.
+                            {isSuperAdmin
+                                ? 'Set the target scope (university-wide or specific college), effective date range, and expected arrival times.'
+                                : `Set the effective date range and expected arrival times for ${userCollege?.name ?? 'your college'}.`}
                         </DialogDescription>
                     </DialogHeader>
                     <PeriodForm
@@ -610,6 +895,9 @@ export default function AdminSchedule({
                         onChange={(patch) =>
                             setAddForm((f) => ({ ...f, ...patch }))
                         }
+                        isSuperAdmin={isSuperAdmin}
+                        colleges={colleges}
+                        userCollege={userCollege}
                     />
                     <DialogFooter className="gap-2 border-t pt-3 sm:gap-0">
                         <Button
@@ -634,8 +922,8 @@ export default function AdminSchedule({
                             Edit Schedule Period
                         </DialogTitle>
                         <DialogDescription className="text-xs text-muted-foreground sm:text-sm">
-                            Update the date range or expected start times for
-                            each day.
+                            Update the scope, date range, or expected start
+                            times for each day.
                         </DialogDescription>
                     </DialogHeader>
                     <PeriodForm
@@ -643,6 +931,9 @@ export default function AdminSchedule({
                         onChange={(patch) =>
                             setEditForm((f) => ({ ...f, ...patch }))
                         }
+                        isSuperAdmin={isSuperAdmin}
+                        colleges={colleges}
+                        userCollege={userCollege}
                     />
                     <DialogFooter className="gap-2 border-t pt-3 sm:gap-0">
                         <Button

@@ -1,4 +1,4 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import {
     Archive,
     Building2,
@@ -55,8 +55,16 @@ import {
 import { useDebounce } from '@/hooks/use-debounce';
 import { dashboard } from '@/routes';
 
+interface CollegeOption {
+    id: number;
+    name: string;
+    code: string;
+}
+
 interface Hte {
     hte_id: number;
+    college_id?: number | null;
+    college?: CollegeOption | null;
     hte_name: string;
     address: string | null;
     contact_person: string | null;
@@ -70,11 +78,13 @@ interface Hte {
 interface Filters {
     search: string;
     status: string;
+    college_id?: number | null;
     per_page: number;
 }
 
 interface HtesIndexProps {
     htes: Paginated<Hte>;
+    colleges?: CollegeOption[];
     filters: Filters;
 }
 
@@ -160,11 +170,24 @@ function HteActions({
     );
 }
 
-export default function HtesIndex({ htes, filters }: HtesIndexProps) {
+export default function HtesIndex({
+    htes,
+    colleges = [],
+    filters,
+}: HtesIndexProps) {
+    const { auth } = usePage<any>().props;
+    const isSuperAdmin =
+        auth?.user?.is_super_admin ??
+        (auth?.user?.role === 'super_admin' ||
+            (auth?.user?.role === 'admin' && !auth?.user?.college_id));
+
     const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters.search || '');
     const [status, setStatus] = useState(filters.status || '');
-    // Track the filter values search/status were last synced from, so
+    const [collegeFilter, setCollegeFilter] = useState<number | null>(
+        filters.college_id ?? null,
+    );
+    // Track the filter values search/status/college were last synced from, so
     // browser back/forward navigation (which changes `filters` without
     // this component unmounting) resets the local drafts during render
     // instead of via a post-commit effect.
@@ -172,11 +195,13 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
 
     if (
         filters.search !== syncedFilters.search ||
-        filters.status !== syncedFilters.status
+        filters.status !== syncedFilters.status ||
+        filters.college_id !== syncedFilters.college_id
     ) {
         setSyncedFilters(filters);
         setSearch(filters.search || '');
         setStatus(filters.status || '');
+        setCollegeFilter(filters.college_id ?? null);
     }
 
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -196,11 +221,13 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
     const editFileInputRef = useRef<HTMLInputElement>(null);
 
     const addForm = useForm<{
+        college_id: string;
         hte_name: string;
         address: string;
         contact_number: string;
         id_bg: File | null;
     }>({
+        college_id: '',
         hte_name: '',
         address: '',
         contact_number: '',
@@ -209,6 +236,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
 
     const editForm = useForm<{
         _method: string;
+        college_id: string;
         hte_name: string;
         address: string;
         contact_number: string;
@@ -216,6 +244,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
         remove_id_bg: boolean;
     }>({
         _method: 'patch',
+        college_id: '',
         hte_name: '',
         address: '',
         contact_number: '',
@@ -238,8 +267,19 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
     const baseParams = () => ({
         search: search || undefined,
         status: status || undefined,
+        college_id: collegeFilter ? String(collegeFilter) : undefined,
         per_page: String(filters.per_page),
     });
+
+    const applyCollegeFilter = (value: string) => {
+        const nextCollege = value === 'all' ? null : Number(value);
+        setCollegeFilter(nextCollege);
+        visit({
+            ...baseParams(),
+            college_id: nextCollege ? String(nextCollege) : undefined,
+            page: undefined,
+        });
+    };
 
     // Automatically trigger search as user types
     useEffect(() => {
@@ -307,9 +347,11 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
         addForm.reset();
         addForm.clearErrors();
         setAddBgPreview(null);
+
         if (addFileInputRef.current) {
             addFileInputRef.current.value = '';
         }
+
         setAddOpen(true);
     };
 
@@ -318,6 +360,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
         addForm.reset();
         addForm.clearErrors();
         setAddBgPreview(null);
+
         if (addFileInputRef.current) {
             addFileInputRef.current.value = '';
         }
@@ -338,6 +381,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
         editForm.clearErrors();
         editForm.setData({
             _method: 'patch',
+            college_id: hte.college_id ? String(hte.college_id) : '',
             hte_name: hte.hte_name,
             address: hte.address ?? '',
             contact_number: hte.contact_number ?? '',
@@ -345,9 +389,11 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
             remove_id_bg: false,
         });
         setEditBgPreview(null);
+
         if (editFileInputRef.current) {
             editFileInputRef.current.value = '';
         }
+
         setEditingHte(hte);
     };
 
@@ -355,6 +401,7 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
         setEditingHte(null);
         editForm.clearErrors();
         setEditBgPreview(null);
+
         if (editFileInputRef.current) {
             editFileInputRef.current.value = '';
         }
@@ -498,6 +545,38 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                             </Select>
                         </div>
 
+                        {/* College filter — super admin only */}
+                        {isSuperAdmin && colleges.length > 0 && (
+                            <div className="hidden sm:block">
+                                <Select
+                                    value={
+                                        collegeFilter
+                                            ? String(collegeFilter)
+                                            : 'all'
+                                    }
+                                    onValueChange={applyCollegeFilter}
+                                >
+                                    <SelectTrigger className="h-9 w-40">
+                                        <Building2 className="mr-1 size-3.5 shrink-0 text-muted-foreground" />
+                                        <SelectValue placeholder="All Colleges" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">
+                                            All Colleges
+                                        </SelectItem>
+                                        {colleges.map((c) => (
+                                            <SelectItem
+                                                key={c.id}
+                                                value={String(c.id)}
+                                            >
+                                                {c.code}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+
                         {/* View toggle — desktop only */}
                         <div className="hidden sm:block">
                             <Tabs
@@ -592,6 +671,11 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                                         Host Training
                                                         Establishment
                                                     </TableHead>
+                                                    {isSuperAdmin && (
+                                                        <TableHead className="px-6 text-center">
+                                                            College
+                                                        </TableHead>
+                                                    )}
                                                     <TableHead className="px-6 text-center">
                                                         Address
                                                     </TableHead>
@@ -618,6 +702,23 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                                         <TableCell className="px-6 font-medium">
                                                             {hte.hte_name}
                                                         </TableCell>
+                                                        {isSuperAdmin && (
+                                                            <TableCell className="px-6 text-center">
+                                                                {hte.college ? (
+                                                                    <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-medium">
+                                                                        {
+                                                                            hte
+                                                                                .college
+                                                                                .code
+                                                                        }
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-xs text-muted-foreground">
+                                                                        Global
+                                                                    </span>
+                                                                )}
+                                                            </TableCell>
+                                                        )}
                                                         <TableCell
                                                             className="max-w-xs truncate px-6 text-center text-muted-foreground"
                                                             title={
@@ -702,10 +803,17 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                                     <CardTitle className="text-base">
                                                         {hte.hte_name}
                                                     </CardTitle>
-                                                    <div className="mt-2">
+                                                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
                                                         <StatusBadge
                                                             status={hte.status}
                                                         />
+                                                        {isSuperAdmin && (
+                                                            <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-medium">
+                                                                {hte.college
+                                                                    ?.code ??
+                                                                    'Global'}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                                 <div className="shrink-0">
@@ -802,6 +910,44 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                             onSubmit={handleEditSubmit}
                             className="flex flex-col gap-4"
                         >
+                            {isSuperAdmin && colleges.length > 0 && (
+                                <div className="grid gap-1.5">
+                                    <Label htmlFor="edit_college_id">
+                                        College
+                                    </Label>
+                                    <Select
+                                        value={
+                                            editForm.data.college_id || 'none'
+                                        }
+                                        onValueChange={(val) =>
+                                            editForm.setData(
+                                                'college_id',
+                                                val === 'none' ? '' : val,
+                                            )
+                                        }
+                                    >
+                                        <SelectTrigger id="edit_college_id">
+                                            <SelectValue placeholder="Global (No specific college)" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">
+                                                Global / No specific college
+                                            </SelectItem>
+                                            {colleges.map((c) => (
+                                                <SelectItem
+                                                    key={c.id}
+                                                    value={String(c.id)}
+                                                >
+                                                    {c.name} ({c.code})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <InputError
+                                        message={editForm.errors.college_id}
+                                    />
+                                </div>
+                            )}
                             <div className="grid gap-1.5">
                                 <Label htmlFor="edit_hte_name">Name</Label>
                                 <Input
@@ -861,14 +1007,21 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                     Card Background (Optional)
                                 </Label>
                                 <p className="text-xs text-muted-foreground">
-                                    Upload a picture to be used as the background of the cards. Max 5MB (JPG, PNG, WebP).
+                                    Upload a picture to be used as the
+                                    background of the cards. Max 5MB (JPG, PNG,
+                                    WebP).
                                 </p>
 
                                 {/* Image Preview */}
-                                {(editBgPreview || (editingHte.id_bg_url && !editForm.data.remove_id_bg)) && (
+                                {(editBgPreview ||
+                                    (editingHte.id_bg_url &&
+                                        !editForm.data.remove_id_bg)) && (
                                     <div className="relative h-32 w-full overflow-hidden rounded-xl border border-border bg-muted/20 shadow-xs">
                                         <img
-                                            src={editBgPreview || editingHte.id_bg_url!}
+                                            src={
+                                                editBgPreview ||
+                                                editingHte.id_bg_url!
+                                            }
                                             alt="Card Background Preview"
                                             className="size-full object-cover"
                                         />
@@ -881,8 +1034,10 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                                     remove_id_bg: true,
                                                 }));
                                                 setEditBgPreview(null);
+
                                                 if (editFileInputRef.current) {
-                                                    editFileInputRef.current.value = '';
+                                                    editFileInputRef.current.value =
+                                                        '';
                                                 }
                                             }}
                                             className="absolute top-2 right-2 rounded-full bg-black/60 p-1.5 text-white shadow-sm transition hover:bg-black/80"
@@ -893,25 +1048,31 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                     </div>
                                 )}
 
-                                {editingHte.id_bg_url && editForm.data.remove_id_bg && (
-                                    <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300">
-                                        <span>Image will be removed upon saving.</span>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-6 text-xs text-amber-900 hover:text-amber-950 dark:text-amber-200"
-                                            onClick={() => {
-                                                editForm.setData((prev) => ({
-                                                    ...prev,
-                                                    remove_id_bg: false,
-                                                }));
-                                            }}
-                                        >
-                                            Undo
-                                        </Button>
-                                    </div>
-                                )}
+                                {editingHte.id_bg_url &&
+                                    editForm.data.remove_id_bg && (
+                                        <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300">
+                                            <span>
+                                                Image will be removed upon
+                                                saving.
+                                            </span>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-6 text-xs text-amber-900 hover:text-amber-950 dark:text-amber-200"
+                                                onClick={() => {
+                                                    editForm.setData(
+                                                        (prev) => ({
+                                                            ...prev,
+                                                            remove_id_bg: false,
+                                                        }),
+                                                    );
+                                                }}
+                                            >
+                                                Undo
+                                            </Button>
+                                        </div>
+                                    )}
 
                                 <Input
                                     ref={editFileInputRef}
@@ -919,14 +1080,18 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                     type="file"
                                     accept="image/jpeg,image/png,image/webp"
                                     onChange={(e) => {
-                                        const file = e.target.files?.[0] || null;
+                                        const file =
+                                            e.target.files?.[0] || null;
+
                                         if (file) {
                                             editForm.setData((prev) => ({
                                                 ...prev,
                                                 id_bg: file,
                                                 remove_id_bg: false,
                                             }));
-                                            setEditBgPreview(URL.createObjectURL(file));
+                                            setEditBgPreview(
+                                                URL.createObjectURL(file),
+                                            );
                                         }
                                     }}
                                 />
@@ -972,6 +1137,40 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                         onSubmit={handleAddSubmit}
                         className="flex flex-col gap-4"
                     >
+                        {isSuperAdmin && colleges.length > 0 && (
+                            <div className="grid gap-1.5">
+                                <Label htmlFor="add_college_id">College</Label>
+                                <Select
+                                    value={addForm.data.college_id || 'none'}
+                                    onValueChange={(val) =>
+                                        addForm.setData(
+                                            'college_id',
+                                            val === 'none' ? '' : val,
+                                        )
+                                    }
+                                >
+                                    <SelectTrigger id="add_college_id">
+                                        <SelectValue placeholder="Global (No specific college)" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">
+                                            Global / No specific college
+                                        </SelectItem>
+                                        {colleges.map((c) => (
+                                            <SelectItem
+                                                key={c.id}
+                                                value={String(c.id)}
+                                            >
+                                                {c.name} ({c.code})
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <InputError
+                                    message={addForm.errors.college_id}
+                                />
+                            </div>
+                        )}
                         <div className="grid gap-1.5">
                             <Label htmlFor="hte_name">Name</Label>
                             <Input
@@ -1023,7 +1222,8 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                 Card Background (Optional)
                             </Label>
                             <p className="text-xs text-muted-foreground">
-                                Upload a picture to be used as the background of the cards. Max 5MB (JPG, PNG, WebP).
+                                Upload a picture to be used as the background of
+                                the cards. Max 5MB (JPG, PNG, WebP).
                             </p>
 
                             {addBgPreview && (
@@ -1038,8 +1238,10 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                         onClick={() => {
                                             addForm.setData('id_bg', null);
                                             setAddBgPreview(null);
+
                                             if (addFileInputRef.current) {
-                                                addFileInputRef.current.value = '';
+                                                addFileInputRef.current.value =
+                                                    '';
                                             }
                                         }}
                                         className="absolute top-2 right-2 rounded-full bg-black/60 p-1.5 text-white shadow-sm transition hover:bg-black/80"
@@ -1058,8 +1260,11 @@ export default function HtesIndex({ htes, filters }: HtesIndexProps) {
                                 onChange={(e) => {
                                     const file = e.target.files?.[0] || null;
                                     addForm.setData('id_bg', file);
+
                                     if (file) {
-                                        setAddBgPreview(URL.createObjectURL(file));
+                                        setAddBgPreview(
+                                            URL.createObjectURL(file),
+                                        );
                                     } else {
                                         setAddBgPreview(null);
                                     }

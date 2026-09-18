@@ -5,6 +5,7 @@ namespace App\Services\Attendance;
 use App\Models\InternProfile;
 use App\Models\User;
 use App\Notifications\HoursMilestoneNotification;
+use Illuminate\Support\Facades\Notification;
 
 class CheckHoursMilestones
 {
@@ -50,6 +51,9 @@ class CheckHoursMilestones
 
             // Also notify assigned supervisors about 100% completion
             $this->notifySupervisorsAboutCompletion($profile, $totalHours, $requiredHours);
+
+            // Notify college admins belonging to the intern's college
+            $this->notifyCollegeAdminsAboutCompletion($profile, $totalHours, $requiredHours);
 
             return;
         }
@@ -120,5 +124,40 @@ class CheckHoursMilestones
                     ));
                 }
             });
+    }
+
+    private function notifyCollegeAdminsAboutCompletion(InternProfile $profile, float $totalHours, int $requiredHours): void
+    {
+        // Only proceed when the intern has a college associated through their program or user record
+        $program = $profile->program;
+        $profileUser = $profile->user;
+        $collegeId = ($program !== null ? $program->college_id : null)
+            ?? ($profileUser !== null ? $profileUser->college_id : null);
+
+        if (! $collegeId) {
+            return;
+        }
+
+        $collegeAdmins = User::where('role', User::ROLE_COLLEGE_ADMIN)
+            ->where('college_id', $collegeId)
+            ->where('is_active', true)
+            ->get()
+            ->filter(fn (User $admin) => $admin->wantsNotification('intern_completions'))
+            ->reject(function (User $admin) use ($profile) {
+                // Skip admins who were already notified about this specific intern
+                return $admin->notifications()
+                    ->where('data->type', 'college_admin_intern_completed')
+                    ->where('data->intern_user_id', $profile->user_id)
+                    ->exists();
+            });
+
+        if ($collegeAdmins->isNotEmpty()) {
+            Notification::send($collegeAdmins, new HoursMilestoneNotification(
+                milestone: HoursMilestoneNotification::COLLEGE_ADMIN_INTERN_COMPLETED,
+                totalHours: $totalHours,
+                requiredHours: $requiredHours,
+                internProfile: $profile,
+            ));
+        }
     }
 }

@@ -49,6 +49,7 @@ class ProfileController extends Controller
                 'hte' => fn ($q) => $q->withTrashed(),
                 'program' => fn ($q) => $q->withTrashed(),
             ])->first();
+            $hte = $profile === null ? null : $profile->hte;
 
             return [
                 'id_number' => $profile?->id_number,
@@ -58,7 +59,7 @@ class ProfileController extends Controller
                 'qr_code_url' => $profile?->qr_code_value !== null
                     ? route('intern.qr-code.show')
                     : null,
-                'bg_url' => $profile?->hte?->id_bg_url ?? '/images/cic-bg.jpg',
+                'bg_url' => $hte !== null && $hte->id_bg_url !== null ? $hte->id_bg_url : '/images/cic-bg.jpg',
             ];
         }
 
@@ -67,6 +68,7 @@ class ProfileController extends Controller
                 'hte' => fn ($q) => $q->withTrashed(),
                 'program' => fn ($q) => $q->withTrashed(),
             ])->first();
+            $hte = $profile === null ? null : $profile->hte;
 
             return [
                 'id_number' => null,
@@ -74,7 +76,7 @@ class ProfileController extends Controller
                 'detail' => $profile?->getScopeName(),
                 'has_qr_code' => false,
                 'qr_code_url' => null,
-                'bg_url' => $profile?->hte?->id_bg_url ?? '/images/cic-bg.jpg',
+                'bg_url' => $hte !== null && $hte->id_bg_url !== null ? $hte->id_bg_url : '/images/cic-bg.jpg',
             ];
         }
 
@@ -195,6 +197,10 @@ class ProfileController extends Controller
     public function destroy(ProfileDeleteRequest $request): RedirectResponse
     {
         $user = $request->user();
+
+        if ($user->isAdmin() && User::where('role', User::ROLE_ADMIN)->count() <= 1) {
+            return back()->with('error', 'The system must have at least one active administrator. You cannot delete the sole administrator account.');
+        }
 
         Auth::logout();
 

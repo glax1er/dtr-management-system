@@ -1,6 +1,7 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import {
     BookOpen,
+    Building2,
     LayoutGrid,
     Plus,
     Search,
@@ -14,6 +15,7 @@ import { toast } from 'sonner';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
 import { ProgramActions } from '@/components/program-actions';
+import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,9 +48,18 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDebounce } from '@/hooks/use-debounce';
 import { dashboard } from '@/routes';
+import type { PageProps } from '@/types/auth';
+
+interface CollegeOption {
+    id: number;
+    name: string;
+    code: string;
+}
 
 interface Program {
     program_id: number;
+    college_id?: number | null;
+    college?: CollegeOption | null;
     program_name: string;
     is_active: boolean;
     required_hours: number;
@@ -59,20 +70,34 @@ interface Program {
 interface Filters {
     search: string;
     status: string;
+    college_id?: number | null;
     per_page: number;
 }
 
 interface ProgramsProps {
     programs: Paginated<Program>;
+    colleges?: CollegeOption[];
     filters: Filters;
 }
 
 type ViewMode = 'table' | 'grid';
 
-export default function AdminPrograms({ programs, filters }: ProgramsProps) {
+export default function AdminPrograms({
+    programs,
+    colleges = [],
+    filters,
+}: ProgramsProps) {
+    const { auth } = usePage<PageProps>().props;
+    const isSuperAdmin =
+        auth?.user?.is_super_admin ??
+        (auth?.user?.role === 'super_admin' || auth?.user?.role === 'admin');
+
     const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters.search || '');
     const [status, setStatus] = useState(filters.status || '');
+    const [collegeFilter, setCollegeFilter] = useState<number | null>(
+        filters.college_id ?? null,
+    );
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const debouncedSearch = useDebounce(search, 300);
     const isFirstRender = useRef(true);
@@ -80,11 +105,13 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
     const [addOpen, setAddOpen] = useState(false);
     const [addName, setAddName] = useState('');
     const [addHours, setAddHours] = useState('');
+    const [addCollegeId, setAddCollegeId] = useState<string>('');
 
     const [editOpen, setEditOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editName, setEditName] = useState('');
     const [editHours, setEditHours] = useState('');
+    const [editCollegeId, setEditCollegeId] = useState<string>('');
 
     const [archiveOpen, setArchiveOpen] = useState(false);
     const [archiveId, setArchiveId] = useState<number | null>(null);
@@ -104,6 +131,7 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
     const baseParams = () => ({
         search: search || undefined,
         status: status || undefined,
+        college_id: collegeFilter ? String(collegeFilter) : undefined,
         per_page: String(filters.per_page),
     });
 
@@ -140,6 +168,7 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
         setSearch('');
         visit({
             status: status || undefined,
+            college_id: collegeFilter ? String(collegeFilter) : undefined,
             per_page: String(filters.per_page),
             page: undefined,
         });
@@ -153,6 +182,21 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
         visit({
             search: search || undefined,
             status: nextStatus || undefined,
+            college_id: collegeFilter ? String(collegeFilter) : undefined,
+            per_page: String(filters.per_page),
+            page: undefined,
+        });
+    };
+
+    const applyCollege = (value: string) => {
+        const nextCollege = value === 'all' ? null : Number(value);
+
+        setCollegeFilter(nextCollege);
+
+        visit({
+            search: search || undefined,
+            status: status || undefined,
+            college_id: nextCollege ? String(nextCollege) : undefined,
             per_page: String(filters.per_page),
             page: undefined,
         });
@@ -172,6 +216,7 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
         visit({
             search: search || undefined,
             status: status || undefined,
+            college_id: collegeFilter ? String(collegeFilter) : undefined,
             per_page: String(perPage),
             page: undefined,
         });
@@ -184,11 +229,20 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
             return;
         }
 
+        if (isSuperAdmin && !addCollegeId) {
+            toast.error('Please select a college for this program.');
+
+            return;
+        }
+
         router.post(
             '/admin/programs',
             {
                 program_name: addName.trim(),
                 required_hours: addHours,
+                ...(isSuperAdmin && addCollegeId
+                    ? { college_id: Number(addCollegeId) }
+                    : {}),
             },
             {
                 preserveScroll: true,
@@ -196,6 +250,7 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
                     setAddOpen(false);
                     setAddName('');
                     setAddHours('');
+                    setAddCollegeId('');
                 },
             },
         );
@@ -205,6 +260,7 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
         setEditingId(program.program_id);
         setEditName(program.program_name);
         setEditHours(String(program.required_hours));
+        setEditCollegeId(program.college_id ? String(program.college_id) : '');
         setEditOpen(true);
     };
 
@@ -215,17 +271,27 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
             return;
         }
 
+        if (isSuperAdmin && !editCollegeId) {
+            toast.error('Please select a college for this program.');
+
+            return;
+        }
+
         router.patch(
             `/admin/programs/${editingId}`,
             {
                 program_name: editName.trim(),
                 required_hours: editHours,
+                ...(isSuperAdmin && editCollegeId
+                    ? { college_id: Number(editCollegeId) }
+                    : {}),
             },
             {
                 preserveScroll: true,
                 onSuccess: () => {
                     setEditOpen(false);
                     setEditingId(null);
+                    setEditCollegeId('');
                 },
             },
         );
@@ -339,6 +405,37 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
                             </Select>
                         </div>
 
+                        {isSuperAdmin && colleges.length > 0 && (
+                            <div className="hidden sm:block">
+                                <Select
+                                    value={
+                                        collegeFilter
+                                            ? String(collegeFilter)
+                                            : 'all'
+                                    }
+                                    onValueChange={applyCollege}
+                                >
+                                    <SelectTrigger className="h-9 w-44">
+                                        <Building2 className="mr-1 size-3.5 shrink-0 text-muted-foreground" />
+                                        <SelectValue placeholder="All Colleges" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">
+                                            All Colleges
+                                        </SelectItem>
+                                        {colleges.map((c) => (
+                                            <SelectItem
+                                                key={c.id}
+                                                value={String(c.id)}
+                                            >
+                                                {c.code} — {c.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+
                         <div className="sm:hidden">
                             <Select
                                 value={status || 'all'}
@@ -360,6 +457,36 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
                                 </SelectContent>
                             </Select>
                         </div>
+
+                        {isSuperAdmin && colleges.length > 0 && (
+                            <div className="sm:hidden">
+                                <Select
+                                    value={
+                                        collegeFilter
+                                            ? String(collegeFilter)
+                                            : 'all'
+                                    }
+                                    onValueChange={applyCollege}
+                                >
+                                    <SelectTrigger className="inline-flex size-9 items-center justify-center p-0 [&>span]:hidden [&>svg:last-child]:hidden">
+                                        <Building2 className="size-4 text-muted-foreground" />
+                                    </SelectTrigger>
+                                    <SelectContent align="end">
+                                        <SelectItem value="all">
+                                            All Colleges
+                                        </SelectItem>
+                                        {colleges.map((c) => (
+                                            <SelectItem
+                                                key={c.id}
+                                                value={String(c.id)}
+                                            >
+                                                {c.code} — {c.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
 
                         <div className="hidden sm:block">
                             <Tabs
@@ -451,6 +578,11 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
                                                     <TableHead className="px-6 text-center">
                                                         Program
                                                     </TableHead>
+                                                    {isSuperAdmin && (
+                                                        <TableHead className="px-6 text-center">
+                                                            College
+                                                        </TableHead>
+                                                    )}
                                                     <TableHead className="px-6 text-center">
                                                         Status
                                                     </TableHead>
@@ -482,6 +614,26 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
                                                                     program.program_name
                                                                 }
                                                             </TableCell>
+                                                            {isSuperAdmin && (
+                                                                <TableCell className="px-6 text-center">
+                                                                    {program.college ? (
+                                                                        <Badge
+                                                                            variant="outline"
+                                                                            className="font-semibold text-primary"
+                                                                        >
+                                                                            {
+                                                                                program
+                                                                                    .college
+                                                                                    .code
+                                                                            }
+                                                                        </Badge>
+                                                                    ) : (
+                                                                        <span className="text-xs text-muted-foreground">
+                                                                            —
+                                                                        </span>
+                                                                    )}
+                                                                </TableCell>
+                                                            )}
                                                             <TableCell className="px-6 text-center">
                                                                 <StatusBadge
                                                                     status={
@@ -577,6 +729,36 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
                                         </CardHeader>
 
                                         <CardContent className="space-y-2 text-sm">
+                                            {isSuperAdmin && (
+                                                <div className="flex justify-between gap-2">
+                                                    <span className="text-muted-foreground">
+                                                        College
+                                                    </span>
+                                                    <span className="text-right">
+                                                        {program.college ? (
+                                                            <Badge
+                                                                variant="outline"
+                                                                className="text-xs"
+                                                            >
+                                                                {
+                                                                    program
+                                                                        .college
+                                                                        .code
+                                                                }{' '}
+                                                                (
+                                                                {
+                                                                    program
+                                                                        .college
+                                                                        .name
+                                                                }
+                                                                )
+                                                            </Badge>
+                                                        ) : (
+                                                            '—'
+                                                        )}
+                                                    </span>
+                                                </div>
+                                            )}
                                             <div className="flex justify-between gap-2">
                                                 <span className="text-muted-foreground">
                                                     Required Hours
@@ -635,6 +817,38 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
                     </DialogHeader>
 
                     <div className="flex flex-col gap-4">
+                        {isSuperAdmin ? (
+                            <div className="grid gap-1.5">
+                                <Label>College</Label>
+                                <Select
+                                    value={addCollegeId}
+                                    onValueChange={setAddCollegeId}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a college" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {colleges.map((c) => (
+                                            <SelectItem
+                                                key={c.id}
+                                                value={String(c.id)}
+                                            >
+                                                {c.code} — {c.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        ) : auth.user?.college ? (
+                            <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
+                                Assigning program to{' '}
+                                <span className="font-semibold text-foreground">
+                                    {auth.user.college.code} —{' '}
+                                    {auth.user.college.name}
+                                </span>
+                            </div>
+                        ) : null}
+
                         <div className="grid gap-1.5">
                             <Label>Program Name</Label>
                             <Input
@@ -683,6 +897,30 @@ export default function AdminPrograms({ programs, filters }: ProgramsProps) {
                     </DialogHeader>
 
                     <div className="flex flex-col gap-4">
+                        {isSuperAdmin && (
+                            <div className="grid gap-1.5">
+                                <Label>College</Label>
+                                <Select
+                                    value={editCollegeId}
+                                    onValueChange={setEditCollegeId}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a college" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {colleges.map((c) => (
+                                            <SelectItem
+                                                key={c.id}
+                                                value={String(c.id)}
+                                            >
+                                                {c.code} — {c.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+
                         <div className="grid gap-1.5">
                             <Label>Program Name</Label>
                             <Input

@@ -3,10 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
+/**
+ * @property int $interns_count
+ */
 class Hte extends Model
 {
     use SoftDeletes;
@@ -20,6 +24,7 @@ class Hte extends Model
     public const UPDATED_AT = null;
 
     protected $fillable = [
+        'college_id',
         'hte_name',
         'address',
         'contact_person',
@@ -29,8 +34,19 @@ class Hte extends Model
     ];
 
     protected $casts = [
+        'college_id' => 'integer',
         'created_at' => 'datetime',
     ];
+
+    /**
+     * The college this HTE belongs to.
+     *
+     * @return BelongsTo<College, $this>
+     */
+    public function college(): BelongsTo
+    {
+        return $this->belongsTo(College::class, 'college_id', 'id');
+    }
 
     /**
      * Public URL for the HTE's custom ID card background image, or null if none is set.

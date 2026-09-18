@@ -3,6 +3,8 @@ import {
     Calendar,
     CalendarClock,
     Clock,
+    Globe,
+    GraduationCap,
     Pencil,
     Plus,
     Sparkles,
@@ -61,12 +63,19 @@ interface SchedulePeriod {
     start_date: string;
     end_date: string;
     day_schedule: Record<string, string | null>;
-    scope?: 'global' | 'hte';
+    scope?: 'global' | 'college' | 'hte';
+    college_id?: number | null;
+    college?: {
+        id: number;
+        name: string;
+        code: string;
+    } | null;
 }
 
 interface ScheduleProps {
     periods: SchedulePeriod[];
     globalPeriods: SchedulePeriod[];
+    collegePeriods?: SchedulePeriod[];
     highlightId?: number | null;
 }
 
@@ -387,11 +396,25 @@ function PeriodRow({
                                 Updated / Focus
                             </Badge>
                         )}
-                        {readOnly && (
-                            <Badge variant="secondary" className="font-normal">
-                                Global (Admin)
-                            </Badge>
-                        )}
+                        {readOnly &&
+                            (period.scope === 'college' || period.college_id ? (
+                                <Badge className="gap-1 border border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                                    <GraduationCap className="size-3" />
+                                    College Schedule (
+                                    {period.college?.code ??
+                                        period.college?.name ??
+                                        'College'}
+                                    )
+                                </Badge>
+                            ) : (
+                                <Badge
+                                    variant="secondary"
+                                    className="gap-1 font-normal"
+                                >
+                                    <Globe className="size-3" />
+                                    University Baseline
+                                </Badge>
+                            ))}
                     </div>
                     <p className="text-xs text-muted-foreground">
                         {period.start_date} – {period.end_date}
@@ -456,6 +479,7 @@ function PeriodRow({
 export default function SupervisorSchedule({
     periods,
     globalPeriods,
+    collegePeriods = [],
     highlightId,
 }: ScheduleProps) {
     const [processing, setProcessing] = useState(false);
@@ -608,8 +632,9 @@ export default function SupervisorSchedule({
                             HTE Schedule
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Global periods (set by admin) apply to your interns
-                            by default. Add an override if your HTE differs.
+                            University baseline and college schedules apply to
+                            your interns by default. Add an override if your HTE
+                            differs.
                         </p>
                     </div>
 
@@ -619,17 +644,53 @@ export default function SupervisorSchedule({
                     </Button>
                 </div>
 
-                {/* Global schedule (reference) */}
+                {/* College schedule (reference) */}
+                {collegePeriods.length > 0 && (
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center gap-2">
+                                <GraduationCap className="size-4 text-emerald-600 dark:text-emerald-400" />
+                                <CardTitle className="text-base font-semibold">
+                                    College Schedule (Reference)
+                                </CardTitle>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                College-wide schedule set by your college admin.
+                                Takes precedence over the university baseline
+                                unless overridden by your HTE below.
+                            </p>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex flex-col gap-3">
+                                {collegePeriods.map((period) => (
+                                    <PeriodRow
+                                        key={period.id}
+                                        period={period}
+                                        readOnly
+                                        isHighlighted={
+                                            highlightId === period.id
+                                        }
+                                    />
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Global university baseline schedule (reference) */}
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-base font-semibold">
-                            Global Schedule (Reference)
-                        </CardTitle>
+                        <div className="flex items-center gap-2">
+                            <Globe className="size-4 text-sky-600 dark:text-sky-400" />
+                            <CardTitle className="text-base font-semibold">
+                                University Baseline Schedule (Reference)
+                            </CardTitle>
+                        </div>
                     </CardHeader>
                     <CardContent>
                         {globalPeriods.length === 0 ? (
                             <p className="text-sm text-muted-foreground">
-                                No global schedule configured yet.
+                                No global baseline schedule configured yet.
                             </p>
                         ) : (
                             <div className="flex flex-col gap-3">

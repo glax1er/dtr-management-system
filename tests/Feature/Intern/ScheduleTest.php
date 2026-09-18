@@ -107,7 +107,7 @@ test('calendar gives precedence to HTE overrides created by supervisor', functio
         'hte_id' => $hte->hte_id,
         'name' => 'Acme Midterm Schedule',
         'start_date' => '2026-09-01',
-        'end_date' => '2026-09-15',
+        'end_date' => '2026-09-30',
         'day_schedule' => [
             'monday' => '09:00',
             'tuesday' => '09:00',

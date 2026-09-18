@@ -32,6 +32,9 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
 
 const CATEGORY_FILTERS: { value: CategoryFilter; label: string }[] = [
     { value: 'all', label: 'All types' },
+    { value: 'registration', label: NOTIFICATION_CATEGORY_LABELS.registration },
+    { value: 'system', label: NOTIFICATION_CATEGORY_LABELS.system },
+    { value: 'schedule', label: NOTIFICATION_CATEGORY_LABELS.schedule },
     { value: 'approved', label: NOTIFICATION_CATEGORY_LABELS.approved },
     { value: 'rejected', label: NOTIFICATION_CATEGORY_LABELS.rejected },
     { value: 'pending', label: NOTIFICATION_CATEGORY_LABELS.pending },
@@ -88,7 +91,9 @@ const GROUP_ORDER = [
 
 export default function NotificationsPage() {
     const { auth, notifications } = usePage<PageProps>().props;
-    const isAdmin = auth?.user?.role === 'admin';
+    const role = auth?.user?.role;
+    const isAdmin =
+        role === 'admin' || role === 'super_admin' || role === 'college_admin';
 
     const count = notifications?.count ?? 0;
     const items = useMemo(
@@ -176,7 +181,6 @@ export default function NotificationsPage() {
             }
 
             if (
-                !isAdmin &&
                 categoryFilter !== 'all' &&
                 getNotificationCategory(notification) !== categoryFilter
             ) {
@@ -193,7 +197,7 @@ export default function NotificationsPage() {
 
             return true;
         });
-    }, [items, statusFilter, categoryFilter, query, isAdmin]);
+    }, [items, statusFilter, categoryFilter, query]);
 
     const groups = useMemo(() => {
         const buckets = new Map<string, Notification[]>();
@@ -212,9 +216,7 @@ export default function NotificationsPage() {
     }, [filteredItems]);
 
     const isFiltering =
-        statusFilter !== 'all' ||
-        (!isAdmin && categoryFilter !== 'all') ||
-        query !== '';
+        statusFilter !== 'all' || categoryFilter !== 'all' || query !== '';
 
     return (
         <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 p-4">
@@ -254,9 +256,9 @@ export default function NotificationsPage() {
             </div>
 
             {items.length > 0 && (
-                <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="rounded-2xl border border-border bg-card p-4">
                     {/* Search */}
-                    <div className="relative lg:max-w-xs lg:flex-1">
+                    <div className="relative w-full sm:max-w-md">
                         <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             value={query}
@@ -266,7 +268,7 @@ export default function NotificationsPage() {
                         />
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="mt-4 flex min-w-0 flex-wrap items-center gap-3 border-t border-border pt-4">
                         {/* Status filter */}
                         <div className="flex flex-wrap gap-1.5">
                             {STATUS_FILTERS.map((filter) => (
@@ -288,32 +290,28 @@ export default function NotificationsPage() {
                             ))}
                         </div>
 
-                        {!isAdmin && (
-                            <>
-                                <div className="hidden h-5 w-px bg-border lg:block" />
+                        <div className="hidden h-5 w-px bg-border lg:block" />
 
-                                {/* Category filter */}
-                                <div className="flex flex-wrap gap-1.5">
-                                    {CATEGORY_FILTERS.map((filter) => (
-                                        <button
-                                            key={filter.value}
-                                            type="button"
-                                            onClick={() =>
-                                                setCategoryFilter(filter.value)
-                                            }
-                                            className={cn(
-                                                'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-                                                categoryFilter === filter.value
-                                                    ? 'border-foreground/80 bg-foreground/5 text-foreground'
-                                                    : 'border-border bg-transparent text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-                                            )}
-                                        >
-                                            {filter.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </>
-                        )}
+                        {/* Category filter */}
+                        <div className="flex flex-wrap gap-1.5">
+                            {CATEGORY_FILTERS.map((filter) => (
+                                <button
+                                    key={filter.value}
+                                    type="button"
+                                    onClick={() =>
+                                        setCategoryFilter(filter.value)
+                                    }
+                                    className={cn(
+                                        'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+                                        categoryFilter === filter.value
+                                            ? 'border-foreground/80 bg-foreground/5 text-foreground'
+                                            : 'border-border bg-transparent text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                                    )}
+                                >
+                                    {filter.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
             )}

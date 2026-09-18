@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import {
     Archive,
     ArchiveRestore,
@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/tooltip';
 import { useDebounce } from '@/hooks/use-debounce';
 import { dashboard } from '@/routes';
+import type { PageProps } from '@/types/auth';
 
 // -- Types --------------------------------------------------------------------
 interface ArchivedRecord {
@@ -47,7 +48,13 @@ interface Filters {
 
 interface ArchivesIndexProps {
     records: Paginated<ArchivedRecord>;
-    currentType: 'htes' | 'supervisors' | 'interns' | 'programs';
+    currentType:
+        | 'htes'
+        | 'supervisors'
+        | 'interns'
+        | 'programs'
+        | 'colleges'
+        | 'campuses';
     filters?: Filters;
     flash?: {
         success?: string | null;
@@ -59,7 +66,13 @@ type ViewMode = 'table' | 'grid';
 
 const TABS: {
     label: string;
-    value: 'htes' | 'supervisors' | 'interns' | 'programs';
+    value:
+        | 'htes'
+        | 'supervisors'
+        | 'interns'
+        | 'programs'
+        | 'colleges'
+        | 'campuses';
     detailLabel: string;
 }[] = [
     { label: 'Interns', value: 'interns', detailLabel: 'ID Number' },
@@ -73,6 +86,27 @@ export default function ArchivesIndex({
     currentType,
     filters,
 }: ArchivesIndexProps) {
+    const { auth } = usePage<PageProps>().props;
+    const isSuperAdmin =
+        auth?.user?.is_super_admin ??
+        (auth?.user?.role === 'super_admin' || auth?.user?.role === 'admin');
+
+    const availableTabs = isSuperAdmin
+        ? [
+              ...TABS,
+              {
+                  label: 'Colleges',
+                  value: 'colleges' as const,
+                  detailLabel: 'Code',
+              },
+              {
+                  label: 'Campuses',
+                  value: 'campuses' as const,
+                  detailLabel: 'Code',
+              },
+          ]
+        : TABS;
+
     const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters?.search ?? '');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -89,7 +123,8 @@ export default function ArchivesIndex({
     const [forceDeleteTarget, setForceDeleteTarget] =
         useState<ArchivedRecord | null>(null);
 
-    const activeTab = TABS.find((t) => t.value === currentType) ?? TABS[0];
+    const activeTab =
+        availableTabs.find((t) => t.value === currentType) ?? availableTabs[0];
 
     // -- Navigation & Query Handling ------------------------------------------
     const baseParams = () => ({
@@ -305,7 +340,7 @@ export default function ArchivesIndex({
                         <div className="scrollbar-none max-w-[calc(100%-3rem)] overflow-x-auto sm:max-w-none">
                             <Tabs value={currentType} onValueChange={switchTab}>
                                 <TabsList className="w-auto">
-                                    {TABS.map((tab) => (
+                                    {availableTabs.map((tab) => (
                                         <TabsTrigger
                                             key={tab.value}
                                             value={tab.value}

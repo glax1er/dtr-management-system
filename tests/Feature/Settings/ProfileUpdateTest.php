@@ -85,3 +85,41 @@ test('correct password must be provided to delete account', function () {
 
     expect($user->fresh())->not->toBeNull();
 });
+
+test('sole administrator cannot delete their account', function () {
+    // Ensure only 1 admin exists
+    User::where('role', User::ROLE_ADMIN)->delete();
+    $admin = User::factory()->create([
+        'role' => User::ROLE_ADMIN,
+        'password' => 'password',
+    ]);
+
+    $response = $this
+        ->actingAs($admin)
+        ->from(route('profile.edit'))
+        ->delete(route('profile.destroy'), [
+            'password' => 'password',
+        ]);
+
+    $response->assertSessionHasErrors('password');
+    expect($admin->fresh())->not->toBeNull();
+});
+
+test('administrator can delete their account if other administrators exist', function () {
+    User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $admin = User::factory()->create([
+        'role' => User::ROLE_ADMIN,
+        'password' => 'password',
+    ]);
+
+    $response = $this
+        ->actingAs($admin)
+        ->delete(route('profile.destroy'), [
+            'password' => 'password',
+        ]);
+
+    $response->assertSessionHasNoErrors();
+    $this->assertGuest();
+    expect($admin->fresh())->toBeNull();
+});
+

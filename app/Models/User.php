@@ -8,8 +8,10 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -21,10 +23,12 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 /**
  * @property int $id
  * @property string $role
+ * @property int|null $college_id
  * @property string $name
  * @property string $email
  * @property Carbon|null $email_verified_at
  * @property string $password
+ * @property bool $is_active
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
@@ -33,12 +37,33 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['role', 'name', 'email', 'password', 'profile_photo_path', 'notification_preferences', 'notifications_cleared_at'])]
+#[Fillable(['role', 'college_id', 'campus', 'name', 'email', 'password', 'must_change_password', 'profile_photo_path', 'notification_preferences', 'notifications_cleared_at'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+
+    /**
+     * Notifications visible after the user's resolution-ticket clear point.
+     *
+     * @return MorphMany<\Illuminate\Notifications\DatabaseNotification, $this>
+     */
+    public function visibleNotifications(): MorphMany
+    {
+        $notifications = $this->notifications();
+
+        if ($this->notifications_cleared_at !== null) {
+            $notifications->where(function ($query) {
+                $query
+                    ->where('created_at', '>=', $this->notifications_cleared_at)
+                    ->orWhereNull('data->type')
+                    ->orWhere('data->type', '!=', 'resolution_ticket');
+            });
+        }
+
+        return $notifications;
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -47,16 +72,24 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
      */
     protected $fillable = [
         'role',
+        'college_id',
+        'campus',
         'name',
         'email',
         'password',
+        'must_change_password',
         'profile_photo_path',
+        'is_active',
         'notification_preferences',
         'notifications_cleared_at',
     ];
 
     // Role constants so the rest of the app never has to type the
-    // raw strings 'admin' / 'supervisor' / 'intern' directly.
+    // raw strings 'super_admin' / 'college_admin' / 'admin' / 'supervisor' / 'intern' directly.
+    public const ROLE_SUPER_ADMIN = 'super_admin';
+
+    public const ROLE_COLLEGE_ADMIN = 'college_admin';
+
     public const ROLE_ADMIN = 'admin';
 
     public const ROLE_SUPERVISOR = 'supervisor';
@@ -153,11 +186,57 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
                 'default' => true,
             ],
         ],
+        self::ROLE_SUPER_ADMIN => [
+            'system_alerts' => [
+                'key' => 'system_alerts',
+                'label' => 'System & Platform Alerts',
+                'description' => 'Receive critical platform alerts, security events, and system notices.',
+                'default' => true,
+            ],
+            'admin_management' => [
+                'key' => 'admin_management',
+                'label' => 'College Admin Account Updates',
+                'description' => 'Receive notifications when college administrator accounts are created, updated, or deactivated.',
+                'default' => true,
+            ],
+            'all_intern_registrations' => [
+                'key' => 'all_intern_registrations',
+                'label' => 'Global Intern Registrations (All Colleges)',
+                'description' => 'Receive alerts whenever any new intern registers anywhere in the system (normally handled by College Admins).',
+                'default' => false,
+            ],
+        ],
+        self::ROLE_COLLEGE_ADMIN => [
+            'intern_registrations' => [
+                'key' => 'intern_registrations',
+                'label' => 'New Intern Registrations',
+                'description' => 'Receive alerts when new interns register under your college programs and require account approval.',
+                'default' => true,
+            ],
+            'intern_completions' => [
+                'key' => 'intern_completions',
+                'label' => 'Intern Hours Completion Alerts',
+                'description' => 'Get notified when an intern in your college completes 100% of their required training hours.',
+                'default' => true,
+            ],
+            'supervisor_updates' => [
+                'key' => 'supervisor_updates',
+                'label' => 'Supervisor & Program Updates',
+                'description' => 'Receive notifications about supervisor assignments and updates within your college.',
+                'default' => true,
+            ],
+        ],
         self::ROLE_ADMIN => [
             'intern_registrations' => [
                 'key' => 'intern_registrations',
                 'label' => 'New Intern Registrations',
                 'description' => 'Receive alerts when new interns register and require account approval.',
+                'default' => true,
+            ],
+            'intern_completions' => [
+                'key' => 'intern_completions',
+                'label' => 'Intern Hours Completion Alerts',
+                'description' => 'Get notified when an assigned intern completes 100% of their required training hours.',
                 'default' => true,
             ],
         ],
@@ -181,6 +260,14 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
      */
     public function getAvailableNotificationOptions(): array
     {
+        if ($this->isSuperAdmin()) {
+            return self::ROLE_NOTIFICATION_PREFERENCES[self::ROLE_SUPER_ADMIN];
+        }
+
+        if ($this->isCollegeAdmin()) {
+            return self::ROLE_NOTIFICATION_PREFERENCES[self::ROLE_COLLEGE_ADMIN];
+        }
+
         if ($this->role === self::ROLE_SUPERVISOR) {
             if ($this->supervisorProfile?->isOjtSupervisor()) {
                 return self::ROLE_NOTIFICATION_PREFERENCES['supervisor_ojt'];
@@ -222,9 +309,12 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'must_change_password' => 'boolean',
             'two_factor_confirmed_at' => 'datetime',
             'notification_preferences' => 'array',
             'notifications_cleared_at' => 'datetime',
+            'is_active' => 'boolean',
+            'college_id' => 'integer',
         ];
     }
 
@@ -252,6 +342,16 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     }
 
     /**
+     * The college this admin belongs to (if role = college_admin).
+     *
+     * @return BelongsTo<College, $this>
+     */
+    public function college(): BelongsTo
+    {
+        return $this->belongsTo(College::class, 'college_id', 'id');
+    }
+
+    /**
      * The intern-specific fields for this user, if role = intern.
      * Null for admin/supervisor accounts.
      *
@@ -260,6 +360,16 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function internProfile(): HasOne
     {
         return $this->hasOne(InternProfile::class, 'user_id', 'id');
+    }
+
+    /**
+     * The college admin-specific profile fields for this user, if role = college_admin.
+     *
+     * @return HasOne<CollegeAdminProfile, $this>
+     */
+    public function collegeAdminProfile(): HasOne
+    {
+        return $this->hasOne(CollegeAdminProfile::class, 'user_id', 'id');
     }
 
     /**
@@ -290,9 +400,19 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             : null;
     }
 
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === self::ROLE_SUPER_ADMIN || ($this->role === self::ROLE_ADMIN && is_null($this->college_id));
+    }
+
+    public function isCollegeAdmin(): bool
+    {
+        return $this->role === self::ROLE_COLLEGE_ADMIN || ($this->role === self::ROLE_ADMIN && ! is_null($this->college_id));
+    }
+
     public function isAdmin(): bool
     {
-        return $this->role === self::ROLE_ADMIN;
+        return $this->isSuperAdmin() || $this->isCollegeAdmin() || $this->role === self::ROLE_ADMIN;
     }
 
     public function isSupervisor(): bool
@@ -318,6 +438,33 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         }
 
         return ! is_null($this->email_verified_at);
+    }
+
+    /**
+     * Determine whether the user is required to change their password on login.
+     * Checks if the user is explicitly flagged with must_change_password, or if
+     * a supervisor is still using the default temporary password (Supervisor@123).
+     */
+    public function requiresPasswordChange(): bool
+    {
+        if ($this->must_change_password) {
+            return true;
+        }
+
+        if ($this->isSupervisor()) {
+            $defaultPassword = (string) config('supervisor.default_supervisor_password', 'Supervisor@123');
+
+            if (\Illuminate\Support\Facades\Hash::check($defaultPassword, $this->password)) {
+                if ($this->exists) {
+                    $this->must_change_password = true;
+                    $this->saveQuietly();
+                }
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
