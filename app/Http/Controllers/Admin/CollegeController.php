@@ -83,7 +83,7 @@ class CollegeController extends Controller
                     'program_name' => $p->program_name,
                     'is_active' => (bool) $p->is_active,
                     'required_hours' => $p->required_hours,
-                ]),
+                ])->values()->all(),
                 'created_at' => $college->created_at?->format('M d, Y'),
             ]);
 

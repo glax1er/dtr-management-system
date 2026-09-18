@@ -85,8 +85,9 @@ class CollegeAdminController extends Controller
             ->withQueryString()
             ->through(function (User $admin) {
                 $profile = $admin->collegeAdminProfile;
-                $campusName = $profile?->campus?->name
-                    ?? $admin->college?->campus
+                $profileCampus = $profile !== null ? $profile->campus : null;
+                $campusName = ($profileCampus !== null ? $profileCampus->name : null)
+                    ?? ($admin->college !== null ? $admin->college->campus : null)
                     ?? $admin->campus;
 
                 return [
@@ -96,7 +97,7 @@ class CollegeAdminController extends Controller
                     'employee_id' => $profile?->employee_id,
                     'position' => $profile?->position,
                     'college_id' => $admin->college_id,
-                    'campus_id' => $profile?->campus_id ?? $admin->college?->campus_id,
+                    'campus_id' => ($profile !== null ? $profile->campus_id : null) ?? ($admin->college !== null ? $admin->college->campus_id : null),
                     'campus' => $campusName,
                     'college' => $admin->college ? [
                         'id' => $admin->college->id,
@@ -143,11 +144,11 @@ class CollegeAdminController extends Controller
             'password' => ['required', 'string', Password::defaults(), 'confirmed'],
         ]);
 
-        $college = College::find($validated['college_id']);
-        $campusId = $validated['campus_id'] ?? $college?->campus_id;
+        $college = College::find((int) $validated['college_id']);
+        $campusId = $validated['campus_id'] !== null ? (int) $validated['campus_id'] : $college?->campus_id;
         $campusName = null;
         if ($campusId) {
-            $campusName = Campus::find($campusId)?->name;
+            $campusName = Campus::find((int) $campusId)?->name;
         }
         if (! $campusName && $college) {
             $campusName = $college->campus;
@@ -205,11 +206,11 @@ class CollegeAdminController extends Controller
             'is_active' => ['nullable', 'boolean'],
         ]);
 
-        $college = College::find($validated['college_id']);
-        $campusId = $validated['campus_id'] ?? $college?->campus_id;
+        $college = College::find((int) $validated['college_id']);
+        $campusId = $validated['campus_id'] !== null ? (int) $validated['campus_id'] : $college?->campus_id;
         $campusName = null;
         if ($campusId) {
-            $campusName = Campus::find($campusId)?->name;
+            $campusName = Campus::find((int) $campusId)?->name;
         }
         if (! $campusName && $college) {
             $campusName = $college->campus;

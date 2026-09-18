@@ -272,7 +272,7 @@ class DashboardController extends Controller
                 'id' => $college->id,
                 'name' => $college->name,
                 'code' => $college->code,
-                'campus' => $college->campus?->name ?? $college->campus,
+                'campus' => ($college->getRelation('campus') instanceof \App\Models\Campus ? $college->getRelation('campus')->name : null) ?? $college->getAttribute('campus'),
                 'is_active' => (bool) $college->is_active,
                 'programs_count' => (int) $college->programs_count,
                 'interns_count' => (int) $college->interns_count,

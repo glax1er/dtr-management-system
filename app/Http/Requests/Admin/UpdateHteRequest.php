@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\Hte;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -15,6 +16,7 @@ class UpdateHteRequest extends FormRequest
     public function rules(): array
     {
         $hte = $this->route('hte');
+        $hte = $hte instanceof Hte ? $hte : null;
         $collegeId = $this->user()?->isCollegeAdmin() ? $this->user()->college_id : ($this->input('college_id') ?? $hte?->college_id);
 
         return [

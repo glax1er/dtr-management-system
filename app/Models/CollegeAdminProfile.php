@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CollegeAdminProfile extends Model
 {
+    /** @use HasFactory<\Database\Factories\CollegeAdminProfileFactory> */
     use HasFactory, SoftDeletes;
 
     // user_id is the primary key (one-to-one with users table)

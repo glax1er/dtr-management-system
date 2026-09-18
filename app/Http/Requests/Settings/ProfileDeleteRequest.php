@@ -26,7 +26,7 @@ class ProfileDeleteRequest extends FormRequest
     /**
      * Configure additional validation checks.
      */
-    public function withValidator($validator): void
+    public function withValidator(\Illuminate\Validation\Validator $validator): void
     {
         $validator->after(function ($validator) {
             $user = $this->user();
