@@ -129,7 +129,10 @@ class CheckHoursMilestones
     private function notifyCollegeAdminsAboutCompletion(InternProfile $profile, float $totalHours, int $requiredHours): void
     {
         // Only proceed when the intern has a college associated through their program or user record
-        $collegeId = $profile->program?->college_id ?? $profile->user?->college_id;
+        $program = $profile->program;
+        $profileUser = $profile->user;
+        $collegeId = ($program !== null ? $program->college_id : null)
+            ?? ($profileUser !== null ? $profileUser->college_id : null);
 
         if (! $collegeId) {
             return;

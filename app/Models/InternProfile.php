@@ -110,7 +110,7 @@ class InternProfile extends Model
      * @param  Builder<static>  $query
      * @return Builder<static>
      */
-    public function scopeVerified($query)
+    public function scopeVerified(Builder $query): Builder
     {
         return $query->whereHas('user', fn ($q) => $q->whereNotNull('email_verified_at'));
     }
@@ -121,10 +121,10 @@ class InternProfile extends Model
      * @param  Builder<static>  $query
      * @return Builder<static>
      */
-    public function scopeForCollege($query, int $collegeId)
+    public function scopeForCollege(Builder $query, int $collegeId): Builder
     {
         return $query->where(function ($q) use ($collegeId) {
-            $q->whereHas('program', fn ($pq) => $pq->withTrashed()->where('college_id', $collegeId))
+            $q->whereHas('program', fn ($pq) => $pq->where('college_id', $collegeId))
                 ->orWhereHas('user', fn ($uq) => $uq->where('college_id', $collegeId));
         });
     }

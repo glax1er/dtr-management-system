@@ -114,7 +114,10 @@ class SchedulePeriodController extends Controller
     {
         $recipients = User::query()
             ->where('role', User::ROLE_INTERN)
-            ->whereHas('internProfile', fn ($q) => $q->verified()->where('status', 'approved')->where('hte_id', $schedulePeriod->hte_id))
+            ->whereHas('internProfile', fn ($q) => $q
+                ->where('status', 'approved')
+                ->whereHas('user', fn ($user) => $user->whereNotNull('email_verified_at'))
+                ->where('hte_id', $schedulePeriod->hte_id))
             ->get()
             ->filter(fn (User $user) => $user->wantsNotification('schedule_alerts'));
 
@@ -137,7 +140,10 @@ class SchedulePeriodController extends Controller
     {
         $recipients = User::query()
             ->where('role', User::ROLE_INTERN)
-            ->whereHas('internProfile', fn ($q) => $q->verified()->where('status', 'approved')->where('hte_id', $hteId))
+            ->whereHas('internProfile', fn ($q) => $q
+                ->where('status', 'approved')
+                ->whereHas('user', fn ($user) => $user->whereNotNull('email_verified_at'))
+                ->where('hte_id', $hteId))
             ->get()
             ->filter(fn (User $user) => $user->wantsNotification('schedule_alerts'));
 

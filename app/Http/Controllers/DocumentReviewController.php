@@ -24,7 +24,10 @@ class DocumentReviewController extends Controller
         if ($user->isSuperAdmin()) {
             // Super Admin has access across all colleges
         } elseif ($user->isCollegeAdmin()) {
-            $internCollegeId = $internProfile->program?->college_id ?? $internProfile->user?->college_id;
+            $program = $internProfile->program;
+            $profileUser = $internProfile->user;
+            $internCollegeId = ($program !== null ? $program->college_id : null)
+                ?? ($profileUser !== null ? $profileUser->college_id : null);
             abort_if($internCollegeId !== $user->college_id, 403, 'Unauthorized.');
         } elseif ($user->isSupervisor()) {
             $supervisor = $user->supervisorProfile;
@@ -77,8 +80,8 @@ class DocumentReviewController extends Controller
                 'user_id' => $internProfile->user_id,
                 'name' => $internProfile->user->name,
                 'id_number' => $internProfile->id_number,
-                'program' => $internProfile->program?->program_name ?? 'N/A',
-                'hte' => $internProfile->hte?->hte_name ?? 'N/A',
+                'program' => ($program = $internProfile->program) !== null ? $program->program_name : 'N/A',
+                'hte' => ($hte = $internProfile->hte) !== null ? $hte->hte_name : 'N/A',
             ],
             'checklist' => $checklist,
         ]);
@@ -95,7 +98,10 @@ class DocumentReviewController extends Controller
             if (! $internProfile) {
                 return false;
             }
-            $internCollegeId = $internProfile->program?->college_id ?? $internProfile->user?->college_id;
+            $program = $internProfile->program;
+            $profileUser = $internProfile->user;
+            $internCollegeId = ($program !== null ? $program->college_id : null)
+                ?? ($profileUser !== null ? $profileUser->college_id : null);
 
             return $internCollegeId === $user->college_id;
         }

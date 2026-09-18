@@ -272,7 +272,7 @@ class DashboardController extends Controller
                 'id' => $college->id,
                 'name' => $college->name,
                 'code' => $college->code,
-                'campus' => ($college->getRelation('campus') instanceof \App\Models\Campus ? $college->getRelation('campus')->name : null) ?? $college->getAttribute('campus'),
+                'campus' => ($college->getRelation('campus') instanceof Campus ? $college->getRelation('campus')->name : null) ?? $college->getAttribute('campus'),
                 'is_active' => (bool) $college->is_active,
                 'programs_count' => (int) $college->programs_count,
                 'interns_count' => (int) $college->interns_count,
@@ -428,9 +428,13 @@ class DashboardController extends Controller
         return $query
             ->withCount([
                 'internProfiles as interns_count' => function ($query) use ($collegeId) {
-                    $query->verified()->where('status', 'approved');
+                    $query->where('status', 'approved')
+                        ->whereHas('user', fn ($user) => $user->whereNotNull('email_verified_at'));
                     if ($collegeId !== null) {
-                        $query->forCollege($collegeId);
+                        $query->where(function ($profile) use ($collegeId) {
+                            $profile->whereHas('program', fn ($program) => $program->where('college_id', $collegeId))
+                                ->orWhereHas('user', fn ($user) => $user->where('college_id', $collegeId));
+                        });
                     }
                 },
             ])
@@ -460,9 +464,13 @@ class DashboardController extends Controller
         $query = AttendanceLog::query()
             ->whereBetween('scan_timestamp', [$today->clone()->startOfDay(), $today->clone()->endOfDay()])
             ->whereHas('internProfile', function ($query) use ($collegeId) {
-                $query->verified()->where('status', 'approved');
+                $query->where('status', 'approved')
+                    ->whereHas('user', fn ($user) => $user->whereNotNull('email_verified_at'));
                 if ($collegeId !== null) {
-                    $query->forCollege($collegeId);
+                    $query->where(function ($profile) use ($collegeId) {
+                        $profile->whereHas('program', fn ($program) => $program->where('college_id', $collegeId))
+                            ->orWhereHas('user', fn ($user) => $user->where('college_id', $collegeId));
+                    });
                 }
             });
 

@@ -77,9 +77,11 @@ class EmailVerificationCodeController extends Controller
         // When an intern verifies their email, notify admins that their account is pending approval
         if ($user->isIntern() && $user->internProfile && $user->internProfile->status === 'pending') {
             $internProfile = $user->internProfile;
-            $internCollegeId = $internProfile->program?->college_id
+            $program = $internProfile->program;
+            $profileUser = $internProfile->user;
+            $internCollegeId = ($program !== null ? $program->college_id : null)
                 ?? $internProfile->college_id
-                ?? $internProfile->user?->college_id;
+                ?? ($profileUser !== null ? $profileUser->college_id : null);
 
             // Notify college admins responsible for this intern's college
             $collegeAdmins = User::query()

@@ -15,7 +15,10 @@ class InternApprovalController extends Controller
     private function authorizeCollege(Request $request, InternProfile $internProfile): void
     {
         if ($request->user()->isCollegeAdmin()) {
-            $internCollegeId = $internProfile->program?->college_id ?? $internProfile->user?->college_id;
+            $program = $internProfile->program;
+            $profileUser = $internProfile->user;
+            $internCollegeId = ($program !== null ? $program->college_id : null)
+                ?? ($profileUser !== null ? $profileUser->college_id : null);
             abort_if(
                 $internCollegeId !== $request->user()->college_id,
                 403,

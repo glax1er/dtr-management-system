@@ -138,7 +138,8 @@ class SchedulePeriodController extends Controller
         $scheduleName = $schedulePeriod->name ?? "{$schedulePeriod->start_date->format('M d, Y')} - {$schedulePeriod->end_date->format('M d, Y')}";
         $periodId = $schedulePeriod->id;
         $collegeId = $schedulePeriod->college_id;
-        $collegeName = $schedulePeriod->college?->name;
+        $college = $schedulePeriod->college;
+        $collegeName = $college !== null ? $college->name : null;
 
         $schedulePeriod->delete();
 
@@ -162,7 +163,9 @@ class SchedulePeriodController extends Controller
             $query->where(function ($q) {
                 $q->where(function ($iq) {
                     $iq->where('role', User::ROLE_INTERN)
-                        ->whereHas('internProfile', fn ($sub) => $sub->verified()->where('status', 'approved'));
+                        ->whereHas('internProfile', fn ($sub) => $sub
+                            ->where('status', 'approved')
+                            ->whereHas('user', fn ($user) => $user->whereNotNull('email_verified_at')));
                 })->orWhere(function ($sq) {
                     $sq->where('role', User::ROLE_SUPERVISOR)
                         ->whereHas('supervisorProfile', fn ($sp) => $sp->where('supervisor_type', 'hte'));
@@ -173,7 +176,13 @@ class SchedulePeriodController extends Controller
             $query->where(function ($q) use ($collegeId) {
                 $q->where(function ($iq) use ($collegeId) {
                     $iq->where('role', User::ROLE_INTERN)
-                        ->whereHas('internProfile', fn ($sub) => $sub->verified()->where('status', 'approved')->forCollege($collegeId));
+                        ->whereHas('internProfile', fn ($sub) => $sub
+                            ->where('status', 'approved')
+                            ->whereHas('user', fn ($user) => $user->whereNotNull('email_verified_at'))
+                            ->where(function ($profile) use ($collegeId) {
+                                $profile->whereHas('program', fn ($program) => $program->where('college_id', $collegeId))
+                                    ->orWhereHas('user', fn ($user) => $user->where('college_id', $collegeId));
+                            }));
                 })->orWhere(function ($sq) use ($collegeId) {
                     $sq->where('role', User::ROLE_SUPERVISOR)
                         ->whereHas('supervisorProfile', fn ($sp) => $sp->where(function ($sub) use ($collegeId) {
@@ -195,7 +204,7 @@ class SchedulePeriodController extends Controller
                 collegeName: $collegeName,
                 actor: $actor,
                 schedulePeriodId: $schedulePeriod->id,
-                startDate: $schedulePeriod->start_date?->toDateString(),
+                startDate: $schedulePeriod->start_date->toDateString(),
             ));
         }
     }
@@ -210,7 +219,9 @@ class SchedulePeriodController extends Controller
             $query->where(function ($q) {
                 $q->where(function ($iq) {
                     $iq->where('role', User::ROLE_INTERN)
-                        ->whereHas('internProfile', fn ($sub) => $sub->verified()->where('status', 'approved'));
+                        ->whereHas('internProfile', fn ($sub) => $sub
+                            ->where('status', 'approved')
+                            ->whereHas('user', fn ($user) => $user->whereNotNull('email_verified_at')));
                 })->orWhere(function ($sq) {
                     $sq->where('role', User::ROLE_SUPERVISOR)
                         ->whereHas('supervisorProfile', fn ($sp) => $sp->where('supervisor_type', 'hte'));
@@ -220,7 +231,13 @@ class SchedulePeriodController extends Controller
             $query->where(function ($q) use ($collegeId) {
                 $q->where(function ($iq) use ($collegeId) {
                     $iq->where('role', User::ROLE_INTERN)
-                        ->whereHas('internProfile', fn ($sub) => $sub->verified()->where('status', 'approved')->forCollege($collegeId));
+                        ->whereHas('internProfile', fn ($sub) => $sub
+                            ->where('status', 'approved')
+                            ->whereHas('user', fn ($user) => $user->whereNotNull('email_verified_at'))
+                            ->where(function ($profile) use ($collegeId) {
+                                $profile->whereHas('program', fn ($program) => $program->where('college_id', $collegeId))
+                                    ->orWhereHas('user', fn ($user) => $user->where('college_id', $collegeId));
+                            }));
                 })->orWhere(function ($sq) use ($collegeId) {
                     $sq->where('role', User::ROLE_SUPERVISOR)
                         ->whereHas('supervisorProfile', fn ($sp) => $sp->where(function ($sub) use ($collegeId) {
@@ -272,6 +289,7 @@ class SchedulePeriodController extends Controller
     {
         $isGlobal = $period->college_id === null;
         $isOwner = $viewer->isSuperAdmin() || ($period->college_id !== null && $period->college_id === $viewer->college_id);
+        $college = $period->college;
 
         return [
             'id' => $period->id,
@@ -280,15 +298,15 @@ class SchedulePeriodController extends Controller
             'end_date' => $period->end_date->toDateString(),
             'day_schedule' => $period->day_schedule,
             'college_id' => $period->college_id,
-            'college' => $period->college ? [
-                'id' => $period->college->id,
-                'name' => $period->college->name,
-                'code' => $period->college->code,
+            'college' => $college !== null ? [
+                'id' => $college->id,
+                'name' => $college->name,
+                'code' => $college->code,
             ] : null,
             'scope' => $isGlobal ? 'global' : 'college',
             'scope_label' => $isGlobal
                 ? 'University-wide Global Schedule'
-                : 'Global schedule set by '.($period->college?->name ?? 'College'),
+                : 'Global schedule set by '.($college !== null ? $college->name : 'College'),
             'is_owner' => $isOwner,
         ];
     }

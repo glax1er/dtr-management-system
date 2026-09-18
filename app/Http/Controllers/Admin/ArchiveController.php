@@ -61,10 +61,10 @@ class ArchiveController extends Controller
                 ->when($collegeId !== null, fn ($q) => $q->where(function ($sq) use ($collegeId) {
                     $sq->where(function ($hq) use ($collegeId) {
                         $hq->where('supervisor_type', 'hte')
-                            ->whereHas('hte', fn ($sub) => $sub->withTrashed()->where('college_id', $collegeId));
+                            ->whereHas('hte', fn ($sub) => $sub->where('college_id', $collegeId));
                     })->orWhere(function ($pq) use ($collegeId) {
                         $pq->where('supervisor_type', 'ojt')
-                            ->whereHas('program', fn ($sub) => $sub->withTrashed()->where('college_id', $collegeId));
+                            ->whereHas('program', fn ($sub) => $sub->where('college_id', $collegeId));
                     });
                 }))
                 ->orderBy('deleted_at', 'desc')
@@ -141,16 +141,21 @@ class ArchiveController extends Controller
                 abort(403, 'Unauthorized action.');
             }
             if ($type === 'interns') {
-                $internCollegeId = $record->program?->college_id ?? $record->user?->college_id;
+                $program = $record->program;
+                $recordUser = $record->user;
+                $internCollegeId = ($program !== null ? $program->college_id : null)
+                    ?? ($recordUser !== null ? $recordUser->college_id : null);
                 if ($internCollegeId !== $collegeId) {
                     abort(403, 'Unauthorized action.');
                 }
             }
             if ($type === 'supervisors') {
-                if ($record->isOjtSupervisor() && $record->program?->college_id !== $collegeId) {
+                $program = $record->program;
+                $hte = $record->hte;
+                if ($record->isOjtSupervisor() && ($program === null || $program->college_id !== $collegeId)) {
                     abort(403, 'Unauthorized action.');
                 }
-                if ($record->isHteSupervisor() && $record->hte?->college_id !== $collegeId) {
+                if ($record->isHteSupervisor() && ($hte === null || $hte->college_id !== $collegeId)) {
                     abort(403, 'Unauthorized action.');
                 }
             }
@@ -178,16 +183,21 @@ class ArchiveController extends Controller
                 abort(403, 'Unauthorized action.');
             }
             if ($type === 'interns') {
-                $internCollegeId = $record->program?->college_id ?? $record->user?->college_id;
+                $program = $record->program;
+                $recordUser = $record->user;
+                $internCollegeId = ($program !== null ? $program->college_id : null)
+                    ?? ($recordUser !== null ? $recordUser->college_id : null);
                 if ($internCollegeId !== $collegeId) {
                     abort(403, 'Unauthorized action.');
                 }
             }
             if ($type === 'supervisors') {
-                if ($record->isOjtSupervisor() && $record->program?->college_id !== $collegeId) {
+                $program = $record->program;
+                $hte = $record->hte;
+                if ($record->isOjtSupervisor() && ($program === null || $program->college_id !== $collegeId)) {
                     abort(403, 'Unauthorized action.');
                 }
-                if ($record->isHteSupervisor() && $record->hte?->college_id !== $collegeId) {
+                if ($record->isHteSupervisor() && ($hte === null || $hte->college_id !== $collegeId)) {
                     abort(403, 'Unauthorized action.');
                 }
             }

@@ -97,10 +97,14 @@ class AdminManagementController extends Controller
             ->through(function (User $admin) {
                 $isSuper = $admin->role === User::ROLE_SUPER_ADMIN || ($admin->role === User::ROLE_ADMIN && is_null($admin->college_id));
                 $profile = $admin->collegeAdminProfile;
+                $profileCampus = $profile === null ? null : $profile->campus;
+                $college = $admin->college;
 
                 $campusName = $isSuper
                     ? ($admin->campus ?? 'All Campuses')
-                    : ($profile?->campus?->name ?? $admin->college?->campus ?? $admin->campus ?? null);
+                    : ($profileCampus !== null
+                        ? $profileCampus->name
+                        : ($college !== null ? $college->campus : ($admin->campus ?? null)));
 
                 return [
                     'id' => $admin->id,
@@ -108,7 +112,8 @@ class AdminManagementController extends Controller
                     'email' => $admin->email,
                     'role' => $isSuper ? 'super_admin' : 'college_admin',
                     'college_id' => $admin->college_id,
-                    'campus_id' => $profile?->campus_id ?? $admin->college?->campus_id,
+                    'campus_id' => ($profile !== null ? $profile->campus_id : null)
+                        ?? ($college !== null ? $college->campus_id : null),
                     'campus' => $campusName,
                     'employee_id' => $profile?->employee_id,
                     'position' => $profile?->position,
@@ -188,11 +193,11 @@ class AdminManagementController extends Controller
             ]);
         }
 
-        $college = College::find($validated['college_id']);
+        $college = College::whereKey($validated['college_id'])->first();
         $campusId = $validated['campus_id'] ?? $college?->campus_id;
         $campusName = null;
         if ($campusId) {
-            $campusName = Campus::find($campusId)?->name;
+            $campusName = Campus::whereKey($campusId)->first()?->name;
         }
         if (! $campusName && $college) {
             $campusName = $college->campus;
@@ -281,11 +286,11 @@ class AdminManagementController extends Controller
             }
 
             if ($isCollege) {
-                $college = College::find($validated['college_id']);
+                $college = College::whereKey($validated['college_id'])->first();
                 $campusId = $validated['campus_id'] ?? $college?->campus_id;
                 $campusName = null;
                 if ($campusId) {
-                    $campusName = Campus::find($campusId)?->name;
+                    $campusName = Campus::whereKey($campusId)->first()?->name;
                 }
                 if (! $campusName && $college) {
                     $campusName = $college->campus;

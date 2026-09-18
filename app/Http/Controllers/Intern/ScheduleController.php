@@ -43,7 +43,8 @@ class ScheduleController extends Controller
             $month = $now->copy()->startOfMonth();
         }
 
-        $collegeId = $profile?->program?->college_id ?? $user->college_id;
+        $program = $profile === null ? null : $profile->program;
+        $collegeId = ($program !== null ? $program->college_id : null) ?? $user->college_id;
 
         $defaultExpectedStartTime = config('dtr.expected_start_time', '08:00');
 
@@ -130,7 +131,8 @@ class ScheduleController extends Controller
             } elseif ($matchingCollegePeriod !== null) {
                 $dayTime = $matchingCollegePeriod->day_schedule[$dayName] ?? null;
                 $sourceType = 'college_schedule';
-                $sourceLabel = ($matchingCollegePeriod->college?->name ?? 'College').' Schedule';
+                $college = $matchingCollegePeriod->college;
+                $sourceLabel = ($college !== null ? $college->name : 'College').' Schedule';
                 $activePeriod = $matchingCollegePeriod;
                 $isWorkday = ! empty($dayTime);
                 $expectedTime = $dayTime;
@@ -206,7 +208,7 @@ class ScheduleController extends Controller
 
             $scopeLabel = match ($scope) {
                 'hte' => 'HTE Time Schedule',
-                'college' => ($period->college?->name ?? 'College').' Schedule',
+                'college' => (($college = $period->college) !== null ? $college->name : 'College').' Schedule',
                 default => 'Global OJT Schedule',
             };
 

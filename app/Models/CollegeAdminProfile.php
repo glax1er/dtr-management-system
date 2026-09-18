@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CollegeAdminProfile extends Model
 {
-    /** @use HasFactory<\Database\Factories\CollegeAdminProfileFactory> */
+    /** @use HasFactory<Factory> */
     use HasFactory, SoftDeletes;
 
     // user_id is the primary key (one-to-one with users table)

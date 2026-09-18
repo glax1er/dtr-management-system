@@ -84,7 +84,10 @@ class InternController extends Controller
     {
         $collegeId = $request->user()->isCollegeAdmin() ? $request->user()->college_id : null;
         if ($collegeId !== null) {
-            $internCollegeId = $internProfile->program?->college_id ?? $internProfile->user?->college_id;
+            $program = $internProfile->program;
+            $profileUser = $internProfile->user;
+            $internCollegeId = ($program !== null ? $program->college_id : null)
+                ?? ($profileUser !== null ? $profileUser->college_id : null);
             abort_if($internCollegeId !== $collegeId, 403, 'Unauthorized action.');
             abort_if(Program::where('program_id', $request->validated('program_id'))->where('college_id', $collegeId)->doesntExist(), 422, 'Selected program does not belong to your college.');
             abort_if(Hte::where('hte_id', $request->validated('hte_id'))->where('college_id', $collegeId)->doesntExist(), 422, 'Selected HTE does not belong to your college.');

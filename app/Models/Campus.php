@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Campus extends Model
 {
-    /** @use HasFactory<\Database\Factories\CampusFactory> */
+    /** @use HasFactory<Factory> */
     use HasFactory, SoftDeletes;
 
     protected $fillable = [

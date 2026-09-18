@@ -49,6 +49,7 @@ class ProfileController extends Controller
                 'hte' => fn ($q) => $q->withTrashed(),
                 'program' => fn ($q) => $q->withTrashed(),
             ])->first();
+            $hte = $profile === null ? null : $profile->hte;
 
             return [
                 'id_number' => $profile?->id_number,
@@ -58,7 +59,7 @@ class ProfileController extends Controller
                 'qr_code_url' => $profile?->qr_code_value !== null
                     ? route('intern.qr-code.show')
                     : null,
-                'bg_url' => $profile?->hte?->id_bg_url ?? '/images/cic-bg.jpg',
+                'bg_url' => $hte !== null && $hte->id_bg_url !== null ? $hte->id_bg_url : '/images/cic-bg.jpg',
             ];
         }
 
@@ -67,6 +68,7 @@ class ProfileController extends Controller
                 'hte' => fn ($q) => $q->withTrashed(),
                 'program' => fn ($q) => $q->withTrashed(),
             ])->first();
+            $hte = $profile === null ? null : $profile->hte;
 
             return [
                 'id_number' => null,
@@ -74,7 +76,7 @@ class ProfileController extends Controller
                 'detail' => $profile?->getScopeName(),
                 'has_qr_code' => false,
                 'qr_code_url' => null,
-                'bg_url' => $profile?->hte?->id_bg_url ?? '/images/cic-bg.jpg',
+                'bg_url' => $hte !== null && $hte->id_bg_url !== null ? $hte->id_bg_url : '/images/cic-bg.jpg',
             ];
         }
 

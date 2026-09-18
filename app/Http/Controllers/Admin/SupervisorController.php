@@ -159,7 +159,7 @@ class SupervisorController extends Controller
                 'password' => config('supervisor.default_supervisor_password'),
                 'role' => User::ROLE_SUPERVISOR,
                 'must_change_password' => true,
-                'college_id' => $collegeId ?? Hte::find($request->validated('hte_id'))?->college_id,
+                'college_id' => $collegeId ?? Hte::whereKey($request->validated('hte_id'))->first()?->college_id,
             ]);
 
             $supervisorProfile = SupervisorProfile::create([
@@ -200,7 +200,7 @@ class SupervisorController extends Controller
                 'password' => config('supervisor.default_supervisor_password'),
                 'role' => User::ROLE_SUPERVISOR,
                 'must_change_password' => true,
-                'college_id' => $collegeId ?? Program::find($request->validated('program_id'))?->college_id,
+                'college_id' => $collegeId ?? Program::whereKey($request->validated('program_id'))->first()?->college_id,
             ]);
 
             SupervisorProfile::create([
