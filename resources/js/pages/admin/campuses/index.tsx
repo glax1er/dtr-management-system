@@ -1,16 +1,13 @@
 import { Head, router } from '@inertiajs/react';
 import {
     Building2,
+    GraduationCap,
     LayoutGrid,
     MapPin,
-    Pencil,
     Plus,
-    Power,
-    PowerOff,
     Search,
     SlidersHorizontal,
     Table as TableIcon,
-    Trash2,
     X,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -18,6 +15,7 @@ import type { FormEvent } from 'react';
 import { toast } from 'sonner';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
+import { ProgramActions } from '@/components/program-actions';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
@@ -48,12 +46,8 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { useDebounce } from '@/hooks/use-debounce';
 import { dashboard } from '@/routes';
 
@@ -65,6 +59,7 @@ interface CampusRecord {
     description: string | null;
     is_active: boolean;
     colleges_count: number;
+    interns_count: number;
     created_at: string | null;
 }
 
@@ -325,19 +320,37 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                         </form>
 
                         {/* Status Filter */}
-                        <Select
-                            value={status || 'all'}
-                            onValueChange={handleStatusFilterChange}
-                        >
-                            <SelectTrigger className="h-9 w-32">
-                                <SelectValue placeholder="Status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Status</SelectItem>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="inactive">Inactive</SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <div className="hidden sm:block">
+                            <Select
+                                value={status || 'all'}
+                                onValueChange={handleStatusFilterChange}
+                            >
+                                <SelectTrigger className="h-9 w-36">
+                                    <SlidersHorizontal className="mr-1 size-3.5 shrink-0 text-muted-foreground" />
+                                    <SelectValue placeholder="All Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Status</SelectItem>
+                                    <SelectItem value="active">Active</SelectItem>
+                                    <SelectItem value="inactive">Inactive</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="sm:hidden">
+                            <Select
+                                value={status || 'all'}
+                                onValueChange={handleStatusFilterChange}
+                            >
+                                <SelectTrigger className="inline-flex size-9 items-center justify-center p-0 [&>span]:hidden [&>svg:last-child]:hidden">
+                                    <SlidersHorizontal className="size-4 text-muted-foreground" />
+                                </SelectTrigger>
+                                <SelectContent align="end">
+                                    <SelectItem value="all">All Status</SelectItem>
+                                    <SelectItem value="active">Active</SelectItem>
+                                    <SelectItem value="inactive">Inactive</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
 
                         {/* Reset Filters */}
                         {hasActiveFilters && (
@@ -357,40 +370,38 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                             type="button"
                             onClick={() => setMobileSearchOpen((o) => !o)}
                             className="inline-flex size-9 shrink-0 items-center justify-center rounded-md border bg-background text-muted-foreground hover:text-foreground sm:hidden"
+                            aria-label="Toggle search"
                         >
                             {mobileSearchOpen ? <X className="size-4" /> : <Search className="size-4" />}
                         </button>
 
-                        {/* View Mode Toggle */}
-                        <div className="flex items-center rounded-md border bg-muted p-0.5">
-                            <button
-                                type="button"
-                                onClick={() => setView('table')}
-                                className={`rounded p-1.5 transition-colors ${
-                                    view === 'table'
-                                        ? 'bg-background text-foreground shadow-xs'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                }`}
+                        {/* View Mode Toggle — desktop only */}
+                        <div className="hidden sm:block">
+                            <Tabs
+                                value={view}
+                                onValueChange={(v) => setView(v as ViewMode)}
                             >
-                                <TableIcon className="size-4" />
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setView('grid')}
-                                className={`rounded p-1.5 transition-colors ${
-                                    view === 'grid'
-                                        ? 'bg-background text-foreground shadow-xs'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                }`}
-                            >
-                                <LayoutGrid className="size-4" />
-                            </button>
+                                <TabsList>
+                                    <TabsTrigger
+                                        value="table"
+                                        aria-label="Table view"
+                                    >
+                                        <TableIcon className="size-4" />
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                        value="grid"
+                                        aria-label="Grid view"
+                                    >
+                                        <LayoutGrid className="size-4" />
+                                    </TabsTrigger>
+                                </TabsList>
+                            </Tabs>
                         </div>
 
                         {/* Add Campus Button */}
                         <Button onClick={openAdd} className="h-9 gap-1.5">
                             <Plus className="size-4" />
-                            Add Campus
+                            <span className="hidden sm:inline">Add Campus</span>
                         </Button>
                     </div>
                 </div>
@@ -421,224 +432,164 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
 
                 {/* Content */}
                 {campuses.data.length === 0 ? (
-                    <Card className="flex flex-col items-center justify-center p-12 text-center">
-                        <MapPin className="mb-4 size-12 text-muted-foreground/50" />
-                        <h3 className="text-lg font-medium text-foreground">No campuses found</h3>
-                        <p className="mt-1 text-sm text-muted-foreground">
+                    <Card>
+                        <CardContent className="py-8 text-center text-sm text-muted-foreground">
+                            No campuses
                             {hasActiveFilters
-                                ? 'Try adjusting your search query or filters.'
-                                : 'Get started by creating your first university campus.'}
-                        </p>
-                        {hasActiveFilters ? (
-                            <Button variant="outline" size="sm" onClick={clearAllFilters} className="mt-4">
-                                Clear Filters
-                            </Button>
-                        ) : (
-                            <Button size="sm" onClick={openAdd} className="mt-4 gap-1.5">
-                                <Plus className="size-4" />
-                                Add Campus
-                            </Button>
-                        )}
+                                ? ' match this filter.'
+                                : ' yet.'}
+                        </CardContent>
                     </Card>
-                ) : view === 'table' ? (
-                    <div className="overflow-hidden rounded-md border bg-card shadow-xs">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-[220px]">Name</TableHead>
-                                    <TableHead className="w-[100px]">Code</TableHead>
-                                    <TableHead>Address</TableHead>
-                                    <TableHead className="w-[120px] text-center">Colleges</TableHead>
-                                    <TableHead className="w-[110px] text-center">Status</TableHead>
-                                    <TableHead className="w-[130px]">Created</TableHead>
-                                    <TableHead className="w-[110px] text-center">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
+                ) : (
+                    <>
+                        {/* Table view — desktop only */}
+                        {view === 'table' && (
+                            <div className="hidden sm:block">
+                                <Card className="overflow-hidden p-0">
+                                    <CardContent className="p-0">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="px-6">Campus</TableHead>
+                                                    <TableHead className="px-6 text-center">Code</TableHead>
+                                                    <TableHead className="px-6">Address</TableHead>
+                                                    <TableHead className="px-6 text-center">Colleges</TableHead>
+                                                    <TableHead className="px-6 text-center">Interns</TableHead>
+                                                    <TableHead className="px-6 text-center">Status</TableHead>
+                                                    <TableHead className="px-6 text-center">Created</TableHead>
+                                                    <TableHead className="px-6 text-center">Actions</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {campuses.data.map((campus) => (
+                                                    <TableRow key={campus.id}>
+                                                        <TableCell className="px-6 font-medium">
+                                                            <div className="font-semibold text-foreground">
+                                                                {campus.name}
+                                                            </div>
+                                                            {campus.description && (
+                                                                <div className="line-clamp-1 text-xs text-muted-foreground">
+                                                                    {campus.description}
+                                                                </div>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="px-6 text-center">
+                                                            <Badge variant="outline" className="font-mono text-xs">
+                                                                {campus.code}
+                                                            </Badge>
+                                                        </TableCell>
+                                                        <TableCell className="px-6 text-sm text-muted-foreground">
+                                                            {campus.address || '—'}
+                                                        </TableCell>
+                                                        <TableCell className="px-6 text-center">
+                                                            <Badge variant="secondary" className="text-xs">
+                                                                {campus.colleges_count}{' '}
+                                                                {campus.colleges_count === 1 ? 'college' : 'colleges'}
+                                                            </Badge>
+                                                        </TableCell>
+                                                        <TableCell className="px-6 text-center font-medium">
+                                                            {campus.interns_count}
+                                                        </TableCell>
+                                                        <TableCell className="px-6 text-center">
+                                                            <StatusBadge status={campus.is_active ? 'active' : 'inactive'} />
+                                                        </TableCell>
+                                                        <TableCell className="px-6 text-center text-xs text-muted-foreground">
+                                                            {campus.created_at || '—'}
+                                                        </TableCell>
+                                                        <TableCell className="px-6 text-center">
+                                                            <ProgramActions
+                                                                program={campus}
+                                                                onEdit={openEdit}
+                                                                onToggleActive={openStatusConfirm}
+                                                                onArchive={openArchive}
+                                                            />
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                        {campuses.total > 0 && (
+                                            <NumberedPagination
+                                                meta={campuses}
+                                                itemLabel="campus"
+                                                onPageChange={goToPage}
+                                                onPerPageChange={changePerPage}
+                                                idPrefix="campuses-table-per-page"
+                                            />
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )}
+
+                        {/* Grid — always on mobile, desktop when grid tab selected */}
+                        <div className={view === 'table' ? 'sm:hidden' : ''}>
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {campuses.data.map((campus) => (
-                                    <TableRow key={campus.id}>
-                                        <TableCell>
-                                            <div className="font-semibold text-foreground">
-                                                {campus.name}
+                                    <Card key={campus.id} className="flex flex-col justify-between">
+                                        <CardHeader className="pb-3">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div>
+                                                    <Badge variant="outline" className="mb-1 font-mono text-xs">
+                                                        {campus.code}
+                                                    </Badge>
+                                                    <CardTitle className="text-base font-semibold leading-tight">
+                                                        {campus.name}
+                                                    </CardTitle>
+                                                </div>
+                                                <StatusBadge status={campus.is_active ? 'active' : 'inactive'} />
                                             </div>
-                                            {campus.description && (
-                                                <div className="line-clamp-1 text-xs text-muted-foreground">
-                                                    {campus.description}
+                                        </CardHeader>
+                                        <CardContent className="space-y-3 pb-3 text-sm">
+                                            {campus.address && (
+                                                <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                                                    <MapPin className="mt-0.5 size-3.5 shrink-0" />
+                                                    <span>{campus.address}</span>
                                                 </div>
                                             )}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant="outline" className="font-mono text-xs">
-                                                {campus.code}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            <span className="text-sm text-muted-foreground">
-                                                {campus.address || '—'}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <Badge variant="secondary" className="text-xs">
-                                                {campus.colleges_count}{' '}
-                                                {campus.colleges_count === 1 ? 'college' : 'colleges'}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <StatusBadge status={campus.is_active ? 'active' : 'inactive'} />
-                                        </TableCell>
-                                        <TableCell className="text-xs text-muted-foreground">
-                                            {campus.created_at || '—'}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex justify-center gap-1">
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => openEdit(campus)}
-                                                        >
-                                                            <Pencil className="size-4 text-blue-600" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>Edit Campus</TooltipContent>
-                                                </Tooltip>
-
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => openStatusConfirm(campus)}
-                                                        >
-                                                            {campus.is_active ? (
-                                                                <PowerOff className="size-4 text-destructive" />
-                                                            ) : (
-                                                                <Power className="size-4 text-emerald-600" />
-                                                            )}
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        {campus.is_active ? 'Deactivate' : 'Activate'}
-                                                    </TooltipContent>
-                                                </Tooltip>
-
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => openArchive(campus)}
-                                                        >
-                                                            <Trash2 className="size-4 text-destructive" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>Archive Campus</TooltipContent>
-                                                </Tooltip>
+                                            {campus.description && (
+                                                <p className="line-clamp-2 text-xs text-muted-foreground">
+                                                    {campus.description}
+                                                </p>
+                                            )}
+                                            <div className="flex items-center justify-between border-t pt-2 text-xs text-muted-foreground">
+                                                <div className="flex items-center gap-3 font-medium">
+                                                    <span className="flex items-center gap-1">
+                                                        <Building2 className="size-3.5" />
+                                                        {campus.colleges_count}{' '}
+                                                        {campus.colleges_count === 1 ? 'College' : 'Colleges'}
+                                                    </span>
+                                                    <span className="flex items-center gap-1">
+                                                        <GraduationCap className="size-3.5" />
+                                                        {campus.interns_count}{' '}
+                                                        {campus.interns_count === 1 ? 'Intern' : 'Interns'}
+                                                    </span>
+                                                </div>
+                                                <span>Added {campus.created_at || '—'}</span>
                                             </div>
-                                        </TableCell>
-                                    </TableRow>
+                                        </CardContent>
+                                        <div className="flex items-center justify-end border-t bg-muted/20 px-4 py-2">
+                                            <ProgramActions
+                                                program={campus}
+                                                onEdit={openEdit}
+                                                onToggleActive={openStatusConfirm}
+                                                onArchive={openArchive}
+                                            />
+                                        </div>
+                                    </Card>
                                 ))}
-                            </TableBody>
-                        </Table>
-                    </div>
-                ) : (
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {campuses.data.map((campus) => (
-                            <Card key={campus.id} className="flex flex-col justify-between">
-                                <CardHeader className="pb-3">
-                                    <div className="flex items-start justify-between gap-2">
-                                        <div>
-                                            <Badge variant="outline" className="mb-1 font-mono text-xs">
-                                                {campus.code}
-                                            </Badge>
-                                            <CardTitle className="text-base font-semibold leading-tight">
-                                                {campus.name}
-                                            </CardTitle>
-                                        </div>
-                                        <StatusBadge status={campus.is_active ? 'active' : 'inactive'} />
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="space-y-3 pb-3 text-sm">
-                                    {campus.address && (
-                                        <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                                            <MapPin className="mt-0.5 size-3.5 shrink-0" />
-                                            <span>{campus.address}</span>
-                                        </div>
-                                    )}
-                                    {campus.description && (
-                                        <p className="line-clamp-2 text-xs text-muted-foreground">
-                                            {campus.description}
-                                        </p>
-                                    )}
-                                    <div className="flex items-center justify-between border-t pt-2 text-xs text-muted-foreground">
-                                        <span className="flex items-center gap-1 font-medium">
-                                            <Building2 className="size-3.5" />
-                                            {campus.colleges_count}{' '}
-                                            {campus.colleges_count === 1 ? 'College' : 'Colleges'}
-                                        </span>
-                                        <span>Added {campus.created_at || '—'}</span>
-                                    </div>
-                                </CardContent>
-                                <div className="flex items-center justify-end gap-1 border-t bg-muted/20 px-4 py-2">
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => openEdit(campus)}
-                                            >
-                                                <Pencil className="size-4 text-blue-600" />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>Edit Campus</TooltipContent>
-                                    </Tooltip>
-
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => openStatusConfirm(campus)}
-                                            >
-                                                {campus.is_active ? (
-                                                    <PowerOff className="size-4 text-destructive" />
-                                                ) : (
-                                                    <Power className="size-4 text-emerald-600" />
-                                                )}
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            {campus.is_active ? 'Deactivate' : 'Activate'}
-                                        </TooltipContent>
-                                    </Tooltip>
-
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => openArchive(campus)}
-                                            >
-                                                <Trash2 className="size-4 text-destructive" />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>Archive Campus</TooltipContent>
-                                    </Tooltip>
-                                </div>
-                            </Card>
-                        ))}
-                    </div>
-                )}
-
-                {/* Pagination */}
-                {campuses.total > 0 && (
-                    <NumberedPagination
-                        meta={campuses}
-                        itemLabel="campus"
-                        onPageChange={goToPage}
-                        onPerPageChange={changePerPage}
-                    />
+                            </div>
+                            {campuses.total > 0 && (
+                                <NumberedPagination
+                                    meta={campuses}
+                                    itemLabel="campus"
+                                    onPageChange={goToPage}
+                                    onPerPageChange={changePerPage}
+                                    idPrefix="campuses-grid-per-page"
+                                />
+                            )}
+                        </div>
+                    </>
                 )}
             </div>
 

@@ -239,3 +239,51 @@ test('admin management index lists campus for super admin and college admin', fu
         })
     );
 });
+
+test('colleges index returns correct interns count', function () {
+    $program = Program::create([
+        'college_id' => $this->collegeA->id,
+        'program_name' => 'BS CS '.uniqid(),
+        'is_active' => true,
+        'required_hours' => 500,
+    ]);
+
+    $hte = Hte::create([
+        'college_id' => $this->collegeA->id,
+        'hte_name' => 'Tech Corp '.uniqid(),
+        'address' => 'Tech Address',
+        'status' => 'active',
+    ]);
+
+    $internUser = User::factory()->create([
+        'role' => User::ROLE_INTERN,
+        'college_id' => $this->collegeA->id,
+        'email_verified_at' => now(),
+    ]);
+
+    \App\Models\InternProfile::create([
+        'user_id' => $internUser->id,
+        'id_number' => 'ID-'.uniqid(),
+        'sex' => 'female',
+        'hte_id' => $hte->hte_id,
+        'program_id' => $program->program_id,
+        'status' => 'approved',
+        'privacy_accepted_at' => now(),
+        'registered_at' => now(),
+        'approved_at' => now(),
+    ]);
+
+    $response = $this->actingAs($this->superAdmin)->get(route('admin.colleges.index'));
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->component('admin/colleges/index')
+        ->where('colleges.data', function ($colleges) {
+            $collegeRecord = collect($colleges)->firstWhere('id', $this->collegeA->id);
+            expect($collegeRecord)->not->toBeNull();
+            expect($collegeRecord['interns_count'])->toBe(1);
+
+            return true;
+        })
+    );
+});
+

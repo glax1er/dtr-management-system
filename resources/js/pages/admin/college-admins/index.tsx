@@ -25,7 +25,7 @@ import type { FormEvent } from 'react';
 import { toast } from 'sonner';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
@@ -56,6 +56,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Tooltip,
     TooltipContent,
@@ -70,6 +71,7 @@ interface CollegeAdminRecord {
     id: number;
     name: string;
     email: string;
+    avatar?: string | null;
     employee_id?: string | null;
     position?: string | null;
     college_id: number | null;
@@ -542,30 +544,27 @@ export default function CollegeAdminManagement({
                             {mobileSearchOpen ? <X className="size-4" /> : <Search className="size-4" />}
                         </button>
 
-                        {/* View Mode Toggle */}
-                        <div className="flex items-center rounded-md border bg-muted p-0.5">
-                            <button
-                                type="button"
-                                onClick={() => setView('table')}
-                                className={`rounded p-1.5 transition-colors ${
-                                    view === 'table'
-                                        ? 'bg-background text-foreground shadow-xs'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                }`}
+                        {/* View Mode Toggle — desktop only */}
+                        <div className="hidden sm:block">
+                            <Tabs
+                                value={view}
+                                onValueChange={(v) => setView(v as ViewMode)}
                             >
-                                <TableIcon className="size-4" />
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setView('grid')}
-                                className={`rounded p-1.5 transition-colors ${
-                                    view === 'grid'
-                                        ? 'bg-background text-foreground shadow-xs'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                }`}
-                            >
-                                <LayoutGrid className="size-4" />
-                            </button>
+                                <TabsList>
+                                    <TabsTrigger
+                                        value="table"
+                                        aria-label="Table view"
+                                    >
+                                        <TableIcon className="size-4" />
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                        value="grid"
+                                        aria-label="Grid view"
+                                    >
+                                        <LayoutGrid className="size-4" />
+                                    </TabsTrigger>
+                                </TabsList>
+                            </Tabs>
                         </div>
 
                         {/* Add College Admin Button */}
@@ -602,28 +601,22 @@ export default function CollegeAdminManagement({
 
                 {/* Content */}
                 {collegeAdmins.data.length === 0 ? (
-                    <Card className="flex flex-col items-center justify-center p-12 text-center">
-                        <UserCog className="mb-4 size-12 text-muted-foreground/50" />
-                        <h3 className="text-lg font-medium text-foreground">No college administrators found</h3>
-                        <p className="mt-1 text-sm text-muted-foreground">
+                    <Card>
+                        <CardContent className="py-8 text-center text-sm text-muted-foreground">
+                            No college administrators
                             {hasActiveFilters
-                                ? 'Try adjusting your search query or filters.'
-                                : 'Create college administrators to manage programs and intern approvals per college department.'}
-                        </p>
-                        {hasActiveFilters ? (
-                            <Button variant="outline" size="sm" onClick={clearAllFilters} className="mt-4">
-                                Clear Filters
-                            </Button>
-                        ) : (
-                            <Button size="sm" onClick={openAdd} className="mt-4 gap-1.5">
-                                <Plus className="size-4" />
-                                Add College Admin
-                            </Button>
-                        )}
+                                ? ' match this filter.'
+                                : ' yet.'}
+                        </CardContent>
                     </Card>
-                ) : view === 'table' ? (
-                    <div className="overflow-hidden rounded-md border bg-card shadow-xs">
-                        <Table>
+                ) : (
+                    <>
+                        {/* Table view — desktop only */}
+                        {view === 'table' && (
+                            <div className="hidden sm:block">
+                                <Card className="overflow-hidden p-0">
+                                    <CardContent className="p-0">
+                                        <Table>
                             <TableHeader>
                                 <TableRow>
                                     <TableHead className="w-[240px]">Administrator</TableHead>
@@ -641,6 +634,13 @@ export default function CollegeAdminManagement({
                                         <TableCell>
                                             <div className="flex items-center gap-3">
                                                 <Avatar className="size-9">
+                                                    {admin.avatar && (
+                                                        <AvatarImage
+                                                            src={admin.avatar}
+                                                            alt={admin.name}
+                                                            className="object-cover"
+                                                        />
+                                                    )}
                                                     <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
                                                         {getInitials(admin.name)}
                                                     </AvatarFallback>
@@ -746,16 +746,37 @@ export default function CollegeAdminManagement({
                                     </TableRow>
                                 ))}
                             </TableBody>
-                        </Table>
-                    </div>
-                ) : (
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            </Table>
+                            {collegeAdmins.total > 0 && (
+                                <NumberedPagination
+                                    meta={collegeAdmins}
+                                    itemLabel="college administrator"
+                                    onPageChange={goToPage}
+                                    onPerPageChange={changePerPage}
+                                    idPrefix="college-admins-table-per-page"
+                                />
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
+            {/* Mobile card view (always shown on mobile, or when grid view active) */}
+            <div className={view === 'table' ? 'sm:hidden' : ''}>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {collegeAdmins.data.map((admin) => (
                             <Card key={admin.id} className="flex flex-col justify-between">
                                 <CardHeader className="pb-3">
                                     <div className="flex items-start justify-between gap-2">
                                         <div className="flex items-center gap-3">
                                             <Avatar className="size-10">
+                                                {admin.avatar && (
+                                                    <AvatarImage
+                                                        src={admin.avatar}
+                                                        alt={admin.name}
+                                                        className="object-cover"
+                                                    />
+                                                )}
                                                 <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
                                                     {getInitials(admin.name)}
                                                 </AvatarFallback>
@@ -838,18 +859,19 @@ export default function CollegeAdminManagement({
                             </Card>
                         ))}
                     </div>
-                )}
-
-                {/* Pagination */}
-                {collegeAdmins.total > 0 && (
-                    <NumberedPagination
-                        meta={collegeAdmins}
-                        itemLabel="college administrator"
-                        onPageChange={goToPage}
-                        onPerPageChange={changePerPage}
-                    />
-                )}
-            </div>
+                    {collegeAdmins.total > 0 && (
+                        <NumberedPagination
+                            meta={collegeAdmins}
+                            itemLabel="college administrator"
+                            onPageChange={goToPage}
+                            onPerPageChange={changePerPage}
+                            idPrefix="college-admins-grid-per-page"
+                        />
+                    )}
+                </div>
+            </>
+        )}
+    </div>
 
             {/* Add College Admin Modal */}
             <Dialog open={addOpen} onOpenChange={setAddOpen}>

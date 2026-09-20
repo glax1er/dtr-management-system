@@ -49,6 +49,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useDebounce } from '@/hooks/use-debounce';
 import { dashboard } from '@/routes';
@@ -69,6 +70,7 @@ interface CollegeRecord {
     is_active: boolean;
     programs_count: number;
     admins_count: number;
+    interns_count: number;
     admin_email: string | null;
     programs: ProgramItem[];
     created_at: string | null;
@@ -218,6 +220,18 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
         visit({
             ...baseParams(),
             campus: nextCampus || undefined,
+            page: undefined,
+        });
+    };
+
+    const hasActiveFilters = Boolean(search || status || campus);
+
+    const clearAllFilters = () => {
+        setSearch('');
+        setStatus('');
+        setCampus('');
+        visit({
+            per_page: filters.per_page ? String(filters.per_page) : undefined,
             page: undefined,
         });
     };
@@ -397,26 +411,40 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
                             </SelectContent>
                         </Select>
 
-                        {/* View Switcher */}
+                        {/* Reset Filters */}
+                        {hasActiveFilters && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={clearAllFilters}
+                                className="h-9 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                            >
+                                <X className="size-3.5" />
+                                Reset
+                            </Button>
+                        )}
+
+                        {/* View toggle — desktop only */}
                         <div className="hidden sm:block">
-                            <div className="inline-flex rounded-md border p-0.5">
-                                <Button
-                                    variant={view === 'table' ? 'secondary' : 'ghost'}
-                                    size="icon"
-                                    className="size-8"
-                                    onClick={() => setView('table')}
-                                >
-                                    <TableIcon className="size-4" />
-                                </Button>
-                                <Button
-                                    variant={view === 'grid' ? 'secondary' : 'ghost'}
-                                    size="icon"
-                                    className="size-8"
-                                    onClick={() => setView('grid')}
-                                >
-                                    <LayoutGrid className="size-4" />
-                                </Button>
-                            </div>
+                            <Tabs
+                                value={view}
+                                onValueChange={(v) => setView(v as ViewMode)}
+                            >
+                                <TabsList>
+                                    <TabsTrigger
+                                        value="table"
+                                        aria-label="Table view"
+                                    >
+                                        <TableIcon className="size-4" />
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                        value="grid"
+                                        aria-label="Grid view"
+                                    >
+                                        <LayoutGrid className="size-4" />
+                                    </TabsTrigger>
+                                </TabsList>
+                            </Tabs>
                         </div>
 
                         {/* Add College Button */}
@@ -453,276 +481,291 @@ export default function CollegesIndex({ colleges, filters, campuses = [] }: Coll
 
                 {/* Content */}
                 {colleges.data.length === 0 ? (
-                    <Card className="flex flex-col items-center justify-center p-12 text-center shadow-xs">
-                        <div className="flex size-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-                            <Landmark className="size-7" />
-                        </div>
-                        <h3 className="mt-4 text-base font-semibold">No colleges found</h3>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            {search
-                                ? 'No college departments matched your search query.'
-                                : 'Get started by creating the university colleges/departments.'}
-                        </p>
-                        {!search && (
-                            <Button onClick={() => setAddOpen(true)} className="mt-4 gap-1.5" size="sm">
-                                <Plus className="size-4" />
-                                Add College
-                            </Button>
-                        )}
+                    <Card>
+                        <CardContent className="py-8 text-center text-sm text-muted-foreground">
+                            No colleges {hasActiveFilters ? 'match this filter.' : 'yet.'}
+                        </CardContent>
                     </Card>
-                ) : view === 'table' ? (
-                    <div className="overflow-hidden rounded-lg border bg-card shadow-xs">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-10 text-center" />
-                                    <TableHead className="w-24">Code</TableHead>
-                                    <TableHead className="min-w-[220px]">College Name</TableHead>
-                                    <TableHead className="w-32">Campus</TableHead>
-                                    <TableHead className="min-w-[200px]">Admin Email</TableHead>
-                                    <TableHead className="w-28 text-center">Status</TableHead>
-                                    <TableHead className="w-32 text-center">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
+                ) : (
+                    <>
+                        {/* Table view — desktop only */}
+                        {view === 'table' && (
+                            <div className="hidden sm:block">
+                                <Card className="overflow-hidden p-0">
+                                    <CardContent className="p-0">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="w-10 text-center" />
+                                                    <TableHead className="w-24">Code</TableHead>
+                                                    <TableHead className="min-w-[220px]">College Name</TableHead>
+                                                    <TableHead className="w-32">Campus</TableHead>
+                                                    <TableHead className="w-24 text-center">Interns</TableHead>
+                                                    <TableHead className="min-w-[200px]">Admin Email</TableHead>
+                                                    <TableHead className="w-28 text-center">Status</TableHead>
+                                                    <TableHead className="w-32 text-center">Actions</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {colleges.data.map((college) => {
+                                                    const isExpanded = expandedColleges.has(college.id);
+                                                    return (
+                                                        <>
+                                                            <TableRow
+                                                                key={college.id}
+                                                                className="cursor-pointer transition-colors hover:bg-muted/40"
+                                                                onClick={() => toggleExpand(college.id)}
+                                                            >
+                                                                <TableCell className="text-center p-2">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            toggleExpand(college.id);
+                                                                        }}
+                                                                        className="inline-flex size-6 items-center justify-center rounded-md hover:bg-muted text-muted-foreground"
+                                                                        aria-label={isExpanded ? 'Collapse programs' : 'Expand programs'}
+                                                                    >
+                                                                        {isExpanded ? (
+                                                                            <ChevronDown className="size-4 transition-transform text-primary" />
+                                                                        ) : (
+                                                                            <ChevronRight className="size-4 transition-transform" />
+                                                                        )}
+                                                                    </button>
+                                                                </TableCell>
+
+                                                                <TableCell className="font-semibold text-primary">
+                                                                    <Badge variant="outline" className="font-mono text-xs font-bold">
+                                                                        {college.code}
+                                                                    </Badge>
+                                                                </TableCell>
+
+                                                                <TableCell>
+                                                                    <div className="font-medium text-foreground">{college.name}</div>
+                                                                    {college.description && (
+                                                                        <div className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
+                                                                            {college.description}
+                                                                        </div>
+                                                                    )}
+                                                                </TableCell>
+
+                                                                <TableCell>
+                                                                    {college.campus ? (
+                                                                        <Badge variant="secondary" className="text-xs">
+                                                                            <MapPin className="mr-1 size-3 text-muted-foreground" />
+                                                                            {college.campus}
+                                                                        </Badge>
+                                                                    ) : (
+                                                                        <span className="text-xs text-muted-foreground italic">
+                                                                            N/A
+                                                                        </span>
+                                                                    )}
+                                                                </TableCell>
+
+                                                                <TableCell className="text-center font-medium">
+                                                                    {college.interns_count}
+                                                                </TableCell>
+
+                                                                <TableCell>
+                                                                    {college.admin_email ? (
+                                                                        <span className="font-mono text-xs text-foreground font-medium">
+                                                                            {college.admin_email}
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="text-xs text-muted-foreground italic">
+                                                                            N/A
+                                                                        </span>
+                                                                    )}
+                                                                </TableCell>
+
+                                                                <TableCell className="text-center">
+                                                                    <StatusBadge status={college.is_active ? 'active' : 'inactive'} />
+                                                                </TableCell>
+
+                                                                <TableCell
+                                                                    className="text-center"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                >
+                                                                    <ProgramActions
+                                                                        program={college}
+                                                                        onEdit={() => openEdit(college)}
+                                                                        onToggleActive={() => openStatusConfirm(college)}
+                                                                        onArchive={() => openArchive(college)}
+                                                                    />
+                                                                </TableCell>
+                                                            </TableRow>
+
+                                                            {/* Dropdown / Expandable Row for Programs */}
+                                                            {isExpanded && (
+                                                                <TableRow className="bg-muted/25 hover:bg-muted/30">
+                                                                    <TableCell colSpan={8} className="px-6 py-4">
+                                                                        <div className="rounded-lg border bg-background/80 p-3.5 shadow-2xs">
+                                                                            <div className="flex items-center gap-2 border-b pb-2.5 mb-2.5">
+                                                                                <BookOpen className="size-4 text-primary" />
+                                                                                <span className="text-xs font-semibold uppercase tracking-wider text-foreground">
+                                                                                    Programs Offered ({college.programs.length})
+                                                                                </span>
+                                                                            </div>
+
+                                                                            {college.programs.length === 0 ? (
+                                                                                <div className="py-3 text-center text-xs text-muted-foreground italic">
+                                                                                    No programs configured under this college yet.
+                                                                                </div>
+                                                                            ) : (
+                                                                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                                                                                    {college.programs.map((p) => (
+                                                                                        <div
+                                                                                            key={p.program_id ?? p.program_name}
+                                                                                            className="flex items-center justify-between rounded-md border bg-card px-3 py-2 text-xs shadow-2xs"
+                                                                                        >
+                                                                                            <div className="flex items-center gap-2">
+                                                                                                <GraduationCap className="size-3.5 text-muted-foreground shrink-0" />
+                                                                                                <span className="font-medium text-foreground">
+                                                                                                    {p.program_name}
+                                                                                                </span>
+                                                                                            </div>
+                                                                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                                                                <span className="text-[11px] text-muted-foreground">
+                                                                                                    {p.required_hours} hrs
+                                                                                                </span>
+                                                                                                {p.is_active !== undefined && (
+                                                                                                    <StatusBadge
+                                                                                                        status={p.is_active ? 'active' : 'inactive'}
+                                                                                                        className="text-[10px] px-1.5 py-0"
+                                                                                                    />
+                                                                                                )}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </TableCell>
+                                                                </TableRow>
+                                                            )}
+                                                        </>
+                                                    );
+                                                })}
+                                            </TableBody>
+                                        </Table>
+                                        {colleges.total > 0 && (
+                                            <NumberedPagination
+                                                meta={colleges}
+                                                itemLabel="college"
+                                                onPageChange={goToPage}
+                                                onPerPageChange={changePerPage}
+                                                idPrefix="colleges-table-per-page"
+                                            />
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )}
+
+                        {/* Grid — always on mobile, desktop when grid tab selected */}
+                        <div className={view === 'table' ? 'sm:hidden' : ''}>
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {colleges.data.map((college) => {
                                     const isExpanded = expandedColleges.has(college.id);
                                     return (
-                                        <>
-                                            <TableRow
-                                                key={college.id}
-                                                className="cursor-pointer transition-colors hover:bg-muted/40"
-                                                onClick={() => toggleExpand(college.id)}
-                                            >
-                                                <TableCell className="text-center p-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            toggleExpand(college.id);
-                                                        }}
-                                                        className="inline-flex size-6 items-center justify-center rounded-md hover:bg-muted text-muted-foreground"
-                                                        aria-label={isExpanded ? 'Collapse programs' : 'Expand programs'}
-                                                    >
-                                                        {isExpanded ? (
-                                                            <ChevronDown className="size-4 transition-transform text-primary" />
-                                                        ) : (
-                                                            <ChevronRight className="size-4 transition-transform" />
-                                                        )}
-                                                    </button>
-                                                </TableCell>
-
-                                                <TableCell className="font-semibold text-primary">
+                                        <Card key={college.id} className="flex flex-col justify-between shadow-xs">
+                                            <CardHeader className="pb-3">
+                                                <div className="flex items-start justify-between gap-2">
                                                     <Badge variant="outline" className="font-mono text-xs font-bold">
                                                         {college.code}
                                                     </Badge>
-                                                </TableCell>
+                                                    <StatusBadge status={college.is_active ? 'active' : 'inactive'} />
+                                                </div>
+                                                <CardTitle className="mt-2 text-base font-semibold leading-snug">
+                                                    {college.name}
+                                                </CardTitle>
+                                                {college.description && (
+                                                    <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+                                                        {college.description}
+                                                    </p>
+                                                )}
+                                                <div className="mt-2 flex flex-col gap-1 text-xs text-muted-foreground">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <MapPin className="size-3.5 shrink-0" />
+                                                        <span>Campus: <span className="font-medium text-foreground">{college.campus ?? 'N/A'}</span></span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <GraduationCap className="size-3.5 shrink-0" />
+                                                        <span>Interns: <span className="font-semibold text-foreground">{college.interns_count}</span></span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-medium">Admin: </span>
+                                                        {college.admin_email ? (
+                                                            <span className="font-mono text-foreground">{college.admin_email}</span>
+                                                        ) : (
+                                                            <span className="italic">N/A</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </CardHeader>
+                                            <CardContent className="pt-0">
+                                                <div className="border-t pt-3">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleExpand(college.id)}
+                                                        className="flex w-full items-center justify-between text-xs text-muted-foreground hover:text-foreground font-medium mb-2"
+                                                    >
+                                                        <span className="flex items-center gap-1.5">
+                                                            <BookOpen className="size-3.5 text-primary" />
+                                                            Programs Offered ({college.programs.length})
+                                                        </span>
+                                                        {isExpanded ? (
+                                                            <ChevronDown className="size-3.5 text-primary" />
+                                                        ) : (
+                                                            <ChevronRight className="size-3.5" />
+                                                        )}
+                                                    </button>
 
-                                                <TableCell>
-                                                    <div className="font-medium text-foreground">{college.name}</div>
-                                                    {college.description && (
-                                                        <div className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
-                                                            {college.description}
+                                                    {isExpanded && (
+                                                        <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                                                            {college.programs.length === 0 ? (
+                                                                <div className="py-1 text-xs text-muted-foreground italic">
+                                                                    No programs configured yet.
+                                                                </div>
+                                                            ) : (
+                                                                college.programs.map((p) => (
+                                                                    <div
+                                                                        key={p.program_id ?? p.program_name}
+                                                                        className="flex items-center justify-between rounded border bg-muted/40 px-2 py-1 text-[11px]"
+                                                                    >
+                                                                        <span className="font-medium">{p.program_name}</span>
+                                                                        <span className="text-muted-foreground">{p.required_hours} hrs</span>
+                                                                    </div>
+                                                                ))
+                                                            )}
                                                         </div>
                                                     )}
-                                                </TableCell>
+                                                </div>
 
-                                                <TableCell>
-                                                    {college.campus ? (
-                                                        <Badge variant="secondary" className="text-xs">
-                                                            <MapPin className="mr-1 size-3 text-muted-foreground" />
-                                                            {college.campus}
-                                                        </Badge>
-                                                    ) : (
-                                                        <span className="text-xs text-muted-foreground italic">
-                                                            N/A
-                                                        </span>
-                                                    )}
-                                                </TableCell>
-
-                                                <TableCell>
-                                                    {college.admin_email ? (
-                                                        <span className="font-mono text-xs text-foreground font-medium">
-                                                            {college.admin_email}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-xs text-muted-foreground italic">
-                                                            N/A
-                                                        </span>
-                                                    )}
-                                                </TableCell>
-
-                                                <TableCell className="text-center">
-                                                    <StatusBadge status={college.is_active ? 'active' : 'inactive'} />
-                                                </TableCell>
-
-                                                <TableCell
-                                                    className="text-center"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
+                                                <div className="mt-4 flex items-center justify-center border-t pt-3">
                                                     <ProgramActions
                                                         program={college}
                                                         onEdit={() => openEdit(college)}
                                                         onToggleActive={() => openStatusConfirm(college)}
                                                         onArchive={() => openArchive(college)}
                                                     />
-                                                </TableCell>
-                                            </TableRow>
-
-                                            {/* Dropdown / Expandable Row for Programs */}
-                                            {isExpanded && (
-                                                <TableRow className="bg-muted/25 hover:bg-muted/30">
-                                                    <TableCell colSpan={7} className="px-6 py-4">
-                                                        <div className="rounded-lg border bg-background/80 p-3.5 shadow-2xs">
-                                                            <div className="flex items-center gap-2 border-b pb-2.5 mb-2.5">
-                                                                <BookOpen className="size-4 text-primary" />
-                                                                <span className="text-xs font-semibold uppercase tracking-wider text-foreground">
-                                                                    Programs Offered ({college.programs.length})
-                                                                </span>
-                                                            </div>
-
-                                                            {college.programs.length === 0 ? (
-                                                                <div className="py-3 text-center text-xs text-muted-foreground italic">
-                                                                    No programs configured under this college yet.
-                                                                </div>
-                                                            ) : (
-                                                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
-                                                                    {college.programs.map((p) => (
-                                                                        <div
-                                                                            key={p.program_id ?? p.program_name}
-                                                                            className="flex items-center justify-between rounded-md border bg-card px-3 py-2 text-xs shadow-2xs"
-                                                                        >
-                                                                            <div className="flex items-center gap-2">
-                                                                                <GraduationCap className="size-3.5 text-muted-foreground shrink-0" />
-                                                                                <span className="font-medium text-foreground">
-                                                                                    {p.program_name}
-                                                                                </span>
-                                                                            </div>
-                                                                            <div className="flex items-center gap-1.5 shrink-0">
-                                                                                <span className="text-[11px] text-muted-foreground">
-                                                                                    {p.required_hours} hrs
-                                                                                </span>
-                                                                                {p.is_active !== undefined && (
-                                                                                    <StatusBadge
-                                                                                        status={p.is_active ? 'active' : 'inactive'}
-                                                                                        className="text-[10px] px-1.5 py-0"
-                                                                                    />
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                        </>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
                                     );
                                 })}
-                            </TableBody>
-                        </Table>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {colleges.data.map((college) => {
-                            const isExpanded = expandedColleges.has(college.id);
-                            return (
-                                <Card key={college.id} className="flex flex-col justify-between shadow-xs">
-                                    <CardHeader className="pb-3">
-                                        <div className="flex items-start justify-between gap-2">
-                                            <Badge variant="outline" className="font-mono text-xs font-bold">
-                                                {college.code}
-                                            </Badge>
-                                            <StatusBadge status={college.is_active ? 'active' : 'inactive'} />
-                                        </div>
-                                        <CardTitle className="mt-2 text-base font-semibold leading-snug">
-                                            {college.name}
-                                        </CardTitle>
-                                        {college.description && (
-                                            <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
-                                                {college.description}
-                                            </p>
-                                        )}
-                                        <div className="mt-2 flex flex-col gap-1 text-xs text-muted-foreground">
-                                            <div className="flex items-center gap-1.5">
-                                                <MapPin className="size-3.5 shrink-0" />
-                                                <span>Campus: <span className="font-medium text-foreground">{college.campus ?? 'N/A'}</span></span>
-                                            </div>
-                                            <div>
-                                                <span className="font-medium">Admin: </span>
-                                                {college.admin_email ? (
-                                                    <span className="font-mono text-foreground">{college.admin_email}</span>
-                                                ) : (
-                                                    <span className="italic">N/A</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="pt-0">
-                                        <div className="border-t pt-3">
-                                            <button
-                                                type="button"
-                                                onClick={() => toggleExpand(college.id)}
-                                                className="flex w-full items-center justify-between text-xs text-muted-foreground hover:text-foreground font-medium mb-2"
-                                            >
-                                                <span className="flex items-center gap-1.5">
-                                                    <BookOpen className="size-3.5 text-primary" />
-                                                    Programs Offered ({college.programs.length})
-                                                </span>
-                                                {isExpanded ? (
-                                                    <ChevronDown className="size-3.5 text-primary" />
-                                                ) : (
-                                                    <ChevronRight className="size-3.5" />
-                                                )}
-                                            </button>
-
-                                            {isExpanded && (
-                                                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                                                    {college.programs.length === 0 ? (
-                                                        <div className="py-1 text-xs text-muted-foreground italic">
-                                                            No programs configured yet.
-                                                        </div>
-                                                    ) : (
-                                                        college.programs.map((p) => (
-                                                            <div
-                                                                key={p.program_id ?? p.program_name}
-                                                                className="flex items-center justify-between rounded border bg-muted/40 px-2 py-1 text-[11px]"
-                                                            >
-                                                                <span className="font-medium">{p.program_name}</span>
-                                                                <span className="text-muted-foreground">{p.required_hours} hrs</span>
-                                                            </div>
-                                                        ))
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="mt-4 flex items-center justify-center border-t pt-3">
-                                            <ProgramActions
-                                                program={college}
-                                                onEdit={() => openEdit(college)}
-                                                onToggleActive={() => openStatusConfirm(college)}
-                                                onArchive={() => openArchive(college)}
-                                            />
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            );
-                        })}
-                    </div>
-                )}
-
-                {/* Pagination */}
-                {colleges.total > 0 && (
-                    <div className="mt-auto pt-4">
-                        <NumberedPagination
-                            meta={colleges}
-                            itemLabel="college"
-                            onPageChange={goToPage}
-                            onPerPageChange={changePerPage}
-                        />
-                    </div>
+                            </div>
+                            {colleges.total > 0 && (
+                                <NumberedPagination
+                                    meta={colleges}
+                                    itemLabel="college"
+                                    onPageChange={goToPage}
+                                    onPerPageChange={changePerPage}
+                                    idPrefix="colleges-grid-per-page"
+                                />
+                            )}
+                        </div>
+                    </>
                 )}
             </div>
 

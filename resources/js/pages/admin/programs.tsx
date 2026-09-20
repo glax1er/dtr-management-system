@@ -590,7 +590,7 @@ export default function AdminPrograms({
                                                         Required Hours
                                                     </TableHead>
                                                     <TableHead className="px-6 text-center">
-                                                        Approved Interns
+                                                        Interns
                                                     </TableHead>
                                                     <TableHead className="px-6 text-center">
                                                         OJT Supervisor(s)
@@ -759,7 +759,7 @@ export default function AdminPrograms({
 
                                             <div className="flex justify-between gap-2">
                                                 <span className="text-muted-foreground">
-                                                    Approved Interns
+                                                    Interns
                                                 </span>
                                                 <span>
                                                     {

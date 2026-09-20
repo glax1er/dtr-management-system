@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Campus;
 use App\Models\College;
+use App\Models\InternProfile;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -65,27 +66,37 @@ class CollegeController extends Controller
 
         $colleges = $query
             ->paginate($perPage, ['*'], 'page', $validated['page'] ?? 1)
-            ->withQueryString()
-            ->through(fn (College $college) => [
-                'id' => $college->id,
-                'name' => $college->name,
-                'code' => $college->code,
-                'campus' => $college->campus,
-                'description' => $college->description,
-                'is_active' => (bool) $college->is_active,
-                'programs_count' => $college->programs_count,
-                'admins_count' => $college->admins_count,
-                'admin_email' => $college->admins->isNotEmpty()
-                    ? $college->admins->pluck('email')->join(', ')
-                    : null,
-                'programs' => $college->programs->map(fn ($p) => [
-                    'program_id' => $p->program_id,
-                    'program_name' => $p->program_name,
-                    'is_active' => (bool) $p->is_active,
-                    'required_hours' => $p->required_hours,
-                ]),
-                'created_at' => $college->created_at?->format('M d, Y'),
-            ]);
+            ->withQueryString();
+
+        $internCounts = [];
+        foreach ($colleges as $college) {
+            $internCounts[$college->id] = InternProfile::verified()
+                ->where('status', 'approved')
+                ->forCollege($college->id)
+                ->count();
+        }
+
+        $colleges->through(fn (College $college) => [
+            'id' => $college->id,
+            'name' => $college->name,
+            'code' => $college->code,
+            'campus' => $college->campus,
+            'description' => $college->description,
+            'is_active' => (bool) $college->is_active,
+            'programs_count' => $college->programs_count,
+            'admins_count' => $college->admins_count,
+            'interns_count' => $internCounts[$college->id] ?? 0,
+            'admin_email' => $college->admins->isNotEmpty()
+                ? $college->admins->pluck('email')->join(', ')
+                : null,
+            'programs' => $college->programs->map(fn ($p) => [
+                'program_id' => $p->program_id,
+                'program_name' => $p->program_name,
+                'is_active' => (bool) $p->is_active,
+                'required_hours' => $p->required_hours,
+            ]),
+            'created_at' => $college->created_at?->format('M d, Y'),
+        ]);
 
         return Inertia::render('admin/colleges/index', [
             'colleges' => $colleges,

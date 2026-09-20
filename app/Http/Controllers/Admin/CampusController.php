@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Campus;
+use App\Models\InternProfile;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -47,17 +48,27 @@ class CampusController extends Controller
 
         $campuses = $query
             ->paginate($perPage, ['*'], 'page', $validated['page'] ?? 1)
-            ->withQueryString()
-            ->through(fn (Campus $campus) => [
-                'id' => $campus->id,
-                'name' => $campus->name,
-                'code' => $campus->code,
-                'address' => $campus->address,
-                'description' => $campus->description,
-                'is_active' => (bool) $campus->is_active,
-                'colleges_count' => $campus->colleges_count,
-                'created_at' => $campus->created_at?->format('M d, Y'),
-            ]);
+            ->withQueryString();
+
+        $internCounts = [];
+        foreach ($campuses as $campus) {
+            $internCounts[$campus->id] = InternProfile::verified()
+                ->where('status', 'approved')
+                ->forCampus($campus)
+                ->count();
+        }
+
+        $campuses->through(fn (Campus $campus) => [
+            'id' => $campus->id,
+            'name' => $campus->name,
+            'code' => $campus->code,
+            'address' => $campus->address,
+            'description' => $campus->description,
+            'is_active' => (bool) $campus->is_active,
+            'colleges_count' => $campus->colleges_count,
+            'interns_count' => $internCounts[$campus->id] ?? 0,
+            'created_at' => $campus->created_at?->format('M d, Y'),
+        ]);
 
         return Inertia::render('admin/campuses/index', [
             'campuses' => $campuses,

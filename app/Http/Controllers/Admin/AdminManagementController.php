@@ -102,6 +102,7 @@ class AdminManagementController extends Controller
                     'id' => $admin->id,
                     'name' => $admin->name,
                     'email' => $admin->email,
+                    'avatar' => $admin->profile_photo_url,
                     'role' => $isSuper ? 'super_admin' : 'college_admin',
                     'college_id' => $admin->college_id,
                     'campus_id' => $profile?->campus_id ?? $admin->college?->campus_id,
