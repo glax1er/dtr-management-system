@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
@@ -148,8 +149,8 @@ class InternProfile extends Model
                     $sub->where('campus', $name)
                         ->orWhereHas('user', fn ($uq) => $uq->where('campus', $name));
                 }
-                $sub->orWhereHas('program.college', function ($cq) use ($name, $id) {
-                    $cq->withTrashed()->where(function ($csub) use ($name, $id) {
+                $sub->orWhereHas('program.college', function (Builder $cq) use ($name, $id) {
+                    $cq->withoutGlobalScope(SoftDeletingScope::class)->where(function ($csub) use ($name, $id) {
                         if ($id !== null) {
                             $csub->where('campus_id', $id);
                         }
@@ -162,4 +163,3 @@ class InternProfile extends Model
         });
     }
 }
-

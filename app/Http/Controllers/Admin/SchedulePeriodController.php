@@ -86,7 +86,7 @@ class SchedulePeriodController extends Controller
 
         $flashMessage = $collegeId === null
             ? 'University-wide global schedule period created.'
-            : 'Global schedule period for '.($schedulePeriod->college?->name ?? 'college').' created.';
+            : 'Global schedule period for '.($schedulePeriod->college->name ?? 'college').' created.';
 
         Inertia::flash('toast', ['type' => 'success', 'message' => $flashMessage]);
 
@@ -172,7 +172,8 @@ class SchedulePeriodController extends Controller
             $query->where(function ($q) {
                 $q->where(function ($iq) {
                     $iq->where('role', User::ROLE_INTERN)
-                        ->whereHas('internProfile', fn ($sub) => $sub->verified()->where('status', 'approved'));
+                        ->whereHas('internProfile.user', fn ($sub) => $sub->whereNotNull('email_verified_at'))
+                        ->whereHas('internProfile', fn ($sub) => $sub->where('status', 'approved'));
                 })->orWhere(function ($sq) {
                     $sq->where('role', User::ROLE_SUPERVISOR)
                         ->whereHas('supervisorProfile', fn ($sp) => $sp->where('supervisor_type', 'hte'));
@@ -183,7 +184,14 @@ class SchedulePeriodController extends Controller
             $query->where(function ($q) use ($collegeId) {
                 $q->where(function ($iq) use ($collegeId) {
                     $iq->where('role', User::ROLE_INTERN)
-                        ->whereHas('internProfile', fn ($sub) => $sub->verified()->where('status', 'approved')->forCollege($collegeId));
+                        ->whereHas('internProfile.user', fn ($sub) => $sub->whereNotNull('email_verified_at'))
+                        ->whereHas('internProfile', function ($sub) use ($collegeId) {
+                            $sub->where('status', 'approved')
+                                ->where(function ($college) use ($collegeId) {
+                                    $college->whereHas('program', fn ($program) => $program->where('college_id', $collegeId))
+                                        ->orWhereHas('user', fn ($user) => $user->where('college_id', $collegeId));
+                                });
+                        });
                 })->orWhere(function ($sq) use ($collegeId) {
                     $sq->where('role', User::ROLE_SUPERVISOR)
                         ->whereHas('supervisorProfile', fn ($sp) => $sp->where(function ($sub) use ($collegeId) {
@@ -205,7 +213,7 @@ class SchedulePeriodController extends Controller
                 collegeName: $collegeName,
                 actor: $actor,
                 schedulePeriodId: $schedulePeriod->id,
-                startDate: $schedulePeriod->start_date?->toDateString(),
+                startDate: $schedulePeriod->start_date->toDateString(),
             ));
         }
     }
@@ -220,7 +228,8 @@ class SchedulePeriodController extends Controller
             $query->where(function ($q) {
                 $q->where(function ($iq) {
                     $iq->where('role', User::ROLE_INTERN)
-                        ->whereHas('internProfile', fn ($sub) => $sub->verified()->where('status', 'approved'));
+                        ->whereHas('internProfile.user', fn ($sub) => $sub->whereNotNull('email_verified_at'))
+                        ->whereHas('internProfile', fn ($sub) => $sub->where('status', 'approved'));
                 })->orWhere(function ($sq) {
                     $sq->where('role', User::ROLE_SUPERVISOR)
                         ->whereHas('supervisorProfile', fn ($sp) => $sp->where('supervisor_type', 'hte'));
@@ -230,7 +239,14 @@ class SchedulePeriodController extends Controller
             $query->where(function ($q) use ($collegeId) {
                 $q->where(function ($iq) use ($collegeId) {
                     $iq->where('role', User::ROLE_INTERN)
-                        ->whereHas('internProfile', fn ($sub) => $sub->verified()->where('status', 'approved')->forCollege($collegeId));
+                        ->whereHas('internProfile.user', fn ($sub) => $sub->whereNotNull('email_verified_at'))
+                        ->whereHas('internProfile', function ($sub) use ($collegeId) {
+                            $sub->where('status', 'approved')
+                                ->where(function ($college) use ($collegeId) {
+                                    $college->whereHas('program', fn ($program) => $program->where('college_id', $collegeId))
+                                        ->orWhereHas('user', fn ($user) => $user->where('college_id', $collegeId));
+                                });
+                        });
                 })->orWhere(function ($sq) use ($collegeId) {
                     $sq->where('role', User::ROLE_SUPERVISOR)
                         ->whereHas('supervisorProfile', fn ($sp) => $sp->where(function ($sub) use ($collegeId) {
@@ -291,7 +307,7 @@ class SchedulePeriodController extends Controller
             ? 'University-wide Global Schedule'
             : ($isHte
                 ? 'HTE Override set by '.($period->hte?->hte_name ?? 'HTE')
-                : 'Global schedule set by '.($college?->name ?? 'College'));
+                : 'Global schedule set by '.($college->name ?? 'College'));
 
         return [
             'id' => $period->id,
