@@ -136,7 +136,6 @@ export default function AdminManagement({
     const [addEmail, setAddEmail] = useState('');
     const [addCollegeId, setAddCollegeId] = useState('');
     const [addCampusId, setAddCampusId] = useState('');
-    const [addEmployeeId, setAddEmployeeId] = useState('');
     const [addPosition, setAddPosition] = useState('');
     const [addPassword, setAddPassword] = useState('');
     const [addPasswordConfirmation, setAddPasswordConfirmation] = useState('');
@@ -149,7 +148,6 @@ export default function AdminManagement({
     const [editEmail, setEditEmail] = useState('');
     const [editCollegeId, setEditCollegeId] = useState('');
     const [editCampusId, setEditCampusId] = useState('');
-    const [editEmployeeId, setEditEmployeeId] = useState('');
     const [editPosition, setEditPosition] = useState('');
     const [editPassword, setEditPassword] = useState('');
     const [editPasswordConfirmation, setEditPasswordConfirmation] = useState('');
@@ -257,7 +255,6 @@ export default function AdminManagement({
         setAddEmail('');
         setAddCollegeId(colleges.length > 0 ? String(colleges[0].id) : '');
         setAddCampusId('');
-        setAddEmployeeId('');
         setAddPosition('');
         setAddPassword('');
         setAddPasswordConfirmation('');
@@ -311,7 +308,6 @@ export default function AdminManagement({
         if (addRole === 'college_admin') {
             payload.college_id = Number(addCollegeId);
             payload.campus_id = addCampusId ? Number(addCampusId) : null;
-            payload.employee_id = addEmployeeId.trim() || null;
             payload.position = addPosition.trim() || null;
         }
 
@@ -330,7 +326,6 @@ export default function AdminManagement({
         setEditEmail(admin.email);
         setEditCollegeId(admin.college_id ? String(admin.college_id) : '');
         setEditCampusId(admin.campus_id ? String(admin.campus_id) : '');
-        setEditEmployeeId(admin.employee_id || '');
         setEditPosition(admin.position || '');
         setEditPassword('');
         setEditPasswordConfirmation('');
@@ -371,7 +366,6 @@ export default function AdminManagement({
         if (editingAdmin.role === 'college_admin') {
             payload.college_id = editCollegeId ? Number(editCollegeId) : null;
             payload.campus_id = editCampusId ? Number(editCampusId) : null;
-            payload.employee_id = editEmployeeId.trim() || null;
             payload.position = editPosition.trim() || null;
         }
 
@@ -628,7 +622,7 @@ export default function AdminManagement({
                                                     <TableHead className="w-[140px]">Role</TableHead>
                                                     <TableHead className="w-[200px]">Assigned College</TableHead>
                                                     <TableHead className="w-[130px]">Campus</TableHead>
-                                                    <TableHead className="w-[150px]">Designation / ID</TableHead>
+                                                    <TableHead className="w-[150px]">Designation</TableHead>
                                                     <TableHead className="w-[100px] text-center">Status</TableHead>
                                                     <TableHead className="w-[110px]">Added</TableHead>
                                                     <TableHead className="w-[110px] text-center">Actions</TableHead>
@@ -739,11 +733,6 @@ export default function AdminManagement({
                                                             <div className="text-xs font-medium text-foreground">
                                                                 {admin.position || 'College Admin'}
                                                             </div>
-                                                            {admin.employee_id && (
-                                                                <div className="font-mono text-[11px] text-muted-foreground">
-                                                                    ID: {admin.employee_id}
-                                                                </div>
-                                                            )}
                                                         </div>
                                                     )}
                                                 </TableCell>
@@ -844,11 +833,11 @@ export default function AdminManagement({
                                 const isSuper = admin.role === 'super_admin';
 
                                 return (
-                                    <Card key={admin.id} className="flex flex-col justify-between">
+                                    <Card key={admin.id} className="flex flex-col justify-between h-full rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:shadow-md hover:border-border">
                                         <CardHeader className="pb-3">
                                             <div className="flex items-start justify-between gap-2">
-                                                <div className="flex items-center gap-3">
-                                                    <Avatar className="size-10">
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <Avatar className="size-10 shrink-0">
                                                         {admin.avatar && (
                                                             <AvatarImage
                                                                 src={admin.avatar}
@@ -860,11 +849,11 @@ export default function AdminManagement({
                                                             {getInitials(admin.name)}
                                                         </AvatarFallback>
                                                     </Avatar>
-                                                    <div>
-                                                        <CardTitle className="text-base font-semibold leading-tight">
+                                                    <div className="min-w-0">
+                                                        <CardTitle className="text-base font-semibold leading-tight line-clamp-1" title={admin.name}>
                                                             {admin.name}
                                                         </CardTitle>
-                                                        <span className="text-xs text-muted-foreground truncate block">
+                                                        <span className="text-xs text-muted-foreground truncate block" title={admin.email}>
                                                             {admin.email}
                                                         </span>
                                                     </div>
@@ -926,14 +915,13 @@ export default function AdminManagement({
                                                         <span className="text-muted-foreground">Designation:</span>
                                                         <span className="font-medium text-foreground">
                                                             {admin.position || 'College Admin'}
-                                                            {admin.employee_id && ` (${admin.employee_id})`}
                                                         </span>
                                                     </div>
                                                 )}
                                             </div>
                                         </CardContent>
 
-                                        <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2 text-xs text-muted-foreground">
+                                        <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
                                             <span>Added {admin.created_at}</span>
                                             <div className="flex items-center gap-1">
                                                 <Tooltip>
@@ -1006,7 +994,7 @@ export default function AdminManagement({
 
             {/* Add Administrator Dialog */}
             <Dialog open={addOpen} onOpenChange={setAddOpen}>
-                <DialogContent className="sm:max-w-[500px]">
+                <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <UserCog className="size-5 text-primary" />
@@ -1018,15 +1006,15 @@ export default function AdminManagement({
                     </DialogHeader>
 
                     <form onSubmit={handleAddSubmit} className="space-y-4 pt-2">
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                             {/* Role Selection */}
-                            <div className="space-y-1.5 col-span-2">
+                            <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
                                 <Label htmlFor="add_role">Administrator Role <span className="text-destructive">*</span></Label>
                                 <Select
                                     value={addRole}
                                     onValueChange={(val: 'college_admin' | 'super_admin') => setAddRole(val)}
                                 >
-                                    <SelectTrigger id="add_role">
+                                    <SelectTrigger id="add_role" className="w-full">
                                         <SelectValue placeholder="Select role" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -1040,10 +1028,11 @@ export default function AdminManagement({
                                 </Select>
                             </div>
 
-                            <div className="space-y-1.5 col-span-2">
+                            <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
                                 <Label htmlFor="add-name">Full Name <span className="text-destructive">*</span></Label>
                                 <Input
                                     id="add-name"
+                                    className="w-full"
                                     placeholder="e.g. Maria Santos"
                                     value={addName}
                                     onChange={(e) => setAddName(e.target.value)}
@@ -1051,11 +1040,12 @@ export default function AdminManagement({
                                 />
                             </div>
 
-                            <div className="space-y-1.5 col-span-2">
+                            <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
                                 <Label htmlFor="add-email">Email Address <span className="text-destructive">*</span></Label>
                                 <Input
                                     id="add-email"
                                     type="email"
+                                    className="w-full"
                                     placeholder="e.g. maria.santos@usep.edu.ph"
                                     value={addEmail}
                                     onChange={(e) => setAddEmail(e.target.value)}
@@ -1065,14 +1055,14 @@ export default function AdminManagement({
 
                             {addRole === 'college_admin' ? (
                                 <>
-                                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                                    <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
                                         <Label htmlFor="add-college">Assigned College <span className="text-destructive">*</span></Label>
                                         <Select
                                             value={addCollegeId}
                                             onValueChange={handleAddCollegeChange}
                                             required
                                         >
-                                            <SelectTrigger id="add-college">
+                                            <SelectTrigger id="add-college" className="w-full">
                                                 <SelectValue placeholder="Select a college" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -1088,13 +1078,13 @@ export default function AdminManagement({
                                         </Select>
                                     </div>
 
-                                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                                    <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
                                         <Label htmlFor="add-campus">Campus</Label>
                                         <Select
                                             value={addCampusId || 'none'}
                                             onValueChange={(val) => setAddCampusId(val === 'none' ? '' : val)}
                                         >
-                                            <SelectTrigger id="add-campus">
+                                            <SelectTrigger id="add-campus" className="w-full">
                                                 <SelectValue placeholder="Select campus" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -1108,20 +1098,11 @@ export default function AdminManagement({
                                         </Select>
                                     </div>
 
-                                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
-                                        <Label htmlFor="add-emp-id">Employee ID</Label>
-                                        <Input
-                                            id="add-emp-id"
-                                            placeholder="e.g. EMP-2024-001"
-                                            value={addEmployeeId}
-                                            onChange={(e) => setAddEmployeeId(e.target.value)}
-                                        />
-                                    </div>
-
-                                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                                    <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
                                         <Label htmlFor="add-position">Designation / Position</Label>
                                         <Input
                                             id="add-position"
+                                            className="w-full"
                                             placeholder="e.g. Dean / OJT Coordinator"
                                             value={addPosition}
                                             onChange={(e) => setAddPosition(e.target.value)}
@@ -1129,7 +1110,7 @@ export default function AdminManagement({
                                     </div>
                                 </>
                             ) : (
-                                <div className="col-span-2 rounded-md bg-purple-50 p-3 text-xs text-purple-700 dark:bg-purple-950/40 dark:text-purple-300">
+                                <div className="col-span-1 sm:col-span-2 rounded-md bg-purple-50 p-3 text-xs text-purple-700 dark:bg-purple-950/40 dark:text-purple-300">
                                     <p className="font-semibold">Full System Privileges</p>
                                     <p className="mt-0.5">
                                         Super Administrators have unrestricted access to all colleges, campuses, programs, intern approvals, and system settings.
@@ -1137,11 +1118,12 @@ export default function AdminManagement({
                                 </div>
                             )}
 
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                            <div className="space-y-1.5 col-span-1 min-w-0">
                                 <Label htmlFor="add-password">Password <span className="text-destructive">*</span></Label>
                                 <Input
                                     id="add-password"
                                     type="password"
+                                    className="w-full"
                                     placeholder="••••••••"
                                     value={addPassword}
                                     onChange={(e) => setAddPassword(e.target.value)}
@@ -1149,13 +1131,14 @@ export default function AdminManagement({
                                 />
                             </div>
 
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                            <div className="space-y-1.5 col-span-1 min-w-0">
                                 <Label htmlFor="add-confirm-password">
                                     Confirm Password <span className="text-destructive">*</span>
                                 </Label>
                                 <Input
                                     id="add-confirm-password"
                                     type="password"
+                                    className="w-full"
                                     placeholder="••••••••"
                                     value={addPasswordConfirmation}
                                     onChange={(e) =>
@@ -1185,7 +1168,7 @@ export default function AdminManagement({
 
             {/* Edit Admin Dialog */}
             <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                <DialogContent className="sm:max-w-[500px]">
+                <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <Pencil className="size-5 text-primary" />
@@ -1197,22 +1180,24 @@ export default function AdminManagement({
                     </DialogHeader>
 
                     <form onSubmit={handleEditSubmit} className="space-y-4 pt-2">
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5 col-span-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                            <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
                                 <Label htmlFor="edit-name">Full Name <span className="text-destructive">*</span></Label>
                                 <Input
                                     id="edit-name"
+                                    className="w-full"
                                     value={editName}
                                     onChange={(e) => setEditName(e.target.value)}
                                     required
                                 />
                             </div>
 
-                            <div className="space-y-1.5 col-span-2">
+                            <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
                                 <Label htmlFor="edit-email">Email Address <span className="text-destructive">*</span></Label>
                                 <Input
                                     id="edit-email"
                                     type="email"
+                                    className="w-full"
                                     value={editEmail}
                                     onChange={(e) => setEditEmail(e.target.value)}
                                     required
@@ -1221,13 +1206,13 @@ export default function AdminManagement({
 
                             {editingAdmin?.role === 'college_admin' && (
                                 <>
-                                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                                    <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
                                         <Label htmlFor="edit-college">Assigned College <span className="text-destructive">*</span></Label>
                                         <Select
                                             value={editCollegeId}
                                             onValueChange={handleEditCollegeChange}
                                         >
-                                            <SelectTrigger id="edit-college">
+                                            <SelectTrigger id="edit-college" className="w-full">
                                                 <SelectValue placeholder="Select a college" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -1243,13 +1228,13 @@ export default function AdminManagement({
                                         </Select>
                                     </div>
 
-                                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                                    <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
                                         <Label htmlFor="edit-campus">Campus</Label>
                                         <Select
                                             value={editCampusId || 'none'}
                                             onValueChange={(val) => setEditCampusId(val === 'none' ? '' : val)}
                                         >
-                                            <SelectTrigger id="edit-campus">
+                                            <SelectTrigger id="edit-campus" className="w-full">
                                                 <SelectValue placeholder="Select campus" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -1263,20 +1248,11 @@ export default function AdminManagement({
                                         </Select>
                                     </div>
 
-                                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
-                                        <Label htmlFor="edit-emp-id">Employee ID</Label>
-                                        <Input
-                                            id="edit-emp-id"
-                                            placeholder="e.g. EMP-2024-001"
-                                            value={editEmployeeId}
-                                            onChange={(e) => setEditEmployeeId(e.target.value)}
-                                        />
-                                    </div>
-
-                                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                                    <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
                                         <Label htmlFor="edit-position">Designation / Position</Label>
                                         <Input
                                             id="edit-position"
+                                            className="w-full"
                                             placeholder="e.g. Dean / OJT Coordinator"
                                             value={editPosition}
                                             onChange={(e) => setEditPosition(e.target.value)}
@@ -1285,15 +1261,16 @@ export default function AdminManagement({
                                 </>
                             )}
 
-                            <div className="col-span-2 border-t pt-2 text-xs text-muted-foreground">
+                            <div className="col-span-1 sm:col-span-2 border-t pt-2 text-xs text-muted-foreground">
                                 Leave password fields blank unless you wish to change the administrator's password.
                             </div>
 
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                            <div className="space-y-1.5 col-span-1 min-w-0">
                                 <Label htmlFor="edit-password">New Password</Label>
                                 <Input
                                     id="edit-password"
                                     type="password"
+                                    className="w-full"
                                     placeholder="••••••••"
                                     value={editPassword}
                                     onChange={(e) =>
@@ -1302,13 +1279,14 @@ export default function AdminManagement({
                                 />
                             </div>
 
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                            <div className="space-y-1.5 col-span-1 min-w-0">
                                 <Label htmlFor="edit-confirm-password">
                                     Confirm Password
                                 </Label>
                                 <Input
                                     id="edit-confirm-password"
                                     type="password"
+                                    className="w-full"
                                     placeholder="••••••••"
                                     value={editPasswordConfirmation}
                                     onChange={(e) =>

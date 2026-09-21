@@ -3,6 +3,7 @@ import {
     Archive,
     Building2,
     LayoutGrid,
+    MapPin,
     Pencil,
     Plus,
     Power,
@@ -10,6 +11,8 @@ import {
     Search,
     SlidersHorizontal,
     Table as TableIcon,
+    User,
+    Users,
     X,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -17,6 +20,7 @@ import type { FormEvent } from 'react';
 import InputError from '@/components/input-error';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
+import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -782,83 +786,87 @@ export default function HtesIndex({
                         <div className={view === 'table' ? 'sm:hidden' : ''}>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {htes.data.map((hte) => (
-                                    <Card key={hte.hte_id}>
-                                        <CardHeader>
+                                    <Card key={hte.hte_id} className="flex flex-col justify-between h-full rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:shadow-md hover:border-border">
+                                        <CardHeader className="pb-3">
                                             <div className="flex items-start justify-between gap-2">
-                                                <div>
-                                                    <CardTitle className="text-base">
+                                                <div className="min-w-0 flex-1">
+                                                    <CardTitle className="text-base font-semibold leading-tight line-clamp-1" title={hte.hte_name}>
                                                         {hte.hte_name}
                                                     </CardTitle>
-                                                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                                                        <StatusBadge
-                                                            status={hte.status}
-                                                        />
-                                                        {isSuperAdmin && (
-                                                            <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-medium">
-                                                                {hte.college?.code ?? 'Global'}
-                                                            </span>
-                                                        )}
-                                                    </div>
+                                                    {isSuperAdmin && (
+                                                        <div className="mt-1">
+                                                            {hte.college ? (
+                                                                <Badge variant="outline" className="text-[11px] font-medium">
+                                                                    {hte.college.code}
+                                                                </Badge>
+                                                            ) : (
+                                                                <Badge variant="secondary" className="text-[11px] font-normal">
+                                                                    Global
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <div className="shrink-0">
-                                                    <HteActions
-                                                        hte={hte}
-                                                        onEdit={openEditDialog}
-                                                        onToggleStatus={
-                                                            toggleStatus
-                                                        }
-                                                        onArchive={
-                                                            openArchiveDialog
-                                                        }
-                                                    />
-                                                </div>
+                                                <StatusBadge
+                                                    status={hte.status}
+                                                />
                                             </div>
                                         </CardHeader>
-                                        <CardContent className="space-y-2 text-sm">
-                                            <div className="flex justify-between gap-2">
-                                                <span className="shrink-0 text-muted-foreground">
-                                                    Address
-                                                </span>
-                                                <span
-                                                    className="text-right"
-                                                    title={
-                                                        hte.address ?? undefined
-                                                    }
-                                                >
-                                                    {hte.address ?? '—'}
-                                                </span>
-                                            </div>
-                                            <div className="flex justify-between gap-2">
-                                                <span className="shrink-0 text-muted-foreground">
-                                                    Contact Person
-                                                </span>
-                                                <span className="text-right">
-                                                    {hte.contact_person ?? '—'}
-                                                </span>
-                                            </div>
-                                            <div className="flex justify-between gap-2">
-                                                <span className="shrink-0 text-muted-foreground">
-                                                    Contact Number
-                                                </span>
-                                                <span className="text-right">
-                                                    {hte.contact_number ?? '—'}
-                                                </span>
-                                            </div>
-                                            <div className="flex justify-between gap-2">
-                                                <span className="shrink-0 text-muted-foreground">
-                                                    Interns
-                                                </span>
-                                                <span>{hte.interns_count}</span>
-                                            </div>
-                                            <div className="flex justify-between gap-2">
-                                                <span className="shrink-0 text-muted-foreground">
-                                                    Supervisors
-                                                </span>
-                                                <span>
-                                                    {hte.supervisors_count}
-                                                </span>
+
+                                        <CardContent className="flex-1 space-y-2.5 pb-3 text-sm">
+                                            <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3 text-xs">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
+                                                        <MapPin className="size-3.5 text-muted-foreground" />
+                                                        Address:
+                                                    </span>
+                                                    <span
+                                                        className="font-medium text-foreground truncate text-right"
+                                                        title={hte.address ?? undefined}
+                                                    >
+                                                        {hte.address ?? '—'}
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
+                                                        <User className="size-3.5 text-muted-foreground" />
+                                                        Contact:
+                                                    </span>
+                                                    <span
+                                                        className="font-medium text-foreground truncate text-right"
+                                                        title={hte.contact_person ? `${hte.contact_person}${hte.contact_number ? ` (${hte.contact_number})` : ''}` : undefined}
+                                                    >
+                                                        {hte.contact_person ?? '—'}
+                                                        {hte.contact_number && (
+                                                            <span className="text-muted-foreground font-normal ml-1">
+                                                                · {hte.contact_number}
+                                                            </span>
+                                                        )}
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex items-center justify-between gap-2 border-t pt-1.5">
+                                                    <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
+                                                        <Users className="size-3.5 text-muted-foreground" />
+                                                        Interns / Supervisors:
+                                                    </span>
+                                                    <span className="font-semibold text-foreground">
+                                                        {hte.interns_count} interns · {hte.supervisors_count} sup.
+                                                    </span>
+                                                </div>
                                             </div>
                                         </CardContent>
+
+                                        <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
+                                            <span>{hte.interns_count} {hte.interns_count === 1 ? 'Intern' : 'Interns'}</span>
+                                            <HteActions
+                                                hte={hte}
+                                                onEdit={openEditDialog}
+                                                onToggleStatus={toggleStatus}
+                                                onArchive={openArchiveDialog}
+                                            />
+                                        </div>
                                     </Card>
                                 ))}
                             </div>

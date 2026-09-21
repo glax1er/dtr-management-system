@@ -1,6 +1,8 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import {
+    Briefcase,
     Building,
+    Building2,
     Check,
     Filter,
     GraduationCap,
@@ -134,7 +136,6 @@ export default function CollegeAdminManagement({
         email: '',
         college_id: '',
         campus_id: '',
-        employee_id: '',
         position: '',
         password: '',
         password_confirmation: '',
@@ -147,7 +148,6 @@ export default function CollegeAdminManagement({
         email: '',
         college_id: '',
         campus_id: '',
-        employee_id: '',
         position: '',
         password: '',
         password_confirmation: '',
@@ -262,7 +262,6 @@ export default function CollegeAdminManagement({
             email: '',
             college_id: colleges.length > 0 ? String(colleges[0].id) : '',
             campus_id: '',
-            employee_id: '',
             position: '',
             password: '',
             password_confirmation: '',
@@ -313,7 +312,6 @@ export default function CollegeAdminManagement({
                 email: addForm.email.trim().toLowerCase(),
                 college_id: Number(addForm.college_id),
                 campus_id: addForm.campus_id ? Number(addForm.campus_id) : null,
-                employee_id: addForm.employee_id.trim() || null,
                 position: addForm.position.trim() || null,
                 password: addForm.password,
                 password_confirmation: addForm.password_confirmation,
@@ -334,7 +332,6 @@ export default function CollegeAdminManagement({
             email: admin.email,
             college_id: admin.college_id ? String(admin.college_id) : '',
             campus_id: admin.campus_id ? String(admin.campus_id) : '',
-            employee_id: admin.employee_id || '',
             position: admin.position || '',
             password: '',
             password_confirmation: '',
@@ -381,7 +378,6 @@ export default function CollegeAdminManagement({
                 email: editForm.email.trim().toLowerCase(),
                 college_id: Number(editForm.college_id),
                 campus_id: editForm.campus_id ? Number(editForm.campus_id) : null,
-                employee_id: editForm.employee_id.trim() || null,
                 position: editForm.position.trim() || null,
                 ...(editForm.password ? {
                     password: editForm.password,
@@ -681,11 +677,6 @@ export default function CollegeAdminManagement({
                                             <div className="text-sm font-medium text-foreground">
                                                 {admin.position || 'College Admin'}
                                             </div>
-                                            {admin.employee_id && (
-                                                <div className="font-mono text-xs text-muted-foreground">
-                                                    ID: {admin.employee_id}
-                                                </div>
-                                            )}
                                         </TableCell>
                                         <TableCell className="text-center">
                                             <StatusBadge status={admin.is_active ? 'active' : 'inactive'} />
@@ -765,11 +756,11 @@ export default function CollegeAdminManagement({
             <div className={view === 'table' ? 'sm:hidden' : ''}>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {collegeAdmins.data.map((admin) => (
-                            <Card key={admin.id} className="flex flex-col justify-between">
+                            <Card key={admin.id} className="flex flex-col justify-between h-full rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:shadow-md hover:border-border">
                                 <CardHeader className="pb-3">
                                     <div className="flex items-start justify-between gap-2">
-                                        <div className="flex items-center gap-3">
-                                            <Avatar className="size-10">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <Avatar className="size-10 shrink-0">
                                                 {admin.avatar && (
                                                     <AvatarImage
                                                         src={admin.avatar}
@@ -781,34 +772,58 @@ export default function CollegeAdminManagement({
                                                     {getInitials(admin.name)}
                                                 </AvatarFallback>
                                             </Avatar>
-                                            <div>
-                                                <CardTitle className="text-base font-semibold leading-tight">
+                                            <div className="min-w-0">
+                                                <CardTitle className="text-base font-semibold leading-tight line-clamp-1" title={admin.name}>
                                                     {admin.name}
                                                 </CardTitle>
-                                                <div className="text-xs text-muted-foreground">
+                                                <span className="text-xs text-muted-foreground truncate block" title={admin.email}>
                                                     {admin.email}
-                                                </div>
+                                                </span>
                                             </div>
                                         </div>
                                         <StatusBadge status={admin.is_active ? 'active' : 'inactive'} />
                                     </div>
                                 </CardHeader>
-                                <CardContent className="space-y-3 pb-3 text-sm">
-                                    <div className="rounded-md border bg-muted/30 p-2 text-xs">
-                                        <div className="font-medium text-foreground">
-                                            {admin.college ? `${admin.college.code} - ${admin.college.name}` : 'Unassigned College'}
+                                <CardContent className="flex-1 space-y-2.5 pb-3 text-sm">
+                                    <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3 text-xs">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
+                                                <Building2 className="size-3.5 text-muted-foreground" />
+                                                College:
+                                            </span>
+                                            {admin.college ? (
+                                                <span className="font-semibold text-foreground truncate text-right" title={`${admin.college.code} — ${admin.college.name}`}>
+                                                    {admin.college.code} — {admin.college.name}
+                                                </span>
+                                            ) : (
+                                                <span className="italic text-muted-foreground">Unassigned</span>
+                                            )}
                                         </div>
-                                        <div className="mt-1 flex items-center gap-1 text-muted-foreground">
-                                            <MapPin className="size-3 shrink-0" />
-                                            <span>{admin.campus || 'No Campus'}</span>
+
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
+                                                <MapPin className="size-3.5 text-muted-foreground" />
+                                                Campus:
+                                            </span>
+                                            <span className="font-medium text-foreground truncate text-right">
+                                                {admin.campus || 'N/A'}
+                                            </span>
                                         </div>
-                                    </div>
-                                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                        <span>Position: <strong className="font-medium text-foreground">{admin.position || 'College Admin'}</strong></span>
-                                        {admin.employee_id && <span>ID: <strong className="font-mono text-foreground">{admin.employee_id}</strong></span>}
+
+                                        <div className="flex items-center justify-between gap-2 border-t pt-1.5">
+                                            <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
+                                                <Briefcase className="size-3.5 text-muted-foreground" />
+                                                Designation:
+                                            </span>
+                                            <span className="font-medium text-foreground truncate text-right">
+                                                {admin.position || 'College Admin'}
+                                            </span>
+                                        </div>
                                     </div>
                                 </CardContent>
-                                <div className="flex items-center justify-end gap-1 border-t bg-muted/20 px-4 py-2">
+                                <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
+                                    <span>Added {admin.created_at}</span>
+                                    <div className="flex items-center gap-1">
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <Button
@@ -856,7 +871,8 @@ export default function CollegeAdminManagement({
                                         <TooltipContent>Delete Admin</TooltipContent>
                                     </Tooltip>
                                 </div>
-                            </Card>
+                            </div>
+                        </Card>
                         ))}
                     </div>
                     {collegeAdmins.total > 0 && (
@@ -875,7 +891,7 @@ export default function CollegeAdminManagement({
 
             {/* Add College Admin Modal */}
             <Dialog open={addOpen} onOpenChange={setAddOpen}>
-                <DialogContent className="sm:max-w-[500px]">
+                <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Add College Administrator</DialogTitle>
                         <DialogDescription>
@@ -883,35 +899,37 @@ export default function CollegeAdminManagement({
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={submitAdd} className="space-y-4 pt-2">
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5 col-span-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                            <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
                                 <Label htmlFor="add_name">Full Name <span className="text-destructive">*</span></Label>
                                 <Input
                                     id="add_name"
+                                    className="w-full"
                                     value={addForm.name}
                                     onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))}
                                     placeholder="e.g. Dr. Juan Dela Cruz"
                                     required
                                 />
                             </div>
-                            <div className="space-y-1.5 col-span-2">
+                            <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
                                 <Label htmlFor="add_email">Email Address <span className="text-destructive">*</span></Label>
                                 <Input
                                     id="add_email"
                                     type="email"
+                                    className="w-full"
                                     value={addForm.email}
                                     onChange={(e) => setAddForm((f) => ({ ...f, email: e.target.value }))}
                                     placeholder="e.g. juan.delacruz@usep.edu.ph"
                                     required
                                 />
                             </div>
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                            <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
                                 <Label htmlFor="add_college">Assigned College <span className="text-destructive">*</span></Label>
                                 <Select
                                     value={addForm.college_id}
                                     onValueChange={handleAddCollegeChange}
                                 >
-                                    <SelectTrigger id="add_college">
+                                    <SelectTrigger id="add_college" className="w-full">
                                         <SelectValue placeholder="Select college" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -923,13 +941,13 @@ export default function CollegeAdminManagement({
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                            <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
                                 <Label htmlFor="add_campus">Campus</Label>
                                 <Select
                                     value={addForm.campus_id || 'none'}
                                     onValueChange={(val) => setAddForm((f) => ({ ...f, campus_id: val === 'none' ? '' : val }))}
                                 >
-                                    <SelectTrigger id="add_campus">
+                                    <SelectTrigger id="add_campus" className="w-full">
                                         <SelectValue placeholder="Select campus" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -942,40 +960,34 @@ export default function CollegeAdminManagement({
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
-                                <Label htmlFor="add_emp_id">Employee ID</Label>
-                                <Input
-                                    id="add_emp_id"
-                                    value={addForm.employee_id}
-                                    onChange={(e) => setAddForm((f) => ({ ...f, employee_id: e.target.value }))}
-                                    placeholder="e.g. EMP-2024-001"
-                                />
-                            </div>
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                            <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
                                 <Label htmlFor="add_position">Designation / Position</Label>
                                 <Input
                                     id="add_position"
+                                    className="w-full"
                                     value={addForm.position}
                                     onChange={(e) => setAddForm((f) => ({ ...f, position: e.target.value }))}
                                     placeholder="e.g. Dean / OJT Coordinator"
                                 />
                             </div>
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                            <div className="space-y-1.5 col-span-1 min-w-0">
                                 <Label htmlFor="add_pwd">Password <span className="text-destructive">*</span></Label>
                                 <Input
                                     id="add_pwd"
                                     type="password"
+                                    className="w-full"
                                     value={addForm.password}
                                     onChange={(e) => setAddForm((f) => ({ ...f, password: e.target.value }))}
                                     placeholder="••••••••"
                                     required
                                 />
                             </div>
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                            <div className="space-y-1.5 col-span-1 min-w-0">
                                 <Label htmlFor="add_pwd_conf">Confirm Password <span className="text-destructive">*</span></Label>
                                 <Input
                                     id="add_pwd_conf"
                                     type="password"
+                                    className="w-full"
                                     value={addForm.password_confirmation}
                                     onChange={(e) => setAddForm((f) => ({ ...f, password_confirmation: e.target.value }))}
                                     placeholder="••••••••"
@@ -999,7 +1011,7 @@ export default function CollegeAdminManagement({
 
             {/* Edit College Admin Modal */}
             <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                <DialogContent className="sm:max-w-[500px]">
+                <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Edit College Administrator</DialogTitle>
                         <DialogDescription>
@@ -1007,35 +1019,37 @@ export default function CollegeAdminManagement({
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={submitEdit} className="space-y-4 pt-2">
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5 col-span-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                            <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
                                 <Label htmlFor="edit_name">Full Name <span className="text-destructive">*</span></Label>
                                 <Input
                                     id="edit_name"
+                                    className="w-full"
                                     value={editForm.name}
                                     onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
                                     placeholder="e.g. Dr. Juan Dela Cruz"
                                     required
                                 />
                             </div>
-                            <div className="space-y-1.5 col-span-2">
+                            <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
                                 <Label htmlFor="edit_email">Email Address <span className="text-destructive">*</span></Label>
                                 <Input
                                     id="edit_email"
                                     type="email"
+                                    className="w-full"
                                     value={editForm.email}
                                     onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
                                     placeholder="e.g. juan.delacruz@usep.edu.ph"
                                     required
                                 />
                             </div>
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                            <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
                                 <Label htmlFor="edit_college">Assigned College <span className="text-destructive">*</span></Label>
                                 <Select
                                     value={editForm.college_id}
                                     onValueChange={handleEditCollegeChange}
                                 >
-                                    <SelectTrigger id="edit_college">
+                                    <SelectTrigger id="edit_college" className="w-full">
                                         <SelectValue placeholder="Select college" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -1047,13 +1061,13 @@ export default function CollegeAdminManagement({
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                            <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
                                 <Label htmlFor="edit_campus">Campus</Label>
                                 <Select
                                     value={editForm.campus_id || 'none'}
                                     onValueChange={(val) => setEditForm((f) => ({ ...f, campus_id: val === 'none' ? '' : val }))}
                                 >
-                                    <SelectTrigger id="edit_campus">
+                                    <SelectTrigger id="edit_campus" className="w-full">
                                         <SelectValue placeholder="Select campus" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -1066,42 +1080,36 @@ export default function CollegeAdminManagement({
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
-                                <Label htmlFor="edit_emp_id">Employee ID</Label>
-                                <Input
-                                    id="edit_emp_id"
-                                    value={editForm.employee_id}
-                                    onChange={(e) => setEditForm((f) => ({ ...f, employee_id: e.target.value }))}
-                                    placeholder="e.g. EMP-2024-001"
-                                />
-                            </div>
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                            <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
                                 <Label htmlFor="edit_position">Designation / Position</Label>
                                 <Input
                                     id="edit_position"
+                                    className="w-full"
                                     value={editForm.position}
                                     onChange={(e) => setEditForm((f) => ({ ...f, position: e.target.value }))}
                                     placeholder="e.g. Dean / OJT Coordinator"
                                 />
                             </div>
-                            <div className="col-span-2 pt-2 border-t text-xs text-muted-foreground">
+                            <div className="col-span-1 sm:col-span-2 pt-2 border-t text-xs text-muted-foreground">
                                 Leave password fields blank unless you want to change the administrator's password.
                             </div>
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                            <div className="space-y-1.5 col-span-1 min-w-0">
                                 <Label htmlFor="edit_pwd">New Password</Label>
                                 <Input
                                     id="edit_pwd"
                                     type="password"
+                                    className="w-full"
                                     value={editForm.password}
                                     onChange={(e) => setEditForm((f) => ({ ...f, password: e.target.value }))}
                                     placeholder="••••••••"
                                 />
                             </div>
-                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                            <div className="space-y-1.5 col-span-1 min-w-0">
                                 <Label htmlFor="edit_pwd_conf">Confirm Password</Label>
                                 <Input
                                     id="edit_pwd_conf"
                                     type="password"
+                                    className="w-full"
                                     value={editForm.password_confirmation}
                                     onChange={(e) => setEditForm((f) => ({ ...f, password_confirmation: e.target.value }))}
                                     placeholder="••••••••"

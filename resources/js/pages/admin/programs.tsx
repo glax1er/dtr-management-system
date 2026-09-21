@@ -2,11 +2,14 @@ import { Head, router, usePage } from '@inertiajs/react';
 import {
     BookOpen,
     Building2,
+    Clock,
+    GraduationCap,
     LayoutGrid,
     Plus,
     Search,
     SlidersHorizontal,
     Table as TableIcon,
+    UserCheck,
     X,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -695,90 +698,72 @@ export default function AdminPrograms({
                         <div className={view === 'table' ? 'sm:hidden' : ''}>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {programs.data.map((program) => (
-                                    <Card key={program.program_id}>
-                                        <CardHeader>
+                                    <Card key={program.program_id} className="flex flex-col justify-between h-full rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:shadow-md hover:border-border">
+                                        <CardHeader className="pb-3">
                                             <div className="flex items-start justify-between gap-2">
-                                                <div>
-                                                    <CardTitle className="text-base">
+                                                <div className="min-w-0 flex-1">
+                                                    <CardTitle className="text-base font-semibold leading-tight line-clamp-1" title={program.program_name}>
                                                         {program.program_name}
                                                     </CardTitle>
-                                                    <div className="mt-2">
-                                                        <StatusBadge
-                                                            status={
-                                                                program.is_active
-                                                                    ? 'active'
-                                                                    : 'inactive'
-                                                            }
-                                                        />
-                                                    </div>
+                                                    {isSuperAdmin && program.college && (
+                                                        <span className="text-xs text-muted-foreground truncate block mt-1" title={program.college.name}>
+                                                            {program.college.code} — {program.college.name}
+                                                        </span>
+                                                    )}
                                                 </div>
-
-                                                <div className="shrink-0">
-                                                    <ProgramActions
-                                                        program={program}
-                                                        onEdit={openEdit}
-                                                        onToggleActive={
-                                                            toggleActive
-                                                        }
-                                                        onArchive={
-                                                            openArchiveDialog
-                                                        }
-                                                    />
-                                                </div>
+                                                <StatusBadge
+                                                    status={
+                                                        program.is_active
+                                                            ? 'active'
+                                                            : 'inactive'
+                                                    }
+                                                />
                                             </div>
                                         </CardHeader>
 
-                                        <CardContent className="space-y-2 text-sm">
-                                            {isSuperAdmin && (
-                                                <div className="flex justify-between gap-2">
-                                                    <span className="text-muted-foreground">
-                                                        College
+                                        <CardContent className="flex-1 space-y-2.5 pb-3 text-sm">
+                                            <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3 text-xs">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
+                                                        <Clock className="size-3.5 text-muted-foreground" />
+                                                        Required Hours:
                                                     </span>
-                                                    <span className="text-right">
-                                                        {program.college ? (
-                                                            <Badge
-                                                                variant="outline"
-                                                                className="text-xs"
-                                                            >
-                                                                {program.college.code} ({program.college.name})
-                                                            </Badge>
-                                                        ) : (
-                                                            '—'
-                                                        )}
+                                                    <span className="font-semibold text-foreground">
+                                                        {program.required_hours} hrs
                                                     </span>
                                                 </div>
-                                            )}
-                                            <div className="flex justify-between gap-2">
-                                                <span className="text-muted-foreground">
-                                                    Required Hours
-                                                </span>
-                                                <span>
-                                                    {program.required_hours} hrs
-                                                </span>
-                                            </div>
 
-                                            <div className="flex justify-between gap-2">
-                                                <span className="text-muted-foreground">
-                                                    Interns
-                                                </span>
-                                                <span>
-                                                    {
-                                                        program.approved_intern_count
-                                                    }
-                                                </span>
-                                            </div>
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
+                                                        <GraduationCap className="size-3.5 text-muted-foreground" />
+                                                        Interns Enrolled:
+                                                    </span>
+                                                    <span className="font-medium text-foreground">
+                                                        {program.approved_intern_count}
+                                                    </span>
+                                                </div>
 
-                                            <div className="flex justify-between gap-2">
-                                                <span className="shrink-0 text-muted-foreground">
-                                                    OJT Supervisor(s)
-                                                </span>
-                                                <span className="text-right">
-                                                    {supervisorLabel(
-                                                        program.ojt_supervisors,
-                                                    )}
-                                                </span>
+                                                <div className="flex items-center justify-between gap-2 border-t pt-1.5">
+                                                    <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
+                                                        <UserCheck className="size-3.5 text-muted-foreground" />
+                                                        Supervisor(s):
+                                                    </span>
+                                                    <span className="font-medium text-foreground truncate text-right" title={supervisorLabel(program.ojt_supervisors)}>
+                                                        {supervisorLabel(program.ojt_supervisors)}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </CardContent>
+
+                                        <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
+                                            <span>{program.required_hours}h required</span>
+                                            <ProgramActions
+                                                program={program}
+                                                onEdit={openEdit}
+                                                onToggleActive={toggleActive}
+                                                onArchive={openArchiveDialog}
+                                            />
+                                        </div>
                                     </Card>
                                 ))}
                             </div>
