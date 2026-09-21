@@ -148,3 +148,51 @@ test('super admin can permanently delete an archived campus', function () {
     $response->assertRedirect();
     expect(Campus::withTrashed()->where('id', $this->campus->id)->exists())->toBeFalse();
 });
+
+test('campuses index returns correct interns count', function () {
+    $program = \App\Models\Program::create([
+        'college_id' => $this->collegeA->id,
+        'program_name' => 'BS IT '.uniqid(),
+        'is_active' => true,
+        'required_hours' => 500,
+    ]);
+
+    $hte = \App\Models\Hte::create([
+        'college_id' => $this->collegeA->id,
+        'hte_name' => 'HTE '.uniqid(),
+        'address' => 'HTE Address',
+        'status' => 'active',
+    ]);
+
+    $internUser = User::factory()->create([
+        'role' => User::ROLE_INTERN,
+        'email_verified_at' => now(),
+    ]);
+
+    \App\Models\InternProfile::create([
+        'user_id' => $internUser->id,
+        'id_number' => 'ID-'.uniqid(),
+        'sex' => 'male',
+        'hte_id' => $hte->hte_id,
+        'program_id' => $program->program_id,
+        'campus' => $this->campus->name,
+        'status' => 'approved',
+        'privacy_accepted_at' => now(),
+        'registered_at' => now(),
+        'approved_at' => now(),
+    ]);
+
+    $response = $this->actingAs($this->superAdmin)->get(route('admin.campuses.index'));
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->component('admin/campuses/index')
+        ->where('campuses.data', function ($campuses) {
+            $campusRecord = collect($campuses)->firstWhere('id', $this->campus->id);
+            expect($campusRecord)->not->toBeNull();
+            expect($campusRecord['interns_count'])->toBe(1);
+
+            return true;
+        })
+    );
+});
+

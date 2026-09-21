@@ -83,6 +83,7 @@ test('calendar accurately reflects global schedule periods set by admin', functi
 });
 
 test('calendar gives precedence to HTE overrides created by supervisor', function () {
+    Carbon\Carbon::setTestNow('2026-09-05');
     [$intern, $profile, $hte] = createScheduleTestIntern();
 
     // Global schedule at 8:00
@@ -128,6 +129,8 @@ test('calendar gives precedence to HTE overrides created by supervisor', functio
         ->where('htePeriods.0.day_schedule.monday', '09:00')
         ->where('stats.hte_overrides_count', 1)
     );
+
+    Carbon\Carbon::setTestNow();
 });
 
 test('schedule update notifications sent to intern are visible in recent updates', function () {

@@ -128,4 +128,38 @@ class InternProfile extends Model
                 ->orWhereHas('user', fn ($uq) => $uq->where('college_id', $collegeId));
         });
     }
+
+    /**
+     * Scope a query to only include intern profiles belonging to a given campus (via campus string, user campus, or program college campus).
+     *
+     * @param  Builder<static>  $query
+     * @param  Campus|string|int  $campus
+     * @return Builder<static>
+     */
+    public function scopeForCampus($query, Campus|string|int $campus)
+    {
+        $campusModel = $campus instanceof Campus ? $campus : null;
+        $name = $campusModel ? $campusModel->name : (is_string($campus) ? $campus : null);
+        $id = $campusModel ? $campusModel->id : (is_int($campus) ? $campus : null);
+
+        return $query->where(function ($q) use ($name, $id) {
+            $q->where(function ($sub) use ($name, $id) {
+                if ($name !== null) {
+                    $sub->where('campus', $name)
+                        ->orWhereHas('user', fn ($uq) => $uq->where('campus', $name));
+                }
+                $sub->orWhereHas('program.college', function ($cq) use ($name, $id) {
+                    $cq->withTrashed()->where(function ($csub) use ($name, $id) {
+                        if ($id !== null) {
+                            $csub->where('campus_id', $id);
+                        }
+                        if ($name !== null) {
+                            $csub->orWhere('campus', $name);
+                        }
+                    });
+                });
+            });
+        });
+    }
 }
+

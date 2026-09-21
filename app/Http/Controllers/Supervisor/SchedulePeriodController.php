@@ -43,11 +43,23 @@ class SchedulePeriodController extends Controller
             ->get()
             ->map(fn (SchedulePeriod $period) => $this->toArray($period, 'hte'));
 
+        $hte = $supervisorProfile->hte;
+        $college = $hte?->college;
+
         return Inertia::render('supervisor/schedule', [
             'globalPeriods' => $globalPeriods,
             'collegePeriods' => $collegePeriods,
             'periods' => $ownPeriods,
             'highlightId' => $highlightId ? (int) $highlightId : null,
+            'college' => $college ? [
+                'id' => $college->id,
+                'name' => $college->name,
+                'code' => $college->code,
+            ] : null,
+            'hte' => $hte ? [
+                'id' => $hte->hte_id,
+                'name' => $hte->hte_name,
+            ] : null,
         ]);
     }
 

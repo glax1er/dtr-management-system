@@ -1,7 +1,6 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import {
     Building2,
-    Filter,
     LayoutGrid,
     MapPin,
     Pencil,
@@ -11,6 +10,7 @@ import {
     Search,
     Shield,
     ShieldCheck,
+    SlidersHorizontal,
     Table as TableIcon,
     Trash2,
     UserCog,
@@ -21,7 +21,7 @@ import type { FormEvent } from 'react';
 import { toast } from 'sonner';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
@@ -66,6 +66,7 @@ interface AdminUser {
     id: number;
     name: string;
     email: string;
+    avatar?: string | null;
     role: 'super_admin' | 'college_admin' | 'admin';
     college_id: number | null;
     campus_id?: number | null;
@@ -112,17 +113,11 @@ export default function AdminManagement({
 
     const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters.search || '');
-    const [collegeId, setCollegeId] = useState<string>(
-        filters.college_id ? String(filters.college_id) : 'all',
-    );
-    const [campusId, setCampusId] = useState<string>(
-        filters.campus_id ? String(filters.campus_id) : 'all',
-    );
     const [roleFilter, setRoleFilter] = useState<string>(filters.role || 'all');
     const [statusFilter, setStatusFilter] = useState<string>(
         filters.status || 'all',
     );
-    const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+    const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
     const debouncedSearch = useDebounce(search, 300);
     const isFirstRender = useRef(true);
@@ -177,8 +172,6 @@ export default function AdminManagement({
 
     const baseParams = () => ({
         search: search || undefined,
-        college_id: collegeId !== 'all' ? collegeId : undefined,
-        campus_id: campusId !== 'all' ? campusId : undefined,
         status: statusFilter !== 'all' ? statusFilter : undefined,
         role: roleFilter !== 'all' ? roleFilter : undefined,
         per_page: filters.per_page ? String(filters.per_page) : undefined,
@@ -198,7 +191,6 @@ export default function AdminManagement({
                 page: undefined,
             });
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch]);
 
     const handleSearchSubmit = (e: FormEvent) => {
@@ -228,24 +220,6 @@ export default function AdminManagement({
         });
     };
 
-    const handleCollegeChange = (val: string) => {
-        setCollegeId(val);
-        visit({
-            ...baseParams(),
-            college_id: val !== 'all' ? val : undefined,
-            page: undefined,
-        });
-    };
-
-    const handleCampusChange = (val: string) => {
-        setCampusId(val);
-        visit({
-            ...baseParams(),
-            campus_id: val !== 'all' ? val : undefined,
-            page: undefined,
-        });
-    };
-
     const handleStatusChange = (val: string) => {
         setStatusFilter(val);
         visit({
@@ -257,8 +231,6 @@ export default function AdminManagement({
 
     const handleResetFilters = () => {
         setSearch('');
-        setCollegeId('all');
-        setCampusId('all');
         setRoleFilter('all');
         setStatusFilter('all');
         visit({
@@ -268,11 +240,7 @@ export default function AdminManagement({
     };
 
     const hasActiveFilters = Boolean(
-        search ||
-        collegeId !== 'all' ||
-        campusId !== 'all' ||
-        roleFilter !== 'all' ||
-        statusFilter !== 'all',
+        search || roleFilter !== 'all' || statusFilter !== 'all',
     );
 
     const goToPage = (page: number) =>
@@ -306,8 +274,8 @@ export default function AdminManagement({
             );
 
             if (foundCamp) {
-setAddCampusId(String(foundCamp.id));
-}
+                setAddCampusId(String(foundCamp.id));
+            }
         }
     };
 
@@ -390,8 +358,8 @@ setAddCampusId(String(foundCamp.id));
             );
 
             if (foundCamp) {
-setEditCampusId(String(foundCamp.id));
-}
+                setEditCampusId(String(foundCamp.id));
+            }
         }
     };
 
@@ -452,8 +420,8 @@ setEditCampusId(String(foundCamp.id));
 
     const handleConfirmStatusToggle = () => {
         if (!statusAdmin) {
-return;
-}
+            return;
+        }
 
         router.patch(
             `/admin/admins/${statusAdmin.id}/status`,
@@ -481,8 +449,8 @@ return;
 
     const handleConfirmDelete = () => {
         if (!deleteAdmin) {
-return;
-}
+            return;
+        }
 
         router.delete(`/admin/admins/${deleteAdmin.id}`, {
             preserveScroll: true,
@@ -497,27 +465,16 @@ return;
         <>
             <Head title="Admin Management" />
 
-            <div className="flex h-full flex-1 flex-col gap-4 p-4 sm:gap-6 md:p-6">
+            <div className="flex h-full flex-1 flex-col gap-4 p-4">
                 {/* Header */}
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <div className="flex flex-wrap items-center gap-3">
+                        <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-black dark:text-white">
                             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
                                 <ShieldCheck className="size-5" />
                             </span>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <h1 className="text-2xl font-semibold tracking-tight text-black dark:text-white">
-                                    Administrators
-                                </h1>
-                                <Badge
-                                    variant="outline"
-                                    className="border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-800 dark:bg-purple-950/40 dark:text-purple-300"
-                                >
-                                    <ShieldCheck className="mr-1 size-3.5" />
-                                    Super Admin Control
-                                </Badge>
-                            </div>
-                        </div>
+                            Administrators
+                        </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
                             Manage Super Administrators and College
                             Administrators across all USeP colleges and
@@ -525,17 +482,19 @@ return;
                         </p>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                    <div className="flex flex-wrap items-center gap-2">
+                        {/* Search */}
                         <form
                             onSubmit={handleSearchSubmit}
                             className="relative hidden sm:block"
                         >
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                                placeholder="Search admins..."
+                            <input
+                                type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className="h-9 w-44 pr-8 pl-8"
+                                placeholder="Search administrators..."
+                                className="h-9 w-44 rounded-md border bg-background pr-8 pl-8 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             />
                             {search && (
                                 <button
@@ -547,181 +506,115 @@ return;
                                 </button>
                             )}
                         </form>
-                        <Button
-                            onClick={handleOpenAdd}
-                            className="w-full shrink-0 justify-center gap-2 sm:w-auto"
-                        >
-                            <Plus className="size-4" />
-                            Add Administrator
-                        </Button>
-                    </div>
-                </div>
 
-                {/* Filters & Search Toolbar */}
-                <div className="flex flex-col gap-3">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-                            {/* Search Input */}
-                            <form
-                                onSubmit={handleSearchSubmit}
-                                className="relative min-w-[200px] flex-1 sm:hidden"
-                            >
-                                <Search className="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
-                                <Input
-                                    placeholder="Search admins..."
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    className="h-9 pr-8 pl-9"
-                                />
-                                {search && (
-                                    <button
-                                        type="button"
-                                        onClick={handleClearSearch}
-                                        className="absolute top-2.5 right-2.5 text-muted-foreground hover:text-foreground"
-                                    >
-                                        <X className="size-4" />
-                                    </button>
-                                )}
-                            </form>
-
-                            {/* Mobile Filters Toggle */}
-                            <Button
-                                variant={
-                                    mobileFiltersOpen ? 'secondary' : 'outline'
-                                }
-                                size="sm"
-                                onClick={() =>
-                                    setMobileFiltersOpen((prev) => !prev)
-                                }
-                                className="h-9 gap-1.5 sm:hidden"
-                            >
-                                <Filter className="size-3.5" />
-                                Filters
-                                {hasActiveFilters && (
-                                    <span className="size-2 rounded-full bg-primary" />
-                                )}
-                            </Button>
-
-                            {/* Desktop Filters */}
-                            <div className="hidden sm:flex sm:items-center sm:gap-2">
-                                {/* College Filter */}
-                                <Select
-                                    value={collegeId}
-                                    onValueChange={handleCollegeChange}
-                                >
-                                    <SelectTrigger className="h-9 w-[180px]">
-                                        <SelectValue placeholder="All Colleges" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">
-                                            All Colleges
-                                        </SelectItem>
-                                        {colleges.map((college) => (
-                                            <SelectItem
-                                                key={college.id}
-                                                value={String(college.id)}
-                                            >
-                                                {college.code} — {college.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-
-                                {/* Campus Filter */}
-                                <Select
-                                    value={campusId}
-                                    onValueChange={handleCampusChange}
-                                >
-                                    <SelectTrigger className="h-9 w-[150px]">
-                                        <SelectValue placeholder="All Campuses" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">
-                                            All Campuses
-                                        </SelectItem>
-                                        {campuses.map((camp) => (
-                                            <SelectItem
-                                                key={camp.id}
-                                                value={String(camp.id)}
-                                            >
-                                                {camp.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-
-                                {/* Status Filter */}
-                                <Select
-                                    value={statusFilter}
-                                    onValueChange={handleStatusChange}
-                                >
-                                    <SelectTrigger className="h-9 w-[130px]">
-                                        <SelectValue placeholder="All Status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">
-                                            All Status
-                                        </SelectItem>
-                                        <SelectItem value="active">
-                                            Active
-                                        </SelectItem>
-                                        <SelectItem value="inactive">
-                                            Inactive
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-
-                                {/* Reset Filters */}
-                                {hasActiveFilters && (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={handleResetFilters}
-                                        className="h-9 px-2 text-xs text-muted-foreground hover:text-foreground"
-                                    >
-                                        <X className="mr-1 size-3.5" />
-                                        Reset
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Role Filter Tabs & View Toggle */}
-                        <div className="flex flex-wrap items-center justify-between gap-2 sm:justify-end">
+                        {/* Switch bar (Role filter tabs) */}
+                        <div className="scrollbar-none max-w-[calc(100%-3rem)] overflow-x-auto sm:max-w-none">
                             <Tabs
                                 value={roleFilter}
                                 onValueChange={handleRoleChange}
-                                className="w-full sm:w-auto"
                             >
-                                <TabsList className="grid w-full grid-cols-3 sm:w-[320px]">
+                                <TabsList className="h-9">
                                     <TabsTrigger
                                         value="all"
-                                        className="text-xs"
+                                        className="px-2.5 text-xs sm:px-3 sm:text-sm"
                                     >
                                         All
                                     </TabsTrigger>
                                     <TabsTrigger
                                         value="super_admin"
-                                        className="text-xs"
+                                        className="px-2.5 text-xs sm:px-3 sm:text-sm"
                                     >
                                         Super Admins
                                     </TabsTrigger>
                                     <TabsTrigger
                                         value="college_admin"
-                                        className="text-xs"
+                                        className="px-2.5 text-xs sm:px-3 sm:text-sm"
                                     >
                                         College Admins
                                     </TabsTrigger>
                                 </TabsList>
                             </Tabs>
+                        </div>
 
+                        {/* Status Filter */}
+                        <div className="hidden sm:block">
+                            <Select
+                                value={statusFilter || 'all'}
+                                onValueChange={handleStatusChange}
+                            >
+                                <SelectTrigger className="h-9 w-32">
+                                    <SlidersHorizontal className="mr-1.5 size-3.5 shrink-0 text-muted-foreground" />
+                                    <SelectValue placeholder="All Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">
+                                        All Status
+                                    </SelectItem>
+                                    <SelectItem value="active">
+                                        Active
+                                    </SelectItem>
+                                    <SelectItem value="inactive">
+                                        Inactive
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="sm:hidden">
+                            <Select
+                                value={statusFilter || 'all'}
+                                onValueChange={handleStatusChange}
+                            >
+                                <SelectTrigger className="inline-flex size-9 items-center justify-center p-0 [&>span]:hidden [&>svg:last-child]:hidden">
+                                    <SlidersHorizontal className="size-4 text-muted-foreground" />
+                                </SelectTrigger>
+                                <SelectContent align="end">
+                                    <SelectItem value="all">
+                                        All Status
+                                    </SelectItem>
+                                    <SelectItem value="active">
+                                        Active
+                                    </SelectItem>
+                                    <SelectItem value="inactive">
+                                        Inactive
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* Reset Filters */}
+                        {hasActiveFilters && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleResetFilters}
+                                className="h-9 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                            >
+                                <X className="size-3.5" />
+                                Reset
+                            </Button>
+                        )}
+
+                        {/* Mobile Search Toggle */}
+                        <button
+                            type="button"
+                            onClick={() => setMobileSearchOpen((o) => !o)}
+                            className="inline-flex size-9 shrink-0 items-center justify-center rounded-md border bg-background text-muted-foreground hover:text-foreground sm:hidden"
+                            aria-label="Toggle search"
+                        >
+                            {mobileSearchOpen ? (
+                                <X className="size-4" />
+                            ) : (
+                                <Search className="size-4" />
+                            )}
+                        </button>
+
+                        {/* View Mode Toggle — desktop only */}
+                        <div className="hidden sm:block">
                             <Tabs
                                 value={view}
-                                onValueChange={(value) =>
-                                    setView(value as ViewMode)
-                                }
+                                onValueChange={(v) => setView(v as ViewMode)}
                             >
-                                <TabsList>
+                                <TabsList className="h-9">
                                     <TabsTrigger
                                         value="table"
                                         aria-label="Table view"
@@ -737,189 +630,462 @@ return;
                                 </TabsList>
                             </Tabs>
                         </div>
+
+                        {/* Add Administrator Button */}
+                        <Button
+                            onClick={handleOpenAdd}
+                            className="h-9 shrink-0 gap-1.5"
+                        >
+                            <Plus className="size-4" />
+                            <span className="hidden sm:inline">
+                                Add Administrator
+                            </span>
+                            <span className="sm:hidden">Add</span>
+                        </Button>
                     </div>
-
-                    {/* Mobile Filters Dropdown */}
-                    {mobileFiltersOpen && (
-                        <div className="flex flex-col gap-2.5 rounded-lg border bg-muted/40 p-3.5 sm:hidden">
-                            <div className="flex items-center justify-between">
-                                <Label className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-                                    Filters
-                                </Label>
-                                {hasActiveFilters && (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={handleResetFilters}
-                                        className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-                                    >
-                                        <X className="mr-1 size-3" />
-                                        Reset All
-                                    </Button>
-                                )}
-                            </div>
-                            <div className="grid grid-cols-1 gap-2">
-                                <Select
-                                    value={collegeId}
-                                    onValueChange={handleCollegeChange}
-                                >
-                                    <SelectTrigger className="h-9">
-                                        <SelectValue placeholder="All Colleges" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">
-                                            All Colleges
-                                        </SelectItem>
-                                        {colleges.map((college) => (
-                                            <SelectItem
-                                                key={college.id}
-                                                value={String(college.id)}
-                                            >
-                                                {college.code} — {college.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-
-                                <Select
-                                    value={campusId}
-                                    onValueChange={handleCampusChange}
-                                >
-                                    <SelectTrigger className="h-9">
-                                        <SelectValue placeholder="All Campuses" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">
-                                            All Campuses
-                                        </SelectItem>
-                                        {campuses.map((camp) => (
-                                            <SelectItem
-                                                key={camp.id}
-                                                value={String(camp.id)}
-                                            >
-                                                {camp.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-
-                                <Select
-                                    value={statusFilter}
-                                    onValueChange={handleStatusChange}
-                                >
-                                    <SelectTrigger className="h-9">
-                                        <SelectValue placeholder="All Status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">
-                                            All Status
-                                        </SelectItem>
-                                        <SelectItem value="active">
-                                            Active
-                                        </SelectItem>
-                                        <SelectItem value="inactive">
-                                            Inactive
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                    )}
                 </div>
 
-                {/* Content: Table View */}
-                {view === 'table' ? (
-                    <div className="overflow-hidden rounded-lg border bg-card shadow-xs">
-                        <div className="overflow-x-auto">
-                            <Table className="min-w-[920px]">
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="w-[240px]">
-                                            Administrator
-                                        </TableHead>
-                                        <TableHead className="w-[140px]">
-                                            Role
-                                        </TableHead>
-                                        <TableHead className="w-[200px]">
-                                            Assigned College
-                                        </TableHead>
-                                        <TableHead className="w-[130px]">
-                                            Campus
-                                        </TableHead>
-                                        <TableHead className="w-[150px]">
-                                            Designation / ID
-                                        </TableHead>
-                                        <TableHead className="w-[100px] text-center">
-                                            Status
-                                        </TableHead>
-                                        <TableHead className="w-[110px]">
-                                            Added
-                                        </TableHead>
-                                        <TableHead className="w-[110px] text-center">
-                                            Actions
-                                        </TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {admins.data.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell
-                                                colSpan={8}
-                                                className="h-32 text-center text-muted-foreground"
-                                            >
-                                                No administrators found.
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : (
-                                        admins.data.map((admin) => {
-                                            const isCurrent =
-                                                admin.id === currentUserId;
-                                            const isSuper =
-                                                admin.role === 'super_admin';
+                {/* Mobile Search Input */}
+                {mobileSearchOpen && (
+                    <form
+                        onSubmit={handleSearchSubmit}
+                        className="relative sm:hidden"
+                    >
+                        <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <input
+                            type="text"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Search administrators..."
+                            className="h-10 w-full rounded-md border bg-background pr-9 pl-9 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
+                            autoFocus
+                        />
+                        {search && (
+                            <button
+                                type="button"
+                                onClick={handleClearSearch}
+                                className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            >
+                                <X className="size-4" />
+                            </button>
+                        )}
+                    </form>
+                )}
 
-                                            return (
-                                                <TableRow key={admin.id}>
-                                                    {/* User Info */}
-                                                    <TableCell>
-                                                        <div className="flex items-center gap-3">
-                                                            <Avatar className="size-9">
-                                                                <AvatarFallback className="bg-primary/10 font-semibold text-primary">
-                                                                    {getInitials(
-                                                                        admin.name,
-                                                                    )}
-                                                                </AvatarFallback>
-                                                            </Avatar>
-                                                            <div className="flex min-w-0 flex-col">
-                                                                <div className="flex items-center gap-1.5 font-medium">
-                                                                    <span className="truncate">
-                                                                        {
-                                                                            admin.name
-                                                                        }
+                {/* Content */}
+                {admins.data.length === 0 ? (
+                    <Card className="flex flex-col items-center justify-center p-12 text-center">
+                        <CardContent className="p-0">
+                            <ShieldCheck className="mx-auto mb-4 size-12 text-muted-foreground/50" />
+                            <h3 className="text-lg font-medium text-foreground">
+                                No administrators found
+                            </h3>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                {hasActiveFilters
+                                    ? 'Try adjusting your search or filters.'
+                                    : 'Create administrators to manage access across the system.'}
+                            </p>
+                            <Button
+                                size="sm"
+                                variant={
+                                    hasActiveFilters ? 'outline' : 'default'
+                                }
+                                onClick={
+                                    hasActiveFilters
+                                        ? handleResetFilters
+                                        : handleOpenAdd
+                                }
+                                className="mt-4"
+                            >
+                                {hasActiveFilters
+                                    ? 'Clear Filters'
+                                    : 'Add Administrator'}
+                            </Button>
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <>
+                        {/* Table view — desktop only */}
+                        {view === 'table' && (
+                            <div className="hidden sm:block">
+                                <Card className="overflow-hidden p-0">
+                                    <CardContent className="p-0">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="w-[240px]">
+                                                        Administrator
+                                                    </TableHead>
+                                                    <TableHead className="w-[140px]">
+                                                        Role
+                                                    </TableHead>
+                                                    <TableHead className="w-[200px]">
+                                                        Assigned College
+                                                    </TableHead>
+                                                    <TableHead className="w-[130px]">
+                                                        Campus
+                                                    </TableHead>
+                                                    <TableHead className="w-[150px]">
+                                                        Designation / ID
+                                                    </TableHead>
+                                                    <TableHead className="w-[100px] text-center">
+                                                        Status
+                                                    </TableHead>
+                                                    <TableHead className="w-[110px]">
+                                                        Added
+                                                    </TableHead>
+                                                    <TableHead className="w-[110px] text-center">
+                                                        Actions
+                                                    </TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {admins.data.map((admin) => {
+                                                    const isCurrent =
+                                                        admin.id ===
+                                                        currentUserId;
+                                                    const isSuper =
+                                                        admin.role ===
+                                                        'super_admin';
+
+                                                    return (
+                                                        <TableRow
+                                                            key={admin.id}
+                                                        >
+                                                            {/* User Info */}
+                                                            <TableCell>
+                                                                <div className="flex items-center gap-3">
+                                                                    <Avatar className="size-9">
+                                                                        {admin.avatar && (
+                                                                            <AvatarImage
+                                                                                src={
+                                                                                    admin.avatar
+                                                                                }
+                                                                                alt={
+                                                                                    admin.name
+                                                                                }
+                                                                                className="object-cover"
+                                                                            />
+                                                                        )}
+                                                                        <AvatarFallback className="bg-primary/10 font-semibold text-primary">
+                                                                            {getInitials(
+                                                                                admin.name,
+                                                                            )}
+                                                                        </AvatarFallback>
+                                                                    </Avatar>
+                                                                    <div className="flex min-w-0 flex-col">
+                                                                        <div className="flex items-center gap-1.5 font-medium">
+                                                                            <span className="truncate">
+                                                                                {
+                                                                                    admin.name
+                                                                                }
+                                                                            </span>
+                                                                            {isCurrent && (
+                                                                                <Badge
+                                                                                    variant="secondary"
+                                                                                    className="shrink-0 px-1 py-0 text-[10px]"
+                                                                                >
+                                                                                    You
+                                                                                </Badge>
+                                                                            )}
+                                                                        </div>
+                                                                        <span className="truncate text-xs text-muted-foreground">
+                                                                            {
+                                                                                admin.email
+                                                                            }
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            </TableCell>
+
+                                                            {/* Role */}
+                                                            <TableCell>
+                                                                {isSuper ? (
+                                                                    <Badge
+                                                                        variant="outline"
+                                                                        className="border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-800 dark:bg-purple-950/40 dark:text-purple-300"
+                                                                    >
+                                                                        <Shield className="mr-1 size-3" />
+                                                                        Super
+                                                                        Admin
+                                                                    </Badge>
+                                                                ) : (
+                                                                    <Badge
+                                                                        variant="outline"
+                                                                        className="border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300"
+                                                                    >
+                                                                        <Building2 className="mr-1 size-3" />
+                                                                        College
+                                                                        Admin
+                                                                    </Badge>
+                                                                )}
+                                                            </TableCell>
+
+                                                            {/* College */}
+                                                            <TableCell>
+                                                                {isSuper ? (
+                                                                    <span className="text-xs font-medium text-muted-foreground">
+                                                                        University-Wide
+                                                                        (All)
                                                                     </span>
-                                                                    {isCurrent && (
+                                                                ) : admin.college ? (
+                                                                    <div>
                                                                         <Badge
                                                                             variant="secondary"
-                                                                            className="shrink-0 px-1 py-0 text-[10px]"
+                                                                            className="font-semibold"
                                                                         >
-                                                                            You
+                                                                            {
+                                                                                admin
+                                                                                    .college
+                                                                                    .code
+                                                                            }
                                                                         </Badge>
+                                                                        <div
+                                                                            className="line-clamp-1 text-xs text-muted-foreground"
+                                                                            title={
+                                                                                admin
+                                                                                    .college
+                                                                                    .name
+                                                                            }
+                                                                        >
+                                                                            {
+                                                                                admin
+                                                                                    .college
+                                                                                    .name
+                                                                            }
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="text-xs text-muted-foreground italic">
+                                                                        Unassigned
+                                                                    </span>
+                                                                )}
+                                                            </TableCell>
+
+                                                            {/* Campus */}
+                                                            <TableCell>
+                                                                {admin.campus ? (
+                                                                    <Badge
+                                                                        variant="secondary"
+                                                                        className="text-xs font-normal"
+                                                                    >
+                                                                        <MapPin className="mr-1 size-3 shrink-0" />
+                                                                        {
+                                                                            admin.campus
+                                                                        }
+                                                                    </Badge>
+                                                                ) : (
+                                                                    <span className="text-xs text-muted-foreground italic">
+                                                                        N/A
+                                                                    </span>
+                                                                )}
+                                                            </TableCell>
+
+                                                            {/* Designation / ID */}
+                                                            <TableCell>
+                                                                {isSuper ? (
+                                                                    <span className="text-xs text-muted-foreground">
+                                                                        —
+                                                                    </span>
+                                                                ) : (
+                                                                    <div>
+                                                                        <div className="text-xs font-medium text-foreground">
+                                                                            {admin.position ||
+                                                                                'College Admin'}
+                                                                        </div>
+                                                                        {admin.employee_id && (
+                                                                            <div className="font-mono text-[11px] text-muted-foreground">
+                                                                                ID:{' '}
+                                                                                {
+                                                                                    admin.employee_id
+                                                                                }
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </TableCell>
+
+                                                            {/* Status */}
+                                                            <TableCell className="text-center">
+                                                                <StatusBadge
+                                                                    status={
+                                                                        admin.is_active
+                                                                            ? 'active'
+                                                                            : 'inactive'
+                                                                    }
+                                                                />
+                                                            </TableCell>
+
+                                                            {/* Added Date */}
+                                                            <TableCell className="text-xs text-muted-foreground">
+                                                                {
+                                                                    admin.created_at
+                                                                }
+                                                            </TableCell>
+
+                                                            {/* Actions */}
+                                                            <TableCell className="text-center">
+                                                                <div className="flex justify-center gap-1">
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger
+                                                                            asChild
+                                                                        >
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                onClick={() =>
+                                                                                    handleOpenEdit(
+                                                                                        admin,
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                <Pencil className="size-4 text-blue-600" />
+                                                                            </Button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                            Edit
+                                                                            Admin
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+
+                                                                    {!isCurrent && (
+                                                                        <>
+                                                                            <Tooltip>
+                                                                                <TooltipTrigger
+                                                                                    asChild
+                                                                                >
+                                                                                    <Button
+                                                                                        variant="ghost"
+                                                                                        size="icon"
+                                                                                        onClick={() =>
+                                                                                            handleToggleStatusClick(
+                                                                                                admin,
+                                                                                            )
+                                                                                        }
+                                                                                    >
+                                                                                        {admin.is_active ? (
+                                                                                            <PowerOff className="size-4 text-destructive" />
+                                                                                        ) : (
+                                                                                            <Power className="size-4 text-emerald-600" />
+                                                                                        )}
+                                                                                    </Button>
+                                                                                </TooltipTrigger>
+                                                                                <TooltipContent>
+                                                                                    {admin.is_active
+                                                                                        ? 'Deactivate'
+                                                                                        : 'Activate'}
+                                                                                </TooltipContent>
+                                                                            </Tooltip>
+
+                                                                            <Tooltip>
+                                                                                <TooltipTrigger
+                                                                                    asChild
+                                                                                >
+                                                                                    <Button
+                                                                                        variant="ghost"
+                                                                                        size="icon"
+                                                                                        onClick={() =>
+                                                                                            handleDeleteClick(
+                                                                                                admin,
+                                                                                            )
+                                                                                        }
+                                                                                    >
+                                                                                        <Trash2 className="size-4 text-destructive" />
+                                                                                    </Button>
+                                                                                </TooltipTrigger>
+                                                                                <TooltipContent>
+                                                                                    Delete
+                                                                                    Admin
+                                                                                </TooltipContent>
+                                                                            </Tooltip>
+                                                                        </>
                                                                     )}
                                                                 </div>
-                                                                <span className="truncate text-xs text-muted-foreground">
-                                                                    {
-                                                                        admin.email
-                                                                    }
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </TableCell>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })}
+                                            </TableBody>
+                                        </Table>
+                                        {admins.total > 0 && (
+                                            <NumberedPagination
+                                                meta={admins}
+                                                itemLabel="administrator"
+                                                onPageChange={goToPage}
+                                                onPerPageChange={changePerPage}
+                                                idPrefix="admins-table-per-page"
+                                            />
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )}
 
-                                                    {/* Role */}
-                                                    <TableCell>
+                        {/* Mobile card view (always shown on mobile, or when grid view active) */}
+                        <div className={view === 'table' ? 'sm:hidden' : ''}>
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                {admins.data.map((admin) => {
+                                    const isCurrent =
+                                        admin.id === currentUserId;
+                                    const isSuper =
+                                        admin.role === 'super_admin';
+
+                                    return (
+                                        <Card
+                                            key={admin.id}
+                                            className="flex flex-col justify-between"
+                                        >
+                                            <CardHeader className="pb-3">
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="flex items-center gap-3">
+                                                        <Avatar className="size-10">
+                                                            {admin.avatar && (
+                                                                <AvatarImage
+                                                                    src={
+                                                                        admin.avatar
+                                                                    }
+                                                                    alt={
+                                                                        admin.name
+                                                                    }
+                                                                    className="object-cover"
+                                                                />
+                                                            )}
+                                                            <AvatarFallback className="bg-primary/10 font-semibold text-primary">
+                                                                {getInitials(
+                                                                    admin.name,
+                                                                )}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                        <div>
+                                                            <CardTitle className="text-base leading-tight font-semibold">
+                                                                {admin.name}
+                                                            </CardTitle>
+                                                            <span className="block truncate text-xs text-muted-foreground">
+                                                                {admin.email}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <StatusBadge
+                                                        status={
+                                                            admin.is_active
+                                                                ? 'active'
+                                                                : 'inactive'
+                                                        }
+                                                    />
+                                                </div>
+                                            </CardHeader>
+
+                                            <CardContent className="space-y-3 pb-3 text-sm">
+                                                <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3 text-xs">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-muted-foreground">
+                                                            Role:
+                                                        </span>
                                                         {isSuper ? (
                                                             <Badge
                                                                 variant="outline"
-                                                                className="border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-800 dark:bg-purple-950/40 dark:text-purple-300"
+                                                                className="border-purple-200 bg-purple-50 text-purple-700"
                                                             >
                                                                 <Shield className="mr-1 size-3" />
                                                                 Super Admin
@@ -927,115 +1093,95 @@ return;
                                                         ) : (
                                                             <Badge
                                                                 variant="outline"
-                                                                className="border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300"
+                                                                className="border-blue-200 bg-blue-50 text-blue-700"
                                                             >
                                                                 <Building2 className="mr-1 size-3" />
                                                                 College Admin
                                                             </Badge>
                                                         )}
-                                                    </TableCell>
+                                                    </div>
 
-                                                    {/* College */}
-                                                    <TableCell>
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-muted-foreground">
+                                                            College:
+                                                        </span>
                                                         {isSuper ? (
-                                                            <span className="text-xs font-medium text-muted-foreground">
+                                                            <span className="font-medium text-foreground">
                                                                 University-Wide
-                                                                (All)
                                                             </span>
                                                         ) : admin.college ? (
-                                                            <div>
-                                                                <Badge
-                                                                    variant="secondary"
-                                                                    className="font-semibold"
-                                                                >
-                                                                    {
-                                                                        admin
-                                                                            .college
-                                                                            .code
-                                                                    }
-                                                                </Badge>
-                                                                <div
-                                                                    className="line-clamp-1 text-xs text-muted-foreground"
-                                                                    title={
-                                                                        admin
-                                                                            .college
-                                                                            .name
-                                                                    }
-                                                                >
-                                                                    {
-                                                                        admin
-                                                                            .college
-                                                                            .name
-                                                                    }
-                                                                </div>
-                                                            </div>
+                                                            <span className="font-semibold text-foreground">
+                                                                {
+                                                                    admin
+                                                                        .college
+                                                                        .code
+                                                                }{' '}
+                                                                —{' '}
+                                                                {
+                                                                    admin
+                                                                        .college
+                                                                        .name
+                                                                }
+                                                            </span>
                                                         ) : (
-                                                            <span className="text-xs text-muted-foreground italic">
-                                                                Unassigned
+                                                            <span className="text-muted-foreground italic">
+                                                                None
                                                             </span>
                                                         )}
-                                                    </TableCell>
+                                                    </div>
 
-                                                    {/* Campus */}
-                                                    <TableCell>
-                                                        {admin.campus ? (
-                                                            <Badge
-                                                                variant="secondary"
-                                                                className="text-xs font-normal"
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-muted-foreground">
+                                                            Campus:
+                                                        </span>
+                                                        <span className="font-medium text-foreground">
+                                                            {admin.campus ??
+                                                                'N/A'}
+                                                        </span>
+                                                    </div>
+
+                                                    {!isSuper && (
+                                                        <div className="flex items-center justify-between border-t pt-1.5">
+                                                            <span className="text-muted-foreground">
+                                                                Designation:
+                                                            </span>
+                                                            <span className="font-medium text-foreground">
+                                                                {admin.position ||
+                                                                    'College Admin'}
+                                                                {admin.employee_id &&
+                                                                    ` (${admin.employee_id})`}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </CardContent>
+
+                                            <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2 text-xs text-muted-foreground">
+                                                <span>
+                                                    Added {admin.created_at}
+                                                </span>
+                                                <div className="flex items-center gap-1">
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() =>
+                                                                    handleOpenEdit(
+                                                                        admin,
+                                                                    )
+                                                                }
                                                             >
-                                                                <MapPin className="mr-1 size-3 shrink-0" />
-                                                                {admin.campus}
-                                                            </Badge>
-                                                        ) : (
-                                                            <span className="text-xs text-muted-foreground italic">
-                                                                N/A
-                                                            </span>
-                                                        )}
-                                                    </TableCell>
+                                                                <Pencil className="size-4 text-blue-600" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            Edit Admin
+                                                        </TooltipContent>
+                                                    </Tooltip>
 
-                                                    {/* Designation / ID */}
-                                                    <TableCell>
-                                                        {isSuper ? (
-                                                            <span className="text-xs text-muted-foreground">
-                                                                —
-                                                            </span>
-                                                        ) : (
-                                                            <div>
-                                                                <div className="text-xs font-medium text-foreground">
-                                                                    {admin.position ||
-                                                                        'College Admin'}
-                                                                </div>
-                                                                {admin.employee_id && (
-                                                                    <div className="font-mono text-[11px] text-muted-foreground">
-                                                                        ID:{' '}
-                                                                        {
-                                                                            admin.employee_id
-                                                                        }
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </TableCell>
-
-                                                    {/* Status */}
-                                                    <TableCell className="text-center">
-                                                        <StatusBadge
-                                                            status={
-                                                                admin.is_active
-                                                                    ? 'active'
-                                                                    : 'inactive'
-                                                            }
-                                                        />
-                                                    </TableCell>
-
-                                                    {/* Added Date */}
-                                                    <TableCell className="text-xs text-muted-foreground">
-                                                        {admin.created_at}
-                                                    </TableCell>
-
-                                                    {/* Actions */}
-                                                    <TableCell className="text-center">
-                                                        <div className="flex justify-center gap-1">
+                                                    {!isCurrent && (
+                                                        <>
                                                             <Tooltip>
                                                                 <TooltipTrigger
                                                                     asChild
@@ -1044,298 +1190,70 @@ return;
                                                                         variant="ghost"
                                                                         size="icon"
                                                                         onClick={() =>
-                                                                            handleOpenEdit(
+                                                                            handleToggleStatusClick(
                                                                                 admin,
                                                                             )
                                                                         }
                                                                     >
-                                                                        <Pencil className="size-4 text-blue-600" />
+                                                                        {admin.is_active ? (
+                                                                            <PowerOff className="size-4 text-destructive" />
+                                                                        ) : (
+                                                                            <Power className="size-4 text-emerald-600" />
+                                                                        )}
                                                                     </Button>
                                                                 </TooltipTrigger>
                                                                 <TooltipContent>
-                                                                    Edit Admin
+                                                                    {admin.is_active
+                                                                        ? 'Deactivate'
+                                                                        : 'Activate'}
                                                                 </TooltipContent>
                                                             </Tooltip>
 
-                                                            {!isCurrent && (
-                                                                <>
-                                                                    <Tooltip>
-                                                                        <TooltipTrigger
-                                                                            asChild
-                                                                        >
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                size="icon"
-                                                                                onClick={() =>
-                                                                                    handleToggleStatusClick(
-                                                                                        admin,
-                                                                                    )
-                                                                                }
-                                                                            >
-                                                                                {admin.is_active ? (
-                                                                                    <PowerOff className="size-4 text-destructive" />
-                                                                                ) : (
-                                                                                    <Power className="size-4 text-emerald-600" />
-                                                                                )}
-                                                                            </Button>
-                                                                        </TooltipTrigger>
-                                                                        <TooltipContent>
-                                                                            {admin.is_active
-                                                                                ? 'Deactivate'
-                                                                                : 'Activate'}
-                                                                        </TooltipContent>
-                                                                    </Tooltip>
-
-                                                                    <Tooltip>
-                                                                        <TooltipTrigger
-                                                                            asChild
-                                                                        >
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                size="icon"
-                                                                                onClick={() =>
-                                                                                    handleDeleteClick(
-                                                                                        admin,
-                                                                                    )
-                                                                                }
-                                                                            >
-                                                                                <Trash2 className="size-4 text-destructive" />
-                                                                            </Button>
-                                                                        </TooltipTrigger>
-                                                                        <TooltipContent>
-                                                                            Delete
-                                                                            Admin
-                                                                        </TooltipContent>
-                                                                    </Tooltip>
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            );
-                                        })
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    </div>
-                ) : (
-                    /* Content: Grid View */
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {admins.data.length === 0 ? (
-                            <div className="col-span-full py-12 text-center text-muted-foreground">
-                                No administrators found.
+                                                            <Tooltip>
+                                                                <TooltipTrigger
+                                                                    asChild
+                                                                >
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        onClick={() =>
+                                                                            handleDeleteClick(
+                                                                                admin,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <Trash2 className="size-4 text-destructive" />
+                                                                    </Button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    Delete Admin
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </Card>
+                                    );
+                                })}
                             </div>
-                        ) : (
-                            admins.data.map((admin) => {
-                                const isCurrent = admin.id === currentUserId;
-                                const isSuper = admin.role === 'super_admin';
-
-                                return (
-                                    <Card
-                                        key={admin.id}
-                                        className="flex flex-col justify-between"
-                                    >
-                                        <CardHeader className="pb-3">
-                                            <div className="flex min-w-0 items-start justify-between gap-2">
-                                                <div className="flex min-w-0 flex-1 items-center gap-3">
-                                                    <Avatar className="size-10 shrink-0">
-                                                        <AvatarFallback className="bg-primary/10 font-semibold text-primary">
-                                                            {getInitials(
-                                                                admin.name,
-                                                            )}
-                                                        </AvatarFallback>
-                                                    </Avatar>
-                                                    <div className="min-w-0 flex-1">
-                                                        <CardTitle className="truncate text-base leading-tight font-semibold">
-                                                            {admin.name}
-                                                        </CardTitle>
-                                                        <span className="block truncate text-xs text-muted-foreground">
-                                                            {admin.email}
-                                                        </span>
-                                                    </div>
-                                                </div>
-
-                                                <StatusBadge
-                                                    status={
-                                                        admin.is_active
-                                                            ? 'active'
-                                                            : 'inactive'
-                                                    }
-                                                    className="shrink-0"
-                                                />
-                                            </div>
-                                        </CardHeader>
-
-                                        <CardContent className="space-y-3 pb-3 text-sm">
-                                            <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3 text-xs">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-muted-foreground">
-                                                        Role:
-                                                    </span>
-                                                    {isSuper ? (
-                                                        <Badge
-                                                            variant="outline"
-                                                            className="border-purple-200 bg-purple-50 text-purple-700"
-                                                        >
-                                                            <Shield className="mr-1 size-3" />
-                                                            Super Admin
-                                                        </Badge>
-                                                    ) : (
-                                                        <Badge
-                                                            variant="outline"
-                                                            className="border-blue-200 bg-blue-50 text-blue-700"
-                                                        >
-                                                            <Building2 className="mr-1 size-3" />
-                                                            College Admin
-                                                        </Badge>
-                                                    )}
-                                                </div>
-
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <span className="shrink-0 text-muted-foreground">
-                                                        College:
-                                                    </span>
-                                                    {isSuper ? (
-                                                        <span className="font-medium text-foreground">
-                                                            University-Wide
-                                                        </span>
-                                                    ) : admin.college ? (
-                                                        <span className="truncate text-right font-semibold text-foreground">
-                                                            {admin.college.code}{' '}
-                                                            —{' '}
-                                                            {admin.college.name}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-muted-foreground italic">
-                                                            None
-                                                        </span>
-                                                    )}
-                                                </div>
-
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-muted-foreground">
-                                                        Campus:
-                                                    </span>
-                                                    <span className="font-medium text-foreground">
-                                                        {admin.campus ?? 'N/A'}
-                                                    </span>
-                                                </div>
-
-                                                {!isSuper && (
-                                                    <div className="flex items-center justify-between gap-2 border-t pt-1.5">
-                                                        <span className="shrink-0 text-muted-foreground">
-                                                            Designation:
-                                                        </span>
-                                                        <span className="truncate text-right font-medium text-foreground">
-                                                            {admin.position ||
-                                                                'College Admin'}
-                                                            {admin.employee_id &&
-                                                                ` (${admin.employee_id})`}
-                                                        </span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </CardContent>
-
-                                        <div className="flex flex-wrap items-center justify-between gap-2 border-t bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
-                                            <span>
-                                                Added {admin.created_at}
-                                            </span>
-                                            <div className="ml-auto flex shrink-0 items-center gap-1">
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() =>
-                                                                handleOpenEdit(
-                                                                    admin,
-                                                                )
-                                                            }
-                                                        >
-                                                            <Pencil className="size-4 text-blue-600" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        Edit Admin
-                                                    </TooltipContent>
-                                                </Tooltip>
-
-                                                {!isCurrent && (
-                                                    <>
-                                                        <Tooltip>
-                                                            <TooltipTrigger
-                                                                asChild
-                                                            >
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    onClick={() =>
-                                                                        handleToggleStatusClick(
-                                                                            admin,
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    {admin.is_active ? (
-                                                                        <PowerOff className="size-4 text-destructive" />
-                                                                    ) : (
-                                                                        <Power className="size-4 text-emerald-600" />
-                                                                    )}
-                                                                </Button>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent>
-                                                                {admin.is_active
-                                                                    ? 'Deactivate'
-                                                                    : 'Activate'}
-                                                            </TooltipContent>
-                                                        </Tooltip>
-
-                                                        <Tooltip>
-                                                            <TooltipTrigger
-                                                                asChild
-                                                            >
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    onClick={() =>
-                                                                        handleDeleteClick(
-                                                                            admin,
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    <Trash2 className="size-4 text-destructive" />
-                                                                </Button>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent>
-                                                                Delete Admin
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </Card>
-                                );
-                            })
-                        )}
-                    </div>
-                )}
-
-                {/* Pagination */}
-                {admins.total > 0 && (
-                    <NumberedPagination
-                        meta={admins}
-                        itemLabel="administrator"
-                        onPageChange={goToPage}
-                        onPerPageChange={changePerPage}
-                    />
+                            {admins.total > 0 && (
+                                <NumberedPagination
+                                    meta={admins}
+                                    itemLabel="administrator"
+                                    onPageChange={goToPage}
+                                    onPerPageChange={changePerPage}
+                                    idPrefix="admins-grid-per-page"
+                                />
+                            )}
+                        </div>
+                    </>
                 )}
             </div>
 
             {/* Add Administrator Dialog */}
             <Dialog open={addOpen} onOpenChange={setAddOpen}>
-                <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto p-4 sm:max-w-[540px] sm:p-6">
+                <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <UserCog className="size-5 text-primary" />
@@ -1348,9 +1266,9 @@ return;
                     </DialogHeader>
 
                     <form onSubmit={handleAddSubmit} className="space-y-4 pt-2">
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div className="grid grid-cols-2 gap-3">
                             {/* Role Selection */}
-                            <div className="space-y-1.5 sm:col-span-2">
+                            <div className="col-span-2 space-y-1.5">
                                 <Label htmlFor="add_role">
                                     Administrator Role{' '}
                                     <span className="text-destructive">*</span>
@@ -1377,7 +1295,7 @@ return;
                                 </Select>
                             </div>
 
-                            <div className="space-y-1.5 sm:col-span-2">
+                            <div className="col-span-2 space-y-1.5">
                                 <Label htmlFor="add-name">
                                     Full Name{' '}
                                     <span className="text-destructive">*</span>
@@ -1391,7 +1309,7 @@ return;
                                 />
                             </div>
 
-                            <div className="space-y-1.5 sm:col-span-2">
+                            <div className="col-span-2 space-y-1.5">
                                 <Label htmlFor="add-email">
                                     Email Address{' '}
                                     <span className="text-destructive">*</span>
@@ -1410,7 +1328,7 @@ return;
 
                             {addRole === 'college_admin' ? (
                                 <>
-                                    <div className="col-span-1 space-y-1.5">
+                                    <div className="col-span-2 space-y-1.5 sm:col-span-1">
                                         <Label htmlFor="add-college">
                                             Assigned College{' '}
                                             <span className="text-destructive">
@@ -1443,7 +1361,7 @@ return;
                                         </Select>
                                     </div>
 
-                                    <div className="col-span-1 space-y-1.5">
+                                    <div className="col-span-2 space-y-1.5 sm:col-span-1">
                                         <Label htmlFor="add-campus">
                                             Campus
                                         </Label>
@@ -1474,7 +1392,7 @@ return;
                                         </Select>
                                     </div>
 
-                                    <div className="col-span-1 space-y-1.5">
+                                    <div className="col-span-2 space-y-1.5 sm:col-span-1">
                                         <Label htmlFor="add-emp-id">
                                             Employee ID
                                         </Label>
@@ -1488,7 +1406,7 @@ return;
                                         />
                                     </div>
 
-                                    <div className="col-span-1 space-y-1.5">
+                                    <div className="col-span-2 space-y-1.5 sm:col-span-1">
                                         <Label htmlFor="add-position">
                                             Designation / Position
                                         </Label>
@@ -1503,7 +1421,7 @@ return;
                                     </div>
                                 </>
                             ) : (
-                                <div className="rounded-md bg-purple-50 p-3 text-xs text-purple-700 sm:col-span-2 dark:bg-purple-950/40 dark:text-purple-300">
+                                <div className="col-span-2 rounded-md bg-purple-50 p-3 text-xs text-purple-700 dark:bg-purple-950/40 dark:text-purple-300">
                                     <p className="font-semibold">
                                         Full System Privileges
                                     </p>
@@ -1516,7 +1434,7 @@ return;
                                 </div>
                             )}
 
-                            <div className="col-span-1 space-y-1.5">
+                            <div className="col-span-2 space-y-1.5 sm:col-span-1">
                                 <Label htmlFor="add-password">
                                     Password{' '}
                                     <span className="text-destructive">*</span>
@@ -1533,7 +1451,7 @@ return;
                                 />
                             </div>
 
-                            <div className="col-span-1 space-y-1.5">
+                            <div className="col-span-2 space-y-1.5 sm:col-span-1">
                                 <Label htmlFor="add-confirm-password">
                                     Confirm Password{' '}
                                     <span className="text-destructive">*</span>
@@ -1553,21 +1471,16 @@ return;
                             </div>
                         </div>
 
-                        <DialogFooter className="flex flex-col-reverse gap-2 pt-3 sm:flex-row sm:justify-end">
+                        <DialogFooter className="pt-2">
                             <Button
                                 type="button"
                                 variant="outline"
                                 onClick={() => setAddOpen(false)}
                                 disabled={addLoading}
-                                className="w-full sm:w-auto"
                             >
                                 Cancel
                             </Button>
-                            <Button
-                                type="submit"
-                                disabled={addLoading}
-                                className="w-full sm:w-auto"
-                            >
+                            <Button type="submit" disabled={addLoading}>
                                 {addLoading ? 'Creating...' : 'Create Account'}
                             </Button>
                         </DialogFooter>
@@ -1577,7 +1490,7 @@ return;
 
             {/* Edit Admin Dialog */}
             <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto p-4 sm:max-w-[540px] sm:p-6">
+                <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <Pencil className="size-5 text-primary" />
@@ -1593,8 +1506,8 @@ return;
                         onSubmit={handleEditSubmit}
                         className="space-y-4 pt-2"
                     >
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                            <div className="space-y-1.5 sm:col-span-2">
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="col-span-2 space-y-1.5">
                                 <Label htmlFor="edit-name">
                                     Full Name{' '}
                                     <span className="text-destructive">*</span>
@@ -1609,7 +1522,7 @@ return;
                                 />
                             </div>
 
-                            <div className="space-y-1.5 sm:col-span-2">
+                            <div className="col-span-2 space-y-1.5">
                                 <Label htmlFor="edit-email">
                                     Email Address{' '}
                                     <span className="text-destructive">*</span>
@@ -1627,7 +1540,7 @@ return;
 
                             {editingAdmin?.role === 'college_admin' && (
                                 <>
-                                    <div className="col-span-1 space-y-1.5">
+                                    <div className="col-span-2 space-y-1.5 sm:col-span-1">
                                         <Label htmlFor="edit-college">
                                             Assigned College{' '}
                                             <span className="text-destructive">
@@ -1659,7 +1572,7 @@ return;
                                         </Select>
                                     </div>
 
-                                    <div className="col-span-1 space-y-1.5">
+                                    <div className="col-span-2 space-y-1.5 sm:col-span-1">
                                         <Label htmlFor="edit-campus">
                                             Campus
                                         </Label>
@@ -1690,7 +1603,7 @@ return;
                                         </Select>
                                     </div>
 
-                                    <div className="col-span-1 space-y-1.5">
+                                    <div className="col-span-2 space-y-1.5 sm:col-span-1">
                                         <Label htmlFor="edit-emp-id">
                                             Employee ID
                                         </Label>
@@ -1706,7 +1619,7 @@ return;
                                         />
                                     </div>
 
-                                    <div className="col-span-1 space-y-1.5">
+                                    <div className="col-span-2 space-y-1.5 sm:col-span-1">
                                         <Label htmlFor="edit-position">
                                             Designation / Position
                                         </Label>
@@ -1722,12 +1635,12 @@ return;
                                 </>
                             )}
 
-                            <div className="border-t pt-2 text-xs text-muted-foreground sm:col-span-2">
+                            <div className="col-span-2 border-t pt-2 text-xs text-muted-foreground">
                                 Leave password fields blank unless you wish to
                                 change the administrator's password.
                             </div>
 
-                            <div className="col-span-1 space-y-1.5">
+                            <div className="col-span-2 space-y-1.5 sm:col-span-1">
                                 <Label htmlFor="edit-password">
                                     New Password
                                 </Label>
@@ -1742,7 +1655,7 @@ return;
                                 />
                             </div>
 
-                            <div className="col-span-1 space-y-1.5">
+                            <div className="col-span-2 space-y-1.5 sm:col-span-1">
                                 <Label htmlFor="edit-confirm-password">
                                     Confirm Password
                                 </Label>
@@ -1760,21 +1673,16 @@ return;
                             </div>
                         </div>
 
-                        <DialogFooter className="flex flex-col-reverse gap-2 pt-3 sm:flex-row sm:justify-end">
+                        <DialogFooter className="pt-2">
                             <Button
                                 type="button"
                                 variant="outline"
                                 onClick={() => setEditOpen(false)}
                                 disabled={editLoading}
-                                className="w-full sm:w-auto"
                             >
                                 Cancel
                             </Button>
-                            <Button
-                                type="submit"
-                                disabled={editLoading}
-                                className="w-full sm:w-auto"
-                            >
+                            <Button type="submit" disabled={editLoading}>
                                 {editLoading ? 'Saving...' : 'Save Changes'}
                             </Button>
                         </DialogFooter>

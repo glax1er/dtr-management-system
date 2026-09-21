@@ -94,6 +94,7 @@ class CollegeAdminController extends Controller
                     'id' => $admin->id,
                     'name' => $admin->name,
                     'email' => $admin->email,
+                    'avatar' => $admin->profile_photo_url,
                     'employee_id' => $profile?->employee_id,
                     'position' => $profile?->position,
                     'college_id' => $admin->college_id,

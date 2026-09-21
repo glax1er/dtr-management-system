@@ -17,7 +17,7 @@ import type { FormEvent } from 'react';
 import { toast } from 'sonner';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
@@ -48,6 +48,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Tooltip,
     TooltipContent,
@@ -61,6 +62,7 @@ interface CollegeAdminRecord {
     id: number;
     name: string;
     email: string;
+    avatar?: string | null;
     employee_id?: string | null;
     position?: string | null;
     college_id: number | null;
@@ -187,7 +189,6 @@ export default function CollegeAdminManagement({
                 page: undefined,
             });
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch]);
 
     const applySearch = (e: FormEvent) => {
@@ -282,8 +283,8 @@ export default function CollegeAdminManagement({
             );
 
             if (foundCamp) {
-matchingCampusId = String(foundCamp.id);
-}
+                matchingCampusId = String(foundCamp.id);
+            }
         }
 
         setAddForm((prev) => ({
@@ -369,8 +370,8 @@ matchingCampusId = String(foundCamp.id);
             );
 
             if (foundCamp) {
-matchingCampusId = String(foundCamp.id);
-}
+                matchingCampusId = String(foundCamp.id);
+            }
         }
 
         setEditForm((prev) => ({
@@ -445,8 +446,8 @@ matchingCampusId = String(foundCamp.id);
 
     const submitStatusToggle = () => {
         if (!statusTarget) {
-return;
-}
+            return;
+        }
 
         router.patch(
             `/admin/college-admins/${statusTarget.id}/status`,
@@ -474,8 +475,8 @@ return;
 
     const submitDelete = () => {
         if (!deleteTarget) {
-return;
-}
+            return;
+        }
 
         router.delete(`/admin/college-admins/${deleteTarget.id}`, {
             preserveScroll: true,
@@ -611,30 +612,27 @@ return;
                             )}
                         </button>
 
-                        {/* View Mode Toggle */}
-                        <div className="flex items-center rounded-md border bg-muted p-0.5">
-                            <button
-                                type="button"
-                                onClick={() => setView('table')}
-                                className={`rounded p-1.5 transition-colors ${
-                                    view === 'table'
-                                        ? 'bg-background text-foreground shadow-xs'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                }`}
+                        {/* View Mode Toggle — desktop only */}
+                        <div className="hidden sm:block">
+                            <Tabs
+                                value={view}
+                                onValueChange={(v) => setView(v as ViewMode)}
                             >
-                                <TableIcon className="size-4" />
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setView('grid')}
-                                className={`rounded p-1.5 transition-colors ${
-                                    view === 'grid'
-                                        ? 'bg-background text-foreground shadow-xs'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                }`}
-                            >
-                                <LayoutGrid className="size-4" />
-                            </button>
+                                <TabsList>
+                                    <TabsTrigger
+                                        value="table"
+                                        aria-label="Table view"
+                                    >
+                                        <TableIcon className="size-4" />
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                        value="grid"
+                                        aria-label="Grid view"
+                                    >
+                                        <LayoutGrid className="size-4" />
+                                    </TabsTrigger>
+                                </TabsList>
+                            </Tabs>
                         </div>
 
                         {/* Add College Admin Button */}
@@ -672,352 +670,430 @@ return;
                 {/* Content */}
                 {collegeAdmins.data.length === 0 ? (
                     <Card className="flex flex-col items-center justify-center p-12 text-center">
-                        <UserCog className="mb-4 size-12 text-muted-foreground/50" />
-                        <h3 className="text-lg font-medium text-foreground">
-                            No college administrators found
-                        </h3>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            {hasActiveFilters
-                                ? 'Try adjusting your search query or filters.'
-                                : 'Create college administrators to manage programs and intern approvals per college department.'}
-                        </p>
-                        {hasActiveFilters ? (
+                        <CardContent className="p-0">
+                            <UserCog className="mx-auto mb-4 size-12 text-muted-foreground/50" />
+                            <h3 className="text-lg font-medium text-foreground">
+                                No college administrators found
+                            </h3>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                {hasActiveFilters
+                                    ? 'Try adjusting your search or filters.'
+                                    : 'Create college administrators to manage programs and intern approvals per college department.'}
+                            </p>
                             <Button
-                                variant="outline"
                                 size="sm"
-                                onClick={clearAllFilters}
+                                variant={
+                                    hasActiveFilters ? 'outline' : 'default'
+                                }
+                                onClick={
+                                    hasActiveFilters ? clearAllFilters : openAdd
+                                }
                                 className="mt-4"
                             >
-                                Clear Filters
+                                {hasActiveFilters
+                                    ? 'Clear Filters'
+                                    : 'Add College Admin'}
                             </Button>
-                        ) : (
-                            <Button
-                                size="sm"
-                                onClick={openAdd}
-                                className="mt-4 gap-1.5"
-                            >
-                                <Plus className="size-4" />
-                                Add College Admin
-                            </Button>
-                        )}
+                        </CardContent>
                     </Card>
-                ) : view === 'table' ? (
-                    <div className="overflow-hidden rounded-md border bg-card shadow-xs">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-[240px]">
-                                        Administrator
-                                    </TableHead>
-                                    <TableHead className="w-[180px]">
-                                        Assigned College
-                                    </TableHead>
-                                    <TableHead className="w-[140px]">
-                                        Campus
-                                    </TableHead>
-                                    <TableHead className="w-[140px]">
-                                        Role / Position
-                                    </TableHead>
-                                    <TableHead className="w-[100px] text-center">
-                                        Status
-                                    </TableHead>
-                                    <TableHead className="w-[120px]">
-                                        Added
-                                    </TableHead>
-                                    <TableHead className="w-[110px] text-center">
-                                        Actions
-                                    </TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {collegeAdmins.data.map((admin) => (
-                                    <TableRow key={admin.id}>
-                                        <TableCell>
-                                            <div className="flex items-center gap-3">
-                                                <Avatar className="size-9">
-                                                    <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
-                                                        {getInitials(
-                                                            admin.name,
-                                                        )}
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                                <div className="min-w-0">
-                                                    <div className="font-semibold text-foreground">
-                                                        {admin.name}
-                                                    </div>
-                                                    <div className="truncate text-xs text-muted-foreground">
-                                                        {admin.email}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            {admin.college ? (
-                                                <div>
-                                                    <Badge
-                                                        variant="secondary"
-                                                        className="font-semibold"
-                                                    >
-                                                        {admin.college.code}
-                                                    </Badge>
-                                                    <div className="line-clamp-1 text-xs text-muted-foreground">
-                                                        {admin.college.name}
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <span className="text-xs text-muted-foreground italic">
-                                                    Unassigned
-                                                </span>
-                                            )}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-1 text-sm text-foreground">
-                                                <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
-                                                <span>
-                                                    {admin.campus || '—'}
-                                                </span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="text-sm font-medium text-foreground">
-                                                {admin.position ||
-                                                    'College Admin'}
-                                            </div>
-                                            {admin.employee_id && (
-                                                <div className="font-mono text-xs text-muted-foreground">
-                                                    ID: {admin.employee_id}
-                                                </div>
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <StatusBadge
-                                                status={
-                                                    admin.is_active
-                                                        ? 'active'
-                                                        : 'inactive'
-                                                }
-                                            />
-                                        </TableCell>
-                                        <TableCell className="text-xs text-muted-foreground">
-                                            {admin.created_at}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex justify-center gap-1">
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() =>
-                                                                openEdit(admin)
-                                                            }
-                                                        >
-                                                            <Pencil className="size-4 text-blue-600" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        Edit Admin
-                                                    </TooltipContent>
-                                                </Tooltip>
-
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            disabled={
-                                                                admin.id ===
-                                                                currentUserId
-                                                            }
-                                                            onClick={() =>
-                                                                openStatusConfirm(
-                                                                    admin,
-                                                                )
-                                                            }
-                                                        >
-                                                            {admin.is_active ? (
-                                                                <PowerOff className="size-4 text-destructive" />
-                                                            ) : (
-                                                                <Power className="size-4 text-emerald-600" />
-                                                            )}
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        {admin.is_active
-                                                            ? 'Deactivate'
-                                                            : 'Activate'}
-                                                    </TooltipContent>
-                                                </Tooltip>
-
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            disabled={
-                                                                admin.id ===
-                                                                currentUserId
-                                                            }
-                                                            onClick={() =>
-                                                                openDelete(
-                                                                    admin,
-                                                                )
-                                                            }
-                                                        >
-                                                            <Trash2 className="size-4 text-destructive" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        Delete Admin
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
                 ) : (
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {collegeAdmins.data.map((admin) => (
-                            <Card
-                                key={admin.id}
-                                className="flex flex-col justify-between"
-                            >
-                                <CardHeader className="pb-3">
-                                    <div className="flex items-start justify-between gap-2">
-                                        <div className="flex items-center gap-3">
-                                            <Avatar className="size-10">
-                                                <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
-                                                    {getInitials(admin.name)}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <div>
-                                                <CardTitle className="text-base leading-tight font-semibold">
-                                                    {admin.name}
-                                                </CardTitle>
-                                                <div className="text-xs text-muted-foreground">
-                                                    {admin.email}
+                    <>
+                        {/* Table view — desktop only */}
+                        {view === 'table' && (
+                            <div className="hidden sm:block">
+                                <Card className="overflow-hidden p-0">
+                                    <CardContent className="p-0">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="w-[240px]">
+                                                        Administrator
+                                                    </TableHead>
+                                                    <TableHead className="w-[180px]">
+                                                        Assigned College
+                                                    </TableHead>
+                                                    <TableHead className="w-[140px]">
+                                                        Campus
+                                                    </TableHead>
+                                                    <TableHead className="w-[140px]">
+                                                        Role / Position
+                                                    </TableHead>
+                                                    <TableHead className="w-[100px] text-center">
+                                                        Status
+                                                    </TableHead>
+                                                    <TableHead className="w-[120px]">
+                                                        Added
+                                                    </TableHead>
+                                                    <TableHead className="w-[110px] text-center">
+                                                        Actions
+                                                    </TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {collegeAdmins.data.map(
+                                                    (admin) => (
+                                                        <TableRow
+                                                            key={admin.id}
+                                                        >
+                                                            <TableCell>
+                                                                <div className="flex items-center gap-3">
+                                                                    <Avatar className="size-9">
+                                                                        {admin.avatar && (
+                                                                            <AvatarImage
+                                                                                src={
+                                                                                    admin.avatar
+                                                                                }
+                                                                                alt={
+                                                                                    admin.name
+                                                                                }
+                                                                                className="object-cover"
+                                                                            />
+                                                                        )}
+                                                                        <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
+                                                                            {getInitials(
+                                                                                admin.name,
+                                                                            )}
+                                                                        </AvatarFallback>
+                                                                    </Avatar>
+                                                                    <div className="min-w-0">
+                                                                        <div className="font-semibold text-foreground">
+                                                                            {
+                                                                                admin.name
+                                                                            }
+                                                                        </div>
+                                                                        <div className="truncate text-xs text-muted-foreground">
+                                                                            {
+                                                                                admin.email
+                                                                            }
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                {admin.college ? (
+                                                                    <div>
+                                                                        <Badge
+                                                                            variant="secondary"
+                                                                            className="font-semibold"
+                                                                        >
+                                                                            {
+                                                                                admin
+                                                                                    .college
+                                                                                    .code
+                                                                            }
+                                                                        </Badge>
+                                                                        <div className="line-clamp-1 text-xs text-muted-foreground">
+                                                                            {
+                                                                                admin
+                                                                                    .college
+                                                                                    .name
+                                                                            }
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="text-xs text-muted-foreground italic">
+                                                                        Unassigned
+                                                                    </span>
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <div className="flex items-center gap-1 text-sm text-foreground">
+                                                                    <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
+                                                                    <span>
+                                                                        {admin.campus ||
+                                                                            '—'}
+                                                                    </span>
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <div className="text-sm font-medium text-foreground">
+                                                                    {admin.position ||
+                                                                        'College Admin'}
+                                                                </div>
+                                                                {admin.employee_id && (
+                                                                    <div className="font-mono text-xs text-muted-foreground">
+                                                                        ID:{' '}
+                                                                        {
+                                                                            admin.employee_id
+                                                                        }
+                                                                    </div>
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell className="text-center">
+                                                                <StatusBadge
+                                                                    status={
+                                                                        admin.is_active
+                                                                            ? 'active'
+                                                                            : 'inactive'
+                                                                    }
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell className="text-xs text-muted-foreground">
+                                                                {
+                                                                    admin.created_at
+                                                                }
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <div className="flex justify-center gap-1">
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger
+                                                                            asChild
+                                                                        >
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                onClick={() =>
+                                                                                    openEdit(
+                                                                                        admin,
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                <Pencil className="size-4 text-blue-600" />
+                                                                            </Button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                            Edit
+                                                                            Admin
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger
+                                                                            asChild
+                                                                        >
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                disabled={
+                                                                                    admin.id ===
+                                                                                    currentUserId
+                                                                                }
+                                                                                onClick={() =>
+                                                                                    openStatusConfirm(
+                                                                                        admin,
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                {admin.is_active ? (
+                                                                                    <PowerOff className="size-4 text-destructive" />
+                                                                                ) : (
+                                                                                    <Power className="size-4 text-emerald-600" />
+                                                                                )}
+                                                                            </Button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                            {admin.is_active
+                                                                                ? 'Deactivate'
+                                                                                : 'Activate'}
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger
+                                                                            asChild
+                                                                        >
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                disabled={
+                                                                                    admin.id ===
+                                                                                    currentUserId
+                                                                                }
+                                                                                onClick={() =>
+                                                                                    openDelete(
+                                                                                        admin,
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                <Trash2 className="size-4 text-destructive" />
+                                                                            </Button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                            Delete
+                                                                            Admin
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+                                                                </div>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ),
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                        {collegeAdmins.total > 0 && (
+                                            <NumberedPagination
+                                                meta={collegeAdmins}
+                                                itemLabel="college administrator"
+                                                onPageChange={goToPage}
+                                                onPerPageChange={changePerPage}
+                                                idPrefix="college-admins-table-per-page"
+                                            />
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )}
+
+                        {/* Mobile card view (always shown on mobile, or when grid view active) */}
+                        <div className={view === 'table' ? 'sm:hidden' : ''}>
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                {collegeAdmins.data.map((admin) => (
+                                    <Card
+                                        key={admin.id}
+                                        className="flex flex-col justify-between"
+                                    >
+                                        <CardHeader className="pb-3">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar className="size-10">
+                                                        {admin.avatar && (
+                                                            <AvatarImage
+                                                                src={
+                                                                    admin.avatar
+                                                                }
+                                                                alt={admin.name}
+                                                                className="object-cover"
+                                                            />
+                                                        )}
+                                                        <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
+                                                            {getInitials(
+                                                                admin.name,
+                                                            )}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div>
+                                                        <CardTitle className="text-base leading-tight font-semibold">
+                                                            {admin.name}
+                                                        </CardTitle>
+                                                        <div className="text-xs text-muted-foreground">
+                                                            {admin.email}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <StatusBadge
+                                                    status={
+                                                        admin.is_active
+                                                            ? 'active'
+                                                            : 'inactive'
+                                                    }
+                                                />
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent className="space-y-3 pb-3 text-sm">
+                                            <div className="rounded-md border bg-muted/30 p-2 text-xs">
+                                                <div className="font-medium text-foreground">
+                                                    {admin.college
+                                                        ? `${admin.college.code} - ${admin.college.name}`
+                                                        : 'Unassigned College'}
+                                                </div>
+                                                <div className="mt-1 flex items-center gap-1 text-muted-foreground">
+                                                    <MapPin className="size-3 shrink-0" />
+                                                    <span>
+                                                        {admin.campus ||
+                                                            'No Campus'}
+                                                    </span>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <StatusBadge
-                                            status={
-                                                admin.is_active
-                                                    ? 'active'
-                                                    : 'inactive'
-                                            }
-                                        />
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="space-y-3 pb-3 text-sm">
-                                    <div className="rounded-md border bg-muted/30 p-2 text-xs">
-                                        <div className="font-medium text-foreground">
-                                            {admin.college
-                                                ? `${admin.college.code} - ${admin.college.name}`
-                                                : 'Unassigned College'}
-                                        </div>
-                                        <div className="mt-1 flex items-center gap-1 text-muted-foreground">
-                                            <MapPin className="size-3 shrink-0" />
-                                            <span>
-                                                {admin.campus || 'No Campus'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                        <span>
-                                            Position:{' '}
-                                            <strong className="font-medium text-foreground">
-                                                {admin.position ||
-                                                    'College Admin'}
-                                            </strong>
-                                        </span>
-                                        {admin.employee_id && (
-                                            <span>
-                                                ID:{' '}
-                                                <strong className="font-mono text-foreground">
-                                                    {admin.employee_id}
-                                                </strong>
-                                            </span>
-                                        )}
-                                    </div>
-                                </CardContent>
-                                <div className="flex items-center justify-end gap-1 border-t bg-muted/20 px-4 py-2">
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => openEdit(admin)}
-                                            >
-                                                <Pencil className="size-4 text-blue-600" />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            Edit Admin
-                                        </TooltipContent>
-                                    </Tooltip>
-
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                disabled={
-                                                    admin.id === currentUserId
-                                                }
-                                                onClick={() =>
-                                                    openStatusConfirm(admin)
-                                                }
-                                            >
-                                                {admin.is_active ? (
-                                                    <PowerOff className="size-4 text-destructive" />
-                                                ) : (
-                                                    <Power className="size-4 text-emerald-600" />
+                                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                                <span>
+                                                    Position:{' '}
+                                                    <strong className="font-medium text-foreground">
+                                                        {admin.position ||
+                                                            'College Admin'}
+                                                    </strong>
+                                                </span>
+                                                {admin.employee_id && (
+                                                    <span>
+                                                        ID:{' '}
+                                                        <strong className="font-mono text-foreground">
+                                                            {admin.employee_id}
+                                                        </strong>
+                                                    </span>
                                                 )}
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            {admin.is_active
-                                                ? 'Deactivate'
-                                                : 'Activate'}
-                                        </TooltipContent>
-                                    </Tooltip>
+                                            </div>
+                                        </CardContent>
+                                        <div className="flex items-center justify-end gap-1 border-t bg-muted/20 px-4 py-2">
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() =>
+                                                            openEdit(admin)
+                                                        }
+                                                    >
+                                                        <Pencil className="size-4 text-blue-600" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    Edit Admin
+                                                </TooltipContent>
+                                            </Tooltip>
 
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                disabled={
-                                                    admin.id === currentUserId
-                                                }
-                                                onClick={() =>
-                                                    openDelete(admin)
-                                                }
-                                            >
-                                                <Trash2 className="size-4 text-destructive" />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            Delete Admin
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </div>
-                            </Card>
-                        ))}
-                    </div>
-                )}
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        disabled={
+                                                            admin.id ===
+                                                            currentUserId
+                                                        }
+                                                        onClick={() =>
+                                                            openStatusConfirm(
+                                                                admin,
+                                                            )
+                                                        }
+                                                    >
+                                                        {admin.is_active ? (
+                                                            <PowerOff className="size-4 text-destructive" />
+                                                        ) : (
+                                                            <Power className="size-4 text-emerald-600" />
+                                                        )}
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    {admin.is_active
+                                                        ? 'Deactivate'
+                                                        : 'Activate'}
+                                                </TooltipContent>
+                                            </Tooltip>
 
-                {/* Pagination */}
-                {collegeAdmins.total > 0 && (
-                    <NumberedPagination
-                        meta={collegeAdmins}
-                        itemLabel="college administrator"
-                        onPageChange={goToPage}
-                        onPerPageChange={changePerPage}
-                    />
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        disabled={
+                                                            admin.id ===
+                                                            currentUserId
+                                                        }
+                                                        onClick={() =>
+                                                            openDelete(admin)
+                                                        }
+                                                    >
+                                                        <Trash2 className="size-4 text-destructive" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    Delete Admin
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </div>
+                                    </Card>
+                                ))}
+                            </div>
+                            {collegeAdmins.total > 0 && (
+                                <NumberedPagination
+                                    meta={collegeAdmins}
+                                    itemLabel="college administrator"
+                                    onPageChange={goToPage}
+                                    onPerPageChange={changePerPage}
+                                    idPrefix="college-admins-grid-per-page"
+                                />
+                            )}
+                        </div>
+                    </>
                 )}
             </div>
 

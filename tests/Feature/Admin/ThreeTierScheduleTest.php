@@ -417,3 +417,71 @@ test('notifications for college schedule creation target only interns in that co
         ScheduleUpdatedNotification::class
     );
 });
+
+test('college admin can view schedule overrides of HTEs belonging to their college but not other colleges', function () {
+    [$collegeA] = createCollegeAndProgram('College A', 'CLA');
+    [$collegeB] = createCollegeAndProgram('College B', 'CLB');
+
+    $collegeAdminA = User::factory()->create([
+        'role' => User::ROLE_COLLEGE_ADMIN,
+        'college_id' => $collegeA->id,
+    ]);
+
+    $hteA = Hte::create([
+        'hte_name' => 'Partner A Co',
+        'college_id' => $collegeA->id,
+        'status' => 'active',
+    ]);
+
+    $hteB = Hte::create([
+        'hte_name' => 'Partner B Co',
+        'college_id' => $collegeB->id,
+        'status' => 'active',
+    ]);
+
+    // HTE A override (belongs to College A)
+    SchedulePeriod::create([
+        'hte_id' => $hteA->hte_id,
+        'college_id' => null,
+        'name' => 'HTE A Shift Override',
+        'start_date' => '2026-09-15',
+        'end_date' => '2026-10-15',
+        'day_schedule' => ['monday' => '09:00'],
+    ]);
+
+    // HTE B override (belongs to College B)
+    SchedulePeriod::create([
+        'hte_id' => $hteB->hte_id,
+        'college_id' => null,
+        'name' => 'HTE B Shift Override',
+        'start_date' => '2026-09-15',
+        'end_date' => '2026-10-15',
+        'day_schedule' => ['monday' => '09:00'],
+    ]);
+
+    // College A baseline
+    SchedulePeriod::create([
+        'hte_id' => null,
+        'college_id' => $collegeA->id,
+        'name' => 'College A Baseline',
+        'start_date' => '2026-09-01',
+        'end_date' => '2026-12-31',
+        'day_schedule' => ['monday' => '08:30'],
+    ]);
+
+    $response = $this->actingAs($collegeAdminA)->get(route('admin.schedule.index'));
+
+    $response->assertOk();
+    $response->assertInertia(fn (Assert $page) => $page
+        ->component('admin/schedule')
+        ->where('isSuperAdmin', false)
+        ->has('periods', 2)
+        ->where('periods.0.name', 'HTE A Shift Override')
+        ->where('periods.0.scope', 'hte')
+        ->where('periods.0.is_owner', false)
+        ->where('periods.0.hte.name', 'Partner A Co')
+        ->where('periods.1.name', 'College A Baseline')
+        ->where('periods.1.scope', 'college')
+        ->where('periods.1.is_owner', true)
+    );
+});
