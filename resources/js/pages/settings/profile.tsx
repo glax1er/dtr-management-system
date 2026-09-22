@@ -28,6 +28,8 @@ export interface ProfileDetails {
     role: string;
     id_number: string | null;
     program: string | null;
+    college?: string | null;
+    campus?: string | null;
     hte: string | null;
     hte_supervisor: string | null;
     ojt_supervisor: string | null;
@@ -251,6 +253,42 @@ export default function Profile({
                                     </div>
                                 </div>
 
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="college">
+                                            College / Department
+                                        </Label>
+                                        <Input
+                                            id="college"
+                                            className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
+                                            defaultValue={
+                                                profileDetails?.college ?? '—'
+                                            }
+                                            disabled
+                                            readOnly
+                                        />
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="campus">Campus</Label>
+                                        <Input
+                                            id="campus"
+                                            className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
+                                            defaultValue={
+                                                profileDetails?.campus
+                                                    ? profileDetails.campus
+                                                          .toLowerCase()
+                                                          .includes('campus')
+                                                        ? profileDetails.campus
+                                                        : `${profileDetails.campus} Campus`
+                                                    : '—'
+                                            }
+                                            disabled
+                                            readOnly
+                                        />
+                                    </div>
+                                </div>
+
                                 <div className="grid gap-2">
                                     <Label htmlFor="hte">
                                         Host Training Establishment (HTE)
@@ -361,6 +399,48 @@ export default function Profile({
                                     )}
                                 </div>
 
+                                {(profileDetails?.college || profileDetails?.campus) && (
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        {profileDetails?.college && (
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="college">
+                                                    College / Department
+                                                </Label>
+                                                <Input
+                                                    id="college"
+                                                    className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
+                                                    defaultValue={
+                                                        profileDetails.college
+                                                    }
+                                                    disabled
+                                                    readOnly
+                                                />
+                                            </div>
+                                        )}
+
+                                        {profileDetails?.campus && (
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="campus">
+                                                    Campus
+                                                </Label>
+                                                <Input
+                                                    id="campus"
+                                                    className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
+                                                    defaultValue={
+                                                        profileDetails.campus
+                                                            .toLowerCase()
+                                                            .includes('campus')
+                                                            ? profileDetails.campus
+                                                            : `${profileDetails.campus} Campus`
+                                                    }
+                                                    disabled
+                                                    readOnly
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 <p className="text-xs text-muted-foreground">
                                     Supervisor assignments are managed by the
                                     administrator and cannot be edited directly.
@@ -368,18 +448,80 @@ export default function Profile({
                             </>
                         )}
 
-                        {auth.user.role === 'admin' && (
+                        {['admin', 'college_admin', 'super_admin'].includes(auth.user.role) && (
                             <>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="role">Role</Label>
-                                    <Input
-                                        id="role"
-                                        className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
-                                        defaultValue="System Administrator"
-                                        disabled
-                                        readOnly
-                                    />
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="role">Role</Label>
+                                        <Input
+                                            id="role"
+                                            className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
+                                            defaultValue={
+                                                profileDetails?.role ??
+                                                (auth.user.role === 'college_admin'
+                                                    ? 'College Administrator'
+                                                    : 'System Administrator')
+                                            }
+                                            disabled
+                                            readOnly
+                                        />
+                                    </div>
+
+                                    {profileDetails?.id_number && (
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="employee_id">Employee ID</Label>
+                                            <Input
+                                                id="employee_id"
+                                                className="mt-1 block w-full cursor-not-allowed bg-muted/50 font-mono opacity-70"
+                                                defaultValue={profileDetails.id_number}
+                                                disabled
+                                                readOnly
+                                            />
+                                        </div>
+                                    )}
                                 </div>
+
+                                {(profileDetails?.college || profileDetails?.campus) && (
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        {profileDetails?.college && (
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="college">
+                                                    College / Department
+                                                </Label>
+                                                <Input
+                                                    id="college"
+                                                    className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
+                                                    defaultValue={
+                                                        profileDetails.college
+                                                    }
+                                                    disabled
+                                                    readOnly
+                                                />
+                                            </div>
+                                        )}
+
+                                        {profileDetails?.campus && (
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="campus">
+                                                    Campus
+                                                </Label>
+                                                <Input
+                                                    id="campus"
+                                                    className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
+                                                    defaultValue={
+                                                        profileDetails.campus
+                                                            .toLowerCase()
+                                                            .includes('campus')
+                                                            ? profileDetails.campus
+                                                            : `${profileDetails.campus} Campus`
+                                                    }
+                                                    disabled
+                                                    readOnly
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </>
                         )}
 
