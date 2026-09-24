@@ -615,19 +615,19 @@ export default function InternDocuments({
                                     key={doc.document_type}
                                     id={`doc-card-${doc.document_type}`}
                                     className={cn(
-                                        'flex flex-col justify-between border-border/70 transition-all duration-300',
+                                        'flex flex-col justify-between h-full rounded-xl border-border/70 shadow-xs transition-all duration-300',
                                         isHighlighted
                                             ? 'border-primary bg-primary/5 shadow-md ring-2 ring-primary dark:bg-primary/10'
                                             : doc.status === 'approved'
-                                              ? 'border-emerald-500/30 bg-card shadow-sm hover:border-emerald-500/50'
+                                              ? 'border-emerald-500/30 bg-card shadow-xs hover:border-emerald-500/50 hover:shadow-md'
                                               : doc.status === 'rejected'
-                                                ? 'border-destructive/30 bg-card hover:border-destructive/50'
+                                                ? 'border-destructive/30 bg-card hover:border-destructive/50 hover:shadow-md'
                                                 : hasUploaded
-                                                  ? 'bg-card shadow-sm hover:border-primary/50'
-                                                  : 'border-dashed bg-card/60 hover:bg-card',
+                                                  ? 'bg-card shadow-xs hover:border-primary/50 hover:shadow-md'
+                                                  : 'border-dashed bg-card/60 hover:bg-card hover:shadow-md',
                                     )}
                                 >
-                                    <CardContent className="space-y-3 p-4">
+                                    <CardContent className="flex-1 space-y-3 p-4">
                                         {/* Card Header */}
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="flex min-w-0 items-start gap-2.5">

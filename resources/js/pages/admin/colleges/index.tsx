@@ -6,6 +6,7 @@ import {
     GraduationCap,
     Landmark,
     LayoutGrid,
+    Mail,
     MapPin,
     Plus,
     Search,
@@ -834,10 +835,7 @@ export default function CollegesIndex({
                                     );
 
                                     return (
-                                        <Card
-                                            key={college.id}
-                                            className="flex flex-col justify-between shadow-xs"
-                                        >
+                                        <Card key={college.id} className="flex flex-col justify-between h-full rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:shadow-md hover:border-border">
                                             <CardHeader className="pb-3">
                                                 <div className="flex items-start justify-between gap-2">
                                                     <Badge
@@ -854,64 +852,57 @@ export default function CollegesIndex({
                                                         }
                                                     />
                                                 </div>
-                                                <CardTitle className="mt-2 text-base leading-snug font-semibold">
+                                                <CardTitle className="mt-2 text-base font-semibold leading-tight line-clamp-1" title={college.name}>
                                                     {college.name}
                                                 </CardTitle>
                                                 {college.description && (
-                                                    <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                                                    <p className="mt-1 text-xs text-muted-foreground line-clamp-2" title={college.description}>
                                                         {college.description}
                                                     </p>
                                                 )}
-                                                <div className="mt-2 flex flex-col gap-1 text-xs text-muted-foreground">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <MapPin className="size-3.5 shrink-0" />
-                                                        <span>
-                                                            Campus:{' '}
-                                                            <span className="font-medium text-foreground">
-                                                                {college.campus ??
-                                                                    'N/A'}
-                                                            </span>
+                                            </CardHeader>
+                                            <CardContent className="flex-1 space-y-2.5 pb-3 text-sm">
+                                                <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3 text-xs">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
+                                                            <MapPin className="size-3.5 text-muted-foreground" />
+                                                            Campus:
+                                                        </span>
+                                                        <span className="font-medium text-foreground truncate text-right">
+                                                            {college.campus ?? 'N/A'}
                                                         </span>
                                                     </div>
-                                                    <div className="flex items-center gap-1.5">
-                                                        <GraduationCap className="size-3.5 shrink-0" />
-                                                        <span>
-                                                            Interns:{' '}
-                                                            <span className="font-semibold text-foreground">
-                                                                {
-                                                                    college.interns_count
-                                                                }
-                                                            </span>
+
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
+                                                            <GraduationCap className="size-3.5 text-muted-foreground" />
+                                                            Interns:
+                                                        </span>
+                                                        <span className="font-semibold text-foreground">
+                                                            {college.interns_count}
                                                         </span>
                                                     </div>
-                                                    <div>
-                                                        <span className="font-medium">
-                                                            Admin:{' '}
+
+                                                    <div className="flex items-center justify-between gap-2 border-t pt-1.5">
+                                                        <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
+                                                            <Mail className="size-3.5 text-muted-foreground" />
+                                                            Admin:
                                                         </span>
                                                         {college.admin_email ? (
-                                                            <span className="font-mono text-foreground">
-                                                                {
-                                                                    college.admin_email
-                                                                }
+                                                            <span className="font-mono text-foreground truncate text-right" title={college.admin_email}>
+                                                                {college.admin_email}
                                                             </span>
                                                         ) : (
-                                                            <span className="italic">
-                                                                N/A
-                                                            </span>
+                                                            <span className="italic text-muted-foreground">Unassigned</span>
                                                         )}
                                                     </div>
                                                 </div>
-                                            </CardHeader>
-                                            <CardContent className="pt-0">
-                                                <div className="border-t pt-3">
+
+                                                <div className="border-t pt-2.5">
                                                     <button
                                                         type="button"
-                                                        onClick={() =>
-                                                            toggleExpand(
-                                                                college.id,
-                                                            )
-                                                        }
-                                                        className="mb-2 flex w-full items-center justify-between text-xs font-medium text-muted-foreground hover:text-foreground"
+                                                        onClick={() => toggleExpand(college.id)}
+                                                        className="flex w-full items-center justify-between text-xs text-muted-foreground hover:text-foreground font-medium py-1"
                                                     >
                                                         <span className="flex items-center gap-1.5">
                                                             <BookOpen className="size-3.5 text-primary" />
@@ -930,61 +921,36 @@ export default function CollegesIndex({
                                                     </button>
 
                                                     {isExpanded && (
-                                                        <div className="max-h-48 space-y-1.5 overflow-y-auto pr-1">
-                                                            {college.programs
-                                                                .length ===
-                                                            0 ? (
+                                                        <div className="mt-2 space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                                                            {college.programs.length === 0 ? (
                                                                 <div className="py-1 text-xs text-muted-foreground italic">
-                                                                    No programs
-                                                                    configured
-                                                                    yet.
+                                                                    No programs configured yet.
                                                                 </div>
                                                             ) : (
-                                                                college.programs.map(
-                                                                    (p) => (
-                                                                        <div
-                                                                            key={
-                                                                                p.program_id ??
-                                                                                p.program_name
-                                                                            }
-                                                                            className="flex items-center justify-between rounded border bg-muted/40 px-2 py-1 text-[11px]"
-                                                                        >
-                                                                            <span className="font-medium">
-                                                                                {
-                                                                                    p.program_name
-                                                                                }
-                                                                            </span>
-                                                                            <span className="text-muted-foreground">
-                                                                                {
-                                                                                    p.required_hours
-                                                                                }{' '}
-                                                                                hrs
-                                                                            </span>
-                                                                        </div>
-                                                                    ),
-                                                                )
+                                                                college.programs.map((p) => (
+                                                                    <div
+                                                                        key={p.program_id ?? p.program_name}
+                                                                        className="flex items-center justify-between rounded border bg-muted/40 px-2.5 py-1.5 text-[11px]"
+                                                                    >
+                                                                        <span className="font-medium text-foreground truncate mr-2">{p.program_name}</span>
+                                                                        <span className="text-muted-foreground shrink-0">{p.required_hours} hrs</span>
+                                                                    </div>
+                                                                ))
                                                             )}
                                                         </div>
                                                     )}
                                                 </div>
-
-                                                <div className="mt-4 flex items-center justify-center border-t pt-3">
-                                                    <ProgramActions
-                                                        program={college}
-                                                        onEdit={() =>
-                                                            openEdit(college)
-                                                        }
-                                                        onToggleActive={() =>
-                                                            openStatusConfirm(
-                                                                college,
-                                                            )
-                                                        }
-                                                        onArchive={() =>
-                                                            openArchive(college)
-                                                        }
-                                                    />
-                                                </div>
                                             </CardContent>
+
+                                            <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
+                                                <span>{college.programs.length} {college.programs.length === 1 ? 'Program' : 'Programs'}</span>
+                                                <ProgramActions
+                                                    program={college}
+                                                    onEdit={() => openEdit(college)}
+                                                    onToggleActive={() => openStatusConfirm(college)}
+                                                    onArchive={() => openArchive(college)}
+                                                />
+                                            </div>
                                         </Card>
                                     );
                                 })}

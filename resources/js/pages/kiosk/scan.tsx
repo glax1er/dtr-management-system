@@ -286,7 +286,7 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                             className="h-27 w-auto object-contain dark:hidden"
                         />
                         <img
-                            src="/images/cims-logo-dark.png"
+                            src="/images/cims-logo-dark.png?v=5"
                             className="hidden h-27 w-auto object-contain dark:block"
                             alt="CIC logo dark"
                         />

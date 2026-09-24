@@ -1,6 +1,8 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import {
     Archive,
+    BookOpen,
+    Building2,
     LayoutGrid,
     Pencil,
     Plus,
@@ -17,6 +19,7 @@ import type { FormEvent } from 'react';
 import InputError from '@/components/input-error';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { TypeBadge } from '@/components/ui/badges/type-badge';
 import { Button } from '@/components/ui/button';
@@ -54,6 +57,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useDebounce } from '@/hooks/use-debounce';
+import { useInitials } from '@/hooks/use-initials';
 import { dashboard } from '@/routes';
 
 // -- Types --------------------------------------------------------------------
@@ -99,6 +103,7 @@ export default function SupervisorsIndex({
     programs,
     filters,
 }: SupervisorsIndexProps) {
+    const getInitials = useInitials();
     const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters.search || '');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -601,46 +606,55 @@ export default function SupervisorsIndex({
                         <div className={view === 'table' ? 'sm:hidden' : ''}>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {supervisors.data.map((supervisor) => (
-                                    <Card key={supervisor.user_id}>
-                                        <CardHeader>
+                                    <Card key={supervisor.user_id} className="flex flex-col justify-between h-full rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:shadow-md hover:border-border">
+                                        <CardHeader className="pb-3">
                                             <div className="flex items-start justify-between gap-2">
-                                                <div className="min-w-0">
-                                                    <CardTitle className="truncate text-base">
-                                                        {supervisor.name}
-                                                    </CardTitle>
-                                                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                                                        {supervisor.email}
-                                                    </p>
-                                                    <div className="mt-2 flex flex-wrap gap-1.5">
-                                                        <TypeBadge
-                                                            type={
-                                                                supervisor.supervisor_type
-                                                            }
-                                                        />
-                                                        <StatusBadge
-                                                            status={
-                                                                supervisor.status
-                                                            }
-                                                        />
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <Avatar className="size-10 shrink-0">
+                                                        <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
+                                                            {getInitials(supervisor.name)}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="min-w-0">
+                                                        <CardTitle className="text-base font-semibold leading-tight line-clamp-1" title={supervisor.name}>
+                                                            {supervisor.name}
+                                                        </CardTitle>
+                                                        <span className="text-xs text-muted-foreground truncate block" title={supervisor.email}>
+                                                            {supervisor.email}
+                                                        </span>
                                                     </div>
                                                 </div>
-                                                <div className="shrink-0">
-                                                    <SupervisorActions
-                                                        supervisor={supervisor}
-                                                    />
-                                                </div>
+                                                <StatusBadge status={supervisor.status} />
                                             </div>
                                         </CardHeader>
-                                        <CardContent className="space-y-2 text-sm">
-                                            <div className="flex justify-between gap-2">
-                                                <span className="shrink-0 text-muted-foreground">
-                                                    Scope
-                                                </span>
-                                                <span className="text-right">
-                                                    {supervisor.scope_name}
-                                                </span>
+                                        <CardContent className="flex-1 space-y-2.5 pb-3 text-sm">
+                                            <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3 text-xs">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
+                                                        Role Type:
+                                                    </span>
+                                                    <TypeBadge type={supervisor.supervisor_type} />
+                                                </div>
+
+                                                <div className="flex items-center justify-between gap-2 border-t pt-1.5">
+                                                    <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
+                                                        {supervisor.supervisor_type === 'hte' ? (
+                                                            <Building2 className="size-3.5 text-muted-foreground" />
+                                                        ) : (
+                                                            <BookOpen className="size-3.5 text-muted-foreground" />
+                                                        )}
+                                                        Scope:
+                                                    </span>
+                                                    <span className="font-medium text-foreground truncate text-right" title={supervisor.scope_name}>
+                                                        {supervisor.scope_name}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </CardContent>
+                                        <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
+                                            <span className="capitalize font-medium">{supervisor.supervisor_type.toUpperCase()} Supervisor</span>
+                                            <SupervisorActions supervisor={supervisor} />
+                                        </div>
                                     </Card>
                                 ))}
                             </div>

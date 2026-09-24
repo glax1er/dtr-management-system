@@ -603,20 +603,14 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                         <div className={view === 'table' ? 'sm:hidden' : ''}>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {campuses.data.map((campus) => (
-                                    <Card
-                                        key={campus.id}
-                                        className="flex flex-col justify-between"
-                                    >
+                                    <Card key={campus.id} className="flex flex-col justify-between h-full rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:shadow-md hover:border-border">
                                         <CardHeader className="pb-3">
                                             <div className="flex items-start justify-between gap-2">
-                                                <div>
-                                                    <Badge
-                                                        variant="outline"
-                                                        className="mb-1 font-mono text-xs"
-                                                    >
+                                                <div className="min-w-0 flex-1">
+                                                    <Badge variant="outline" className="mb-1 font-mono text-xs font-bold">
                                                         {campus.code}
                                                     </Badge>
-                                                    <CardTitle className="text-base leading-tight font-semibold">
+                                                    <CardTitle className="text-base font-semibold leading-tight line-clamp-1" title={campus.name}>
                                                         {campus.name}
                                                     </CardTitle>
                                                 </div>
@@ -629,46 +623,33 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                                                 />
                                             </div>
                                         </CardHeader>
-                                        <CardContent className="space-y-3 pb-3 text-sm">
+                                        <CardContent className="flex-1 space-y-2.5 pb-3 text-sm">
                                             {campus.address && (
                                                 <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
                                                     <MapPin className="mt-0.5 size-3.5 shrink-0" />
-                                                    <span>
-                                                        {campus.address}
-                                                    </span>
+                                                    <span className="line-clamp-1" title={campus.address}>{campus.address}</span>
                                                 </div>
                                             )}
                                             {campus.description && (
-                                                <p className="line-clamp-2 text-xs text-muted-foreground">
+                                                <p className="line-clamp-2 text-xs text-muted-foreground" title={campus.description}>
                                                     {campus.description}
                                                 </p>
                                             )}
-                                            <div className="flex items-center justify-between border-t pt-2 text-xs text-muted-foreground">
-                                                <div className="flex items-center gap-3 font-medium">
-                                                    <span className="flex items-center gap-1">
-                                                        <Building2 className="size-3.5" />
-                                                        {campus.colleges_count}{' '}
-                                                        {campus.colleges_count ===
-                                                        1
-                                                            ? 'College'
-                                                            : 'Colleges'}
-                                                    </span>
-                                                    <span className="flex items-center gap-1">
-                                                        <GraduationCap className="size-3.5" />
-                                                        {campus.interns_count}{' '}
-                                                        {campus.interns_count ===
-                                                        1
-                                                            ? 'Intern'
-                                                            : 'Interns'}
-                                                    </span>
-                                                </div>
-                                                <span>
-                                                    Added{' '}
-                                                    {campus.created_at || '—'}
+                                            <div className="flex items-center justify-between rounded-lg bg-muted/40 p-2.5 text-xs font-medium text-foreground">
+                                                <span className="flex items-center gap-1.5">
+                                                    <Building2 className="size-3.5 text-muted-foreground" />
+                                                    {campus.colleges_count}{' '}
+                                                    {campus.colleges_count === 1 ? 'College' : 'Colleges'}
+                                                </span>
+                                                <span className="flex items-center gap-1.5">
+                                                    <GraduationCap className="size-3.5 text-muted-foreground" />
+                                                    {campus.interns_count}{' '}
+                                                    {campus.interns_count === 1 ? 'Intern' : 'Interns'}
                                                 </span>
                                             </div>
                                         </CardContent>
-                                        <div className="flex items-center justify-end border-t bg-muted/20 px-4 py-2">
+                                        <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
+                                            <span>Added {campus.created_at || '—'}</span>
                                             <ProgramActions
                                                 program={campus}
                                                 onEdit={openEdit}

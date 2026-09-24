@@ -40,6 +40,8 @@ export function printIdCard({
         id_number: null,
         subtitle: null,
         detail: null,
+        college: null,
+        campus: null,
         has_qr_code: false,
         qr_code_url: null,
         bg_url: null,
@@ -50,6 +52,11 @@ export function printIdCard({
             ? String(role).charAt(0).toUpperCase() + String(role).slice(1)
             : 'Member');
     const bgUrl = cardData.bg_url || '/images/cic-bg.jpg';
+    const campusLabel = cardData.campus
+        ? cardData.campus.toLowerCase().includes('campus')
+            ? cardData.campus
+            : `${cardData.campus} Campus`
+        : null;
 
     // Exact on-screen dimensions matching IdCard component (420x265 landscape, 270x430 portrait)
     const cardWidth = isLandscape ? '420px' : '270px';
@@ -366,14 +373,14 @@ export function printIdCard({
             flex: 1;
             ${
                 isLandscape
-                    ? 'flex-direction: row; gap: 16px; padding: 10px 0;'
-                    : 'flex-direction: column; justify-content: center; text-align: center; gap: 8px; padding: 8px 0;'
+                    ? 'flex-direction: row; gap: 14px; padding: 6px 0;'
+                    : 'flex-direction: column; justify-content: center; text-align: center; gap: 6px; padding: 6px 0;'
             }
         }
 
         .photo {
-            width: ${isLandscape ? '120px' : '128px'};
-            height: ${isLandscape ? '120px' : '128px'};
+            width: ${isLandscape ? '110px' : '116px'};
+            height: ${isLandscape ? '110px' : '116px'};
             border-radius: ${isLandscape ? '14px' : '16px'};
             border: 2px solid rgba(255, 255, 255, 0.95);
             outline: 1px solid rgba(228, 228, 231, 0.7);
@@ -395,7 +402,7 @@ export function printIdCard({
         }
 
         .name {
-            font-size: 15px;
+            font-size: 14.5px;
             font-weight: 900;
             text-transform: uppercase;
             letter-spacing: -0.025em;
@@ -414,37 +421,67 @@ export function printIdCard({
             overflow: hidden;
             text-overflow: ellipsis;
             line-height: 1.2;
-            margin-top: 2px;
+            margin-top: 1px;
+        }
+
+        .college {
+            font-size: 10px;
+            font-weight: 600;
+            color: #3f3f46;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.2;
+            margin-top: 1px;
         }
 
         .detail {
-            font-size: 10.5px;
+            font-size: 9.5px;
             font-weight: 500;
             color: var(--text-sub);
-            line-height: 1.35;
+            line-height: 1.3;
             word-break: break-word;
             display: -webkit-box;
-            -webkit-line-clamp: 2;
+            -webkit-line-clamp: 1;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            margin-top: 2px;
+            margin-top: 1px;
         }
 
-        .id-badge-wrap {
-            margin-top: 4px;
+        .badges-wrap {
+            display: flex;
+            align-items: center;
+            ${isLandscape ? '' : 'justify-content: center;'}
+            gap: 5px;
+            flex-wrap: wrap;
+            margin-top: 3px;
         }
 
         .id-badge {
             display: inline-block;
-            font-size: 9.5px;
+            font-size: 9px;
             font-weight: 700;
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
             background: rgba(255, 255, 255, 0.95);
             border: 1px solid #e4e4e7;
-            padding: 2px 6px;
+            padding: 1.5px 6px;
             border-radius: 4px;
             letter-spacing: 0.05em;
             color: var(--primary);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        }
+
+        .campus-badge {
+            display: inline-block;
+            font-size: 8.5px;
+            font-weight: 700;
+            background: #f4f4f5;
+            border: 1px solid #e4e4e7;
+            padding: 1.5px 6px;
+            border-radius: 4px;
+            letter-spacing: 0.03em;
+            color: #3f3f46;
+            text-transform: uppercase;
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
         }
 
@@ -593,8 +630,8 @@ export function printIdCard({
             }
 
             .photo {
-                width: ${isLandscape ? '31mm' : '34mm'} !important;
-                height: ${isLandscape ? '31mm' : '34mm'} !important;
+                width: ${isLandscape ? '29mm' : '31mm'} !important;
+                height: ${isLandscape ? '29mm' : '31mm'} !important;
             }
 
             .qr-box-centered {
@@ -686,8 +723,16 @@ export function printIdCard({
                     <div class="info-front">
                         <div class="name">${name}</div>
                         ${cardData.subtitle ? `<div class="subtitle">${cardData.subtitle}</div>` : ''}
-                        ${cardData.detail ? `<div class="detail">${cardData.detail}</div>` : ''}
-                        ${cardData.id_number ? `<div class="id-badge-wrap"><span class="id-badge">ID: ${cardData.id_number}</span></div>` : ''}
+                        ${cardData.college ? `<div class="college">${cardData.college}</div>` : ''}
+                        ${cardData.detail && cardData.detail !== cardData.college ? `<div class="detail">${cardData.detail}</div>` : ''}
+                        ${
+                            cardData.id_number || campusLabel
+                                ? `<div class="badges-wrap">
+                                    ${cardData.id_number ? `<span class="id-badge">ID: ${cardData.id_number}</span>` : ''}
+                                    ${campusLabel ? `<span class="campus-badge">${campusLabel}</span>` : ''}
+                                   </div>`
+                                : ''
+                        }
                         <div class="email">${email}</div>
                     </div>
                 </div>
@@ -739,7 +784,7 @@ export function printIdCard({
                 </div>
 
                 <div class="card-footer card-footer-center">
-                    Non-transferable • Property of USeP • If found, return to OJT Coordinator's office
+                    Non-transferable • Property of USeP${campusLabel ? ` (${campusLabel})` : ''} • If found, return to OJT Coordinator's office
                 </div>
             </div>
         </div>

@@ -33,7 +33,12 @@ export default function AuthCardLayout({
                                 <img
                                     src="/images/cims-logo-light.png?v=3"
                                     alt="CIC logo"
-                                    className="h-27 w-auto object-contain"
+                                    className="h-27 w-auto object-contain dark:hidden"
+                                />
+                                <img
+                                    src="/images/cims-logo-dark.png?v=5"
+                                    alt="CIC logo dark"
+                                    className="hidden h-27 w-auto object-contain dark:block"
                                 />
                                 <img
                                     src="/images/cic-logo.png"
