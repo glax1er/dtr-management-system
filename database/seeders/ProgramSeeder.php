@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\College;
 use App\Models\Program;
 use Illuminate\Database\Seeder;
 
@@ -19,10 +20,15 @@ class ProgramSeeder extends Seeder
             'BLIS',
         ];
 
+        $cic = College::where('code', 'CIC')->first();
+
         foreach ($programs as $name) {
             Program::firstOrCreate(
                 ['program_name' => $name],
-                ['created_at' => now()]
+                [
+                    'college_id' => $cic?->id,
+                    'created_at' => now(),
+                ]
             );
         }
     }

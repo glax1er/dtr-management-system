@@ -32,10 +32,17 @@ class InternController extends Controller
         $search = trim($validated['search'] ?? '');
         $perPage = (int) ($validated['per_page'] ?? self::DEFAULT_PER_PAGE);
 
+        $collegeId = $request->user()->isCollegeAdmin() ? $request->user()->college_id : null;
+
         $query = InternProfile::query()
+            ->verified()
             ->where('status', $status)
-            ->with(['user:id,name,email', 'hte:hte_id,hte_name', 'program:program_id,program_name'])
+            ->with(['user:id,name,email', 'hte:hte_id,hte_name', 'program:program_id,program_name,college_id'])
             ->orderBy('registered_at', 'desc');
+
+        if ($collegeId !== null) {
+            $query->forCollege($collegeId);
+        }
 
         if ($search !== '') {
             $query->whereHas('user', fn ($q) => $q->where('name', 'like', "%{$search}%"));
@@ -62,13 +69,30 @@ class InternController extends Controller
                 'search' => $search,
                 'per_page' => $perPage,
             ],
-            'htes' => Hte::where('status', 'active')->orderBy('hte_name')->get(['hte_id', 'hte_name']),
-            'programs' => Program::where('is_active', true)->orderBy('program_name')->get(['program_id', 'program_name']),
+            'htes' => Hte::where('status', 'active')
+                ->when($collegeId !== null, fn ($q) => $q->where('college_id', $collegeId))
+                ->orderBy('hte_name')
+                ->get(['hte_id', 'hte_name']),
+            'programs' => Program::where('is_active', true)
+                ->when($collegeId !== null, fn ($q) => $q->where('college_id', $collegeId))
+                ->orderBy('program_name')
+                ->get(['program_id', 'program_name', 'college_id']),
         ]);
     }
 
     public function update(UpdateInternRequest $request, InternProfile $internProfile): RedirectResponse
     {
+        $collegeId = $request->user()->isCollegeAdmin() ? $request->user()->college_id : null;
+        if ($collegeId !== null) {
+            $program = $internProfile->program;
+            $profileUser = $internProfile->user;
+            $internCollegeId = ($program !== null ? $program->college_id : null)
+                ?? ($profileUser !== null ? $profileUser->college_id : null);
+            abort_if($internCollegeId !== $collegeId, 403, 'Unauthorized action.');
+            abort_if(Program::where('program_id', $request->validated('program_id'))->where('college_id', $collegeId)->doesntExist(), 422, 'Selected program does not belong to your college.');
+            abort_if(Hte::where('hte_id', $request->validated('hte_id'))->where('college_id', $collegeId)->doesntExist(), 422, 'Selected HTE does not belong to your college.');
+        }
+
         DB::transaction(function () use ($request, $internProfile) {
             $internProfile->user->update([
                 'name' => $request->validated('name'),

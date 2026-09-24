@@ -1,7 +1,8 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import {
     Archive,
     ArchiveRestore,
+    Clock,
     LayoutGrid,
     Search,
     Table as TableIcon,
@@ -12,6 +13,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
@@ -31,6 +33,7 @@ import {
 } from '@/components/ui/tooltip';
 import { useDebounce } from '@/hooks/use-debounce';
 import { dashboard } from '@/routes';
+import type { PageProps } from '@/types/auth';
 
 // -- Types --------------------------------------------------------------------
 interface ArchivedRecord {
@@ -47,7 +50,13 @@ interface Filters {
 
 interface ArchivesIndexProps {
     records: Paginated<ArchivedRecord>;
-    currentType: 'htes' | 'supervisors' | 'interns' | 'programs';
+    currentType:
+        | 'htes'
+        | 'supervisors'
+        | 'interns'
+        | 'programs'
+        | 'colleges'
+        | 'campuses';
     filters?: Filters;
     flash?: {
         success?: string | null;
@@ -59,7 +68,13 @@ type ViewMode = 'table' | 'grid';
 
 const TABS: {
     label: string;
-    value: 'htes' | 'supervisors' | 'interns' | 'programs';
+    value:
+        | 'htes'
+        | 'supervisors'
+        | 'interns'
+        | 'programs'
+        | 'colleges'
+        | 'campuses';
     detailLabel: string;
 }[] = [
     { label: 'Interns', value: 'interns', detailLabel: 'ID Number' },
@@ -73,6 +88,27 @@ export default function ArchivesIndex({
     currentType,
     filters,
 }: ArchivesIndexProps) {
+    const { auth } = usePage<PageProps>().props;
+    const isSuperAdmin =
+        auth?.user?.is_super_admin ??
+        (auth?.user?.role === 'super_admin' || auth?.user?.role === 'admin');
+
+    const availableTabs = isSuperAdmin
+        ? [
+              ...TABS,
+              {
+                  label: 'Colleges',
+                  value: 'colleges' as const,
+                  detailLabel: 'Code',
+              },
+              {
+                  label: 'Campuses',
+                  value: 'campuses' as const,
+                  detailLabel: 'Code',
+              },
+          ]
+        : TABS;
+
     const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters?.search ?? '');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -89,7 +125,8 @@ export default function ArchivesIndex({
     const [forceDeleteTarget, setForceDeleteTarget] =
         useState<ArchivedRecord | null>(null);
 
-    const activeTab = TABS.find((t) => t.value === currentType) ?? TABS[0];
+    const activeTab =
+        availableTabs.find((t) => t.value === currentType) ?? availableTabs[0];
 
     // -- Navigation & Query Handling ------------------------------------------
     const baseParams = () => ({
@@ -305,7 +342,7 @@ export default function ArchivesIndex({
                         <div className="scrollbar-none max-w-[calc(100%-3rem)] overflow-x-auto sm:max-w-none">
                             <Tabs value={currentType} onValueChange={switchTab}>
                                 <TabsList className="w-auto">
-                                    {TABS.map((tab) => (
+                                    {availableTabs.map((tab) => (
                                         <TabsTrigger
                                             key={tab.value}
                                             value={tab.value}
@@ -458,37 +495,53 @@ export default function ArchivesIndex({
                         <div className={view === 'table' ? 'sm:hidden' : ''}>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {records.data.map((record) => (
-                                    <Card key={record.id}>
-                                        <CardHeader>
+                                    <Card
+                                        key={record.id}
+                                        className="flex h-full flex-col justify-between rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:border-border hover:shadow-md"
+                                    >
+                                        <CardHeader className="pb-3">
                                             <div className="flex items-start justify-between gap-2">
-                                                <div className="min-w-0">
-                                                    <CardTitle className="truncate text-base">
+                                                <div className="min-w-0 flex-1">
+                                                    <CardTitle
+                                                        className="line-clamp-1 text-base leading-tight font-semibold"
+                                                        title={record.name}
+                                                    >
                                                         {record.name}
                                                     </CardTitle>
-                                                    <p
-                                                        className="mt-0.5 truncate text-xs text-muted-foreground"
-                                                        title={record.detail}
-                                                    >
-                                                        {record.detail}
-                                                    </p>
+                                                    {record.detail && (
+                                                        <p
+                                                            className="mt-1 line-clamp-2 text-xs text-muted-foreground"
+                                                            title={
+                                                                record.detail
+                                                            }
+                                                        >
+                                                            {record.detail}
+                                                        </p>
+                                                    )}
                                                 </div>
-                                                <div className="shrink-0">
-                                                    <ArchiveActions
-                                                        record={record}
-                                                    />
-                                                </div>
+                                                <Badge
+                                                    variant="outline"
+                                                    className="shrink-0 text-[11px] font-medium text-muted-foreground"
+                                                >
+                                                    Archived
+                                                </Badge>
                                             </div>
                                         </CardHeader>
-                                        <CardContent className="space-y-2 text-sm">
-                                            <div className="flex justify-between gap-2">
-                                                <span className="shrink-0 text-muted-foreground">
-                                                    Archived On
+                                        <CardContent className="flex-1 space-y-2.5 pb-3 text-sm">
+                                            <div className="flex items-center justify-between rounded-lg bg-muted/40 p-2.5 text-xs">
+                                                <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
+                                                    <Clock className="size-3.5 text-muted-foreground" />
+                                                    Archived On:
                                                 </span>
-                                                <span className="text-right text-muted-foreground">
+                                                <span className="truncate text-right font-medium text-foreground">
                                                     {record.deleted_at}
                                                 </span>
                                             </div>
                                         </CardContent>
+                                        <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
+                                            <span>Archived record</span>
+                                            <ArchiveActions record={record} />
+                                        </div>
                                     </Card>
                                 ))}
                             </div>

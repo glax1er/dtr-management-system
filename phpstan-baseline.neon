@@ -19,31 +19,6 @@ parameters:
             identifier: nullsafe.neverNull
             count: 2
             path: app/Http/Controllers/Admin/DashboardController.php
-        -
-            identifier: property.notFound
-            count: 2
-            path: app/Http/Controllers/Admin/DashboardController.php
-        -
-            identifier: argument.unresolvableType
-            count: 1
-            path: app/Http/Controllers/Admin/DashboardController.php
-        -
-            identifier: method.unresolvableReturnType
-            count: 3
-            path: app/Http/Controllers/Admin/DashboardController.php
-
-        -
-            identifier: argument.unresolvableType
-            count: 1
-            path: app/Http/Controllers/Admin/HteController.php
-        -
-            identifier: method.unresolvableReturnType
-            count: 1
-            path: app/Http/Controllers/Admin/HteController.php
-        -
-            identifier: property.notFound
-            count: 1
-            path: app/Http/Controllers/Admin/HteController.php
 
         -
             identifier: nullsafe.neverNull
@@ -64,10 +39,6 @@ parameters:
             count: 1
             path: app/Http/Controllers/Admin/SupervisorController.php
 
-        -
-            identifier: nullsafe.neverNull
-            count: 2
-            path: app/Http/Controllers/DocumentReviewController.php
         -
             identifier: method.notFound
             count: 4
@@ -118,19 +89,7 @@ parameters:
             count: 1
             path: app/Http/Controllers/Supervisor/HtesController.php
         -
-            identifier: argument.unresolvableType
-            count: 1
-            path: app/Http/Controllers/Supervisor/HtesController.php
-        -
             identifier: argument.type
-            count: 1
-            path: app/Http/Controllers/Supervisor/HtesController.php
-        -
-            identifier: method.unresolvableReturnType
-            count: 2
-            path: app/Http/Controllers/Supervisor/HtesController.php
-        -
-            identifier: property.notFound
             count: 1
             path: app/Http/Controllers/Supervisor/HtesController.php
 

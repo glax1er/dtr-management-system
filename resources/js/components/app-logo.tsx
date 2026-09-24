@@ -5,7 +5,12 @@ export default function AppLogo() {
                 <img
                     src="/images/cims-logo-light.png?v=3"
                     alt="CIMS logo"
-                    className="block h-14 w-auto object-contain"
+                    className="block h-14 w-auto object-contain dark:hidden"
+                />
+                <img
+                    src="/images/cims-logo-dark.png?v=5"
+                    alt="CIMS logo dark"
+                    className="hidden h-14 w-auto object-contain dark:block"
                 />
             </div>
 

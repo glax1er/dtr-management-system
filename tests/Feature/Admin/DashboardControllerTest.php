@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\AttendanceLog;
+use App\Models\Campus;
+use App\Models\College;
 use App\Models\Hte;
 use App\Models\InternProfile;
 use App\Models\Program;
@@ -19,6 +21,7 @@ function makeInternProfile(Hte $hte, Program $program, string $status = 'approve
         'hte_id' => $hte->hte_id,
         'program_id' => $program->program_id,
         'status' => $status,
+        'registered_at' => Carbon::now(config('dtr.timezone')),
         'privacy_accepted_at' => now(),
     ]);
 }
@@ -92,3 +95,69 @@ test('the registrations trend sums same-day signups instead of listing one row p
             ->where('registrationsTrend.13.count', 2)
         );
 });
+
+test('super admin dashboard exposes institutional analytics for campuses, colleges, and admins', function () {
+    $superAdmin = User::factory()->create(['role' => User::ROLE_SUPER_ADMIN]);
+
+    $campus = Campus::create([
+        'name' => 'Main Campus '.uniqid(),
+        'code' => 'MC'.rand(10, 99),
+        'is_active' => true,
+    ]);
+
+    $college = College::create([
+        'name' => 'College of Engineering '.uniqid(),
+        'code' => 'CE'.rand(10, 99),
+        'campus_id' => $campus->id,
+        'campus' => $campus->name,
+        'is_active' => true,
+    ]);
+
+    $collegeAdmin = User::factory()->create([
+        'role' => User::ROLE_COLLEGE_ADMIN,
+        'college_id' => $college->id,
+        'is_active' => true,
+    ]);
+
+    $program = Program::create([
+        'college_id' => $college->id,
+        'program_name' => 'BSCE-'.uniqid(),
+        'is_active' => true,
+    ]);
+
+    $hte = Hte::create(['hte_name' => 'Civic Builders '.uniqid(), 'status' => 'active']);
+    makeInternProfile($hte, $program, 'approved');
+
+    $response = $this->actingAs($superAdmin)->get(route('admin.dashboard'));
+
+    $response->assertOk();
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('superAdminAnalytics.campuses.total', fn ($total) => $total >= 1)
+        ->where('superAdminAnalytics.colleges.total', fn ($total) => $total >= 1)
+        ->where('superAdminAnalytics.admins.total', fn ($total) => $total >= 2)
+        ->where('superAdminAnalytics.admins.super_admins', fn ($sa) => $sa >= 1)
+        ->where('superAdminAnalytics.admins.college_admins', fn ($ca) => $ca >= 1)
+        ->where('superAdminAnalytics.admins.coverage_percent', fn ($cp) => $cp > 0)
+    );
+});
+
+test('college admin dashboard does not expose superAdminAnalytics', function () {
+    $college = College::create([
+        'name' => 'Arts & Sciences '.uniqid(),
+        'code' => 'AS'.rand(10, 99),
+        'is_active' => true,
+    ]);
+
+    $collegeAdmin = User::factory()->create([
+        'role' => User::ROLE_COLLEGE_ADMIN,
+        'college_id' => $college->id,
+    ]);
+
+    $response = $this->actingAs($collegeAdmin)->get(route('admin.dashboard'));
+
+    $response->assertOk();
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('superAdminAnalytics', null)
+    );
+});
+

@@ -19,6 +19,7 @@ use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 beforeEach(function () {
     Storage::fake('local');
@@ -49,6 +50,41 @@ test('user can view notifications list', function () {
     $response = $this->actingAs($user)->get(route('notifications.index'));
 
     $response->assertOk();
+});
+
+test('cleared resolution ticket notifications are hidden from the notification list', function () {
+    [$user] = createTestInternProfile();
+
+    $user->notifications()->create([
+        'id' => (string) Str::uuid(),
+        'type' => 'resolution_ticket',
+        'data' => [
+            'type' => 'resolution_ticket',
+            'title' => 'Old resolution request',
+            'message' => 'This notification was cleared.',
+        ],
+        'created_at' => now()->subMinute(),
+    ]);
+
+    $user->update(['notifications_cleared_at' => now()]);
+
+    $visible = $user->notifications()->create([
+        'id' => (string) Str::uuid(),
+        'type' => 'intern_document',
+        'data' => [
+            'type' => 'intern_document',
+            'title' => 'Visible document update',
+            'message' => 'This notification remains visible.',
+        ],
+    ]);
+
+    $response = $this->actingAs($user)->get(route('notifications.index'));
+
+    $response->assertInertia(fn ($page) => $page
+        ->where('notifications.count', 1)
+        ->has('notifications.items', 1)
+        ->where('notifications.items.0.id', $visible->id)
+    );
 });
 
 test('user can mark a single notification as read', function () {
@@ -421,20 +457,46 @@ test('hte supervisor can view and update role-specific notification preferences'
     expect($supervisor->fresh()->wantsNotification('intern_completions'))->toBeFalse();
 });
 
-test('admin can view and update role-specific notification preferences', function () {
-    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+test('college admin can view and update role-specific notification preferences', function () {
+    $college = \App\Models\College::create(['name' => 'College of Arts', 'code' => 'CAS', 'is_active' => true]);
+    $admin = User::factory()->create([
+        'role' => User::ROLE_COLLEGE_ADMIN,
+        'college_id' => $college->id,
+    ]);
 
     $response = $this->actingAs($admin)->get(route('notifications.edit'));
     $response->assertOk();
 
     $response = $this->actingAs($admin)->patch(route('notifications.update'), [
         'intern_registrations' => false,
+        'intern_completions' => true,
+        'supervisor_updates' => true,
     ]);
 
     $response->assertRedirect();
     $response->assertSessionHasNoErrors();
 
     expect($admin->fresh()->wantsNotification('intern_registrations'))->toBeFalse();
+    expect($admin->fresh()->wantsNotification('intern_completions'))->toBeTrue();
+});
+
+test('super admin can view and update role-specific notification preferences', function () {
+    $superAdmin = User::factory()->create(['role' => User::ROLE_SUPER_ADMIN]);
+
+    $response = $this->actingAs($superAdmin)->get(route('notifications.edit'));
+    $response->assertOk();
+
+    $response = $this->actingAs($superAdmin)->patch(route('notifications.update'), [
+        'system_alerts' => true,
+        'admin_management' => false,
+        'all_intern_registrations' => true,
+    ]);
+
+    $response->assertRedirect();
+    $response->assertSessionHasNoErrors();
+
+    expect($superAdmin->fresh()->wantsNotification('all_intern_registrations'))->toBeTrue();
+    expect($superAdmin->fresh()->wantsNotification('admin_management'))->toBeFalse();
 });
 
 test('opted out ojt supervisor does not receive document submission notification', function () {

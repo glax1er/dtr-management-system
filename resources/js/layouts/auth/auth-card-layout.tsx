@@ -33,12 +33,17 @@ export default function AuthCardLayout({
                                 <img
                                     src="/images/cims-logo-light.png?v=3"
                                     alt="CIC logo"
-                                    className="mx-2 h-27 w-auto object-contain"
+                                    className="h-27 w-auto object-contain dark:hidden"
+                                />
+                                <img
+                                    src="/images/cims-logo-dark.png?v=5"
+                                    alt="CIC logo dark"
+                                    className="hidden h-27 w-auto object-contain dark:block"
                                 />
                                 <img
                                     src="/images/cic-logo.png"
                                     alt="App logo"
-                                    className="mb-2 h-12 w-auto rounded-full object-contain"
+                                    className="mb-1 h-14 w-auto rounded-full object-contain"
                                 />
                             </div>
                             <CardTitle className="text-xl">{title}</CardTitle>

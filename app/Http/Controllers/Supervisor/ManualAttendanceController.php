@@ -23,6 +23,7 @@ class ManualAttendanceController extends Controller
         $supervisorProfile = $request->user()->supervisorProfile;
 
         $interns = InternProfile::query()
+            ->verified()
             ->where('hte_id', $supervisorProfile->hte_id)
             ->where('status', 'approved')
             ->with(['user:id,name,email,profile_photo_path', 'program:program_id,program_name'])
@@ -207,7 +208,10 @@ class ManualAttendanceController extends Controller
     {
         $supervisorProfile = $request->user()->supervisorProfile;
 
-        $belongsToHte = InternProfile::where('user_id', $internUserId)
+        $belongsToHte = InternProfile::query()
+            ->verified()
+            ->where('status', 'approved')
+            ->where('user_id', $internUserId)
             ->where('hte_id', $supervisorProfile->hte_id)
             ->exists();
 

@@ -18,6 +18,8 @@ class HoursMilestoneNotification extends Notification
 
     public const SUPERVISOR_INTERN_COMPLETED = 'supervisor_intern_completed';
 
+    public const COLLEGE_ADMIN_INTERN_COMPLETED = 'college_admin_intern_completed';
+
     public function __construct(
         public string $milestone,
         public float $totalHours,
@@ -66,6 +68,15 @@ class HoursMilestoneNotification extends Notification
                 'title' => "Intern Completed Hours: {$internName}",
                 'message' => "{$internName} has rendered {$rendered} hours (100% completed) and is ready for DTR sign-off.",
                 'href' => $this->internProfile ? "/supervisor/interns?doc_intern={$this->internProfile->user_id}&open_summary=1" : '/supervisor/interns',
+                'intern_user_id' => $this->internProfile?->user_id,
+                'total_hours' => $this->totalHours,
+                'required_hours' => $this->requiredHours,
+            ],
+            self::COLLEGE_ADMIN_INTERN_COMPLETED => [
+                'type' => 'college_admin_intern_completed',
+                'title' => "Intern Completed OJT Hours: {$internName}",
+                'message' => "{$internName} has completed 100% ({$rendered} of {$required} hrs) of required OJT hours and is ready for endorsement sign-off.",
+                'href' => $this->internProfile ? "/admin/interns?intern={$this->internProfile->user_id}" : '/admin/interns',
                 'intern_user_id' => $this->internProfile?->user_id,
                 'total_hours' => $this->totalHours,
                 'required_hours' => $this->requiredHours,

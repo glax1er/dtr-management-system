@@ -77,7 +77,10 @@ class InternsController extends Controller
         // Every HTE currently hosting an intern from this program — powers
         // the "Assigned HTE" filter dropdown.
         $hteOptions = Hte::query()
-            ->whereHas('internProfiles', fn ($query) => $query->where('program_id', $supervisorProfile->program_id))
+            ->whereHas('internProfiles', fn ($query) => $query
+                ->where('status', 'approved')
+                ->whereHas('user', fn ($user) => $user->whereNotNull('email_verified_at'))
+                ->where('program_id', $supervisorProfile->program_id))
             ->orderBy('hte_name')
             ->get(['hte_id', 'hte_name']);
 
@@ -184,7 +187,10 @@ class InternsController extends Controller
             ->where('user_id', $internUserId)
             ->firstOrFail();
 
-        if (! $user->isAdmin()) {
+        if ($user->isCollegeAdmin()) {
+            $internCollegeId = $internProfile->program?->college_id ?? $internProfile->user?->college_id;
+            abort_if($internCollegeId !== $user->college_id, 403, 'Unauthorized.');
+        } elseif (! $user->isAdmin()) {
             if (! $user->isSupervisor()) {
                 abort(403, 'Unauthorized.');
             }
@@ -318,7 +324,10 @@ class InternsController extends Controller
         $user = $request->user();
         $internProfile = InternProfile::with(['user', 'hte', 'program'])->where('user_id', $internUserId)->firstOrFail();
 
-        if (! $user->isAdmin()) {
+        if ($user->isCollegeAdmin()) {
+            $internCollegeId = $internProfile->program?->college_id ?? $internProfile->user?->college_id;
+            abort_if($internCollegeId !== $user->college_id, 403, 'Unauthorized.');
+        } elseif (! $user->isAdmin()) {
             if (! $user->isSupervisor()) {
                 abort(403, 'Unauthorized.');
             }
@@ -484,8 +493,8 @@ class InternsController extends Controller
                     [
                         'intern_user_id' => $intern->user_id,
                         'intern_name' => $intern->user->name,
-                        'hte_name' => $intern->hte?->hte_name ?? 'Deleted HTE',
-                        'program_name' => $intern->program?->program_name ?? 'Deleted Program',
+                        'hte_name' => ($hte = $intern->hte) !== null ? $hte->hte_name : 'Deleted HTE',
+                        'program_name' => ($program = $intern->program) !== null ? $program->program_name : 'Deleted Program',
                         'punctuality' => $this->computePunctuality($day, $intern->hte_id),
                     ],
                 ));

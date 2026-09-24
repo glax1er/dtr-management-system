@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceLog;
+use App\Models\Campus;
+use App\Models\College;
 use App\Models\Hte;
 use App\Models\InternProfile;
 use App\Models\User;
@@ -22,7 +24,7 @@ class DashboardController extends Controller
     private const TREND_DAYS = 14;
 
     /** How many HTEs to surface in the "Top HTEs" ranking. */
-    private const TOP_HTE_LIMIT = 5;
+    private const TOP_HTE_LIMIT = 10;
 
     public function index(Request $request): Response
     {
@@ -31,11 +33,21 @@ class DashboardController extends Controller
             'per_page' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_PER_PAGE],
         ]);
 
+        $user = $request->user();
+        $collegeId = $user->isCollegeAdmin() ? $user->college_id : null;
+
         $perPage = (int) ($validated['per_page'] ?? self::DEFAULT_PER_PAGE);
 
-        $recentRegistrations = InternProfile::query()
+        $query = InternProfile::query()
+            ->verified()
             ->with(['user:id,name,email', 'hte:hte_id,hte_name', 'program:program_id,program_name'])
-            ->orderBy('registered_at', 'desc')
+            ->orderBy('registered_at', 'desc');
+
+        if ($collegeId !== null) {
+            $query->forCollege($collegeId);
+        }
+
+        $recentRegistrations = $query
             ->paginate($perPage, ['*'], 'page', $validated['page'] ?? 1)
             ->withQueryString()
             ->through(fn (InternProfile $profile) => [
@@ -50,31 +62,308 @@ class DashboardController extends Controller
                 'registered_at_full' => $profile->registered_at->format('M j, Y g:i A'),
             ]);
 
-        $totalInterns = InternProfile::where('status', 'approved')->count();
+        $approvedQuery = InternProfile::verified()->where('status', 'approved');
+        $pendingQuery = InternProfile::verified()->where('status', 'pending');
+
+        if ($collegeId !== null) {
+            $approvedQuery->forCollege($collegeId);
+            $pendingQuery->forCollege($collegeId);
+        }
+
+        $totalInterns = $approvedQuery->count();
+
+        $supervisorQuery = User::where('role', User::ROLE_SUPERVISOR);
+        if ($collegeId !== null) {
+            $supervisorQuery->whereHas('supervisorProfile', fn ($q) => $q->where(function ($sq) use ($collegeId) {
+                $sq->where(function ($hq) use ($collegeId) {
+                    $hq->where('supervisor_type', 'hte')
+                        ->whereHas('hte', fn ($sub) => $sub->where('college_id', $collegeId));
+                })->orWhere(function ($pq) use ($collegeId) {
+                    $pq->where('supervisor_type', 'ojt')
+                        ->whereHas('program', fn ($sub) => $sub->where('college_id', $collegeId));
+                });
+            }));
+        }
+
+        $activeHtesQuery = Hte::where('status', 'active');
+        if ($collegeId !== null) {
+            $activeHtesQuery->where('college_id', $collegeId);
+        }
+
+        $isSuperAdmin = $user->isSuperAdmin();
 
         return Inertia::render('admin/dashboard', [
-            'pendingApprovals' => InternProfile::where('status', 'pending')->count(),
+            'pendingApprovals' => $pendingQuery->count(),
             'totalInterns' => $totalInterns,
-            'totalSupervisors' => User::where('role', User::ROLE_SUPERVISOR)->count(),
-            'activeHtes' => Hte::where('status', 'active')->count(),
+            'totalSupervisors' => $supervisorQuery->count(),
+            'activeHtes' => $activeHtesQuery->count(),
             'recentRegistrations' => $recentRegistrations,
-            'statusBreakdown' => $this->statusBreakdown(),
-            'registrationsTrend' => $this->registrationsTrend(),
-            'topHtes' => $this->topHtes(),
-            'todayAttendance' => $this->todayAttendance($totalInterns),
+            'statusBreakdown' => $this->statusBreakdown($collegeId),
+            'registrationsTrend' => $this->registrationsTrend($collegeId),
+            'topHtes' => $this->topHtes($collegeId),
+            'todayAttendance' => $this->todayAttendance($totalInterns, $collegeId),
+            'college' => $user->college ? [
+                'id' => $user->college->id,
+                'name' => $user->college->name,
+                'code' => $user->college->code,
+            ] : null,
+            'superAdminAnalytics' => $isSuperAdmin ? $this->superAdminAnalytics() : null,
         ]);
     }
 
     /**
-     * Pending / approved / rejected counts across every intern profile
-     * ever registered — gives the admin an at-a-glance approval-pipeline
-     * shape, not just the raw "pending" number.
+     * Aggregated analytics for super administrators (campuses, colleges, admins).
+     *
+     * @return array{
+     *     campuses: array{
+     *         total: int,
+     *         active: int,
+     *         items: array<int, array{
+     *             id: int,
+     *             name: string,
+     *             code: string,
+     *             is_active: bool,
+     *             colleges_count: int,
+     *             interns_count: int,
+     *             admins_count: int
+     *         }>
+     *     },
+     *     colleges: array{
+     *         total: int,
+     *         active: int,
+     *         items: array<int, array{
+     *             id: int,
+     *             name: string,
+     *             code: string,
+     *             campus: ?string,
+     *             is_active: bool,
+     *             programs_count: int,
+     *             interns_count: int,
+     *             admins_count: int,
+     *             has_admin: bool,
+     *             admin_names: ?string
+     *         }>
+     *     },
+     *     admins: array{
+     *         total: int,
+     *         active: int,
+     *         inactive: int,
+     *         super_admins: int,
+     *         college_admins: int,
+     *         colleges_count: int,
+     *         colleges_with_admin: int,
+     *         coverage_percent: int,
+     *         unassigned_colleges: array<int, array{id: int, name: string, code: string}>
+     *     }
+     * }
+     */
+    private function superAdminAnalytics(): array
+    {
+        return [
+            'campuses' => $this->campusAnalytics(),
+            'colleges' => $this->collegeAnalytics(),
+            'admins' => $this->adminAnalytics(),
+        ];
+    }
+
+    /**
+     * Campuses with college counts, intern counts, and admin counts
+     *
+     * @return array{
+     *     total: int,
+     *     active: int,
+     *     items: array<int, array{
+     *         id: int,
+     *         name: string,
+     *         code: string,
+     *         is_active: bool,
+     *         colleges_count: int,
+     *         interns_count: int,
+     *         admins_count: int
+     *     }>
+     * }
+     */
+    private function campusAnalytics(): array
+    {
+        $campuses = Campus::query()
+            ->withCount('colleges')
+            ->orderBy('name')
+            ->get();
+
+        $items = $campuses->map(function (Campus $campus) {
+            $internsCount = InternProfile::verified()
+                ->where('status', 'approved')
+                ->where(function ($q) use ($campus) {
+                    $q->whereHas('program.college', fn ($cq) => $cq->where('campus_id', $campus->id))
+                        ->orWhere('campus', $campus->name);
+                })
+                ->count();
+
+            $adminsCount = User::whereIn('role', [User::ROLE_COLLEGE_ADMIN, User::ROLE_ADMIN])
+                ->where(function ($q) use ($campus) {
+                    $q->whereHas('collegeAdminProfile', fn ($pq) => $pq->where('campus_id', $campus->id))
+                        ->orWhereHas('college', fn ($cq) => $cq->where('campus_id', $campus->id))
+                        ->orWhere('campus', $campus->name);
+                })
+                ->count();
+
+            return [
+                'id' => $campus->id,
+                'name' => $campus->name,
+                'code' => $campus->code,
+                'is_active' => (bool) $campus->is_active,
+                'colleges_count' => (int) $campus->colleges_count,
+                'interns_count' => $internsCount,
+                'admins_count' => $adminsCount,
+            ];
+        })->all();
+
+        return [
+            'total' => count($items),
+            'active' => collect($items)->where('is_active', true)->count(),
+            'items' => $items,
+        ];
+    }
+
+    /**
+     * Colleges with programs, interns, and admin assignment status
+     *
+     * @return array{
+     *     total: int,
+     *     active: int,
+     *     items: array<int, array{
+     *         id: int,
+     *         name: string,
+     *         code: string,
+     *         campus: ?string,
+     *         is_active: bool,
+     *         programs_count: int,
+     *         interns_count: int,
+     *         admins_count: int,
+     *         has_admin: bool,
+     *         admin_names: ?string
+     *     }>
+     * }
+     */
+    private function collegeAnalytics(): array
+    {
+        $colleges = College::query()
+            ->withCount([
+                'programs',
+                'admins',
+                'internProfiles as interns_count' => function ($query) {
+                    $query->verified()->where('status', 'approved');
+                },
+            ])
+            ->with([
+                'campus:id,name',
+                'admins:id,name,email,college_id',
+            ])
+            ->orderByDesc('interns_count')
+            ->orderBy('name')
+            ->get();
+
+        $items = $colleges->map(function (College $college) {
+            $adminNames = $college->admins->isNotEmpty()
+                ? $college->admins->pluck('name')->join(', ')
+                : null;
+
+            return [
+                'id' => $college->id,
+                'name' => $college->name,
+                'code' => $college->code,
+                'campus' => ($college->getRelation('campus') instanceof Campus ? $college->getRelation('campus')->name : null) ?? $college->getAttribute('campus'),
+                'is_active' => (bool) $college->is_active,
+                'programs_count' => (int) $college->programs_count,
+                'interns_count' => (int) $college->interns_count,
+                'admins_count' => (int) $college->admins_count,
+                'has_admin' => $college->admins_count > 0,
+                'admin_names' => $adminNames,
+            ];
+        })->all();
+
+        return [
+            'total' => count($items),
+            'active' => collect($items)->where('is_active', true)->count(),
+            'items' => $items,
+        ];
+    }
+
+    /**
+     * Overview of super admins and college admins across the system
+     *
+     * @return array{
+     *     total: int,
+     *     active: int,
+     *     inactive: int,
+     *     super_admins: int,
+     *     college_admins: int,
+     *     colleges_count: int,
+     *     colleges_with_admin: int,
+     *     coverage_percent: int,
+     *     unassigned_colleges: array<int, array{id: int, name: string, code: string}>
+     * }
+     */
+    private function adminAnalytics(): array
+    {
+        $admins = User::query()
+            ->whereIn('role', [User::ROLE_SUPER_ADMIN, User::ROLE_COLLEGE_ADMIN, User::ROLE_ADMIN])
+            ->get(['id', 'role', 'college_id', 'is_active']);
+
+        $totalAdmins = $admins->count();
+        $activeAdmins = $admins->where('is_active', true)->count();
+        $inactiveAdmins = $totalAdmins - $activeAdmins;
+
+        $superAdmins = $admins->filter(fn (User $u) => $u->isSuperAdmin())->count();
+        $collegeAdmins = $admins->filter(fn (User $u) => $u->isCollegeAdmin())->count();
+
+        $activeColleges = College::where('is_active', true)
+            ->withCount('admins')
+            ->get(['id', 'name', 'code']);
+
+        $totalActiveColleges = $activeColleges->count();
+        $collegesWithAdmin = $activeColleges->where('admins_count', '>', 0)->count();
+
+        $unassignedColleges = $activeColleges
+            ->where('admins_count', 0)
+            ->map(fn (College $c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'code' => $c->code,
+            ])
+            ->values()
+            ->all();
+
+        $coveragePercent = $totalActiveColleges > 0
+            ? (int) round(($collegesWithAdmin / $totalActiveColleges) * 100)
+            : 0;
+
+        return [
+            'total' => $totalAdmins,
+            'active' => $activeAdmins,
+            'inactive' => $inactiveAdmins,
+            'super_admins' => $superAdmins,
+            'college_admins' => $collegeAdmins,
+            'colleges_count' => $totalActiveColleges,
+            'colleges_with_admin' => $collegesWithAdmin,
+            'coverage_percent' => $coveragePercent,
+            'unassigned_colleges' => $unassignedColleges,
+        ];
+    }
+
+    /**
+     * Pending / approved / rejected counts across intern profiles
      *
      * @return array<int, array{status: string, count: int}>
      */
-    private function statusBreakdown(): array
+    private function statusBreakdown(?int $collegeId = null): array
     {
-        $counts = InternProfile::query()
+        $query = InternProfile::query()->verified();
+        if ($collegeId !== null) {
+            $query->forCollege($collegeId);
+        }
+
+        $counts = $query
             ->selectRaw('status, count(*) as aggregate')
             ->groupBy('status')
             ->pluck('aggregate', 'status');
@@ -88,20 +377,22 @@ class DashboardController extends Controller
     }
 
     /**
-     * Daily registration counts for the last TREND_DAYS days (including
-     * today), oldest first — powers the "signups over time" mini bar
-     * chart so momentum is visible without opening the interns list.
+     * Daily registration counts for the last TREND_DAYS days
      *
      * @return array<int, array{date: string, label: string, count: int}>
      */
-    private function registrationsTrend(): array
+    private function registrationsTrend(?int $collegeId = null): array
     {
         $timezone = config('dtr.timezone');
         $today = Carbon::now($timezone)->startOfDay();
         $rangeStart = $today->clone()->subDays(self::TREND_DAYS - 1);
 
-        $countsByDate = InternProfile::query()
-            ->where('registered_at', '>=', $rangeStart)
+        $query = InternProfile::query()->verified()->where('registered_at', '>=', $rangeStart);
+        if ($collegeId !== null) {
+            $query->forCollege($collegeId);
+        }
+
+        $countsByDate = $query
             ->get(['registered_at'])
             ->countBy(fn (InternProfile $profile) => $profile->registered_at
                 ->clone()
@@ -123,17 +414,29 @@ class DashboardController extends Controller
     }
 
     /**
-     * The HTEs currently hosting the most approved interns — helps the
-     * admin spot which partners are most active (or which ones might be
-     * under-utilized) without cross-referencing the HTE list by hand.
+     * The HTEs currently hosting the most approved interns
      *
      * @return array<int, array{name: string, count: int}>
      */
-    private function topHtes(): array
+    private function topHtes(?int $collegeId = null): array
     {
-        return Hte::query()
+        $query = Hte::query();
+        if ($collegeId !== null) {
+            $query->where('college_id', $collegeId);
+        }
+
+        return $query
             ->withCount([
-                'internProfiles as interns_count' => fn ($query) => $query->where('status', 'approved'),
+                'internProfiles as interns_count' => function ($query) use ($collegeId) {
+                    $query->where('status', 'approved')
+                        ->whereHas('user', fn ($user) => $user->whereNotNull('email_verified_at'));
+                    if ($collegeId !== null) {
+                        $query->where(function ($profile) use ($collegeId) {
+                            $profile->whereHas('program', fn ($program) => $program->where('college_id', $collegeId))
+                                ->orWhereHas('user', fn ($user) => $user->where('college_id', $collegeId));
+                        });
+                    }
+                },
             ])
             ->orderByDesc('interns_count')
             ->orderBy('hte_name')
@@ -149,20 +452,29 @@ class DashboardController extends Controller
     }
 
     /**
-     * How many approved interns have scanned in at least once today, out
-     * of every approved intern — the single most useful "right now"
-     * signal on a DTR system, distinct from the lifetime totals above.
+     * Today's attendance
      *
      * @return array{checked_in: int, total: int, percent: int}
      */
-    private function todayAttendance(int $totalApprovedInterns): array
+    private function todayAttendance(int $totalApprovedInterns, ?int $collegeId = null): array
     {
         $timezone = config('dtr.timezone');
         $today = Carbon::now($timezone);
 
-        $checkedIn = AttendanceLog::query()
+        $query = AttendanceLog::query()
             ->whereBetween('scan_timestamp', [$today->clone()->startOfDay(), $today->clone()->endOfDay()])
-            ->whereHas('internProfile', fn ($query) => $query->where('status', 'approved'))
+            ->whereHas('internProfile', function ($query) use ($collegeId) {
+                $query->where('status', 'approved')
+                    ->whereHas('user', fn ($user) => $user->whereNotNull('email_verified_at'));
+                if ($collegeId !== null) {
+                    $query->where(function ($profile) use ($collegeId) {
+                        $profile->whereHas('program', fn ($program) => $program->where('college_id', $collegeId))
+                            ->orWhereHas('user', fn ($user) => $user->where('college_id', $collegeId));
+                    });
+                }
+            });
+
+        $checkedIn = $query
             ->distinct('intern_user_id')
             ->count('intern_user_id');
 

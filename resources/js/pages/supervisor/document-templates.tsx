@@ -713,9 +713,9 @@ export default function DocumentTemplates({
                             {filteredArchived.map((item) => (
                                 <Card
                                     key={item.id}
-                                    className="flex flex-col justify-between border-border/70 bg-card/60 transition-all duration-200 hover:bg-card"
+                                    className="flex h-full flex-col justify-between rounded-xl border border-border/70 bg-card/60 shadow-xs transition-all duration-200 hover:border-border hover:bg-card hover:shadow-md"
                                 >
-                                    <CardContent className="space-y-3 p-4">
+                                    <CardContent className="flex-1 space-y-3 p-4">
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="flex min-w-0 items-start gap-2.5">
                                                 <div className="shrink-0 rounded-lg bg-orange-500/10 p-2 text-orange-600">
@@ -1008,13 +1008,13 @@ export default function DocumentTemplates({
                         {filteredChecklist.map((item) => (
                             <Card
                                 key={item.document_type}
-                                className={`flex flex-col justify-between border-border/70 transition-all duration-200 ${
+                                className={`flex h-full flex-col justify-between rounded-xl border transition-all duration-200 ${
                                     item.has_template
-                                        ? 'bg-card shadow-sm hover:border-primary/50'
-                                        : 'border-dashed bg-card/60 hover:bg-card'
+                                        ? 'border-border/70 bg-card shadow-xs hover:border-border hover:shadow-md'
+                                        : 'border-dashed border-border/70 bg-card/60 shadow-xs hover:bg-card hover:shadow-md'
                                 }`}
                             >
-                                <CardContent className="space-y-3 p-4">
+                                <CardContent className="flex-1 space-y-3 p-4">
                                     {/* Card Header */}
                                     <div className="flex items-start justify-between gap-2">
                                         <div className="flex min-w-0 items-start gap-2.5">
