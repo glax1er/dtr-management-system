@@ -603,14 +603,23 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                         <div className={view === 'table' ? 'sm:hidden' : ''}>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {campuses.data.map((campus) => (
-                                    <Card key={campus.id} className="flex flex-col justify-between h-full rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:shadow-md hover:border-border">
+                                    <Card
+                                        key={campus.id}
+                                        className="flex h-full flex-col justify-between rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:border-border hover:shadow-md"
+                                    >
                                         <CardHeader className="pb-3">
                                             <div className="flex items-start justify-between gap-2">
                                                 <div className="min-w-0 flex-1">
-                                                    <Badge variant="outline" className="mb-1 font-mono text-xs font-bold">
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="mb-1 font-mono text-xs font-bold"
+                                                    >
                                                         {campus.code}
                                                     </Badge>
-                                                    <CardTitle className="text-base font-semibold leading-tight line-clamp-1" title={campus.name}>
+                                                    <CardTitle
+                                                        className="line-clamp-1 text-base leading-tight font-semibold"
+                                                        title={campus.name}
+                                                    >
                                                         {campus.name}
                                                     </CardTitle>
                                                 </div>
@@ -627,11 +636,19 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                                             {campus.address && (
                                                 <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
                                                     <MapPin className="mt-0.5 size-3.5 shrink-0" />
-                                                    <span className="line-clamp-1" title={campus.address}>{campus.address}</span>
+                                                    <span
+                                                        className="line-clamp-1"
+                                                        title={campus.address}
+                                                    >
+                                                        {campus.address}
+                                                    </span>
                                                 </div>
                                             )}
                                             {campus.description && (
-                                                <p className="line-clamp-2 text-xs text-muted-foreground" title={campus.description}>
+                                                <p
+                                                    className="line-clamp-2 text-xs text-muted-foreground"
+                                                    title={campus.description}
+                                                >
                                                     {campus.description}
                                                 </p>
                                             )}
@@ -639,17 +656,23 @@ export default function CampusesIndex({ campuses, filters }: CampusIndexProps) {
                                                 <span className="flex items-center gap-1.5">
                                                     <Building2 className="size-3.5 text-muted-foreground" />
                                                     {campus.colleges_count}{' '}
-                                                    {campus.colleges_count === 1 ? 'College' : 'Colleges'}
+                                                    {campus.colleges_count === 1
+                                                        ? 'College'
+                                                        : 'Colleges'}
                                                 </span>
                                                 <span className="flex items-center gap-1.5">
                                                     <GraduationCap className="size-3.5 text-muted-foreground" />
                                                     {campus.interns_count}{' '}
-                                                    {campus.interns_count === 1 ? 'Intern' : 'Interns'}
+                                                    {campus.interns_count === 1
+                                                        ? 'Intern'
+                                                        : 'Interns'}
                                                 </span>
                                             </div>
                                         </CardContent>
                                         <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
-                                            <span>Added {campus.created_at || '—'}</span>
+                                            <span>
+                                                Added {campus.created_at || '—'}
+                                            </span>
                                             <ProgramActions
                                                 program={campus}
                                                 onEdit={openEdit}

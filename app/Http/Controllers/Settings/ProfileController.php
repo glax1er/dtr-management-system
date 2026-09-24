@@ -51,7 +51,7 @@ class ProfileController extends Controller
             ])->first();
             $hte = $profile === null ? null : $profile->hte;
 
-            $college = $profile?->program?->college ?? $user->college;
+            $college = $profile?->program->college ?? $user->college;
             $collegeCampus = is_string($college?->campus) && ! empty($college->campus)
                 ? $college->campus
                 : $college?->campus()?->value('name');
@@ -79,7 +79,7 @@ class ProfileController extends Controller
             ])->first();
             $hte = $profile === null ? null : $profile->hte;
 
-            $college = $profile?->program?->college ?? $profile?->hte?->college ?? $user->college;
+            $college = $profile?->program->college ?? $profile?->hte->college ?? $user->college;
             $collegeCampus = is_string($college?->campus) && ! empty($college->campus)
                 ? $college->campus
                 : $college?->campus()?->value('name');
@@ -98,8 +98,8 @@ class ProfileController extends Controller
         }
 
         $collegeAdminProfile = $user->collegeAdminProfile()->with(['campus', 'college'])->first();
-        $college = $collegeAdminProfile?->college ?? $user->college;
-        $campus = $collegeAdminProfile?->campus?->name
+        $college = $collegeAdminProfile->college ?? $user->college;
+        $campus = $collegeAdminProfile?->campus->name
             ?? $user->campus
             ?? (is_string($college?->campus) && ! empty($college->campus) ? $college->campus : $college?->campus()?->value('name'));
 
@@ -129,7 +129,7 @@ class ProfileController extends Controller
                 'program.college' => fn ($q) => $q->withTrashed(),
             ])->first();
 
-            $college = $profile?->program?->college ?? $user->college;
+            $college = $profile?->program->college ?? $user->college;
             $collegeCampus = is_string($college?->campus) && ! empty($college->campus)
                 ? $college->campus
                 : $college?->campus()?->value('name');
@@ -186,7 +186,7 @@ class ProfileController extends Controller
                 'program.college' => fn ($q) => $q->withTrashed(),
             ])->first();
 
-            $college = $profile?->program?->college ?? $profile?->hte?->college ?? $user->college;
+            $college = $profile?->program->college ?? $profile?->hte->college ?? $user->college;
             $collegeCampus = is_string($college?->campus) && ! empty($college->campus)
                 ? $college->campus
                 : $college?->campus()?->value('name');
@@ -205,8 +205,8 @@ class ProfileController extends Controller
         }
 
         $collegeAdminProfile = $user->collegeAdminProfile()->with(['campus', 'college'])->first();
-        $college = $collegeAdminProfile?->college ?? $user->college;
-        $campus = $collegeAdminProfile?->campus?->name
+        $college = $collegeAdminProfile->college ?? $user->college;
+        $campus = $collegeAdminProfile?->campus->name
             ?? $user->campus
             ?? (is_string($college?->campus) && ! empty($college->campus) ? $college->campus : $college?->campus()?->value('name'));
 

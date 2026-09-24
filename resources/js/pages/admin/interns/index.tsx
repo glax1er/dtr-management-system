@@ -518,43 +518,59 @@ export default function InternsIndex({
                                             key={intern.user_id}
                                             id={`intern-card-${intern.user_id}`}
                                             className={cn(
-                                                'flex flex-col justify-between h-full rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:shadow-md hover:border-border',
+                                                'flex h-full flex-col justify-between rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:border-border hover:shadow-md',
                                                 isHighlighted &&
                                                     'border-primary bg-primary/5 shadow-md ring-2 ring-primary dark:bg-primary/10',
                                             )}
                                         >
                                             <CardHeader className="pb-3">
                                                 <div className="flex items-start justify-between gap-2">
-                                                    <div className="flex items-center gap-3 min-w-0">
+                                                    <div className="flex min-w-0 items-center gap-3">
                                                         <Avatar className="size-10 shrink-0">
                                                             <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
-                                                                {getInitials(intern.name)}
+                                                                {getInitials(
+                                                                    intern.name,
+                                                                )}
                                                             </AvatarFallback>
                                                         </Avatar>
                                                         <div className="min-w-0">
                                                             <div className="flex items-center gap-1.5">
-                                                                <CardTitle className="text-base font-semibold leading-tight line-clamp-1" title={intern.name}>
-                                                                    {intern.name}
+                                                                <CardTitle
+                                                                    className="line-clamp-1 text-base leading-tight font-semibold"
+                                                                    title={
+                                                                        intern.name
+                                                                    }
+                                                                >
+                                                                    {
+                                                                        intern.name
+                                                                    }
                                                                 </CardTitle>
                                                                 {isHighlighted && (
-                                                                    <Badge className="animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase shrink-0">
+                                                                    <Badge className="shrink-0 animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase">
                                                                         <Sparkles className="size-2.5" />
                                                                         Focus
                                                                     </Badge>
                                                                 )}
                                                             </div>
-                                                            <span className="text-xs text-muted-foreground truncate block" title={intern.email}>
+                                                            <span
+                                                                className="block truncate text-xs text-muted-foreground"
+                                                                title={
+                                                                    intern.email
+                                                                }
+                                                            >
                                                                 {intern.email}
                                                             </span>
                                                         </div>
                                                     </div>
-                                                    <StatusBadge status={intern.status} />
+                                                    <StatusBadge
+                                                        status={intern.status}
+                                                    />
                                                 </div>
                                             </CardHeader>
                                             <CardContent className="flex-1 space-y-2.5 pb-3 text-sm">
                                                 <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3 text-xs">
                                                     <div className="flex items-center justify-between gap-2">
-                                                        <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
+                                                        <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
                                                             ID Number:
                                                         </span>
                                                         <span className="font-mono font-medium text-foreground">
@@ -563,28 +579,43 @@ export default function InternsIndex({
                                                     </div>
 
                                                     <div className="flex items-center justify-between gap-2">
-                                                        <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
+                                                        <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
                                                             <BookOpen className="size-3.5 text-muted-foreground" />
                                                             Program:
                                                         </span>
-                                                        <span className="font-medium text-foreground truncate text-right" title={intern.program_name}>
-                                                            {intern.program_name}
+                                                        <span
+                                                            className="truncate text-right font-medium text-foreground"
+                                                            title={
+                                                                intern.program_name
+                                                            }
+                                                        >
+                                                            {
+                                                                intern.program_name
+                                                            }
                                                         </span>
                                                     </div>
 
                                                     <div className="flex items-center justify-between gap-2 border-t pt-1.5">
-                                                        <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
+                                                        <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
                                                             <Building2 className="size-3.5 text-muted-foreground" />
                                                             HTE:
                                                         </span>
-                                                        <span className="font-medium text-foreground truncate text-right" title={intern.hte_name}>
+                                                        <span
+                                                            className="truncate text-right font-medium text-foreground"
+                                                            title={
+                                                                intern.hte_name
+                                                            }
+                                                        >
                                                             {intern.hte_name}
                                                         </span>
                                                     </div>
                                                 </div>
                                             </CardContent>
                                             <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
-                                                <span>Registered {intern.registered_at}</span>
+                                                <span>
+                                                    Registered{' '}
+                                                    {intern.registered_at}
+                                                </span>
                                                 <InternActions
                                                     intern={intern}
                                                     onApprove={approve}

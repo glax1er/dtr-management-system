@@ -495,34 +495,45 @@ export default function ArchivesIndex({
                         <div className={view === 'table' ? 'sm:hidden' : ''}>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {records.data.map((record) => (
-                                    <Card key={record.id} className="flex flex-col justify-between h-full rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:shadow-md hover:border-border">
+                                    <Card
+                                        key={record.id}
+                                        className="flex h-full flex-col justify-between rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:border-border hover:shadow-md"
+                                    >
                                         <CardHeader className="pb-3">
                                             <div className="flex items-start justify-between gap-2">
                                                 <div className="min-w-0 flex-1">
-                                                    <CardTitle className="text-base font-semibold leading-tight line-clamp-1" title={record.name}>
+                                                    <CardTitle
+                                                        className="line-clamp-1 text-base leading-tight font-semibold"
+                                                        title={record.name}
+                                                    >
                                                         {record.name}
                                                     </CardTitle>
                                                     {record.detail && (
                                                         <p
                                                             className="mt-1 line-clamp-2 text-xs text-muted-foreground"
-                                                            title={record.detail}
+                                                            title={
+                                                                record.detail
+                                                            }
                                                         >
                                                             {record.detail}
                                                         </p>
                                                     )}
                                                 </div>
-                                                <Badge variant="outline" className="text-[11px] font-medium shrink-0 text-muted-foreground">
+                                                <Badge
+                                                    variant="outline"
+                                                    className="shrink-0 text-[11px] font-medium text-muted-foreground"
+                                                >
                                                     Archived
                                                 </Badge>
                                             </div>
                                         </CardHeader>
                                         <CardContent className="flex-1 space-y-2.5 pb-3 text-sm">
                                             <div className="flex items-center justify-between rounded-lg bg-muted/40 p-2.5 text-xs">
-                                                <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
+                                                <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
                                                     <Clock className="size-3.5 text-muted-foreground" />
                                                     Archived On:
                                                 </span>
-                                                <span className="font-medium text-foreground text-right truncate">
+                                                <span className="truncate text-right font-medium text-foreground">
                                                     {record.deleted_at}
                                                 </span>
                                             </div>

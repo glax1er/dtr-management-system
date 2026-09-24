@@ -1,12 +1,7 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import {
     Briefcase,
-    Building,
     Building2,
-    Check,
-    Filter,
-    GraduationCap,
-    Landmark,
     LayoutGrid,
     MapPin,
     Pencil,
@@ -14,12 +9,9 @@ import {
     Power,
     PowerOff,
     Search,
-    SlidersHorizontal,
     Table as TableIcon,
     Trash2,
-    UserCheck,
     UserCog,
-    UserX,
     X,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -66,7 +58,6 @@ import {
 } from '@/components/ui/tooltip';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useInitials } from '@/hooks/use-initials';
-import { dashboard } from '@/routes';
 import type { Campus, College, PageProps } from '@/types';
 
 interface CollegeAdminRecord {
@@ -119,10 +110,10 @@ export default function CollegeAdminManagement({
     const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters.search || '');
     const [collegeId, setCollegeId] = useState<string>(
-        filters.college_id ? String(filters.college_id) : 'all'
+        filters.college_id ? String(filters.college_id) : 'all',
     );
     const [campusId, setCampusId] = useState<string>(
-        filters.campus_id ? String(filters.campus_id) : 'all'
+        filters.campus_id ? String(filters.campus_id) : 'all',
     );
     const [status, setStatus] = useState<string>(filters.status || 'all');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -142,7 +133,9 @@ export default function CollegeAdminManagement({
     });
 
     const [editOpen, setEditOpen] = useState(false);
-    const [editTarget, setEditTarget] = useState<CollegeAdminRecord | null>(null);
+    const [editTarget, setEditTarget] = useState<CollegeAdminRecord | null>(
+        null,
+    );
     const [editForm, setEditForm] = useState({
         name: '',
         email: '',
@@ -154,10 +147,14 @@ export default function CollegeAdminManagement({
     });
 
     const [statusConfirmOpen, setStatusConfirmOpen] = useState(false);
-    const [statusTarget, setStatusTarget] = useState<CollegeAdminRecord | null>(null);
+    const [statusTarget, setStatusTarget] = useState<CollegeAdminRecord | null>(
+        null,
+    );
 
     const [deleteOpen, setDeleteOpen] = useState(false);
-    const [deleteTarget, setDeleteTarget] = useState<CollegeAdminRecord | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<CollegeAdminRecord | null>(
+        null,
+    );
 
     const baseParams = () => ({
         search: search || undefined,
@@ -167,7 +164,10 @@ export default function CollegeAdminManagement({
         per_page: filters.per_page ? String(filters.per_page) : undefined,
     });
 
-    const visit = (params: Record<string, string | undefined>, replace = true) => {
+    const visit = (
+        params: Record<string, string | undefined>,
+        replace = true,
+    ) => {
         router.get('/admin/college-admins', params, {
             preserveState: true,
             preserveScroll: true,
@@ -178,6 +178,7 @@ export default function CollegeAdminManagement({
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
+
             return;
         }
 
@@ -247,14 +248,13 @@ export default function CollegeAdminManagement({
     };
 
     const hasActiveFilters = Boolean(
-        search ||
-        collegeId !== 'all' ||
-        campusId !== 'all' ||
-        status !== 'all'
+        search || collegeId !== 'all' || campusId !== 'all' || status !== 'all',
     );
 
-    const goToPage = (page: number) => visit({ ...baseParams(), page: String(page) }, false);
-    const changePerPage = (perPage: number) => visit({ ...baseParams(), per_page: String(perPage), page: undefined });
+    const goToPage = (page: number) =>
+        visit({ ...baseParams(), page: String(page) }, false);
+    const changePerPage = (perPage: number) =>
+        visit({ ...baseParams(), per_page: String(perPage), page: undefined });
 
     const openAdd = () => {
         setAddForm({
@@ -272,11 +272,18 @@ export default function CollegeAdminManagement({
     const handleAddCollegeChange = (colId: string) => {
         const selCollege = colleges.find((c) => String(c.id) === colId);
         let matchingCampusId = '';
+
         if (selCollege?.campus_id) {
             matchingCampusId = String(selCollege.campus_id);
         } else if (selCollege?.campus) {
-            const foundCamp = campuses.find((c) => c.name.toLowerCase() === selCollege.campus?.toLowerCase());
-            if (foundCamp) matchingCampusId = String(foundCamp.id);
+            const foundCamp = campuses.find(
+                (c) =>
+                    c.name.toLowerCase() === selCollege.campus?.toLowerCase(),
+            );
+
+            if (foundCamp) {
+                matchingCampusId = String(foundCamp.id);
+            }
         }
 
         setAddForm((prev) => ({
@@ -288,20 +295,28 @@ export default function CollegeAdminManagement({
 
     const submitAdd = (e: FormEvent) => {
         e.preventDefault();
+
         if (!addForm.name.trim() || !addForm.email.trim()) {
             toast.error('Name and email are required.');
+
             return;
         }
+
         if (!addForm.college_id) {
             toast.error('Please select an assigned college.');
+
             return;
         }
+
         if (!addForm.password) {
             toast.error('Password is required.');
+
             return;
         }
+
         if (addForm.password !== addForm.password_confirmation) {
             toast.error('Passwords do not match.');
+
             return;
         }
 
@@ -321,7 +336,7 @@ export default function CollegeAdminManagement({
                 onSuccess: () => {
                     setAddOpen(false);
                 },
-            }
+            },
         );
     };
 
@@ -342,11 +357,18 @@ export default function CollegeAdminManagement({
     const handleEditCollegeChange = (colId: string) => {
         const selCollege = colleges.find((c) => String(c.id) === colId);
         let matchingCampusId = '';
+
         if (selCollege?.campus_id) {
             matchingCampusId = String(selCollege.campus_id);
         } else if (selCollege?.campus) {
-            const foundCamp = campuses.find((c) => c.name.toLowerCase() === selCollege.campus?.toLowerCase());
-            if (foundCamp) matchingCampusId = String(foundCamp.id);
+            const foundCamp = campuses.find(
+                (c) =>
+                    c.name.toLowerCase() === selCollege.campus?.toLowerCase(),
+            );
+
+            if (foundCamp) {
+                matchingCampusId = String(foundCamp.id);
+            }
         }
 
         setEditForm((prev) => ({
@@ -358,16 +380,25 @@ export default function CollegeAdminManagement({
 
     const submitEdit = (e: FormEvent) => {
         e.preventDefault();
+
         if (!editTarget || !editForm.name.trim() || !editForm.email.trim()) {
             toast.error('Name and email are required.');
+
             return;
         }
+
         if (!editForm.college_id) {
             toast.error('Please select an assigned college.');
+
             return;
         }
-        if (editForm.password && editForm.password !== editForm.password_confirmation) {
+
+        if (
+            editForm.password &&
+            editForm.password !== editForm.password_confirmation
+        ) {
             toast.error('Passwords do not match.');
+
             return;
         }
 
@@ -377,12 +408,16 @@ export default function CollegeAdminManagement({
                 name: editForm.name.trim(),
                 email: editForm.email.trim().toLowerCase(),
                 college_id: Number(editForm.college_id),
-                campus_id: editForm.campus_id ? Number(editForm.campus_id) : null,
+                campus_id: editForm.campus_id
+                    ? Number(editForm.campus_id)
+                    : null,
                 position: editForm.position.trim() || null,
-                ...(editForm.password ? {
-                    password: editForm.password,
-                    password_confirmation: editForm.password_confirmation,
-                } : {}),
+                ...(editForm.password
+                    ? {
+                          password: editForm.password,
+                          password_confirmation: editForm.password_confirmation,
+                      }
+                    : {}),
             },
             {
                 preserveScroll: true,
@@ -390,21 +425,25 @@ export default function CollegeAdminManagement({
                     setEditOpen(false);
                     setEditTarget(null);
                 },
-            }
+            },
         );
     };
 
     const openStatusConfirm = (admin: CollegeAdminRecord) => {
         if (admin.id === currentUserId) {
             toast.error('You cannot deactivate your own account.');
+
             return;
         }
+
         setStatusTarget(admin);
         setStatusConfirmOpen(true);
     };
 
     const submitStatusToggle = () => {
-        if (!statusTarget) return;
+        if (!statusTarget) {
+            return;
+        }
 
         router.patch(
             `/admin/college-admins/${statusTarget.id}/status`,
@@ -415,21 +454,25 @@ export default function CollegeAdminManagement({
                     setStatusConfirmOpen(false);
                     setStatusTarget(null);
                 },
-            }
+            },
         );
     };
 
     const openDelete = (admin: CollegeAdminRecord) => {
         if (admin.id === currentUserId) {
             toast.error('You cannot delete your own account.');
+
             return;
         }
+
         setDeleteTarget(admin);
         setDeleteOpen(true);
     };
 
     const submitDelete = () => {
-        if (!deleteTarget) return;
+        if (!deleteTarget) {
+            return;
+        }
 
         router.delete(`/admin/college-admins/${deleteTarget.id}`, {
             preserveScroll: true,
@@ -456,7 +499,10 @@ export default function CollegeAdminManagement({
 
                     <div className="flex flex-wrap items-center gap-2">
                         {/* Search */}
-                        <form onSubmit={applySearch} className="relative hidden sm:block">
+                        <form
+                            onSubmit={applySearch}
+                            className="relative hidden sm:block"
+                        >
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                             <input
                                 type="text"
@@ -477,12 +523,17 @@ export default function CollegeAdminManagement({
                         </form>
 
                         {/* College Filter */}
-                        <Select value={collegeId} onValueChange={handleCollegeChange}>
+                        <Select
+                            value={collegeId}
+                            onValueChange={handleCollegeChange}
+                        >
                             <SelectTrigger className="h-9 w-40">
                                 <SelectValue placeholder="All Colleges" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All Colleges</SelectItem>
+                                <SelectItem value="all">
+                                    All Colleges
+                                </SelectItem>
                                 {colleges.map((c) => (
                                     <SelectItem key={c.id} value={String(c.id)}>
                                         {c.code} - {c.name}
@@ -492,14 +543,22 @@ export default function CollegeAdminManagement({
                         </Select>
 
                         {/* Campus Filter */}
-                        <Select value={campusId} onValueChange={handleCampusChange}>
+                        <Select
+                            value={campusId}
+                            onValueChange={handleCampusChange}
+                        >
                             <SelectTrigger className="h-9 w-36">
                                 <SelectValue placeholder="All Campuses" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All Campuses</SelectItem>
+                                <SelectItem value="all">
+                                    All Campuses
+                                </SelectItem>
                                 {campuses.map((camp) => (
-                                    <SelectItem key={camp.id} value={String(camp.id)}>
+                                    <SelectItem
+                                        key={camp.id}
+                                        value={String(camp.id)}
+                                    >
                                         {camp.name}
                                     </SelectItem>
                                 ))}
@@ -507,14 +566,19 @@ export default function CollegeAdminManagement({
                         </Select>
 
                         {/* Status Filter */}
-                        <Select value={status} onValueChange={handleStatusChange}>
+                        <Select
+                            value={status}
+                            onValueChange={handleStatusChange}
+                        >
                             <SelectTrigger className="h-9 w-32">
                                 <SelectValue placeholder="Status" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Status</SelectItem>
                                 <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="inactive">Inactive</SelectItem>
+                                <SelectItem value="inactive">
+                                    Inactive
+                                </SelectItem>
                             </SelectContent>
                         </Select>
 
@@ -537,7 +601,11 @@ export default function CollegeAdminManagement({
                             onClick={() => setMobileSearchOpen((o) => !o)}
                             className="inline-flex size-9 shrink-0 items-center justify-center rounded-md border bg-background text-muted-foreground hover:text-foreground sm:hidden"
                         >
-                            {mobileSearchOpen ? <X className="size-4" /> : <Search className="size-4" />}
+                            {mobileSearchOpen ? (
+                                <X className="size-4" />
+                            ) : (
+                                <Search className="size-4" />
+                            )}
                         </button>
 
                         {/* View Mode Toggle — desktop only */}
@@ -600,9 +668,7 @@ export default function CollegeAdminManagement({
                     <Card>
                         <CardContent className="py-8 text-center text-sm text-muted-foreground">
                             No college administrators
-                            {hasActiveFilters
-                                ? ' match this filter.'
-                                : ' yet.'}
+                            {hasActiveFilters ? ' match this filter.' : ' yet.'}
                         </CardContent>
                     </Card>
                 ) : (
@@ -613,90 +679,344 @@ export default function CollegeAdminManagement({
                                 <Card className="overflow-hidden p-0">
                                     <CardContent className="p-0">
                                         <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-[240px]">Administrator</TableHead>
-                                    <TableHead className="w-[180px]">Assigned College</TableHead>
-                                    <TableHead className="w-[140px]">Campus</TableHead>
-                                    <TableHead className="w-[140px]">Role / Position</TableHead>
-                                    <TableHead className="w-[100px] text-center">Status</TableHead>
-                                    <TableHead className="w-[120px]">Added</TableHead>
-                                    <TableHead className="w-[110px] text-center">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="w-[240px]">
+                                                        Administrator
+                                                    </TableHead>
+                                                    <TableHead className="w-[180px]">
+                                                        Assigned College
+                                                    </TableHead>
+                                                    <TableHead className="w-[140px]">
+                                                        Campus
+                                                    </TableHead>
+                                                    <TableHead className="w-[140px]">
+                                                        Role / Position
+                                                    </TableHead>
+                                                    <TableHead className="w-[100px] text-center">
+                                                        Status
+                                                    </TableHead>
+                                                    <TableHead className="w-[120px]">
+                                                        Added
+                                                    </TableHead>
+                                                    <TableHead className="w-[110px] text-center">
+                                                        Actions
+                                                    </TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {collegeAdmins.data.map(
+                                                    (admin) => (
+                                                        <TableRow
+                                                            key={admin.id}
+                                                        >
+                                                            <TableCell>
+                                                                <div className="flex items-center gap-3">
+                                                                    <Avatar className="size-9">
+                                                                        {admin.avatar && (
+                                                                            <AvatarImage
+                                                                                src={
+                                                                                    admin.avatar
+                                                                                }
+                                                                                alt={
+                                                                                    admin.name
+                                                                                }
+                                                                                className="object-cover"
+                                                                            />
+                                                                        )}
+                                                                        <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
+                                                                            {getInitials(
+                                                                                admin.name,
+                                                                            )}
+                                                                        </AvatarFallback>
+                                                                    </Avatar>
+                                                                    <div className="min-w-0">
+                                                                        <div className="font-semibold text-foreground">
+                                                                            {
+                                                                                admin.name
+                                                                            }
+                                                                        </div>
+                                                                        <div className="truncate text-xs text-muted-foreground">
+                                                                            {
+                                                                                admin.email
+                                                                            }
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                {admin.college ? (
+                                                                    <div>
+                                                                        <Badge
+                                                                            variant="secondary"
+                                                                            className="font-semibold"
+                                                                        >
+                                                                            {
+                                                                                admin
+                                                                                    .college
+                                                                                    .code
+                                                                            }
+                                                                        </Badge>
+                                                                        <div className="line-clamp-1 text-xs text-muted-foreground">
+                                                                            {
+                                                                                admin
+                                                                                    .college
+                                                                                    .name
+                                                                            }
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="text-xs text-muted-foreground italic">
+                                                                        Unassigned
+                                                                    </span>
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <div className="flex items-center gap-1 text-sm text-foreground">
+                                                                    <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
+                                                                    <span>
+                                                                        {admin.campus ||
+                                                                            '—'}
+                                                                    </span>
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <div className="text-sm font-medium text-foreground">
+                                                                    {admin.position ||
+                                                                        'College Admin'}
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell className="text-center">
+                                                                <StatusBadge
+                                                                    status={
+                                                                        admin.is_active
+                                                                            ? 'active'
+                                                                            : 'inactive'
+                                                                    }
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell className="text-xs text-muted-foreground">
+                                                                {
+                                                                    admin.created_at
+                                                                }
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <div className="flex justify-center gap-1">
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger
+                                                                            asChild
+                                                                        >
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                onClick={() =>
+                                                                                    openEdit(
+                                                                                        admin,
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                <Pencil className="size-4 text-blue-600" />
+                                                                            </Button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                            Edit
+                                                                            Admin
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger
+                                                                            asChild
+                                                                        >
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                disabled={
+                                                                                    admin.id ===
+                                                                                    currentUserId
+                                                                                }
+                                                                                onClick={() =>
+                                                                                    openStatusConfirm(
+                                                                                        admin,
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                {admin.is_active ? (
+                                                                                    <PowerOff className="size-4 text-destructive" />
+                                                                                ) : (
+                                                                                    <Power className="size-4 text-emerald-600" />
+                                                                                )}
+                                                                            </Button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                            {admin.is_active
+                                                                                ? 'Deactivate'
+                                                                                : 'Activate'}
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger
+                                                                            asChild
+                                                                        >
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                disabled={
+                                                                                    admin.id ===
+                                                                                    currentUserId
+                                                                                }
+                                                                                onClick={() =>
+                                                                                    openDelete(
+                                                                                        admin,
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                <Trash2 className="size-4 text-destructive" />
+                                                                            </Button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                            Delete
+                                                                            Admin
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+                                                                </div>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ),
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                        {collegeAdmins.total > 0 && (
+                                            <NumberedPagination
+                                                meta={collegeAdmins}
+                                                itemLabel="college administrator"
+                                                onPageChange={goToPage}
+                                                onPerPageChange={changePerPage}
+                                                idPrefix="college-admins-table-per-page"
+                                            />
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )}
+
+                        {/* Mobile card view (always shown on mobile, or when grid view active) */}
+                        <div className={view === 'table' ? 'sm:hidden' : ''}>
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {collegeAdmins.data.map((admin) => (
-                                    <TableRow key={admin.id}>
-                                        <TableCell>
-                                            <div className="flex items-center gap-3">
-                                                <Avatar className="size-9">
-                                                    {admin.avatar && (
-                                                        <AvatarImage
-                                                            src={admin.avatar}
-                                                            alt={admin.name}
-                                                            className="object-cover"
-                                                        />
+                                    <Card
+                                        key={admin.id}
+                                        className="flex h-full flex-col justify-between rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:border-border hover:shadow-md"
+                                    >
+                                        <CardHeader className="pb-3">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="flex min-w-0 items-center gap-3">
+                                                    <Avatar className="size-10 shrink-0">
+                                                        {admin.avatar && (
+                                                            <AvatarImage
+                                                                src={
+                                                                    admin.avatar
+                                                                }
+                                                                alt={admin.name}
+                                                                className="object-cover"
+                                                            />
+                                                        )}
+                                                        <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
+                                                            {getInitials(
+                                                                admin.name,
+                                                            )}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="min-w-0">
+                                                        <CardTitle
+                                                            className="line-clamp-1 text-base leading-tight font-semibold"
+                                                            title={admin.name}
+                                                        >
+                                                            {admin.name}
+                                                        </CardTitle>
+                                                        <span
+                                                            className="block truncate text-xs text-muted-foreground"
+                                                            title={admin.email}
+                                                        >
+                                                            {admin.email}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <StatusBadge
+                                                    status={
+                                                        admin.is_active
+                                                            ? 'active'
+                                                            : 'inactive'
+                                                    }
+                                                />
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent className="flex-1 space-y-2.5 pb-3 text-sm">
+                                            <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3 text-xs">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
+                                                        <Building2 className="size-3.5 text-muted-foreground" />
+                                                        College:
+                                                    </span>
+                                                    {admin.college ? (
+                                                        <span
+                                                            className="truncate text-right font-semibold text-foreground"
+                                                            title={`${admin.college.code} — ${admin.college.name}`}
+                                                        >
+                                                            {admin.college.code}{' '}
+                                                            —{' '}
+                                                            {admin.college.name}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-muted-foreground italic">
+                                                            Unassigned
+                                                        </span>
                                                     )}
-                                                    <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
-                                                        {getInitials(admin.name)}
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                                <div className="min-w-0">
-                                                    <div className="font-semibold text-foreground">
-                                                        {admin.name}
-                                                    </div>
-                                                    <div className="truncate text-xs text-muted-foreground">
-                                                        {admin.email}
-                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
+                                                        <MapPin className="size-3.5 text-muted-foreground" />
+                                                        Campus:
+                                                    </span>
+                                                    <span className="truncate text-right font-medium text-foreground">
+                                                        {admin.campus || 'N/A'}
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex items-center justify-between gap-2 border-t pt-1.5">
+                                                    <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
+                                                        <Briefcase className="size-3.5 text-muted-foreground" />
+                                                        Designation:
+                                                    </span>
+                                                    <span className="truncate text-right font-medium text-foreground">
+                                                        {admin.position ||
+                                                            'College Admin'}
+                                                    </span>
                                                 </div>
                                             </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            {admin.college ? (
-                                                <div>
-                                                    <Badge variant="secondary" className="font-semibold">
-                                                        {admin.college.code}
-                                                    </Badge>
-                                                    <div className="line-clamp-1 text-xs text-muted-foreground">
-                                                        {admin.college.name}
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <span className="text-xs text-muted-foreground italic">
-                                                    Unassigned
-                                                </span>
-                                            )}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-1 text-sm text-foreground">
-                                                <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
-                                                <span>{admin.campus || '—'}</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="text-sm font-medium text-foreground">
-                                                {admin.position || 'College Admin'}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <StatusBadge status={admin.is_active ? 'active' : 'inactive'} />
-                                        </TableCell>
-                                        <TableCell className="text-xs text-muted-foreground">
-                                            {admin.created_at}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex justify-center gap-1">
+                                        </CardContent>
+                                        <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
+                                            <span>
+                                                Added {admin.created_at}
+                                            </span>
+                                            <div className="flex items-center gap-1">
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            onClick={() => openEdit(admin)}
+                                                            onClick={() =>
+                                                                openEdit(admin)
+                                                            }
                                                         >
                                                             <Pencil className="size-4 text-blue-600" />
                                                         </Button>
                                                     </TooltipTrigger>
-                                                    <TooltipContent>Edit Admin</TooltipContent>
+                                                    <TooltipContent>
+                                                        Edit Admin
+                                                    </TooltipContent>
                                                 </Tooltip>
 
                                                 <Tooltip>
@@ -704,8 +1024,15 @@ export default function CollegeAdminManagement({
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            disabled={admin.id === currentUserId}
-                                                            onClick={() => openStatusConfirm(admin)}
+                                                            disabled={
+                                                                admin.id ===
+                                                                currentUserId
+                                                            }
+                                                            onClick={() =>
+                                                                openStatusConfirm(
+                                                                    admin,
+                                                                )
+                                                            }
                                                         >
                                                             {admin.is_active ? (
                                                                 <PowerOff className="size-4 text-destructive" />
@@ -715,7 +1042,9 @@ export default function CollegeAdminManagement({
                                                         </Button>
                                                     </TooltipTrigger>
                                                     <TooltipContent>
-                                                        {admin.is_active ? 'Deactivate' : 'Activate'}
+                                                        {admin.is_active
+                                                            ? 'Deactivate'
+                                                            : 'Activate'}
                                                     </TooltipContent>
                                                 </Tooltip>
 
@@ -724,272 +1053,207 @@ export default function CollegeAdminManagement({
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            disabled={admin.id === currentUserId}
-                                                            onClick={() => openDelete(admin)}
+                                                            disabled={
+                                                                admin.id ===
+                                                                currentUserId
+                                                            }
+                                                            onClick={() =>
+                                                                openDelete(
+                                                                    admin,
+                                                                )
+                                                            }
                                                         >
                                                             <Trash2 className="size-4 text-destructive" />
                                                         </Button>
                                                     </TooltipTrigger>
-                                                    <TooltipContent>Delete Admin</TooltipContent>
+                                                    <TooltipContent>
+                                                        Delete Admin
+                                                    </TooltipContent>
                                                 </Tooltip>
                                             </div>
-                                        </TableCell>
-                                    </TableRow>
+                                        </div>
+                                    </Card>
                                 ))}
-                            </TableBody>
-                            </Table>
+                            </div>
                             {collegeAdmins.total > 0 && (
                                 <NumberedPagination
                                     meta={collegeAdmins}
                                     itemLabel="college administrator"
                                     onPageChange={goToPage}
                                     onPerPageChange={changePerPage}
-                                    idPrefix="college-admins-table-per-page"
+                                    idPrefix="college-admins-grid-per-page"
                                 />
                             )}
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
-
-            {/* Mobile card view (always shown on mobile, or when grid view active) */}
-            <div className={view === 'table' ? 'sm:hidden' : ''}>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {collegeAdmins.data.map((admin) => (
-                            <Card key={admin.id} className="flex flex-col justify-between h-full rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:shadow-md hover:border-border">
-                                <CardHeader className="pb-3">
-                                    <div className="flex items-start justify-between gap-2">
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            <Avatar className="size-10 shrink-0">
-                                                {admin.avatar && (
-                                                    <AvatarImage
-                                                        src={admin.avatar}
-                                                        alt={admin.name}
-                                                        className="object-cover"
-                                                    />
-                                                )}
-                                                <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
-                                                    {getInitials(admin.name)}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <div className="min-w-0">
-                                                <CardTitle className="text-base font-semibold leading-tight line-clamp-1" title={admin.name}>
-                                                    {admin.name}
-                                                </CardTitle>
-                                                <span className="text-xs text-muted-foreground truncate block" title={admin.email}>
-                                                    {admin.email}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <StatusBadge status={admin.is_active ? 'active' : 'inactive'} />
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="flex-1 space-y-2.5 pb-3 text-sm">
-                                    <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3 text-xs">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
-                                                <Building2 className="size-3.5 text-muted-foreground" />
-                                                College:
-                                            </span>
-                                            {admin.college ? (
-                                                <span className="font-semibold text-foreground truncate text-right" title={`${admin.college.code} — ${admin.college.name}`}>
-                                                    {admin.college.code} — {admin.college.name}
-                                                </span>
-                                            ) : (
-                                                <span className="italic text-muted-foreground">Unassigned</span>
-                                            )}
-                                        </div>
-
-                                        <div className="flex items-center justify-between gap-2">
-                                            <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
-                                                <MapPin className="size-3.5 text-muted-foreground" />
-                                                Campus:
-                                            </span>
-                                            <span className="font-medium text-foreground truncate text-right">
-                                                {admin.campus || 'N/A'}
-                                            </span>
-                                        </div>
-
-                                        <div className="flex items-center justify-between gap-2 border-t pt-1.5">
-                                            <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
-                                                <Briefcase className="size-3.5 text-muted-foreground" />
-                                                Designation:
-                                            </span>
-                                            <span className="font-medium text-foreground truncate text-right">
-                                                {admin.position || 'College Admin'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                                <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
-                                    <span>Added {admin.created_at}</span>
-                                    <div className="flex items-center gap-1">
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => openEdit(admin)}
-                                            >
-                                                <Pencil className="size-4 text-blue-600" />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>Edit Admin</TooltipContent>
-                                    </Tooltip>
-
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                disabled={admin.id === currentUserId}
-                                                onClick={() => openStatusConfirm(admin)}
-                                            >
-                                                {admin.is_active ? (
-                                                    <PowerOff className="size-4 text-destructive" />
-                                                ) : (
-                                                    <Power className="size-4 text-emerald-600" />
-                                                )}
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            {admin.is_active ? 'Deactivate' : 'Activate'}
-                                        </TooltipContent>
-                                    </Tooltip>
-
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                disabled={admin.id === currentUserId}
-                                                onClick={() => openDelete(admin)}
-                                            >
-                                                <Trash2 className="size-4 text-destructive" />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>Delete Admin</TooltipContent>
-                                    </Tooltip>
-                                </div>
-                            </div>
-                        </Card>
-                        ))}
-                    </div>
-                    {collegeAdmins.total > 0 && (
-                        <NumberedPagination
-                            meta={collegeAdmins}
-                            itemLabel="college administrator"
-                            onPageChange={goToPage}
-                            onPerPageChange={changePerPage}
-                            idPrefix="college-admins-grid-per-page"
-                        />
-                    )}
-                </div>
-            </>
-        )}
-    </div>
+                        </div>
+                    </>
+                )}
+            </div>
 
             {/* Add College Admin Modal */}
             <Dialog open={addOpen} onOpenChange={setAddOpen}>
-                <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[560px]">
                     <DialogHeader>
                         <DialogTitle>Add College Administrator</DialogTitle>
                         <DialogDescription>
-                            Create a college admin account assigned to a specific college department and campus.
+                            Create a college admin account assigned to a
+                            specific college department and campus.
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={submitAdd} className="space-y-4 pt-2">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                            <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
-                                <Label htmlFor="add_name">Full Name <span className="text-destructive">*</span></Label>
+                        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                            <div className="col-span-1 min-w-0 space-y-1.5 sm:col-span-2">
+                                <Label htmlFor="add_name">
+                                    Full Name{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
                                 <Input
                                     id="add_name"
                                     className="w-full"
                                     value={addForm.name}
-                                    onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))}
+                                    onChange={(e) =>
+                                        setAddForm((f) => ({
+                                            ...f,
+                                            name: e.target.value,
+                                        }))
+                                    }
                                     placeholder="e.g. Dr. Juan Dela Cruz"
                                     required
                                 />
                             </div>
-                            <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
-                                <Label htmlFor="add_email">Email Address <span className="text-destructive">*</span></Label>
+                            <div className="col-span-1 min-w-0 space-y-1.5 sm:col-span-2">
+                                <Label htmlFor="add_email">
+                                    Email Address{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
                                 <Input
                                     id="add_email"
                                     type="email"
                                     className="w-full"
                                     value={addForm.email}
-                                    onChange={(e) => setAddForm((f) => ({ ...f, email: e.target.value }))}
+                                    onChange={(e) =>
+                                        setAddForm((f) => ({
+                                            ...f,
+                                            email: e.target.value,
+                                        }))
+                                    }
                                     placeholder="e.g. juan.delacruz@usep.edu.ph"
                                     required
                                 />
                             </div>
-                            <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
-                                <Label htmlFor="add_college">Assigned College <span className="text-destructive">*</span></Label>
+                            <div className="col-span-1 min-w-0 space-y-1.5 sm:col-span-2">
+                                <Label htmlFor="add_college">
+                                    Assigned College{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
                                 <Select
                                     value={addForm.college_id}
                                     onValueChange={handleAddCollegeChange}
                                 >
-                                    <SelectTrigger id="add_college" className="w-full">
+                                    <SelectTrigger
+                                        id="add_college"
+                                        className="w-full"
+                                    >
                                         <SelectValue placeholder="Select college" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {colleges.map((c) => (
-                                            <SelectItem key={c.id} value={String(c.id)}>
+                                            <SelectItem
+                                                key={c.id}
+                                                value={String(c.id)}
+                                            >
                                                 {c.code} - {c.name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
+                            <div className="col-span-1 min-w-0 space-y-1.5 sm:col-span-2">
                                 <Label htmlFor="add_campus">Campus</Label>
                                 <Select
                                     value={addForm.campus_id || 'none'}
-                                    onValueChange={(val) => setAddForm((f) => ({ ...f, campus_id: val === 'none' ? '' : val }))}
+                                    onValueChange={(val) =>
+                                        setAddForm((f) => ({
+                                            ...f,
+                                            campus_id:
+                                                val === 'none' ? '' : val,
+                                        }))
+                                    }
                                 >
-                                    <SelectTrigger id="add_campus" className="w-full">
+                                    <SelectTrigger
+                                        id="add_campus"
+                                        className="w-full"
+                                    >
                                         <SelectValue placeholder="Select campus" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="none">Use College Campus</SelectItem>
+                                        <SelectItem value="none">
+                                            Use College Campus
+                                        </SelectItem>
                                         {campuses.map((camp) => (
-                                            <SelectItem key={camp.id} value={String(camp.id)}>
+                                            <SelectItem
+                                                key={camp.id}
+                                                value={String(camp.id)}
+                                            >
                                                 {camp.name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
-                                <Label htmlFor="add_position">Designation / Position</Label>
+                            <div className="col-span-1 min-w-0 space-y-1.5 sm:col-span-2">
+                                <Label htmlFor="add_position">
+                                    Designation / Position
+                                </Label>
                                 <Input
                                     id="add_position"
                                     className="w-full"
                                     value={addForm.position}
-                                    onChange={(e) => setAddForm((f) => ({ ...f, position: e.target.value }))}
+                                    onChange={(e) =>
+                                        setAddForm((f) => ({
+                                            ...f,
+                                            position: e.target.value,
+                                        }))
+                                    }
                                     placeholder="e.g. Dean / OJT Coordinator"
                                 />
                             </div>
-                            <div className="space-y-1.5 col-span-1 min-w-0">
-                                <Label htmlFor="add_pwd">Password <span className="text-destructive">*</span></Label>
+                            <div className="col-span-1 min-w-0 space-y-1.5">
+                                <Label htmlFor="add_pwd">
+                                    Password{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
                                 <Input
                                     id="add_pwd"
                                     type="password"
                                     className="w-full"
                                     value={addForm.password}
-                                    onChange={(e) => setAddForm((f) => ({ ...f, password: e.target.value }))}
+                                    onChange={(e) =>
+                                        setAddForm((f) => ({
+                                            ...f,
+                                            password: e.target.value,
+                                        }))
+                                    }
                                     placeholder="••••••••"
                                     required
                                 />
                             </div>
-                            <div className="space-y-1.5 col-span-1 min-w-0">
-                                <Label htmlFor="add_pwd_conf">Confirm Password <span className="text-destructive">*</span></Label>
+                            <div className="col-span-1 min-w-0 space-y-1.5">
+                                <Label htmlFor="add_pwd_conf">
+                                    Confirm Password{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
                                 <Input
                                     id="add_pwd_conf"
                                     type="password"
                                     className="w-full"
                                     value={addForm.password_confirmation}
-                                    onChange={(e) => setAddForm((f) => ({ ...f, password_confirmation: e.target.value }))}
+                                    onChange={(e) =>
+                                        setAddForm((f) => ({
+                                            ...f,
+                                            password_confirmation:
+                                                e.target.value,
+                                        }))
+                                    }
                                     placeholder="••••••••"
                                     required
                                 />
@@ -1011,107 +1275,168 @@ export default function CollegeAdminManagement({
 
             {/* Edit College Admin Modal */}
             <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[560px]">
                     <DialogHeader>
                         <DialogTitle>Edit College Administrator</DialogTitle>
                         <DialogDescription>
-                            Update administrator details, assigned college, campus, or credentials.
+                            Update administrator details, assigned college,
+                            campus, or credentials.
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={submitEdit} className="space-y-4 pt-2">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                            <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
-                                <Label htmlFor="edit_name">Full Name <span className="text-destructive">*</span></Label>
+                        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                            <div className="col-span-1 min-w-0 space-y-1.5 sm:col-span-2">
+                                <Label htmlFor="edit_name">
+                                    Full Name{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
                                 <Input
                                     id="edit_name"
                                     className="w-full"
                                     value={editForm.name}
-                                    onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                                    onChange={(e) =>
+                                        setEditForm((f) => ({
+                                            ...f,
+                                            name: e.target.value,
+                                        }))
+                                    }
                                     placeholder="e.g. Dr. Juan Dela Cruz"
                                     required
                                 />
                             </div>
-                            <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
-                                <Label htmlFor="edit_email">Email Address <span className="text-destructive">*</span></Label>
+                            <div className="col-span-1 min-w-0 space-y-1.5 sm:col-span-2">
+                                <Label htmlFor="edit_email">
+                                    Email Address{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
                                 <Input
                                     id="edit_email"
                                     type="email"
                                     className="w-full"
                                     value={editForm.email}
-                                    onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
+                                    onChange={(e) =>
+                                        setEditForm((f) => ({
+                                            ...f,
+                                            email: e.target.value,
+                                        }))
+                                    }
                                     placeholder="e.g. juan.delacruz@usep.edu.ph"
                                     required
                                 />
                             </div>
-                            <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
-                                <Label htmlFor="edit_college">Assigned College <span className="text-destructive">*</span></Label>
+                            <div className="col-span-1 min-w-0 space-y-1.5 sm:col-span-2">
+                                <Label htmlFor="edit_college">
+                                    Assigned College{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
                                 <Select
                                     value={editForm.college_id}
                                     onValueChange={handleEditCollegeChange}
                                 >
-                                    <SelectTrigger id="edit_college" className="w-full">
+                                    <SelectTrigger
+                                        id="edit_college"
+                                        className="w-full"
+                                    >
                                         <SelectValue placeholder="Select college" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {colleges.map((c) => (
-                                            <SelectItem key={c.id} value={String(c.id)}>
+                                            <SelectItem
+                                                key={c.id}
+                                                value={String(c.id)}
+                                            >
                                                 {c.code} - {c.name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
+                            <div className="col-span-1 min-w-0 space-y-1.5 sm:col-span-2">
                                 <Label htmlFor="edit_campus">Campus</Label>
                                 <Select
                                     value={editForm.campus_id || 'none'}
-                                    onValueChange={(val) => setEditForm((f) => ({ ...f, campus_id: val === 'none' ? '' : val }))}
+                                    onValueChange={(val) =>
+                                        setEditForm((f) => ({
+                                            ...f,
+                                            campus_id:
+                                                val === 'none' ? '' : val,
+                                        }))
+                                    }
                                 >
-                                    <SelectTrigger id="edit_campus" className="w-full">
+                                    <SelectTrigger
+                                        id="edit_campus"
+                                        className="w-full"
+                                    >
                                         <SelectValue placeholder="Select campus" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="none">Use College Campus</SelectItem>
+                                        <SelectItem value="none">
+                                            Use College Campus
+                                        </SelectItem>
                                         {campuses.map((camp) => (
-                                            <SelectItem key={camp.id} value={String(camp.id)}>
+                                            <SelectItem
+                                                key={camp.id}
+                                                value={String(camp.id)}
+                                            >
                                                 {camp.name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="space-y-1.5 col-span-1 sm:col-span-2 min-w-0">
-                                <Label htmlFor="edit_position">Designation / Position</Label>
+                            <div className="col-span-1 min-w-0 space-y-1.5 sm:col-span-2">
+                                <Label htmlFor="edit_position">
+                                    Designation / Position
+                                </Label>
                                 <Input
                                     id="edit_position"
                                     className="w-full"
                                     value={editForm.position}
-                                    onChange={(e) => setEditForm((f) => ({ ...f, position: e.target.value }))}
+                                    onChange={(e) =>
+                                        setEditForm((f) => ({
+                                            ...f,
+                                            position: e.target.value,
+                                        }))
+                                    }
                                     placeholder="e.g. Dean / OJT Coordinator"
                                 />
                             </div>
-                            <div className="col-span-1 sm:col-span-2 pt-2 border-t text-xs text-muted-foreground">
-                                Leave password fields blank unless you want to change the administrator's password.
+                            <div className="col-span-1 border-t pt-2 text-xs text-muted-foreground sm:col-span-2">
+                                Leave password fields blank unless you want to
+                                change the administrator's password.
                             </div>
-                            <div className="space-y-1.5 col-span-1 min-w-0">
+                            <div className="col-span-1 min-w-0 space-y-1.5">
                                 <Label htmlFor="edit_pwd">New Password</Label>
                                 <Input
                                     id="edit_pwd"
                                     type="password"
                                     className="w-full"
                                     value={editForm.password}
-                                    onChange={(e) => setEditForm((f) => ({ ...f, password: e.target.value }))}
+                                    onChange={(e) =>
+                                        setEditForm((f) => ({
+                                            ...f,
+                                            password: e.target.value,
+                                        }))
+                                    }
                                     placeholder="••••••••"
                                 />
                             </div>
-                            <div className="space-y-1.5 col-span-1 min-w-0">
-                                <Label htmlFor="edit_pwd_conf">Confirm Password</Label>
+                            <div className="col-span-1 min-w-0 space-y-1.5">
+                                <Label htmlFor="edit_pwd_conf">
+                                    Confirm Password
+                                </Label>
                                 <Input
                                     id="edit_pwd_conf"
                                     type="password"
                                     className="w-full"
                                     value={editForm.password_confirmation}
-                                    onChange={(e) => setEditForm((f) => ({ ...f, password_confirmation: e.target.value }))}
+                                    onChange={(e) =>
+                                        setEditForm((f) => ({
+                                            ...f,
+                                            password_confirmation:
+                                                e.target.value,
+                                        }))
+                                    }
                                     placeholder="••••••••"
                                 />
                             </div>
@@ -1134,13 +1459,19 @@ export default function CollegeAdminManagement({
             <ConfirmationDialog
                 open={statusConfirmOpen}
                 onOpenChange={setStatusConfirmOpen}
-                title={statusTarget?.is_active ? 'Deactivate Administrator' : 'Activate Administrator'}
+                title={
+                    statusTarget?.is_active
+                        ? 'Deactivate Administrator'
+                        : 'Activate Administrator'
+                }
                 description={
                     statusTarget?.is_active
                         ? `Are you sure you want to deactivate "${statusTarget?.name}"? They will no longer be able to log in.`
                         : `Are you sure you want to activate "${statusTarget?.name}"?`
                 }
-                confirmText={statusTarget?.is_active ? 'Deactivate' : 'Activate'}
+                confirmText={
+                    statusTarget?.is_active ? 'Deactivate' : 'Activate'
+                }
                 isDestructive={Boolean(statusTarget?.is_active)}
                 onConfirm={submitStatusToggle}
             />

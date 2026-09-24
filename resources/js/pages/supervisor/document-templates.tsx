@@ -713,7 +713,7 @@ export default function DocumentTemplates({
                             {filteredArchived.map((item) => (
                                 <Card
                                     key={item.id}
-                                    className="flex flex-col justify-between h-full rounded-xl border border-border/70 bg-card/60 shadow-xs transition-all duration-200 hover:bg-card hover:shadow-md hover:border-border"
+                                    className="flex h-full flex-col justify-between rounded-xl border border-border/70 bg-card/60 shadow-xs transition-all duration-200 hover:border-border hover:bg-card hover:shadow-md"
                                 >
                                     <CardContent className="flex-1 space-y-3 p-4">
                                         <div className="flex items-start justify-between gap-2">
@@ -1008,7 +1008,7 @@ export default function DocumentTemplates({
                         {filteredChecklist.map((item) => (
                             <Card
                                 key={item.document_type}
-                                className={`flex flex-col justify-between h-full rounded-xl border transition-all duration-200 ${
+                                className={`flex h-full flex-col justify-between rounded-xl border transition-all duration-200 ${
                                     item.has_template
                                         ? 'border-border/70 bg-card shadow-xs hover:border-border hover:shadow-md'
                                         : 'border-dashed border-border/70 bg-card/60 shadow-xs hover:bg-card hover:shadow-md'

@@ -606,54 +606,86 @@ export default function SupervisorsIndex({
                         <div className={view === 'table' ? 'sm:hidden' : ''}>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {supervisors.data.map((supervisor) => (
-                                    <Card key={supervisor.user_id} className="flex flex-col justify-between h-full rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:shadow-md hover:border-border">
+                                    <Card
+                                        key={supervisor.user_id}
+                                        className="flex h-full flex-col justify-between rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:border-border hover:shadow-md"
+                                    >
                                         <CardHeader className="pb-3">
                                             <div className="flex items-start justify-between gap-2">
-                                                <div className="flex items-center gap-3 min-w-0">
+                                                <div className="flex min-w-0 items-center gap-3">
                                                     <Avatar className="size-10 shrink-0">
                                                         <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
-                                                            {getInitials(supervisor.name)}
+                                                            {getInitials(
+                                                                supervisor.name,
+                                                            )}
                                                         </AvatarFallback>
                                                     </Avatar>
                                                     <div className="min-w-0">
-                                                        <CardTitle className="text-base font-semibold leading-tight line-clamp-1" title={supervisor.name}>
+                                                        <CardTitle
+                                                            className="line-clamp-1 text-base leading-tight font-semibold"
+                                                            title={
+                                                                supervisor.name
+                                                            }
+                                                        >
                                                             {supervisor.name}
                                                         </CardTitle>
-                                                        <span className="text-xs text-muted-foreground truncate block" title={supervisor.email}>
+                                                        <span
+                                                            className="block truncate text-xs text-muted-foreground"
+                                                            title={
+                                                                supervisor.email
+                                                            }
+                                                        >
                                                             {supervisor.email}
                                                         </span>
                                                     </div>
                                                 </div>
-                                                <StatusBadge status={supervisor.status} />
+                                                <StatusBadge
+                                                    status={supervisor.status}
+                                                />
                                             </div>
                                         </CardHeader>
                                         <CardContent className="flex-1 space-y-2.5 pb-3 text-sm">
                                             <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3 text-xs">
                                                 <div className="flex items-center justify-between gap-2">
-                                                    <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
+                                                    <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
                                                         Role Type:
                                                     </span>
-                                                    <TypeBadge type={supervisor.supervisor_type} />
+                                                    <TypeBadge
+                                                        type={
+                                                            supervisor.supervisor_type
+                                                        }
+                                                    />
                                                 </div>
 
                                                 <div className="flex items-center justify-between gap-2 border-t pt-1.5">
-                                                    <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
-                                                        {supervisor.supervisor_type === 'hte' ? (
+                                                    <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
+                                                        {supervisor.supervisor_type ===
+                                                        'hte' ? (
                                                             <Building2 className="size-3.5 text-muted-foreground" />
                                                         ) : (
                                                             <BookOpen className="size-3.5 text-muted-foreground" />
                                                         )}
                                                         Scope:
                                                     </span>
-                                                    <span className="font-medium text-foreground truncate text-right" title={supervisor.scope_name}>
+                                                    <span
+                                                        className="truncate text-right font-medium text-foreground"
+                                                        title={
+                                                            supervisor.scope_name
+                                                        }
+                                                    >
                                                         {supervisor.scope_name}
                                                     </span>
                                                 </div>
                                             </div>
                                         </CardContent>
                                         <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
-                                            <span className="capitalize font-medium">{supervisor.supervisor_type.toUpperCase()} Supervisor</span>
-                                            <SupervisorActions supervisor={supervisor} />
+                                            <span className="font-medium capitalize">
+                                                {supervisor.supervisor_type.toUpperCase()}{' '}
+                                                Supervisor
+                                            </span>
+                                            <SupervisorActions
+                                                supervisor={supervisor}
+                                            />
                                         </div>
                                     </Card>
                                 ))}

@@ -216,24 +216,25 @@ export function IdCard({
                             </div>
 
                             <div className="min-w-0 flex-1 space-y-0.5">
-                                <p className="truncate text-[15px] font-black tracking-tight text-zinc-950 uppercase leading-snug">
+                                <p className="truncate text-[15px] leading-snug font-black tracking-tight text-zinc-950 uppercase">
                                     {name}
                                 </p>
                                 {cardData.subtitle && (
-                                    <p className="truncate text-xs font-bold text-primary leading-tight">
+                                    <p className="truncate text-xs leading-tight font-bold text-primary">
                                         {cardData.subtitle}
                                     </p>
                                 )}
                                 {cardData.college && (
-                                    <p className="truncate text-[10px] font-semibold text-zinc-700 leading-tight">
+                                    <p className="truncate text-[10px] leading-tight font-semibold text-zinc-700">
                                         {cardData.college}
                                     </p>
                                 )}
-                                {cardData.detail && cardData.detail !== cardData.college && (
-                                    <p className="line-clamp-1 text-[9.5px] leading-snug font-medium break-words text-zinc-600">
-                                        {cardData.detail}
-                                    </p>
-                                )}
+                                {cardData.detail &&
+                                    cardData.detail !== cardData.college && (
+                                        <p className="line-clamp-1 text-[9.5px] leading-snug font-medium break-words text-zinc-600">
+                                            {cardData.detail}
+                                        </p>
+                                    )}
                                 <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                                     {cardData.id_number && (
                                         <span className="inline-block rounded border border-zinc-200 bg-white/95 px-1.5 py-0.5 font-mono text-[9px] font-bold tracking-wider text-zinc-900 shadow-2xs">
@@ -241,7 +242,7 @@ export function IdCard({
                                         </span>
                                     )}
                                     {campusLabel && (
-                                        <span className="inline-block rounded border border-zinc-200/90 bg-zinc-100/90 px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-zinc-700 shadow-2xs uppercase">
+                                        <span className="inline-block rounded border border-zinc-200/90 bg-zinc-100/90 px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-zinc-700 uppercase shadow-2xs">
                                             {campusLabel}
                                         </span>
                                     )}
@@ -267,24 +268,25 @@ export function IdCard({
                             </div>
 
                             <div className="mt-2 w-full min-w-0 space-y-0.5">
-                                <p className="truncate px-2 text-[15px] font-black tracking-tight text-zinc-950 uppercase leading-snug">
+                                <p className="truncate px-2 text-[15px] leading-snug font-black tracking-tight text-zinc-950 uppercase">
                                     {name}
                                 </p>
                                 {cardData.subtitle && (
-                                    <p className="truncate px-2 text-xs font-bold text-primary leading-tight">
+                                    <p className="truncate px-2 text-xs leading-tight font-bold text-primary">
                                         {cardData.subtitle}
                                     </p>
                                 )}
                                 {cardData.college && (
-                                    <p className="truncate px-2 text-[10px] font-semibold text-zinc-700 leading-tight">
+                                    <p className="truncate px-2 text-[10px] leading-tight font-semibold text-zinc-700">
                                         {cardData.college}
                                     </p>
                                 )}
-                                {cardData.detail && cardData.detail !== cardData.college && (
-                                    <p className="line-clamp-1 px-2 text-[9.5px] leading-snug font-medium break-words text-zinc-600">
-                                        {cardData.detail}
-                                    </p>
-                                )}
+                                {cardData.detail &&
+                                    cardData.detail !== cardData.college && (
+                                        <p className="line-clamp-1 px-2 text-[9.5px] leading-snug font-medium break-words text-zinc-600">
+                                            {cardData.detail}
+                                        </p>
+                                    )}
                                 <div className="flex flex-wrap items-center justify-center gap-1.5 py-0.5">
                                     {cardData.id_number && (
                                         <span className="inline-block rounded border border-zinc-200 bg-white/95 px-2 py-0.5 font-mono text-[9.5px] font-bold tracking-wider text-zinc-900 shadow-2xs">
@@ -292,7 +294,7 @@ export function IdCard({
                                         </span>
                                     )}
                                     {campusLabel && (
-                                        <span className="inline-block rounded border border-zinc-200/90 bg-zinc-100/90 px-2 py-0.5 text-[9px] font-bold tracking-wide text-zinc-700 shadow-2xs uppercase">
+                                        <span className="inline-block rounded border border-zinc-200/90 bg-zinc-100/90 px-2 py-0.5 text-[9px] font-bold tracking-wide text-zinc-700 uppercase shadow-2xs">
                                             {campusLabel}
                                         </span>
                                     )}

@@ -543,14 +543,16 @@ export default function MyStudents({
                                 {students.data.map((student) => (
                                     <Card
                                         key={student.intern_user_id}
-                                        className="flex flex-col justify-between h-full rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:shadow-md hover:border-border"
+                                        className="flex h-full flex-col justify-between rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:border-border hover:shadow-md"
                                     >
                                         <CardHeader className="pb-3">
                                             <div className="flex items-start justify-between gap-3">
                                                 <div className="flex min-w-0 flex-1 items-start gap-3">
                                                     <Avatar className="size-9 shrink-0">
                                                         <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
-                                                            {getInitials(student.name)}
+                                                            {getInitials(
+                                                                student.name,
+                                                            )}
                                                         </AvatarFallback>
                                                     </Avatar>
                                                     <div className="min-w-0 flex-1">
@@ -559,7 +561,9 @@ export default function MyStudents({
                                                         </CardTitle>
                                                         <p
                                                             className="mt-0.5 truncate text-xs text-muted-foreground"
-                                                            title={student.email}
+                                                            title={
+                                                                student.email
+                                                            }
                                                         >
                                                             {student.email}
                                                         </p>
@@ -586,7 +590,11 @@ export default function MyStudents({
                                                 {student.contact_number && (
                                                     <div className="flex items-center gap-2 text-muted-foreground">
                                                         <Phone className="size-3.5 shrink-0 text-muted-foreground/70" />
-                                                        <span className="truncate">{student.contact_number}</span>
+                                                        <span className="truncate">
+                                                            {
+                                                                student.contact_number
+                                                            }
+                                                        </span>
                                                     </div>
                                                 )}
                                             </div>
@@ -594,10 +602,20 @@ export default function MyStudents({
                                             <div className="space-y-2 pt-0.5">
                                                 <div className="flex items-center justify-between text-xs">
                                                     <span className="flex items-center gap-1.5 text-muted-foreground">
-                                                        <Clock className="size-3.5 text-primary" /> Rendered:
+                                                        <Clock className="size-3.5 text-primary" />{' '}
+                                                        Rendered:
                                                     </span>
                                                     <span className="font-semibold text-foreground">
-                                                        {formatHours(student.total_hours)} / {student.required_hours}h ({Math.round(student.progress_percent)}%)
+                                                        {formatHours(
+                                                            student.total_hours,
+                                                        )}{' '}
+                                                        /{' '}
+                                                        {student.required_hours}
+                                                        h (
+                                                        {Math.round(
+                                                            student.progress_percent,
+                                                        )}
+                                                        %)
                                                     </span>
                                                 </div>
                                                 <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
@@ -617,7 +635,8 @@ export default function MyStudents({
                                                         status={
                                                             student.docs_completed
                                                                 ? 'approved'
-                                                                : student.approved_docs_count > 0
+                                                                : student.approved_docs_count >
+                                                                    0
                                                                   ? 'pending_review'
                                                                   : 'not_submitted'
                                                         }

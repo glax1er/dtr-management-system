@@ -615,7 +615,7 @@ export default function InternDocuments({
                                     key={doc.document_type}
                                     id={`doc-card-${doc.document_type}`}
                                     className={cn(
-                                        'flex flex-col justify-between h-full rounded-xl border-border/70 shadow-xs transition-all duration-300',
+                                        'flex h-full flex-col justify-between rounded-xl border-border/70 shadow-xs transition-all duration-300',
                                         isHighlighted
                                             ? 'border-primary bg-primary/5 shadow-md ring-2 ring-primary dark:bg-primary/10'
                                             : doc.status === 'approved'

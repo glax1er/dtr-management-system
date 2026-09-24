@@ -399,7 +399,8 @@ export default function Profile({
                                     )}
                                 </div>
 
-                                {(profileDetails?.college || profileDetails?.campus) && (
+                                {(profileDetails?.college ||
+                                    profileDetails?.campus) && (
                                     <div className="grid gap-4 sm:grid-cols-2">
                                         {profileDetails?.college && (
                                             <div className="grid gap-2">
@@ -448,7 +449,9 @@ export default function Profile({
                             </>
                         )}
 
-                        {['admin', 'college_admin', 'super_admin'].includes(auth.user.role) && (
+                        {['admin', 'college_admin', 'super_admin'].includes(
+                            auth.user.role,
+                        ) && (
                             <>
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <div className="grid gap-2">
@@ -458,7 +461,8 @@ export default function Profile({
                                             className="mt-1 block w-full cursor-not-allowed bg-muted/50 opacity-70"
                                             defaultValue={
                                                 profileDetails?.role ??
-                                                (auth.user.role === 'college_admin'
+                                                (auth.user.role ===
+                                                'college_admin'
                                                     ? 'College Administrator'
                                                     : 'System Administrator')
                                             }
@@ -469,11 +473,15 @@ export default function Profile({
 
                                     {profileDetails?.id_number && (
                                         <div className="grid gap-2">
-                                            <Label htmlFor="employee_id">Employee ID</Label>
+                                            <Label htmlFor="employee_id">
+                                                Employee ID
+                                            </Label>
                                             <Input
                                                 id="employee_id"
                                                 className="mt-1 block w-full cursor-not-allowed bg-muted/50 font-mono opacity-70"
-                                                defaultValue={profileDetails.id_number}
+                                                defaultValue={
+                                                    profileDetails.id_number
+                                                }
                                                 disabled
                                                 readOnly
                                             />
@@ -481,7 +489,8 @@ export default function Profile({
                                     )}
                                 </div>
 
-                                {(profileDetails?.college || profileDetails?.campus) && (
+                                {(profileDetails?.college ||
+                                    profileDetails?.campus) && (
                                     <div className="grid gap-4 sm:grid-cols-2">
                                         {profileDetails?.college && (
                                             <div className="grid gap-2">

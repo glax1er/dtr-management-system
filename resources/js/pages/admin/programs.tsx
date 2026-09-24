@@ -698,18 +698,44 @@ export default function AdminPrograms({
                         <div className={view === 'table' ? 'sm:hidden' : ''}>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {programs.data.map((program) => (
-                                    <Card key={program.program_id} className="flex flex-col justify-between h-full rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:shadow-md hover:border-border">
+                                    <Card
+                                        key={program.program_id}
+                                        className="flex h-full flex-col justify-between rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:border-border hover:shadow-md"
+                                    >
                                         <CardHeader className="pb-3">
                                             <div className="flex items-start justify-between gap-2">
                                                 <div className="min-w-0 flex-1">
-                                                    <CardTitle className="text-base font-semibold leading-tight line-clamp-1" title={program.program_name}>
+                                                    <CardTitle
+                                                        className="line-clamp-1 text-base leading-tight font-semibold"
+                                                        title={
+                                                            program.program_name
+                                                        }
+                                                    >
                                                         {program.program_name}
                                                     </CardTitle>
-                                                    {isSuperAdmin && program.college && (
-                                                        <span className="text-xs text-muted-foreground truncate block mt-1" title={program.college.name}>
-                                                            {program.college.code} — {program.college.name}
-                                                        </span>
-                                                    )}
+                                                    {isSuperAdmin &&
+                                                        program.college && (
+                                                            <span
+                                                                className="mt-1 block truncate text-xs text-muted-foreground"
+                                                                title={
+                                                                    program
+                                                                        .college
+                                                                        .name
+                                                                }
+                                                            >
+                                                                {
+                                                                    program
+                                                                        .college
+                                                                        .code
+                                                                }{' '}
+                                                                —{' '}
+                                                                {
+                                                                    program
+                                                                        .college
+                                                                        .name
+                                                                }
+                                                            </span>
+                                                        )}
                                                 </div>
                                                 <StatusBadge
                                                     status={
@@ -724,40 +750,53 @@ export default function AdminPrograms({
                                         <CardContent className="flex-1 space-y-2.5 pb-3 text-sm">
                                             <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3 text-xs">
                                                 <div className="flex items-center justify-between gap-2">
-                                                    <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
+                                                    <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
                                                         <Clock className="size-3.5 text-muted-foreground" />
                                                         Required Hours:
                                                     </span>
 
                                                     <span className="font-semibold text-foreground">
-                                                        {program.required_hours} hrs
+                                                        {program.required_hours}{' '}
+                                                        hrs
                                                     </span>
                                                 </div>
 
                                                 <div className="flex items-center justify-between gap-2">
-                                                    <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
+                                                    <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
                                                         <GraduationCap className="size-3.5 text-muted-foreground" />
                                                         Interns Enrolled:
                                                     </span>
                                                     <span className="font-medium text-foreground">
-                                                        {program.approved_intern_count}
+                                                        {
+                                                            program.approved_intern_count
+                                                        }
                                                     </span>
                                                 </div>
 
                                                 <div className="flex items-center justify-between gap-2 border-t pt-1.5">
-                                                    <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
+                                                    <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
                                                         <UserCheck className="size-3.5 text-muted-foreground" />
                                                         Supervisor(s):
                                                     </span>
-                                                    <span className="font-medium text-foreground truncate text-right" title={supervisorLabel(program.ojt_supervisors)}>
-                                                        {supervisorLabel(program.ojt_supervisors)}
+                                                    <span
+                                                        className="truncate text-right font-medium text-foreground"
+                                                        title={supervisorLabel(
+                                                            program.ojt_supervisors,
+                                                        )}
+                                                    >
+                                                        {supervisorLabel(
+                                                            program.ojt_supervisors,
+                                                        )}
                                                     </span>
                                                 </div>
                                             </div>
                                         </CardContent>
 
                                         <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
-                                            <span>{program.required_hours}h required</span>
+                                            <span>
+                                                {program.required_hours}h
+                                                required
+                                            </span>
                                             <ProgramActions
                                                 program={program}
                                                 onEdit={openEdit}

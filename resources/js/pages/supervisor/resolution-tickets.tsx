@@ -520,19 +520,23 @@ export default function ResolutionTickets({
                                     {tickets.data.map((ticket) => (
                                         <Card
                                             key={ticket.id}
-                                            className="flex flex-col justify-between h-full rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:shadow-md hover:border-border"
+                                            className="flex h-full flex-col justify-between rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:border-border hover:shadow-md"
                                         >
                                             <CardHeader className="pb-3">
                                                 <div className="flex items-start justify-between gap-3">
                                                     <div className="flex min-w-0 flex-1 items-start gap-3">
                                                         <Avatar className="size-9 shrink-0">
                                                             <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
-                                                                {getInitials(ticket.intern_name)}
+                                                                {getInitials(
+                                                                    ticket.intern_name,
+                                                                )}
                                                             </AvatarFallback>
                                                         </Avatar>
                                                         <div className="min-w-0 flex-1">
                                                             <CardTitle className="line-clamp-1 text-base font-semibold text-foreground">
-                                                                {ticket.intern_name}
+                                                                {
+                                                                    ticket.intern_name
+                                                                }
                                                             </CardTitle>
                                                             <p className="mt-0.5 text-xs text-muted-foreground">
                                                                 {ticket.date}
@@ -547,19 +551,21 @@ export default function ResolutionTickets({
                                             <CardContent className="flex-1 space-y-2.5 pb-3 text-sm">
                                                 <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/40 p-3 text-xs">
                                                     <div>
-                                                        <span className="block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                                                        <span className="block text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
                                                             Proposed In
                                                         </span>
                                                         <span className="mt-0.5 block font-semibold text-foreground">
-                                                            {ticket.proposed_time_in ?? '—'}
+                                                            {ticket.proposed_time_in ??
+                                                                '—'}
                                                         </span>
                                                     </div>
                                                     <div>
-                                                        <span className="block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                                                        <span className="block text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
                                                             Proposed Out
                                                         </span>
                                                         <span className="mt-0.5 block font-semibold text-foreground">
-                                                            {ticket.proposed_time_out ?? '—'}
+                                                            {ticket.proposed_time_out ??
+                                                                '—'}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -567,7 +573,9 @@ export default function ResolutionTickets({
                                                 {ticket.reason && (
                                                     <div className="rounded-lg border border-border/50 bg-muted/20 p-2.5 text-xs text-muted-foreground italic">
                                                         <p className="line-clamp-2 [overflow-wrap:anywhere] break-words [word-break:break-word]">
-                                                            &ldquo;{ticket.reason}&rdquo;
+                                                            &ldquo;
+                                                            {ticket.reason}
+                                                            &rdquo;
                                                         </p>
                                                     </div>
                                                 )}
@@ -579,8 +587,12 @@ export default function ResolutionTickets({
                                                 <TicketActions
                                                     ticketId={ticket.id}
                                                     type={ticket.type}
-                                                    proposedTimeIn={ticket.proposed_time_in}
-                                                    proposedTimeOut={ticket.proposed_time_out}
+                                                    proposedTimeIn={
+                                                        ticket.proposed_time_in
+                                                    }
+                                                    proposedTimeOut={
+                                                        ticket.proposed_time_out
+                                                    }
                                                     className="justify-end"
                                                 />
                                             </div>

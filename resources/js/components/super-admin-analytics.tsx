@@ -93,8 +93,8 @@ function ScrollList({
         const el = ref.current;
 
         if (!el) {
-return;
-}
+            return;
+        }
 
         setAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 8);
     };
@@ -528,7 +528,9 @@ function AdminCoverageTab({
                         <div className="flex items-center gap-2 text-xs font-medium text-amber-700 dark:text-amber-400">
                             <AlertCircle className="size-3.5 shrink-0" />
                             {data.unassigned_colleges.length} college
-                            {data.unassigned_colleges.length !== 1 ? 's' : ''}{' '}
+                            {data.unassigned_colleges.length !== 1
+                                ? 's'
+                                : ''}{' '}
                             without an administrator
                         </div>
                         <div className="flex flex-wrap gap-1.5">
@@ -737,4 +739,3 @@ export function AdminCoverageCard(props: {
 
     return null;
 }
-

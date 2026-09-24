@@ -740,6 +740,7 @@ export default function CollegesIndex({
                                                                                                 .programs
                                                                                                 .length
                                                                                         }
+
                                                                                         )
                                                                                     </span>
                                                                                 </div>
@@ -835,7 +836,10 @@ export default function CollegesIndex({
                                     );
 
                                     return (
-                                        <Card key={college.id} className="flex flex-col justify-between h-full rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:shadow-md hover:border-border">
+                                        <Card
+                                            key={college.id}
+                                            className="flex h-full flex-col justify-between rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:border-border hover:shadow-md"
+                                        >
                                             <CardHeader className="pb-3">
                                                 <div className="flex items-start justify-between gap-2">
                                                     <Badge
@@ -852,11 +856,19 @@ export default function CollegesIndex({
                                                         }
                                                     />
                                                 </div>
-                                                <CardTitle className="mt-2 text-base font-semibold leading-tight line-clamp-1" title={college.name}>
+                                                <CardTitle
+                                                    className="mt-2 line-clamp-1 text-base leading-tight font-semibold"
+                                                    title={college.name}
+                                                >
                                                     {college.name}
                                                 </CardTitle>
                                                 {college.description && (
-                                                    <p className="mt-1 text-xs text-muted-foreground line-clamp-2" title={college.description}>
+                                                    <p
+                                                        className="mt-1 line-clamp-2 text-xs text-muted-foreground"
+                                                        title={
+                                                            college.description
+                                                        }
+                                                    >
                                                         {college.description}
                                                     </p>
                                                 )}
@@ -864,36 +876,48 @@ export default function CollegesIndex({
                                             <CardContent className="flex-1 space-y-2.5 pb-3 text-sm">
                                                 <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3 text-xs">
                                                     <div className="flex items-center justify-between gap-2">
-                                                        <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
+                                                        <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
                                                             <MapPin className="size-3.5 text-muted-foreground" />
                                                             Campus:
                                                         </span>
-                                                        <span className="font-medium text-foreground truncate text-right">
-                                                            {college.campus ?? 'N/A'}
+                                                        <span className="truncate text-right font-medium text-foreground">
+                                                            {college.campus ??
+                                                                'N/A'}
                                                         </span>
                                                     </div>
 
                                                     <div className="flex items-center justify-between gap-2">
-                                                        <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
+                                                        <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
                                                             <GraduationCap className="size-3.5 text-muted-foreground" />
                                                             Interns:
                                                         </span>
                                                         <span className="font-semibold text-foreground">
-                                                            {college.interns_count}
+                                                            {
+                                                                college.interns_count
+                                                            }
                                                         </span>
                                                     </div>
 
                                                     <div className="flex items-center justify-between gap-2 border-t pt-1.5">
-                                                        <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
+                                                        <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
                                                             <Mail className="size-3.5 text-muted-foreground" />
                                                             Admin:
                                                         </span>
                                                         {college.admin_email ? (
-                                                            <span className="font-mono text-foreground truncate text-right" title={college.admin_email}>
-                                                                {college.admin_email}
+                                                            <span
+                                                                className="truncate text-right font-mono text-foreground"
+                                                                title={
+                                                                    college.admin_email
+                                                                }
+                                                            >
+                                                                {
+                                                                    college.admin_email
+                                                                }
                                                             </span>
                                                         ) : (
-                                                            <span className="italic text-muted-foreground">Unassigned</span>
+                                                            <span className="text-muted-foreground italic">
+                                                                Unassigned
+                                                            </span>
                                                         )}
                                                     </div>
                                                 </div>
@@ -901,8 +925,12 @@ export default function CollegesIndex({
                                                 <div className="border-t pt-2.5">
                                                     <button
                                                         type="button"
-                                                        onClick={() => toggleExpand(college.id)}
-                                                        className="flex w-full items-center justify-between text-xs text-muted-foreground hover:text-foreground font-medium py-1"
+                                                        onClick={() =>
+                                                            toggleExpand(
+                                                                college.id,
+                                                            )
+                                                        }
+                                                        className="flex w-full items-center justify-between py-1 text-xs font-medium text-muted-foreground hover:text-foreground"
                                                     >
                                                         <span className="flex items-center gap-1.5">
                                                             <BookOpen className="size-3.5 text-primary" />
@@ -921,21 +949,39 @@ export default function CollegesIndex({
                                                     </button>
 
                                                     {isExpanded && (
-                                                        <div className="mt-2 space-y-1.5 max-h-40 overflow-y-auto pr-1">
-                                                            {college.programs.length === 0 ? (
+                                                        <div className="mt-2 max-h-40 space-y-1.5 overflow-y-auto pr-1">
+                                                            {college.programs
+                                                                .length ===
+                                                            0 ? (
                                                                 <div className="py-1 text-xs text-muted-foreground italic">
-                                                                    No programs configured yet.
+                                                                    No programs
+                                                                    configured
+                                                                    yet.
                                                                 </div>
                                                             ) : (
-                                                                college.programs.map((p) => (
-                                                                    <div
-                                                                        key={p.program_id ?? p.program_name}
-                                                                        className="flex items-center justify-between rounded border bg-muted/40 px-2.5 py-1.5 text-[11px]"
-                                                                    >
-                                                                        <span className="font-medium text-foreground truncate mr-2">{p.program_name}</span>
-                                                                        <span className="text-muted-foreground shrink-0">{p.required_hours} hrs</span>
-                                                                    </div>
-                                                                ))
+                                                                college.programs.map(
+                                                                    (p) => (
+                                                                        <div
+                                                                            key={
+                                                                                p.program_id ??
+                                                                                p.program_name
+                                                                            }
+                                                                            className="flex items-center justify-between rounded border bg-muted/40 px-2.5 py-1.5 text-[11px]"
+                                                                        >
+                                                                            <span className="mr-2 truncate font-medium text-foreground">
+                                                                                {
+                                                                                    p.program_name
+                                                                                }
+                                                                            </span>
+                                                                            <span className="shrink-0 text-muted-foreground">
+                                                                                {
+                                                                                    p.required_hours
+                                                                                }{' '}
+                                                                                hrs
+                                                                            </span>
+                                                                        </div>
+                                                                    ),
+                                                                )
                                                             )}
                                                         </div>
                                                     )}
@@ -943,12 +989,26 @@ export default function CollegesIndex({
                                             </CardContent>
 
                                             <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
-                                                <span>{college.programs.length} {college.programs.length === 1 ? 'Program' : 'Programs'}</span>
+                                                <span>
+                                                    {college.programs.length}{' '}
+                                                    {college.programs.length ===
+                                                    1
+                                                        ? 'Program'
+                                                        : 'Programs'}
+                                                </span>
                                                 <ProgramActions
                                                     program={college}
-                                                    onEdit={() => openEdit(college)}
-                                                    onToggleActive={() => openStatusConfirm(college)}
-                                                    onArchive={() => openArchive(college)}
+                                                    onEdit={() =>
+                                                        openEdit(college)
+                                                    }
+                                                    onToggleActive={() =>
+                                                        openStatusConfirm(
+                                                            college,
+                                                        )
+                                                    }
+                                                    onArchive={() =>
+                                                        openArchive(college)
+                                                    }
                                                 />
                                             </div>
                                         </Card>
