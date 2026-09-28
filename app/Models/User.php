@@ -13,8 +13,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
@@ -37,7 +39,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['role', 'college_id', 'campus', 'name', 'email', 'password', 'must_change_password', 'profile_photo_path', 'notification_preferences', 'notifications_cleared_at'])]
+#[Fillable(['role', 'college_id', 'campus', 'name', 'email', 'password', 'must_change_password', 'profile_photo_path', 'is_active', 'notification_preferences', 'notifications_cleared_at'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
@@ -47,7 +49,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     /**
      * Notifications visible after the user's resolution-ticket clear point.
      *
-     * @return MorphMany<\Illuminate\Notifications\DatabaseNotification, $this>
+     * @return MorphMany<DatabaseNotification, $this>
      */
     public function visibleNotifications(): MorphMany
     {
@@ -454,7 +456,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         if ($this->isSupervisor()) {
             $defaultPassword = (string) config('supervisor.default_supervisor_password', 'Supervisor@123');
 
-            if (\Illuminate\Support\Facades\Hash::check($defaultPassword, $this->password)) {
+            if (Hash::check($defaultPassword, $this->password)) {
                 if ($this->exists) {
                     $this->must_change_password = true;
                     $this->saveQuietly();

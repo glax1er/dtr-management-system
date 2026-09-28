@@ -6,8 +6,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Storage;
 
 class InternProfile extends Model
@@ -134,7 +134,6 @@ class InternProfile extends Model
      * Scope a query to only include intern profiles belonging to a given campus (via campus string, user campus, or program college campus).
      *
      * @param  Builder<static>  $query
-     * @param  Campus|string|int  $campus
      * @return Builder<static>
      */
     public function scopeForCampus($query, Campus|string|int $campus)

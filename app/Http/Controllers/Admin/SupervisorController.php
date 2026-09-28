@@ -126,6 +126,7 @@ class SupervisorController extends Controller
         ]);
 
         $supervisorProfile->update(['status' => $validated['status']]);
+        $supervisorProfile->user?->update(['is_active' => $validated['status'] === 'active']);
 
         // Keep the HTE's stored contact_person in sync — an inactive
         // HTE supervisor should stop being listed as the contact.

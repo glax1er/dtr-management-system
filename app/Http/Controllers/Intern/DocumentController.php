@@ -162,6 +162,10 @@ class DocumentController extends Controller
             ->where('document_type', $documentType)
             ->first();
 
+        if ($existingDoc && $existingDoc->status === InternDocument::STATUS_APPROVED) {
+            abort(403, 'Cannot replace an already approved document.');
+        }
+
         // Remove old stored file if replacing
         if ($existingDoc && $existingDoc->file_path && Storage::disk('local')->exists($existingDoc->file_path)) {
             Storage::disk('local')->delete($existingDoc->file_path);
@@ -260,6 +264,10 @@ class DocumentController extends Controller
     {
         if ($internDocument->user_id !== $request->user()->id) {
             abort(403, 'Unauthorized action.');
+        }
+
+        if ($internDocument->status === InternDocument::STATUS_APPROVED) {
+            abort(403, 'Cannot delete an already approved document.');
         }
 
         if ($internDocument->file_path && Storage::disk('local')->exists($internDocument->file_path)) {
