@@ -235,20 +235,24 @@ export function InternDocumentsDialog({
                     )}
                 </DialogTrigger>
 
-                <DialogContent className="flex max-h-[90vh] w-[95vw] max-w-3xl flex-col overflow-hidden p-0">
-                    <DialogHeader className="border-b border-border px-6 py-4">
+                <DialogContent className="flex max-h-[90vh] w-[95vw] max-w-3xl flex-col overflow-hidden p-0 sm:max-h-[85vh]">
+                    <DialogHeader className="border-b border-border px-4 py-3.5 pr-10 sm:px-6 sm:py-4 sm:pr-8">
                         <div className="flex items-center justify-between">
-                            <div>
-                                <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
-                                    <FileCheck2 className="h-5 w-5 text-primary" />
-                                    Requirements Checklist: {internName}
+                            <div className="min-w-0 flex-1">
+                                <DialogTitle className="flex items-center gap-2 text-base font-semibold sm:text-lg">
+                                    <FileCheck2 className="size-5 shrink-0 text-primary" />
+                                    <span className="break-words">
+                                        Requirements Checklist: {internName}
+                                    </span>
                                 </DialogTitle>
                                 <DialogDescription className="mt-1 text-xs">
                                     {intern ? (
-                                        <span>
-                                            ID: {intern.id_number || '—'} •
-                                            Program: {intern.program} • HTE:{' '}
-                                            {intern.hte}
+                                        <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-muted-foreground">
+                                            <span>ID: {intern.id_number || '—'}</span>
+                                            <span>•</span>
+                                            <span>Program: {intern.program}</span>
+                                            <span>•</span>
+                                            <span>HTE: {intern.hte}</span>
                                         </span>
                                     ) : (
                                         'Review and verify uploaded PDF requirement forms.'
@@ -258,7 +262,7 @@ export function InternDocumentsDialog({
                         </div>
                     </DialogHeader>
 
-                    <div className="flex-1 space-y-6 overflow-y-auto p-6">
+                    <div className="flex-1 space-y-4 overflow-y-auto p-3.5 sm:space-y-6 sm:p-6">
                         {isLoading ? (
                             <div className="flex flex-col items-center justify-center gap-2 py-12 text-muted-foreground">
                                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -300,14 +304,14 @@ export function InternDocumentsDialog({
                                                         key={doc.document_type}
                                                         id={`dialog-doc-${doc.document_type}`}
                                                         className={cn(
-                                                            'rounded-lg border border-border bg-card p-4 text-card-foreground shadow-sm transition-all duration-300',
+                                                            'rounded-lg border border-border bg-card p-3 sm:p-4 text-card-foreground shadow-sm transition-all duration-300',
                                                             isHighlighted &&
                                                                 'border-primary bg-primary/5 shadow-md ring-2 ring-primary dark:bg-primary/10',
                                                         )}
                                                     >
                                                         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-                                                            <div className="flex-1 space-y-1">
-                                                                <div className="flex flex-wrap items-center gap-2">
+                                                            <div className="min-w-0 flex-1 space-y-1">
+                                                                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                                                                     <span className="text-sm font-semibold text-foreground">
                                                                         {
                                                                             doc.name
@@ -339,12 +343,20 @@ export function InternDocumentsDialog({
                                                                 </p>
 
                                                                 {hasUploaded && (
-                                                                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                                                                        <span className="flex items-center gap-1 font-medium text-foreground">
-                                                                            <FileText className="h-3.5 w-3.5 text-primary" />
-                                                                            {
-                                                                                doc.original_filename
+                                                                    <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
+                                                                        <span
+                                                                            className="flex max-w-[200px] items-center gap-1 font-medium text-foreground sm:max-w-xs"
+                                                                            title={
+                                                                                doc.original_filename ||
+                                                                                ''
                                                                             }
+                                                                        >
+                                                                            <FileText className="h-3.5 w-3.5 shrink-0 text-primary" />
+                                                                            <span className="truncate">
+                                                                                {
+                                                                                    doc.original_filename
+                                                                                }
+                                                                            </span>
                                                                         </span>
                                                                         {doc.file_size && (
                                                                             <span>
@@ -373,7 +385,7 @@ export function InternDocumentsDialog({
                                                                             variant="destructive"
                                                                             className="mt-2 bg-destructive/10 py-2 text-xs"
                                                                         >
-                                                                            <AlertDescription>
+                                                                            <AlertDescription className="break-words">
                                                                                 <strong>
                                                                                     Feedback:
                                                                                 </strong>{' '}
@@ -387,7 +399,7 @@ export function InternDocumentsDialog({
 
                                                             {/* Actions */}
                                                             {hasUploaded && (
-                                                                <div className="flex shrink-0 flex-wrap items-center gap-2 self-end sm:self-start">
+                                                                <div className="flex w-full shrink-0 flex-wrap items-center justify-end gap-1.5 border-t border-border/40 pt-2 sm:w-auto sm:border-0 sm:pt-0 sm:gap-2 sm:self-start">
                                                                     {doc.preview_url && (
                                                                         <Button
                                                                             size="sm"
@@ -416,8 +428,13 @@ export function InternDocumentsDialog({
                                                                                     doc.download_url
                                                                                 }
                                                                                 download
+                                                                                title="Download document"
+                                                                                className="flex items-center gap-1"
                                                                             >
                                                                                 <Download className="h-3.5 w-3.5" />
+                                                                                <span className="text-xs sm:hidden">
+                                                                                    Download
+                                                                                </span>
                                                                             </a>
                                                                         </Button>
                                                                     )}
@@ -533,43 +550,20 @@ export function InternDocumentsDialog({
                                                         {/* Official System DTR Report Generator */}
                                                         {doc.document_type ===
                                                             'dtr' && (
-                                                            <div className="mt-3 space-y-2.5 rounded-lg border border-primary/20 bg-primary/5 p-3.5">
-                                                                <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+                                                            <div className="mt-3 space-y-2.5 rounded-lg border border-primary/20 bg-primary/5 p-3 sm:p-3.5">
+                                                                <div className="flex flex-col justify-between gap-2.5 sm:flex-row sm:items-center">
                                                                     <div className="space-y-0.5">
                                                                         <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                                                                            <FileCheck2 className="h-4 w-4 text-primary" />
-                                                                            Generate
-                                                                            &
-                                                                            Download
-                                                                            Official
-                                                                            DTR
-                                                                            Report
+                                                                            <FileCheck2 className="size-4 shrink-0 text-primary" />
+                                                                            Generate & Download Official DTR Report
                                                                         </span>
                                                                         <p className="text-[11px] text-muted-foreground">
-                                                                            Filter
-                                                                            by
-                                                                            date
-                                                                            range,
-                                                                            or
-                                                                            leave
-                                                                            blank
-                                                                            to
-                                                                            download
-                                                                            the
-                                                                            full
-                                                                            DTR
-                                                                            report
-                                                                            up
-                                                                            to
-                                                                            the
-                                                                            most
-                                                                            recent
-                                                                            log.
+                                                                            Filter by date range, or leave blank to download the full DTR report up to the most recent log.
                                                                         </p>
                                                                     </div>
                                                                     <Button
                                                                         size="sm"
-                                                                        className="h-8 shrink-0 gap-1.5 text-xs shadow-sm"
+                                                                        className="h-8 w-full shrink-0 gap-1.5 text-xs shadow-sm sm:w-auto"
                                                                         onClick={() => {
                                                                             let url = `/supervisor/interns/${internUserId}/dtr-report`;
                                                                             const params =
@@ -609,14 +603,13 @@ export function InternDocumentsDialog({
                                                                             );
                                                                         }}
                                                                     >
-                                                                        <Download className="h-3.5 w-3.5" />
-                                                                        Download
-                                                                        DTR
+                                                                        <Download className="size-3.5" />
+                                                                        Download DTR
                                                                     </Button>
                                                                 </div>
 
                                                                 <div className="flex flex-wrap items-center gap-2 border-t border-primary/15 pt-2">
-                                                                    <div className="flex items-center gap-1.5">
+                                                                    <div className="flex flex-1 items-center gap-1.5 min-w-[125px] sm:flex-initial">
                                                                         <span className="text-[11px] font-medium text-muted-foreground">
                                                                             From:
                                                                         </span>
@@ -634,10 +627,10 @@ export function InternDocumentsDialog({
                                                                                         .value,
                                                                                 )
                                                                             }
-                                                                            className="h-7 rounded-md border border-input bg-background px-2 text-xs text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
+                                                                            className="h-7 w-full sm:w-auto rounded-md border border-input bg-background px-2 text-xs text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
                                                                         />
                                                                     </div>
-                                                                    <div className="flex items-center gap-1.5">
+                                                                    <div className="flex flex-1 items-center gap-1.5 min-w-[125px] sm:flex-initial">
                                                                         <span className="text-[11px] font-medium text-muted-foreground">
                                                                             To:
                                                                         </span>
@@ -655,7 +648,7 @@ export function InternDocumentsDialog({
                                                                                         .value,
                                                                                 )
                                                                             }
-                                                                            className="h-7 rounded-md border border-input bg-background px-2 text-xs text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
+                                                                            className="h-7 w-full sm:w-auto rounded-md border border-input bg-background px-2 text-xs text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
                                                                         />
                                                                     </div>
                                                                     {(dtrStartDate ||
@@ -663,7 +656,7 @@ export function InternDocumentsDialog({
                                                                         <Button
                                                                             size="sm"
                                                                             variant="ghost"
-                                                                            className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+                                                                            className="h-7 w-full sm:w-auto px-2 text-[11px] text-muted-foreground hover:text-foreground"
                                                                             onClick={() => {
                                                                                 setDtrStartDate(
                                                                                     '',
@@ -673,9 +666,7 @@ export function InternDocumentsDialog({
                                                                                 );
                                                                             }}
                                                                         >
-                                                                            Reset
-                                                                            (Full
-                                                                            DTR)
+                                                                            Reset (Full DTR)
                                                                         </Button>
                                                                     )}
                                                                 </div>
@@ -702,27 +693,27 @@ export function InternDocumentsDialog({
                     }
                 }}
             >
-                <DialogContent className="z-50 flex h-[85vh] w-[95vw] max-w-4xl flex-col gap-0 overflow-hidden p-0">
-                    <DialogHeader className="flex shrink-0 flex-row items-center justify-between border-b border-border px-5 py-3">
-                        <div>
-                            <DialogTitle className="text-base font-semibold">
+                <DialogContent className="z-50 flex h-[90vh] w-[95vw] max-w-4xl flex-col gap-0 overflow-hidden p-0 sm:h-[85vh]">
+                    <DialogHeader className="flex shrink-0 flex-col gap-2.5 border-b border-border px-4 py-3 pr-10 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:pr-8">
+                        <div className="min-w-0 pr-2">
+                            <DialogTitle className="text-sm font-semibold truncate sm:text-base">
                                 {previewDoc?.name}
                             </DialogTitle>
                             <DialogDescription className="max-w-md truncate text-xs text-muted-foreground">
                                 {previewDoc?.original_filename}
                             </DialogDescription>
                         </div>
-                        <div className="mr-6 flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                             {previewDoc?.download_url && (
                                 <Button
                                     size="sm"
                                     variant="outline"
-                                    className="h-8 gap-1.5 text-xs"
+                                    className="h-7.5 gap-1.5 text-xs sm:h-8"
                                     asChild
                                 >
                                     <a href={previewDoc.download_url} download>
-                                        <Download className="h-3.5 w-3.5" />
-                                        Download
+                                        <Download className="size-3.5" />
+                                        <span>Download</span>
                                     </a>
                                 </Button>
                             )}
@@ -730,7 +721,7 @@ export function InternDocumentsDialog({
                                 <Button
                                     size="sm"
                                     variant="secondary"
-                                    className="h-8 gap-1.5 text-xs"
+                                    className="h-7.5 gap-1.5 text-xs sm:h-8"
                                     asChild
                                 >
                                     <a
