@@ -366,30 +366,30 @@ export default function MyStudents({
                         {/* Table view */}
                         {view === 'table' && (
                             <div className="hidden sm:block">
-                                <Card>
+                                <Card className="overflow-hidden p-0 shadow-xs">
                                     <CardContent className="p-0">
                                         <Table>
-                                            <TableHeader>
+                                            <TableHeader className="bg-muted/40">
                                                 <TableRow>
-                                                    <TableHead className="px-6">
+                                                    <TableHead className="px-6 font-semibold">
                                                         Name
                                                     </TableHead>
-                                                    <TableHead className="px-4 text-center">
+                                                    <TableHead className="px-6 text-center font-semibold">
                                                         ID Number
                                                     </TableHead>
-                                                    <TableHead className="px-4">
+                                                    <TableHead className="px-6 font-semibold">
                                                         Assigned HTE
                                                     </TableHead>
-                                                    <TableHead className="px-4">
+                                                    <TableHead className="px-6 font-semibold">
                                                         Hours Rendered
                                                     </TableHead>
-                                                    <TableHead className="px-4 text-center">
+                                                    <TableHead className="px-6 text-center font-semibold">
                                                         Documents
                                                     </TableHead>
-                                                    <TableHead className="px-4 text-center">
+                                                    <TableHead className="px-6 text-center font-semibold">
                                                         Requirement Status
                                                     </TableHead>
-                                                    <TableHead className="px-6 text-center">
+                                                    <TableHead className="px-6 text-center font-semibold">
                                                         Actions
                                                     </TableHead>
                                                 </TableRow>
@@ -403,7 +403,7 @@ export default function MyStudents({
                                                             }
                                                             className="transition-colors hover:bg-muted/40"
                                                         >
-                                                            <TableCell className="px-6 py-3">
+                                                            <TableCell className="px-6 py-3.5">
                                                                 <p className="font-medium whitespace-nowrap text-foreground">
                                                                     {
                                                                         student.name
@@ -420,7 +420,7 @@ export default function MyStudents({
                                                                     }
                                                                 </p>
                                                             </TableCell>
-                                                            <TableCell className="px-4 py-3 text-center whitespace-nowrap">
+                                                            <TableCell className="px-6 py-3.5 text-center whitespace-nowrap">
                                                                 <Badge
                                                                     variant="outline"
                                                                     className="font-mono text-xs"
@@ -430,7 +430,7 @@ export default function MyStudents({
                                                                 </Badge>
                                                             </TableCell>
                                                             <TableCell
-                                                                className="max-w-[160px] truncate px-4 py-3"
+                                                                className="max-w-[160px] truncate px-6 py-3.5"
                                                                 title={
                                                                     student.hte_name
                                                                 }
@@ -441,7 +441,7 @@ export default function MyStudents({
                                                                     }
                                                                 </span>
                                                             </TableCell>
-                                                            <TableCell className="px-4 py-3 whitespace-nowrap">
+                                                            <TableCell className="px-6 py-3.5 whitespace-nowrap">
                                                                 <div className="flex min-w-[110px] flex-col gap-1">
                                                                     <div className="flex justify-between text-xs">
                                                                         <span className="font-medium text-foreground">
@@ -471,13 +471,13 @@ export default function MyStudents({
                                                                     </div>
                                                                 </div>
                                                             </TableCell>
-                                                            <TableCell className="px-4 py-3 text-center whitespace-nowrap">
+                                                            <TableCell className="px-6 py-3.5 text-center whitespace-nowrap">
                                                                 <StatusBadge
                                                                     status={
                                                                         student.docs_completed
                                                                             ? 'approved'
                                                                             : student.approved_docs_count >
-                                                                                0
+                                                                                  0
                                                                               ? 'pending_review'
                                                                               : 'not_submitted'
                                                                     }
@@ -485,7 +485,7 @@ export default function MyStudents({
                                                                     className="text-xs"
                                                                 />
                                                             </TableCell>
-                                                            <TableCell className="px-4 py-3 text-center whitespace-nowrap">
+                                                            <TableCell className="px-6 py-3.5 text-center whitespace-nowrap">
                                                                 <StatusBadge
                                                                     status={
                                                                         student.is_completed
@@ -504,7 +504,7 @@ export default function MyStudents({
                                                                     className="text-xs"
                                                                 />
                                                             </TableCell>
-                                                            <TableCell className="px-6 py-3 text-center whitespace-nowrap">
+                                                            <TableCell className="px-6 py-3.5 text-center whitespace-nowrap">
                                                                 <div className="flex items-center justify-center gap-1.5">
                                                                     <CompletionSummaryDialog
                                                                         internUserId={
@@ -532,6 +532,13 @@ export default function MyStudents({
                                                 )}
                                             </TableBody>
                                         </Table>
+                                        <NumberedPagination
+                                            meta={students}
+                                            itemLabel="intern"
+                                            onPageChange={goToPage}
+                                            onPerPageChange={changePerPage}
+                                            idPrefix="students-table-per-page"
+                                        />
                                     </CardContent>
                                 </Card>
                             </div>
@@ -539,7 +546,8 @@ export default function MyStudents({
 
                         {/* Grid view */}
                         {view === 'grid' && (
-                            <div className="hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3">
+                            <div className="hidden sm:flex sm:flex-col sm:gap-4">
+                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {students.data.map((student) => (
                                     <Card
                                         key={student.intern_user_id}
@@ -682,6 +690,14 @@ export default function MyStudents({
                                         </CardFooter>
                                     </Card>
                                 ))}
+                                </div>
+                                <NumberedPagination
+                                    meta={students}
+                                    itemLabel="intern"
+                                    onPageChange={goToPage}
+                                    onPerPageChange={changePerPage}
+                                    idPrefix="students-grid-per-page"
+                                />
                             </div>
                         )}
 
@@ -771,15 +787,14 @@ export default function MyStudents({
                                     </CardContent>
                                 </Card>
                             ))}
+                            <NumberedPagination
+                                meta={students}
+                                itemLabel="intern"
+                                onPageChange={goToPage}
+                                onPerPageChange={changePerPage}
+                                idPrefix="students-mobile-per-page"
+                            />
                         </div>
-
-                        <NumberedPagination
-                            meta={students}
-                            itemLabel="intern"
-                            onPageChange={goToPage}
-                            onPerPageChange={changePerPage}
-                            idPrefix="students-per-page"
-                        />
                     </>
                 )}
             </div>

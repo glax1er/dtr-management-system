@@ -31,13 +31,13 @@ export default function AuthCardLayout({
                                     className="mb-2 h-12 w-auto object-contain"
                                 />
                                 <img
-                                    src="/images/cims-logo-light.png?v=3"
-                                    alt="CIC logo"
+                                    src="/images/uims-logo-light.png?v=3"
+                                    alt="UIMS logo"
                                     className="h-27 w-auto object-contain dark:hidden"
                                 />
                                 <img
-                                    src="/images/cims-logo-dark.png?v=5"
-                                    alt="CIC logo dark"
+                                    src="/images/uims-logo-dark.png?v=5"
+                                    alt="UIMS logo dark"
                                     className="hidden h-27 w-auto object-contain dark:block"
                                 />
                                 <img

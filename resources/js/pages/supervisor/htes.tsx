@@ -380,7 +380,7 @@ export default function SupervisorHtes({
                         {/* Table view */}
                         {view === 'table' && (
                             <div className="hidden sm:block">
-                                <Card>
+                                <Card className="overflow-hidden p-0 shadow-xs">
                                     <CardContent className="p-0">
                                         <Table>
                                             <TableHeader className="bg-muted/40">
@@ -575,6 +575,13 @@ export default function SupervisorHtes({
                                                 })}
                                             </TableBody>
                                         </Table>
+                                        <NumberedPagination
+                                            meta={htes}
+                                            itemLabel="HTE"
+                                            onPageChange={goToPage}
+                                            onPerPageChange={changePerPage}
+                                            idPrefix="htes-table-per-page"
+                                        />
                                     </CardContent>
                                 </Card>
                             </div>
@@ -582,7 +589,8 @@ export default function SupervisorHtes({
 
                         {/* Grid view — desktop */}
                         {view === 'grid' && (
-                            <div className="hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3">
+                            <div className="hidden sm:flex sm:flex-col sm:gap-4">
+                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {htes.data.map((hte) => {
                                     const isExpanded = expandedHteIds.has(
                                         hte.hte_id,
@@ -725,6 +733,14 @@ export default function SupervisorHtes({
                                         </Card>
                                     );
                                 })}
+                                </div>
+                                <NumberedPagination
+                                    meta={htes}
+                                    itemLabel="HTE"
+                                    onPageChange={goToPage}
+                                    onPerPageChange={changePerPage}
+                                    idPrefix="htes-grid-per-page"
+                                />
                             </div>
                         )}
 
@@ -825,15 +841,14 @@ export default function SupervisorHtes({
                                     </Card>
                                 );
                             })}
+                            <NumberedPagination
+                                meta={htes}
+                                itemLabel="HTE"
+                                onPageChange={goToPage}
+                                onPerPageChange={changePerPage}
+                                idPrefix="htes-mobile-per-page"
+                            />
                         </div>
-
-                        <NumberedPagination
-                            meta={htes}
-                            itemLabel="HTE"
-                            onPageChange={goToPage}
-                            onPerPageChange={changePerPage}
-                            idPrefix="htes-table-per-page"
-                        />
                     </>
                 )}
             </div>

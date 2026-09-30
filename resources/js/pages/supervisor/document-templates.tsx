@@ -830,30 +830,30 @@ export default function DocumentTemplates({
                         </div>
                     ) : (
                         /* Archived Table */
-                        <Card>
+                        <Card className="overflow-hidden p-0 shadow-xs">
                             <CardContent className="p-0">
                                 <Table>
-                                    <TableHeader>
-                                        <TableRow className="bg-muted/50">
-                                            <TableHead className="px-6">
+                                    <TableHeader className="bg-muted/40">
+                                        <TableRow>
+                                            <TableHead className="px-6 font-semibold">
                                                 Document Name
                                             </TableHead>
-                                            <TableHead className="px-6 text-center">
+                                            <TableHead className="px-6 text-center font-semibold">
                                                 Category
                                             </TableHead>
-                                            <TableHead className="px-6 text-center">
+                                            <TableHead className="px-6 text-center font-semibold">
                                                 Type
                                             </TableHead>
-                                            <TableHead className="px-6 text-center">
+                                            <TableHead className="px-6 text-center font-semibold">
                                                 Status
                                             </TableHead>
-                                            <TableHead className="px-6 text-center">
+                                            <TableHead className="px-6 text-center font-semibold">
                                                 Template File
                                             </TableHead>
-                                            <TableHead className="px-6 text-center">
+                                            <TableHead className="px-6 text-center font-semibold">
                                                 Archived Date
                                             </TableHead>
-                                            <TableHead className="px-6 text-center">
+                                            <TableHead className="px-6 text-center font-semibold">
                                                 Actions
                                             </TableHead>
                                         </TableRow>
@@ -1206,30 +1206,30 @@ export default function DocumentTemplates({
                     </div>
                 ) : (
                     /* Uniform Admin Table View */
-                    <Card>
+                    <Card className="overflow-hidden p-0 shadow-xs">
                         <CardContent className="p-0">
                             <Table>
-                                <TableHeader>
-                                    <TableRow className="bg-muted/50">
-                                        <TableHead className="px-6">
+                                <TableHeader className="bg-muted/40">
+                                    <TableRow>
+                                        <TableHead className="px-6 font-semibold">
                                             Document Requirement
                                         </TableHead>
-                                        <TableHead className="px-6 text-center">
+                                        <TableHead className="px-6 text-center font-semibold">
                                             Category
                                         </TableHead>
-                                        <TableHead className="px-6 text-center">
+                                        <TableHead className="px-6 text-center font-semibold">
                                             Requirement
                                         </TableHead>
-                                        <TableHead className="px-6 text-center">
+                                        <TableHead className="px-6 text-center font-semibold">
                                             Format Status
                                         </TableHead>
-                                        <TableHead className="px-6 text-center">
+                                        <TableHead className="px-6 text-center font-semibold">
                                             Blank File
                                         </TableHead>
-                                        <TableHead className="px-6 text-center">
+                                        <TableHead className="px-6 text-center font-semibold">
                                             Guidance
                                         </TableHead>
-                                        <TableHead className="px-6 text-center">
+                                        <TableHead className="px-6 text-center font-semibold">
                                             Actions
                                         </TableHead>
                                     </TableRow>

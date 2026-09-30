@@ -699,7 +699,7 @@ export function printIdCard({
             <div class="card card-front">
                 <div class="card-header">
                     <div class="header-left">
-                        <img src="/images/cims-logo-light.png?v=3" class="logo" alt="Logo">
+                        <img src="/images/uims-logo-light.png?v=3" class="logo" alt="Logo">
                         <div class="brand-group">
                             <span class="brand-title">University of Southeastern Philippines</span>
                             <span class="brand-sub">Internship Management System</span>
@@ -752,7 +752,7 @@ export function printIdCard({
             <div class="card card-back">
                 <div class="card-header">
                     <div class="header-left">
-                        <img src="/images/cims-logo-light.png?v=3" class="logo" alt="Logo">
+                        <img src="/images/uims-logo-light.png?v=3" class="logo" alt="Logo">
                         <div class="brand-group">
                             <span class="brand-title">University of Southeastern Philippines</span>
                             <span class="brand-sub">Attendance Verification Pass</span>

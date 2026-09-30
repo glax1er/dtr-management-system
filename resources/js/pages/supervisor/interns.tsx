@@ -678,8 +678,8 @@ export default function MyInterns({
                         {/* Table View - desktop */}
                         {view === 'table' && (
                             <div className="hidden sm:block">
-                                <Card className="flex-1">
-                                    <CardHeader className="flex flex-row items-center justify-between">
+                                <Card className="overflow-hidden gap-0 p-0 shadow-xs">
+                                    <CardHeader className="flex flex-row items-center justify-between border-b px-6 py-4">
                                         <CardTitle className="text-base font-semibold">
                                             Attendance Logs
                                         </CardTitle>
@@ -696,7 +696,7 @@ export default function MyInterns({
                                         <Table>
                                             <TableHeader className="bg-muted/40">
                                                 <TableRow>
-                                                    <TableHead className="px-6">
+                                                    <TableHead className="px-6 font-semibold">
                                                         <button
                                                             type="button"
                                                             onClick={() =>
@@ -710,7 +710,7 @@ export default function MyInterns({
                                                             {sortIcon('date')}
                                                         </button>
                                                     </TableHead>
-                                                    <TableHead className="px-6">
+                                                    <TableHead className="px-6 font-semibold">
                                                         <button
                                                             type="button"
                                                             onClick={() =>
@@ -786,6 +786,13 @@ export default function MyInterns({
                                                 ))}
                                             </TableBody>
                                         </Table>
+                                        <NumberedPagination
+                                            meta={logs}
+                                            itemLabel="record"
+                                            onPageChange={goToPage}
+                                            onPerPageChange={changePerPage}
+                                            idPrefix="attendance-logs-table-per-page"
+                                        />
                                     </CardContent>
                                 </Card>
                             </div>
@@ -793,7 +800,8 @@ export default function MyInterns({
 
                         {/* Grid View - desktop */}
                         {view === 'grid' && (
-                            <div className="hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3">
+                            <div className="hidden sm:flex sm:flex-col sm:gap-4">
+                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {logs.data.map((log) => (
                                     <Card
                                         key={`${log.intern_user_id}-${log.date}`}
@@ -886,78 +894,91 @@ export default function MyInterns({
                                         </div>
                                     </Card>
                                 ))}
+                                </div>
+                                <NumberedPagination
+                                    meta={logs}
+                                    itemLabel="record"
+                                    onPageChange={goToPage}
+                                    onPerPageChange={changePerPage}
+                                    idPrefix="attendance-logs-grid-per-page"
+                                />
                             </div>
                         )}
 
                         {/* Mobile List View */}
-                        <div className="divide-y rounded-lg border bg-card sm:hidden">
-                            {logs.data.map((log) => (
-                                <div
-                                    key={`${log.intern_user_id}-${log.date}`}
-                                    className="flex flex-col gap-2.5 p-4"
-                                >
-                                    <div className="flex items-start justify-between gap-2">
-                                        <div className="min-w-0">
-                                            <span className="block truncate text-sm font-semibold text-foreground">
-                                                {log.intern_name}
-                                            </span>
-                                            <span className="text-xs text-muted-foreground">
-                                                {formatLongDate(
-                                                    log.date,
-                                                    log.day,
+                        <div className="flex flex-col gap-3 sm:hidden">
+                            <div className="divide-y rounded-lg border bg-card">
+                                {logs.data.map((log) => (
+                                    <div
+                                        key={`${log.intern_user_id}-${log.date}`}
+                                        className="flex flex-col gap-2.5 p-4"
+                                    >
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="min-w-0">
+                                                <span className="block truncate text-sm font-semibold text-foreground">
+                                                    {log.intern_name}
+                                                </span>
+                                                <span className="text-xs text-muted-foreground">
+                                                    {formatLongDate(
+                                                        log.date,
+                                                        log.day,
+                                                    )}
+                                                </span>
+                                            </div>
+                                            <div className="flex shrink-0 flex-wrap gap-1">
+                                                {log.punctuality && (
+                                                    <AttendanceBadge
+                                                        status={log.punctuality}
+                                                    />
                                                 )}
-                                            </span>
+                                                {log.status === 'open' && (
+                                                    <AttendanceBadge status="open" />
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className="flex shrink-0 flex-wrap gap-1">
-                                            {log.punctuality && (
-                                                <AttendanceBadge
-                                                    status={log.punctuality}
-                                                />
-                                            )}
-                                            {log.status === 'open' && (
-                                                <AttendanceBadge status="open" />
-                                            )}
+                                        <div className="grid grid-cols-3 gap-1 rounded-md border bg-muted/30 p-2 text-center text-xs text-muted-foreground">
+                                            <div>
+                                                <span className="block text-[10px] text-muted-foreground">
+                                                    Time In
+                                                </span>
+                                                <span className="font-medium text-foreground">
+                                                    {formatLongTime(
+                                                        log.time_in,
+                                                    )}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <span className="block text-[10px] text-muted-foreground">
+                                                    Time Out
+                                                </span>
+                                                <span className="font-medium text-foreground">
+                                                    {formatLongTime(
+                                                        log.time_out,
+                                                    )}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <span className="block text-[10px] text-muted-foreground">
+                                                    Hours
+                                                </span>
+                                                <span className="font-semibold text-foreground">
+                                                    {formatLongDuration(
+                                                        log.hours_rendered,
+                                                    )}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-3 gap-1 rounded-md border bg-muted/30 p-2 text-center text-xs text-muted-foreground">
-                                        <div>
-                                            <span className="block text-[10px] text-muted-foreground">
-                                                Time In
-                                            </span>
-                                            <span className="font-medium text-foreground">
-                                                {formatLongTime(log.time_in)}
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <span className="block text-[10px] text-muted-foreground">
-                                                Time Out
-                                            </span>
-                                            <span className="font-medium text-foreground">
-                                                {formatLongTime(log.time_out)}
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <span className="block text-[10px] text-muted-foreground">
-                                                Hours
-                                            </span>
-                                            <span className="font-semibold text-foreground">
-                                                {formatLongDuration(
-                                                    log.hours_rendered,
-                                                )}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
+                            <NumberedPagination
+                                meta={logs}
+                                itemLabel="record"
+                                onPageChange={goToPage}
+                                onPerPageChange={changePerPage}
+                                idPrefix="attendance-logs-mobile-per-page"
+                            />
                         </div>
-
-                        <NumberedPagination
-                            meta={logs}
-                            itemLabel="record"
-                            onPageChange={goToPage}
-                            onPerPageChange={changePerPage}
-                            idPrefix="attendance-logs-per-page"
-                        />
                     </>
                 )}
             </div>
