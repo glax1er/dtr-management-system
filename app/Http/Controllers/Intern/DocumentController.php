@@ -15,6 +15,7 @@ use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 
 class DocumentController extends Controller
 {
@@ -161,6 +162,10 @@ class DocumentController extends Controller
             ->where('document_type', $documentType)
             ->first();
 
+        if ($existingDoc && $existingDoc->status === InternDocument::STATUS_APPROVED) {
+            abort(403, 'Cannot replace an already approved document.');
+        }
+
         // Remove old stored file if replacing
         if ($existingDoc && $existingDoc->file_path && Storage::disk('local')->exists($existingDoc->file_path)) {
             Storage::disk('local')->delete($existingDoc->file_path);
@@ -227,9 +232,14 @@ class DocumentController extends Controller
 
         $fullPath = Storage::disk('local')->path($internDocument->file_path);
 
+        $disposition = HeaderUtils::makeDisposition(
+            HeaderUtils::DISPOSITION_INLINE,
+            $internDocument->original_filename,
+        );
+
         return response()->file($fullPath, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="'.addslashes($internDocument->original_filename).'"',
+            'Content-Disposition' => $disposition,
         ]);
     }
 
@@ -254,6 +264,10 @@ class DocumentController extends Controller
     {
         if ($internDocument->user_id !== $request->user()->id) {
             abort(403, 'Unauthorized action.');
+        }
+
+        if ($internDocument->status === InternDocument::STATUS_APPROVED) {
+            abort(403, 'Cannot delete an already approved document.');
         }
 
         if ($internDocument->file_path && Storage::disk('local')->exists($internDocument->file_path)) {

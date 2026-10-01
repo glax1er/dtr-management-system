@@ -46,12 +46,13 @@ class HtesController extends Controller
         $status = $validated['status'] ?? null;
 
         $htesQuery = Hte::query()
-            ->whereHas('internProfiles', fn ($query) => $query->where('program_id', $program->program_id))
+            ->whereHas('internProfiles', fn ($query) => $query->whereHas('user', fn ($q) => $q->whereNotNull('email_verified_at'))->where('program_id', $program->program_id))
             ->withCount([
                 // scoped to interns from this OJT supervisor's program only —
                 // not the HTE's total roster across every program, and only
                 // approved ones, matching the admin HTE list's convention.
                 'internProfiles as interns_count' => fn ($query) => $query
+                    ->whereHas('user', fn ($q) => $q->whereNotNull('email_verified_at'))
                     ->where('program_id', $program->program_id)
                     ->where('status', 'approved'),
             ])
@@ -60,6 +61,7 @@ class HtesController extends Controller
                 // same scope as interns_count above, plus the user record
                 // for name/email.
                 'internProfiles' => fn ($query) => $query
+                    ->whereHas('user', fn ($q) => $q->whereNotNull('email_verified_at'))
                     ->where('program_id', $program->program_id)
                     ->where('status', 'approved')
                     ->with('user')

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ResolutionTicket;
 use App\Models\User;
 use App\Notifications\ResolutionTicketNotification;
+use App\Services\Attendance\DailyAttendance;
 use App\Services\Attendance\DailyAttendanceCalculator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -46,6 +47,17 @@ class ResolutionTicketController extends Controller
         $day = $this->calculator
             ->forIntern($user->id, $profile->hte_id, from: $date, to: $date, approvedAt: $profile->approved_at)
             ->first();
+
+        if ($day === null && $date->lte(Carbon::now($timezone)->startOfDay())) {
+            $day = new DailyAttendance(
+                date: $validated['date'],
+                timeIn: null,
+                timeOut: null,
+                hoursRendered: 0.0,
+                lunchDeducted: false,
+                rawScanCount: 0,
+            );
+        }
 
         if ($day === null || (! $day->isFullyMissing() && ! $day->isMissingTimeIn() && ! $day->isOpen())) {
             throw ValidationException::withMessages([
@@ -90,6 +102,12 @@ class ResolutionTicketController extends Controller
         $proposedTimeOut = $needsTimeOut
             ? Carbon::createFromFormat('Y-m-d H:i', $validated['date'].' '.$validated['proposed_time_out'], $timezone)
             : null;
+
+        if ($proposedTimeOut !== null && $proposedTimeOut->isAfter(Carbon::now($timezone))) {
+            throw ValidationException::withMessages([
+                'proposed_time_out' => 'Cannot request a future time out for an in-progress date.',
+            ]);
+        }
 
         // Fail fast here for UX — the authoritative check still happens
         // again in Supervisor\ResolutionTicketController::approve(), since

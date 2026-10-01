@@ -457,17 +457,24 @@ class DocumentTemplateController extends Controller
         $supervisor = $user->supervisorProfile;
 
         if (! $user->isAdmin()) {
-            if (! $supervisor || ! $supervisor->isOjtSupervisor()) {
+            if (! $supervisor || $supervisor->status !== 'active' || ! $supervisor->isOjtSupervisor()) {
                 abort(403, 'Unauthorized action.');
             }
         }
 
-        $programId = $supervisor->program_id;
+        $programId = $supervisor === null
+            ? $request->input('program_id')
+            : $supervisor->program_id;
+
+        $query = DocumentTemplate::query();
+        if ($programId !== null) {
+            $query->where('program_id', $programId);
+        }
 
         // Check if $documentType is numeric ID or string key
         $template = is_numeric($documentType)
-            ? DocumentTemplate::where('program_id', $programId)->find((int) $documentType)
-            : DocumentTemplate::where('program_id', $programId)->where('document_type', $documentType)->first();
+            ? (clone $query)->find((int) $documentType)
+            : (clone $query)->where('document_type', $documentType)->first();
 
         if (! $template) {
             $typeKey = is_numeric($documentType) ? null : $documentType;

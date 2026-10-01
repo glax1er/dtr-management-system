@@ -4,6 +4,7 @@ import {
     Calendar,
     CheckCircle2,
     Clock3,
+    ShieldAlert,
     Trophy,
     UserPlus,
     XCircle,
@@ -64,6 +65,7 @@ export type NotificationCategory =
     | 'attendance'
     | 'schedule'
     | 'registration'
+    | 'system'
     | 'general';
 
 export const NOTIFICATION_CATEGORY_LABELS: Record<
@@ -77,6 +79,7 @@ export const NOTIFICATION_CATEGORY_LABELS: Record<
     attendance: 'Attendance',
     schedule: 'Schedule',
     registration: 'Registration',
+    system: 'System & Admin',
     general: 'General',
 };
 
@@ -145,6 +148,17 @@ export function getNotificationCategory(
         return 'pending';
     }
 
+    if (
+        type === 'college_admin_account' ||
+        type.includes('system_alert') ||
+        type.includes('kiosk') ||
+        title.includes('college admin account') ||
+        title.includes('system alert') ||
+        title.includes('kiosk')
+    ) {
+        return 'system';
+    }
+
     return 'general';
 }
 
@@ -180,6 +194,10 @@ const NOTIFICATION_CATEGORY_TONES: Record<
     registration: {
         icon: UserPlus,
         badgeClassName: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+    },
+    system: {
+        icon: ShieldAlert,
+        badgeClassName: 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
     },
     general: {
         icon: Bell,

@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Models\Campus;
+use App\Models\College;
 use App\Models\Hte;
 use App\Models\Program;
 use App\Models\User;
@@ -152,20 +154,38 @@ class FortifyServiceProvider extends ServiceProvider
             ]);
         });
 
-        Fortify::registerView(fn (Request $request) => Inertia::render('auth/register', [
-            'passwordRules' => Password::defaults()->toPasswordRulesString(),
-            'registered' => $request->session()->get('registered', false),
-            'showVerification' => $request->session()->get('show_verification', false),
-            'verificationEmail' => $request->session()->get('verification_email'),
-            'programs' => Program::query()
-                ->select(['program_id', 'program_name'])
-                ->orderBy('program_name')
-                ->get(),
-            'htes' => Hte::query()
-                ->select(['hte_id', 'hte_name'])
-                ->orderBy('hte_name')
-                ->get(),
-        ]));
+        Fortify::registerView(function (Request $request) {
+            $campuses = Campus::where('is_active', true)->orderBy('name')->pluck('name')->toArray();
+            if (empty($campuses)) {
+                $knownCampuses = ['Obrero', 'Mintal', 'Tagum', 'Mabini', 'Malabog'];
+                $dbCampuses = College::whereNotNull('campus')->where('campus', '!=', '')->distinct()->pluck('campus')->toArray();
+                $campuses = array_values(array_unique(array_merge($knownCampuses, $dbCampuses)));
+                sort($campuses);
+            }
+
+            return Inertia::render('auth/register', [
+                'passwordRules' => Password::defaults()->toPasswordRulesString(),
+                'registered' => $request->session()->get('registered', false),
+                'showVerification' => $request->session()->get('show_verification', false),
+                'verificationEmail' => $request->session()->get('verification_email'),
+                'campuses' => $campuses,
+                'colleges' => College::query()
+                    ->where('is_active', true)
+                    ->select(['id', 'name', 'code', 'campus'])
+                    ->orderBy('name')
+                    ->get(),
+                'programs' => Program::query()
+                    ->where('is_active', true)
+                    ->select(['program_id', 'college_id', 'program_name'])
+                    ->orderBy('program_name')
+                    ->get(),
+                'htes' => Hte::query()
+                    ->where('status', 'active')
+                    ->select(['hte_id', 'hte_name', 'college_id'])
+                    ->orderBy('hte_name')
+                    ->get(),
+            ]);
+        });
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge'));
 

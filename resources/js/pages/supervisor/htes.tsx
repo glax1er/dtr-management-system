@@ -4,7 +4,6 @@ import {
     ChevronDown,
     LayoutGrid,
     MapPin,
-    Phone,
     Search,
     SlidersHorizontal,
     Table as TableIcon,
@@ -381,7 +380,7 @@ export default function SupervisorHtes({
                         {/* Table view */}
                         {view === 'table' && (
                             <div className="hidden sm:block">
-                                <Card>
+                                <Card className="overflow-hidden p-0 shadow-xs">
                                     <CardContent className="p-0">
                                         <Table>
                                             <TableHeader className="bg-muted/40">
@@ -576,6 +575,13 @@ export default function SupervisorHtes({
                                                 })}
                                             </TableBody>
                                         </Table>
+                                        <NumberedPagination
+                                            meta={htes}
+                                            itemLabel="HTE"
+                                            onPageChange={goToPage}
+                                            onPerPageChange={changePerPage}
+                                            idPrefix="htes-table-per-page"
+                                        />
                                     </CardContent>
                                 </Card>
                             </div>
@@ -583,7 +589,8 @@ export default function SupervisorHtes({
 
                         {/* Grid view — desktop */}
                         {view === 'grid' && (
-                            <div className="hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3">
+                            <div className="hidden sm:flex sm:flex-col sm:gap-4">
+                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {htes.data.map((hte) => {
                                     const isExpanded = expandedHteIds.has(
                                         hte.hte_id,
@@ -592,11 +599,14 @@ export default function SupervisorHtes({
                                     return (
                                         <Card
                                             key={hte.hte_id}
-                                            className="flex flex-col justify-between"
+                                            className="flex h-full flex-col justify-between rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:border-border hover:shadow-md"
                                         >
                                             <CardHeader className="pb-3">
                                                 <div className="flex items-start justify-between gap-2">
-                                                    <CardTitle className="truncate text-base font-semibold">
+                                                    <CardTitle
+                                                        className="line-clamp-1 min-w-0 text-base leading-tight font-semibold"
+                                                        title={hte.hte_name}
+                                                    >
                                                         {hte.hte_name}
                                                     </CardTitle>
                                                     <StatusBadge
@@ -604,50 +614,65 @@ export default function SupervisorHtes({
                                                     />
                                                 </div>
                                             </CardHeader>
-                                            <CardContent className="flex flex-col gap-2.5 text-xs text-muted-foreground">
-                                                {hte.address && (
-                                                    <div className="flex items-center gap-2">
-                                                        <MapPin className="size-3.5 shrink-0" />
-                                                        <span className="truncate">
-                                                            {hte.address}
+                                            <CardContent className="flex-1 space-y-2.5 pb-3 text-sm">
+                                                <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3 text-xs">
+                                                    {hte.address && (
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
+                                                                <MapPin className="size-3.5 text-muted-foreground" />
+                                                                Address:
+                                                            </span>
+                                                            <span
+                                                                className="truncate text-right font-medium text-foreground"
+                                                                title={
+                                                                    hte.address
+                                                                }
+                                                            >
+                                                                {hte.address}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    {(hte.contact_person ||
+                                                        hte.contact_number) && (
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
+                                                                <User className="size-3.5 text-muted-foreground" />
+                                                                Contact:
+                                                            </span>
+                                                            <span className="truncate text-right font-medium text-foreground">
+                                                                {hte.contact_person ??
+                                                                    '—'}
+                                                                {hte.contact_number && (
+                                                                    <span className="ml-1 font-normal text-muted-foreground">
+                                                                        ·{' '}
+                                                                        {
+                                                                            hte.contact_number
+                                                                        }
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    <div className="flex items-center justify-between gap-2 border-t pt-1.5">
+                                                        <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
+                                                            <Users className="size-3.5 text-muted-foreground" />
+                                                            Assigned Interns:
                                                         </span>
+                                                        <Badge
+                                                            variant="secondary"
+                                                            className="text-xs font-semibold"
+                                                        >
+                                                            {hte.interns_count}
+                                                        </Badge>
                                                     </div>
-                                                )}
-                                                {hte.contact_person && (
-                                                    <div className="flex items-center gap-2">
-                                                        <User className="size-3.5 shrink-0" />
-                                                        <span className="truncate">
-                                                            {hte.contact_person}
-                                                        </span>
-                                                    </div>
-                                                )}
-                                                {hte.contact_number && (
-                                                    <div className="flex items-center gap-2">
-                                                        <Phone className="size-3.5 shrink-0" />
-                                                        <span>
-                                                            {hte.contact_number}
-                                                        </span>
-                                                    </div>
-                                                )}
-                                                <div className="mt-2 flex items-center justify-between border-t pt-2">
-                                                    <span className="flex items-center gap-1.5 text-muted-foreground">
-                                                        <Users className="size-3.5" />{' '}
-                                                        Assigned Interns:
-                                                    </span>
-                                                    <Badge
-                                                        variant="secondary"
-                                                        className="text-xs font-semibold"
-                                                    >
-                                                        {hte.interns_count}
-                                                    </Badge>
                                                 </div>
 
                                                 {hte.interns.length > 0 && (
-                                                    <div className="mt-2">
+                                                    <div className="border-t pt-2">
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
-                                                            className="h-7 w-full justify-between text-xs"
+                                                            className="h-8 w-full justify-between text-xs font-medium"
                                                             onClick={() =>
                                                                 toggleExpanded(
                                                                     hte.hte_id,
@@ -657,14 +682,14 @@ export default function SupervisorHtes({
                                                             <span>
                                                                 {isExpanded
                                                                     ? 'Hide Interns'
-                                                                    : 'View Interns'}
+                                                                    : `View Interns (${hte.interns.length})`}
                                                             </span>
                                                             <ChevronDown
                                                                 className={`size-3.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                                                             />
                                                         </Button>
                                                         {isExpanded && (
-                                                            <div className="mt-2 flex flex-col gap-1.5 rounded-md border bg-muted/20 p-2">
+                                                            <div className="mt-2 flex max-h-36 flex-col gap-1.5 overflow-y-auto rounded-lg border bg-muted/20 p-2.5">
                                                                 {hte.interns.map(
                                                                     (
                                                                         intern,
@@ -675,12 +700,12 @@ export default function SupervisorHtes({
                                                                             }
                                                                             className="flex items-center justify-between text-[11px]"
                                                                         >
-                                                                            <span className="truncate font-medium text-foreground">
+                                                                            <span className="mr-2 truncate font-medium text-foreground">
                                                                                 {
                                                                                     intern.name
                                                                                 }
                                                                             </span>
-                                                                            <span className="text-muted-foreground">
+                                                                            <span className="shrink-0 text-muted-foreground">
                                                                                 {formatLongDuration(
                                                                                     intern.total_hours,
                                                                                 )}
@@ -693,9 +718,29 @@ export default function SupervisorHtes({
                                                     </div>
                                                 )}
                                             </CardContent>
+                                            <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
+                                                <span>
+                                                    {hte.interns_count}{' '}
+                                                    {hte.interns_count === 1
+                                                        ? 'Intern'
+                                                        : 'Interns'}{' '}
+                                                    Assigned
+                                                </span>
+                                                <span className="font-medium capitalize">
+                                                    {hte.status}
+                                                </span>
+                                            </div>
                                         </Card>
                                     );
                                 })}
+                                </div>
+                                <NumberedPagination
+                                    meta={htes}
+                                    itemLabel="HTE"
+                                    onPageChange={goToPage}
+                                    onPerPageChange={changePerPage}
+                                    idPrefix="htes-grid-per-page"
+                                />
                             </div>
                         )}
 
@@ -796,15 +841,14 @@ export default function SupervisorHtes({
                                     </Card>
                                 );
                             })}
+                            <NumberedPagination
+                                meta={htes}
+                                itemLabel="HTE"
+                                onPageChange={goToPage}
+                                onPerPageChange={changePerPage}
+                                idPrefix="htes-mobile-per-page"
+                            />
                         </div>
-
-                        <NumberedPagination
-                            meta={htes}
-                            itemLabel="HTE"
-                            onPageChange={goToPage}
-                            onPerPageChange={changePerPage}
-                            idPrefix="htes-table-per-page"
-                        />
                     </>
                 )}
             </div>

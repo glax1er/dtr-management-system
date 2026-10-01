@@ -51,6 +51,8 @@ class ResolutionTicketController extends Controller
         $perPage = (int) ($validated['per_page'] ?? self::DEFAULT_PER_PAGE);
 
         $internUserIds = InternProfile::query()
+            ->verified()
+            ->where('status', 'approved')
             ->where('hte_id', $supervisorProfile->hte_id)
             ->pluck('user_id');
 
@@ -429,12 +431,13 @@ class ResolutionTicketController extends Controller
             );
         }
 
-        $internHteId = $resolutionTicket
+        $internProfile = $resolutionTicket
             ->intern
-            ->internProfile
-            ->hte_id;
+            ?->internProfile()
+            ->withTrashed()
+            ->first();
 
-        if ($internHteId !== $supervisorProfile->hte_id) {
+        if (! $internProfile || $internProfile->hte_id !== $supervisorProfile->hte_id) {
             abort(403);
         }
     }
