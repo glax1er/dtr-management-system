@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\AttendanceLog;
+use App\Models\Campus;
 use App\Models\Hte;
 use App\Models\InternProfile;
 use App\Models\Program;
@@ -67,11 +68,11 @@ class DevDataSeeder extends Seeder
             // A handful of interns per HTE, with names varied enough to
             // actually see the name filter/sort do something.
             collect(range(1, 8))->each(function (int $i) use ($hte, $programIds, $supervisorUser) {
-                $programId = $programIds->random();
-                $program = Program::with('college')->find($programId);
+                $programId = (int) $programIds->random();
+                $program = Program::query()->with('college')->whereKey($programId)->first();
                 $college = $program?->college;
                 $campusId = $college?->campus_id;
-                $campusName = $college?->campus ?? ($campusId ? \App\Models\Campus::where('id', $campusId)->value('name') : null);
+                $campusName = $college->campus ?? ($campusId ? Campus::where('id', $campusId)->value('name') : null);
 
                 $internUser = User::create([
                     'role' => User::ROLE_INTERN,

@@ -117,7 +117,9 @@ class CreateNewUser implements CreatesNewUsers
                 ? (int) $input['college_id']
                 : $program?->college_id;
 
-            $college = $collegeId ? College::find($collegeId) : null;
+            $college = $collegeId
+                ? College::query()->whereKey((int) $collegeId)->first()
+                : null;
 
             // Resolve campus_id in full within the transaction so we have
             // access to the final $collegeId (program may have been just resolved).
@@ -139,7 +141,7 @@ class CreateNewUser implements CreatesNewUsers
             // Align campus text with the resolved campus model to avoid divergence
             $campus = ! empty($input['campus'])
                 ? $input['campus']
-                : ($college?->campus ?? null);
+                : ($college->campus ?? null);
 
             if ($campusId !== null) {
                 $campusName = Campus::where('id', $campusId)->value('name');
@@ -184,6 +186,8 @@ class CreateNewUser implements CreatesNewUsers
      *  1. campus name/code string directly in input → match Campus by name or code
      *  2. college_id → College::campus_id (FK)
      *  3. program_id → program.college → College::campus_id
+     *
+     * @param  array<string, mixed>  $input
      */
     private function resolveCampusId(array $input): ?int
     {
@@ -199,11 +203,12 @@ class CreateNewUser implements CreatesNewUsers
         $collegeId = ! empty($input['college_id']) ? (int) $input['college_id'] : null;
 
         if ($collegeId === null && ! empty($input['program_id'])) {
-            $collegeId = Program::where('program_id', $input['program_id'])->value('college_id');
+            $programCollegeId = Program::where('program_id', $input['program_id'])->value('college_id');
+            $collegeId = $programCollegeId !== null ? (int) $programCollegeId : null;
         }
 
         if ($collegeId) {
-            $college = College::find($collegeId);
+            $college = College::query()->whereKey($collegeId)->first();
             if ($college?->campus_id) {
                 return $college->campus_id;
             }
