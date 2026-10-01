@@ -5,6 +5,7 @@ import {
     Building2,
     CalendarCheck2,
     ClipboardCheck,
+    Clock,
     GraduationCap,
     Landmark,
     LayoutGrid,
@@ -61,7 +62,25 @@ interface RecentRegistration {
     registered_at_full: string;
 }
 
+interface RecentScan {
+    id: number;
+    intern_name: string;
+    email: string;
+    id_number: string;
+    hte_name: string;
+    program_name: string;
+    label: 'time_in' | 'time_out';
+    source: string;
+    scanned_at: string;
+    scanned_at_full: string;
+}
+
 interface StatusCount {
+    status: 'pending' | 'approved' | 'rejected';
+    count: number;
+}
+
+interface TicketStatusCount {
     status: 'pending' | 'approved' | 'rejected';
     count: number;
 }
@@ -73,6 +92,11 @@ interface TrendPoint {
 }
 
 interface TopHte {
+    name: string;
+    count: number;
+}
+
+interface TopIntern {
     name: string;
     count: number;
 }
@@ -95,6 +119,14 @@ interface AdminDashboardProps {
     todayAttendance: TodayAttendance;
     college?: { id: number; name: string; code: string } | null;
     superAdminAnalytics?: SuperAdminAnalytics | null;
+    tab?: 'overview' | 'operations' | 'institution';
+    scansToday?: number;
+    scansThisWeek?: number;
+    pendingTickets?: number;
+    ticketBreakdown?: TicketStatusCount[];
+    scansTrend?: TrendPoint[];
+    topInterns?: TopIntern[];
+    recentScans?: Paginated<RecentScan>;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -112,6 +144,14 @@ export default function AdminDashboard({
     topHtes,
     todayAttendance,
     superAdminAnalytics,
+    tab,
+    scansToday = 0,
+    scansThisWeek = 0,
+    pendingTickets = 0,
+    ticketBreakdown = [],
+    scansTrend = [],
+    topInterns = [],
+    recentScans,
 }: AdminDashboardProps) {
     const { auth } = usePage<PageProps>().props;
 
@@ -122,7 +162,34 @@ export default function AdminDashboard({
 
     const [activeTab, setActiveTab] = useState<
         'overview' | 'operations' | 'institution'
-    >('overview');
+    >(() => {
+        if (typeof window !== 'undefined') {
+            const urlTab = new URLSearchParams(window.location.search).get(
+                'tab',
+            );
+
+            if (
+                urlTab === 'overview' ||
+                urlTab === 'operations' ||
+                urlTab === 'institution'
+            ) {
+                return urlTab;
+            }
+        }
+
+        return tab || 'overview';
+    });
+
+    const handleTabChange = (val: string) => {
+        const nextTab = val as 'overview' | 'operations' | 'institution';
+        setActiveTab(nextTab);
+
+        if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href);
+            url.searchParams.set('tab', nextTab);
+            window.history.replaceState({}, '', url.toString());
+        }
+    };
 
     const [mounted, setMounted] = useState(false);
     useEffect(() => {
@@ -131,7 +198,7 @@ export default function AdminDashboard({
         return () => cancelAnimationFrame(id);
     }, []);
 
-    // ── Primary Operational KPI Cards ─────────────────────────────────────────
+    // ── Primary Operational KPI Cards (Overview tab) ──────────────────────────
     const operationalStats = [
         {
             label: 'Pending Approvals',
@@ -166,6 +233,67 @@ export default function AdminDashboard({
             icon: Building2,
             variant: 'default' as const,
             onClick: () => router.visit('/admin/htes'),
+        },
+    ];
+
+    // ── Dedicated Interns & Attendance KPI Cards (Interns & Attendance tab) ───
+    const attendanceStats = [
+        {
+            label: 'Active Interns',
+            value: totalInterns,
+            icon: GraduationCap,
+            variant: 'primary' as const,
+            badge: (
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                    Enrolled
+                </span>
+            ),
+            description: 'Approved & active in training',
+            onClick: () => router.visit('/admin/interns?status=approved'),
+        },
+        {
+            label: 'Present Today',
+            value: todayAttendance.checked_in,
+            icon: CalendarCheck2,
+            variant: 'success' as const,
+            badge: (
+                <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                    {todayAttendance.percent}% attendance
+                </span>
+            ),
+            description: `${todayAttendance.checked_in} of ${todayAttendance.total} checked in`,
+        },
+        {
+            label: 'Scans Today',
+            value: scansToday,
+            icon: Clock,
+            variant: 'info' as const,
+            badge: (
+                <span className="text-[10px] text-muted-foreground">
+                    {scansThisWeek} this week
+                </span>
+            ),
+            description: 'Time-in & time-out logs today',
+        },
+        {
+            label: 'Resolution Tickets',
+            value: pendingTickets,
+            icon: AlertCircle,
+            variant:
+                pendingTickets > 0
+                    ? ('warning' as const)
+                    : ('default' as const),
+            badge:
+                pendingTickets > 0 ? (
+                    <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                        Action needed
+                    </span>
+                ) : (
+                    <span className="text-[10px] text-muted-foreground">
+                        All resolved
+                    </span>
+                ),
+            description: 'Attendance dispute requests',
         },
     ];
 
@@ -238,13 +366,27 @@ export default function AdminDashboard({
 
     const goToPage = (page: number) => {
         visit({
+            tab: 'overview',
             page: String(page),
             per_page: String(recentRegistrations.per_page),
         });
     };
 
+    const goToScansPage = (page: number) => {
+        visit({
+            tab: 'operations',
+            scans_page: String(page),
+            per_page: String(recentScans?.per_page ?? 8),
+        });
+    };
+
     const changePerPage = (perPage: number) => {
-        visit({ per_page: String(perPage) });
+        visit({
+            tab: activeTab,
+            per_page: String(perPage),
+            page: activeTab === 'overview' ? '1' : undefined,
+            scans_page: activeTab === 'operations' ? '1' : undefined,
+        });
     };
 
     const totalStatusCount = statusBreakdown.reduce(
@@ -257,8 +399,16 @@ export default function AdminDashboard({
     );
     const totalHteInterns = topHtes.reduce((sum, hte) => sum + hte.count, 0);
 
-    const showOperations =
-        activeTab === 'overview' || activeTab === 'operations';
+    const scansTotal = scansTrend.reduce((sum, point) => sum + point.count, 0);
+    const totalTicketCount = ticketBreakdown.reduce(
+        (sum, s) => sum + s.count,
+        0,
+    );
+    const totalTopInternScans = topInterns.reduce(
+        (sum, intern) => sum + intern.count,
+        0,
+    );
+
     const showInstitution =
         isSuperAdmin &&
         superAdminAnalytics &&
@@ -299,9 +449,7 @@ export default function AdminDashboard({
                 {isSuperAdmin && (
                     <Tabs
                         value={activeTab}
-                        onValueChange={(val) =>
-                            setActiveTab(val as typeof activeTab)
-                        }
+                        onValueChange={handleTabChange}
                         className="w-full"
                     >
                         <TabsList className="grid h-9 w-full grid-cols-3 sm:inline-flex sm:w-auto">
@@ -403,8 +551,8 @@ export default function AdminDashboard({
                         </div>
                     )}
 
-                {/* ── Operational KPI Cards ──────────────────────────────── */}
-                {showOperations && (
+                {/* ── Operational KPI Cards (Overview tab) ────────────────── */}
+                {activeTab === 'overview' && (
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
                         {operationalStats.map((stat, i) => (
                             <StatCard
@@ -421,8 +569,27 @@ export default function AdminDashboard({
                     </div>
                 )}
 
-                {/* ── Charts Row ─────────────────────────────────────────── */}
-                {showOperations && (
+                {/* ── Dedicated Attendance KPI Cards (Interns & Attendance tab) ── */}
+                {activeTab === 'operations' && (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+                        {attendanceStats.map((stat, i) => (
+                            <StatCard
+                                key={stat.label}
+                                label={stat.label}
+                                value={stat.value}
+                                icon={stat.icon}
+                                variant={stat.variant}
+                                badge={stat.badge}
+                                description={stat.description}
+                                onClick={stat.onClick}
+                                index={i}
+                            />
+                        ))}
+                    </div>
+                )}
+
+                {/* ── Overview Charts Row ─────────────────────────────────── */}
+                {activeTab === 'overview' && (
                     <>
                         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                             {/* Registration Trend */}
@@ -585,6 +752,172 @@ export default function AdminDashboard({
                     </>
                 )}
 
+                {/* ── Attendance Charts Row (Interns & Attendance tab) ────── */}
+                {activeTab === 'operations' && (
+                    <>
+                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                            {/* Daily Scans Momentum */}
+                            <Card className="shadow-xs lg:col-span-2">
+                                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                    <div className="flex items-center gap-2.5">
+                                        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                                            <TrendingUp className="size-4" />
+                                        </span>
+                                        <div>
+                                            <CardTitle className="text-base font-semibold">
+                                                Daily Scans Momentum
+                                            </CardTitle>
+                                            <CardDescription className="text-xs">
+                                                14-day cumulative scan volume
+                                                across stations
+                                            </CardDescription>
+                                        </div>
+                                    </div>
+                                    <Badge
+                                        variant="outline"
+                                        className="font-mono text-xs font-normal"
+                                    >
+                                        {scansTotal} scans
+                                    </Badge>
+                                </CardHeader>
+                                <CardContent className="pt-2">
+                                    <TrendBarChart
+                                        data={scansTrend}
+                                        mounted={mounted}
+                                        barColor="bg-emerald-600 dark:bg-emerald-500"
+                                    />
+                                </CardContent>
+                            </Card>
+
+                            {/* Today's Attendance */}
+                            <Card className="flex flex-col shadow-xs">
+                                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                    <div className="flex items-center gap-2.5">
+                                        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                                            <CalendarCheck2 className="size-4" />
+                                        </span>
+                                        <CardTitle className="text-base font-semibold">
+                                            Today's Attendance
+                                        </CardTitle>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="flex flex-1 flex-col items-center justify-center py-4">
+                                    {todayAttendance.total === 0 ? (
+                                        <div className="py-8 text-center text-xs text-muted-foreground sm:text-sm">
+                                            No approved interns enrolled yet.
+                                        </div>
+                                    ) : (
+                                        <AttendanceRing
+                                            percent={
+                                                mounted
+                                                    ? todayAttendance.percent
+                                                    : 0
+                                            }
+                                            checkedIn={
+                                                todayAttendance.checked_in
+                                            }
+                                            total={todayAttendance.total}
+                                            subtitle="Live check-in progress"
+                                        />
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        {/* Ticket Status + Top Active Interns */}
+                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                            {/* Ticket Status Pie Chart */}
+                            <Card className="flex flex-col shadow-xs">
+                                <CardHeader className="pb-2">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2.5">
+                                            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                                                <ClipboardCheck className="size-4" />
+                                            </span>
+                                            <div>
+                                                <CardTitle className="text-base font-semibold">
+                                                    Resolution Tickets
+                                                </CardTitle>
+                                                <CardDescription className="text-xs">
+                                                    Attendance dispute breakdown
+                                                </CardDescription>
+                                            </div>
+                                        </div>
+                                        <Badge
+                                            variant="outline"
+                                            className="font-mono text-xs font-normal"
+                                        >
+                                            {totalTicketCount} total
+                                        </Badge>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="flex flex-1 flex-col justify-center pt-2">
+                                    <StatusPieChart
+                                        data={ticketBreakdown}
+                                        mounted={mounted}
+                                    />
+                                </CardContent>
+                            </Card>
+
+                            {/* Most Active Interns */}
+                            <Card className="flex flex-col shadow-xs lg:col-span-2">
+                                <CardHeader className="flex flex-row items-center justify-between pb-3">
+                                    <div className="flex items-center gap-2.5">
+                                        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                            <GraduationCap className="size-4" />
+                                        </span>
+                                        <div>
+                                            <CardTitle className="text-base font-semibold">
+                                                Most Active Interns
+                                            </CardTitle>
+                                            <CardDescription className="text-xs">
+                                                Leading interns by attendance
+                                                scan logs
+                                            </CardDescription>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        {topInterns.length > 0 && (
+                                            <Badge
+                                                variant="outline"
+                                                className="hidden font-mono text-xs font-normal sm:inline-flex"
+                                            >
+                                                {totalTopInternScans} logged
+                                            </Badge>
+                                        )}
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 gap-1 text-xs text-muted-foreground hover:text-foreground"
+                                            onClick={() =>
+                                                router.visit(
+                                                    '/admin/interns?status=approved',
+                                                )
+                                            }
+                                        >
+                                            <span>Manage Interns</span>
+                                            <ArrowRight className="size-3.5" />
+                                        </Button>
+                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    <RankedList
+                                        items={topInterns}
+                                        mounted={mounted}
+                                        onItemClick={(name) =>
+                                            router.visit(
+                                                `/admin/interns?status=approved&search=${encodeURIComponent(name)}`,
+                                            )
+                                        }
+                                        emptyMessage="No intern attendance scans recorded yet."
+                                        itemLabel="scan"
+                                    />
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </>
+                )}
+
                 {/* ── Institutional Analytics ────────────────────────────── */}
                 {showInstitution && (
                     <>
@@ -607,10 +940,10 @@ export default function AdminDashboard({
                     </>
                 )}
 
-                {/* ── Recent Registrations Table (Unchanged) ─────────────── */}
-                {showOperations && (
-                    <Card className="shadow-xs">
-                        <CardHeader className="pb-3">
+                {/* ── Recent Registrations Table (Overview tab) ───────────── */}
+                {activeTab === 'overview' && (
+                    <Card className="gap-0 overflow-hidden p-0 shadow-xs">
+                        <CardHeader className="border-b px-6 py-4">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2.5">
                                     <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -635,32 +968,32 @@ export default function AdminDashboard({
                             </div>
                         </CardHeader>
 
-                        <CardContent className="flex flex-col gap-4">
+                        <CardContent className="p-0">
                             {recentRegistrations.data.length === 0 ? (
                                 <div className="py-12 text-center text-xs text-muted-foreground sm:text-sm">
                                     No registrations recorded yet.
                                 </div>
                             ) : (
-                                <div className="overflow-hidden rounded-lg border">
+                                <div className="overflow-x-auto">
                                     <Table>
                                         <TableHeader className="bg-muted/40">
                                             <TableRow className="hover:bg-transparent">
-                                                <TableHead className="text-xs font-semibold">
+                                                <TableHead className="px-6 font-semibold">
                                                     Student Name
                                                 </TableHead>
-                                                <TableHead className="text-center text-xs font-semibold">
+                                                <TableHead className="px-6 text-center font-semibold">
                                                     ID Number
                                                 </TableHead>
-                                                <TableHead className="text-center text-xs font-semibold">
+                                                <TableHead className="px-6 text-center font-semibold">
                                                     Program
                                                 </TableHead>
-                                                <TableHead className="text-center text-xs font-semibold">
+                                                <TableHead className="px-6 text-center font-semibold">
                                                     HTE
                                                 </TableHead>
-                                                <TableHead className="text-center text-xs font-semibold">
+                                                <TableHead className="px-6 text-center font-semibold">
                                                     Registered
                                                 </TableHead>
-                                                <TableHead className="text-center text-xs font-semibold">
+                                                <TableHead className="px-6 text-center font-semibold">
                                                     Status
                                                 </TableHead>
                                             </TableRow>
@@ -686,7 +1019,7 @@ export default function AdminDashboard({
                                                                 : undefined
                                                         }
                                                     >
-                                                        <TableCell className="font-medium">
+                                                        <TableCell className="px-6 font-medium">
                                                             <div className="font-medium text-foreground">
                                                                 {intern.name}
                                                             </div>
@@ -694,11 +1027,11 @@ export default function AdminDashboard({
                                                                 {intern.email}
                                                             </div>
                                                         </TableCell>
-                                                        <TableCell className="text-center text-xs text-muted-foreground tabular-nums">
+                                                        <TableCell className="px-6 text-center text-xs text-muted-foreground tabular-nums">
                                                             {intern.id_number}
                                                         </TableCell>
                                                         <TableCell
-                                                            className="max-w-[180px] truncate text-center text-xs"
+                                                            className="max-w-[180px] truncate px-6 text-center text-xs"
                                                             title={
                                                                 intern.program_name
                                                             }
@@ -708,7 +1041,7 @@ export default function AdminDashboard({
                                                             }
                                                         </TableCell>
                                                         <TableCell
-                                                            className="max-w-[180px] truncate text-center text-xs"
+                                                            className="max-w-[180px] truncate px-6 text-center text-xs"
                                                             title={
                                                                 intern.hte_name
                                                             }
@@ -716,7 +1049,7 @@ export default function AdminDashboard({
                                                             {intern.hte_name}
                                                         </TableCell>
                                                         <TableCell
-                                                            className="text-center text-xs whitespace-nowrap text-muted-foreground"
+                                                            className="px-6 text-center text-xs whitespace-nowrap text-muted-foreground"
                                                             title={
                                                                 intern.registered_at_full
                                                             }
@@ -725,7 +1058,7 @@ export default function AdminDashboard({
                                                                 intern.registered_at
                                                             }
                                                         </TableCell>
-                                                        <TableCell className="text-center">
+                                                        <TableCell className="px-6 text-center">
                                                             <StatusBadge
                                                                 status={
                                                                     intern.status
@@ -746,6 +1079,138 @@ export default function AdminDashboard({
                                 onPageChange={goToPage}
                                 onPerPageChange={changePerPage}
                                 idPrefix="dashboard-per-page"
+                            />
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* ── Recent Attendance Logs Table (Interns & Attendance tab) ── */}
+                {activeTab === 'operations' && recentScans && (
+                    <Card className="gap-0 overflow-hidden p-0 shadow-xs">
+                        <CardHeader className="border-b px-6 py-4">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2.5">
+                                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                                        <Clock className="size-4" />
+                                    </span>
+                                    <div>
+                                        <CardTitle className="text-base font-semibold">
+                                            Recent Attendance Logs
+                                        </CardTitle>
+                                        <CardDescription className="text-xs">
+                                            Live stream of time-in and time-out
+                                            scans across all stations
+                                        </CardDescription>
+                                    </div>
+                                </div>
+                                <Badge
+                                    variant="outline"
+                                    className="text-xs font-normal"
+                                >
+                                    Total {recentScans.total}
+                                </Badge>
+                            </div>
+                        </CardHeader>
+
+                        <CardContent className="p-0">
+                            {recentScans.data.length === 0 ? (
+                                <div className="py-12 text-center text-xs text-muted-foreground sm:text-sm">
+                                    No attendance scans recorded yet.
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <Table>
+                                        <TableHeader className="bg-muted/40">
+                                            <TableRow className="hover:bg-transparent">
+                                                <TableHead className="px-6 font-semibold">
+                                                    Intern Name
+                                                </TableHead>
+                                                <TableHead className="px-6 text-center font-semibold">
+                                                    ID Number
+                                                </TableHead>
+                                                <TableHead className="px-6 text-center font-semibold">
+                                                    Program
+                                                </TableHead>
+                                                <TableHead className="px-6 text-center font-semibold">
+                                                    HTE
+                                                </TableHead>
+                                                <TableHead className="px-6 text-center font-semibold">
+                                                    Scan Type
+                                                </TableHead>
+                                                <TableHead className="px-6 text-center font-semibold">
+                                                    Scanned At
+                                                </TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {recentScans.data.map((scan) => (
+                                                <TableRow
+                                                    key={scan.id}
+                                                    className="cursor-pointer hover:bg-muted/50"
+                                                    onClick={() =>
+                                                        router.visit(
+                                                            `/admin/interns?search=${encodeURIComponent(scan.intern_name)}`,
+                                                        )
+                                                    }
+                                                >
+                                                    <TableCell className="px-6 font-medium">
+                                                        <div className="font-medium text-foreground">
+                                                            {scan.intern_name}
+                                                        </div>
+                                                        <div className="text-xs text-muted-foreground">
+                                                            {scan.email}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="px-6 text-center text-xs text-muted-foreground tabular-nums">
+                                                        {scan.id_number}
+                                                    </TableCell>
+                                                    <TableCell
+                                                        className="max-w-[180px] truncate px-6 text-center text-xs"
+                                                        title={
+                                                            scan.program_name
+                                                        }
+                                                    >
+                                                        {scan.program_name}
+                                                    </TableCell>
+                                                    <TableCell
+                                                        className="max-w-[180px] truncate px-6 text-center text-xs"
+                                                        title={scan.hte_name}
+                                                    >
+                                                        {scan.hte_name}
+                                                    </TableCell>
+                                                    <TableCell className="px-6 text-center">
+                                                        {scan.label ===
+                                                        'time_in' ? (
+                                                            <span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                                                                Time In
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-0.5 text-xs font-semibold text-sky-700 dark:text-sky-400">
+                                                                Time Out
+                                                            </span>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell
+                                                        className="px-6 text-center text-xs whitespace-nowrap text-muted-foreground"
+                                                        title={
+                                                            scan.scanned_at_full
+                                                        }
+                                                    >
+                                                        {scan.scanned_at}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            )}
+
+                            <NumberedPagination
+                                meta={recentScans}
+                                itemLabel="scan log"
+                                onPageChange={goToScansPage}
+                                onPerPageChange={changePerPage}
+                                idPrefix="scans-per-page"
                             />
                         </CardContent>
                     </Card>

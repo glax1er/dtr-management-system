@@ -390,8 +390,8 @@ export default function SupervisorDashboard({
                 </div>
 
                 {/* Recent Scans with Shadcn UI Table & NumberedPagination */}
-                <Card className="shadow-xs">
-                    <CardHeader className="pb-3">
+                <Card className="overflow-hidden gap-0 p-0 shadow-xs">
+                    <CardHeader className="border-b px-6 py-4">
                         <div className="flex items-center justify-between">
                             <div>
                                 <CardTitle className="text-base font-semibold">
@@ -410,7 +410,7 @@ export default function SupervisorDashboard({
                             </Badge>
                         </div>
                     </CardHeader>
-                    <CardContent className="flex flex-col gap-4">
+                    <CardContent className="p-0">
                         {recentScans.data.length === 0 ? (
                             <div className="py-12 text-center text-sm text-muted-foreground">
                                 No scans recorded yet — this list fills up as
@@ -419,20 +419,20 @@ export default function SupervisorDashboard({
                         ) : (
                             <>
                                 {/* Table — desktop view */}
-                                <div className="hidden overflow-hidden rounded-lg border sm:block">
+                                <div className="hidden sm:block">
                                     <Table>
                                         <TableHeader className="bg-muted/40">
                                             <TableRow>
-                                                <TableHead className="px-4 font-semibold">
+                                                <TableHead className="px-6 font-semibold">
                                                     Intern Name
                                                 </TableHead>
-                                                <TableHead className="px-4 text-center font-semibold">
+                                                <TableHead className="px-6 text-center font-semibold">
                                                     ID Number
                                                 </TableHead>
-                                                <TableHead className="px-4 text-center font-semibold">
+                                                <TableHead className="px-6 text-center font-semibold">
                                                     Type
                                                 </TableHead>
-                                                <TableHead className="px-4 text-right font-semibold">
+                                                <TableHead className="px-6 text-right font-semibold">
                                                     Scanned At
                                                 </TableHead>
                                             </TableRow>
@@ -440,30 +440,26 @@ export default function SupervisorDashboard({
                                         <TableBody>
                                             {recentScans.data.map((scan) => (
                                                 <TableRow key={scan.id}>
-                                                    <TableCell className="px-4 font-medium text-foreground">
+                                                    <TableCell className="px-6 font-medium text-foreground">
                                                         {scan.intern_name}
                                                     </TableCell>
-                                                    <TableCell className="px-4 text-center text-muted-foreground tabular-nums">
+                                                    <TableCell className="px-6 text-center text-muted-foreground tabular-nums">
                                                         {scan.id_number ?? '—'}
                                                     </TableCell>
-                                                    <TableCell className="px-4 text-center">
-                                                        <Badge
-                                                            variant={
-                                                                scan.label ===
-                                                                'time_in'
-                                                                    ? 'default'
-                                                                    : 'secondary'
-                                                            }
-                                                            className="text-xs font-medium shadow-xs"
-                                                        >
-                                                            {scan.label ===
-                                                            'time_in'
-                                                                ? 'Time In'
-                                                                : 'Time Out'}
-                                                        </Badge>
+                                                    <TableCell className="px-6 text-center">
+                                                        {scan.label ===
+                                                        'time_in' ? (
+                                                            <span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                                                                Time In
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-0.5 text-xs font-semibold text-sky-700 dark:text-sky-400">
+                                                                Time Out
+                                                            </span>
+                                                        )}
                                                     </TableCell>
                                                     <TableCell
-                                                        className="px-4 text-right text-xs whitespace-nowrap text-muted-foreground"
+                                                        className="px-6 text-right text-xs whitespace-nowrap text-muted-foreground"
                                                         title={
                                                             scan.scanned_at_full
                                                         }
@@ -477,11 +473,11 @@ export default function SupervisorDashboard({
                                 </div>
 
                                 {/* Mobile card list */}
-                                <div className="divide-y rounded-lg border sm:hidden">
+                                <div className="divide-y p-4 sm:hidden">
                                     {recentScans.data.map((scan) => (
                                         <div
                                             key={scan.id}
-                                            className="flex items-center justify-between p-3.5"
+                                            className="flex items-center justify-between py-3"
                                         >
                                             <div className="flex flex-col gap-0.5">
                                                 <span className="text-sm font-medium text-foreground">
@@ -494,18 +490,15 @@ export default function SupervisorDashboard({
                                                     {scan.scanned_at}
                                                 </span>
                                             </div>
-                                            <Badge
-                                                variant={
-                                                    scan.label === 'time_in'
-                                                        ? 'default'
-                                                        : 'secondary'
-                                                }
-                                                className="text-xs font-medium"
-                                            >
-                                                {scan.label === 'time_in'
-                                                    ? 'Time In'
-                                                    : 'Time Out'}
-                                            </Badge>
+                                            {scan.label === 'time_in' ? (
+                                                <span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                                                    Time In
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-0.5 text-xs font-semibold text-sky-700 dark:text-sky-400">
+                                                    Time Out
+                                                </span>
+                                            )}
                                         </div>
                                     ))}
                                 </div>

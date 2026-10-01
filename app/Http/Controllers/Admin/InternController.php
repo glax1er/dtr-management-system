@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateInternRequest;
 use App\Models\Campus;
+use App\Models\College;
 use App\Models\Hte;
 use App\Models\InternProfile;
 use App\Models\Program;
@@ -23,30 +24,68 @@ class InternController extends Controller
     public function index(Request $request): Response
     {
         $validated = $request->validate([
-            'status' => ['nullable', 'in:pending,approved,rejected'],
+            'status' => ['nullable', 'in:all,pending,approved,rejected'],
             'search' => ['nullable', 'string', 'max:255'],
+            'college_id' => ['nullable', 'integer', 'exists:colleges,id'],
+            'campus_id' => ['nullable', 'integer', 'exists:campuses,id'],
+            'program_id' => ['nullable', 'integer', 'exists:programs,program_id'],
+            'hte_id' => ['nullable', 'integer', 'exists:htes,hte_id'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_PER_PAGE],
         ]);
 
-        $status = $validated['status'] ?? 'pending';
+        $status = $validated['status'] ?? 'all';
         $search = trim($validated['search'] ?? '');
+        $collegeFilter = isset($validated['college_id']) ? (int) $validated['college_id'] : null;
+        $campusFilter = isset($validated['campus_id']) ? (int) $validated['campus_id'] : null;
+        $programFilter = isset($validated['program_id']) ? (int) $validated['program_id'] : null;
+        $hteFilter = isset($validated['hte_id']) ? (int) $validated['hte_id'] : null;
         $perPage = (int) ($validated['per_page'] ?? self::DEFAULT_PER_PAGE);
 
         $collegeId = $request->user()->isCollegeAdmin() ? $request->user()->college_id : null;
 
         $query = InternProfile::query()
             ->verified()
-            ->where('status', $status)
-            ->with(['user:id,name,email', 'hte:hte_id,hte_name', 'program:program_id,program_name,college_id'])
+            ->with([
+                'user:id,name,email,college_id,campus',
+                'user.college:id,name,code',
+                'hte:hte_id,hte_name',
+                'program:program_id,program_name,college_id',
+                'program.college:id,name,code',
+            ])
             ->orderBy('registered_at', 'desc');
+
+        if ($status !== 'all') {
+            $query->where('status', $status);
+        }
 
         if ($collegeId !== null) {
             $query->forCollege($collegeId);
+        } elseif ($collegeFilter !== null) {
+            $query->forCollege($collegeFilter);
+        }
+
+        if ($campusFilter !== null) {
+            $campus = Campus::find($campusFilter);
+            if ($campus) {
+                $query->forCampus($campus);
+            }
+        }
+
+        if ($programFilter !== null) {
+            $query->where('program_id', $programFilter);
+        }
+
+        if ($hteFilter !== null) {
+            $query->where('hte_id', $hteFilter);
         }
 
         if ($search !== '') {
-            $query->whereHas('user', fn ($q) => $q->where('name', 'like', "%{$search}%"));
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('user', fn ($uq) => $uq->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%"))
+                    ->orWhere('id_number', 'like', "%{$search}%");
+            });
         }
 
         $interns = $query
@@ -57,8 +96,10 @@ class InternController extends Controller
                 'name' => $profile->user->name,
                 'email' => $profile->user->email,
                 'id_number' => $profile->id_number,
-                'hte_name' => $profile->hte?->hte_name ?? 'Deleted HTE',
-                'program_name' => $profile->program?->program_name ?? 'Deleted Program',
+                'hte_name' => $profile->hte?->hte_name ?? 'Not Assigned',
+                'program_name' => $profile->program?->program_name ?? 'Not Assigned',
+                'college_code' => $profile->program?->college->code ?? $profile->user?->college->code ?? null,
+                'campus' => $profile->campus ?? $profile->user->campus ?? null,
                 'status' => $profile->status,
                 'registered_at' => $profile->registered_at->diffForHumans(),
             ]);
@@ -68,14 +109,26 @@ class InternController extends Controller
             'currentStatus' => $status,
             'filters' => [
                 'search' => $search,
+                'college_id' => $collegeFilter,
+                'campus_id' => $campusFilter,
+                'program_id' => $programFilter,
+                'hte_id' => $hteFilter,
                 'per_page' => $perPage,
             ],
+            'colleges' => College::where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'name', 'code']),
+            'campuses' => Campus::where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'name', 'code']),
             'htes' => Hte::where('status', 'active')
                 ->when($collegeId !== null, fn ($q) => $q->where('college_id', $collegeId))
+                ->when($collegeId === null && $collegeFilter !== null, fn ($q) => $q->where('college_id', $collegeFilter))
                 ->orderBy('hte_name')
-                ->get(['hte_id', 'hte_name']),
+                ->get(['hte_id', 'hte_name', 'college_id']),
             'programs' => Program::where('is_active', true)
                 ->when($collegeId !== null, fn ($q) => $q->where('college_id', $collegeId))
+                ->when($collegeId === null && $collegeFilter !== null, fn ($q) => $q->where('college_id', $collegeFilter))
                 ->orderBy('program_name')
                 ->get(['program_id', 'program_name', 'college_id']),
         ]);

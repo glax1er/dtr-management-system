@@ -3,13 +3,13 @@ export default function AppLogo() {
         <>
             <div className="-ml-3 flex aspect-square size-15 items-center justify-center overflow-hidden rounded-md">
                 <img
-                    src="/images/cims-logo-light.png?v=3"
-                    alt="CIMS logo"
+                    src="/images/uims-logo-light.png?v=3"
+                    alt="UIMS logo"
                     className="block h-14 w-auto object-contain dark:hidden"
                 />
                 <img
-                    src="/images/cims-logo-dark.png?v=5"
-                    alt="CIMS logo dark"
+                    src="/images/uims-logo-dark.png?v=5"
+                    alt="UIMS logo dark"
                     className="hidden h-14 w-auto object-contain dark:block"
                 />
             </div>

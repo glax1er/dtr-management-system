@@ -136,6 +136,7 @@ export default function DocumentTemplates({
         if (typeof window !== 'undefined' && window.innerWidth < 768) {
             return 'grid';
         }
+
         return 'table';
     });
     const [search, setSearch] = useState('');
@@ -843,30 +844,30 @@ export default function DocumentTemplates({
                         </div>
                     ) : (
                         /* Archived Table */
-                        <Card className="overflow-hidden">
+                        <Card className="overflow-hidden p-0 shadow-xs">
                             <CardContent className="p-0">
                                 <Table className="min-w-[680px]">
-                                    <TableHeader>
-                                        <TableRow className="bg-muted/50">
-                                            <TableHead className="px-3 sm:px-6">
+                                    <TableHeader className="bg-muted/40">
+                                        <TableRow>
+                                            <TableHead className="px-3 font-semibold sm:px-6">
                                                 Document Name
                                             </TableHead>
-                                            <TableHead className="px-2 text-center sm:px-4">
+                                            <TableHead className="px-2 text-center font-semibold sm:px-4">
                                                 Category
                                             </TableHead>
-                                            <TableHead className="px-2 text-center sm:px-4">
+                                            <TableHead className="px-2 text-center font-semibold sm:px-4">
                                                 Type
                                             </TableHead>
-                                            <TableHead className="px-2 text-center sm:px-4">
+                                            <TableHead className="px-2 text-center font-semibold sm:px-4">
                                                 Status
                                             </TableHead>
-                                            <TableHead className="px-2 text-center sm:px-4">
+                                            <TableHead className="px-2 text-center font-semibold sm:px-4">
                                                 Template File
                                             </TableHead>
-                                            <TableHead className="px-2 text-center sm:px-4">
+                                            <TableHead className="px-2 text-center font-semibold sm:px-4">
                                                 Archived Date
                                             </TableHead>
-                                            <TableHead className="px-3 text-center sm:px-6">
+                                            <TableHead className="px-3 text-center font-semibold sm:px-6">
                                                 Actions
                                             </TableHead>
                                         </TableRow>
@@ -1168,7 +1169,9 @@ export default function DocumentTemplates({
                                                                 download
                                                             >
                                                                 <Download className="size-3.5" />
-                                                                <span>Download</span>
+                                                                <span>
+                                                                    Download
+                                                                </span>
                                                             </a>
                                                         </Button>
                                                     </TooltipTrigger>
@@ -1222,30 +1225,30 @@ export default function DocumentTemplates({
                     </div>
                 ) : (
                     /* Uniform Admin Table View */
-                    <Card className="overflow-hidden">
+                    <Card className="overflow-hidden p-0 shadow-xs">
                         <CardContent className="p-0">
                             <Table className="min-w-[680px]">
-                                <TableHeader>
-                                    <TableRow className="bg-muted/50">
-                                        <TableHead className="px-3 sm:px-6">
+                                <TableHeader className="bg-muted/40">
+                                    <TableRow>
+                                        <TableHead className="px-3 font-semibold sm:px-6">
                                             Document Requirement
                                         </TableHead>
-                                        <TableHead className="px-2 text-center sm:px-4">
+                                        <TableHead className="px-2 text-center font-semibold sm:px-4">
                                             Category
                                         </TableHead>
-                                        <TableHead className="px-2 text-center sm:px-4">
+                                        <TableHead className="px-2 text-center font-semibold sm:px-4">
                                             Requirement
                                         </TableHead>
-                                        <TableHead className="px-2 text-center sm:px-4">
+                                        <TableHead className="px-2 text-center font-semibold sm:px-4">
                                             Format Status
                                         </TableHead>
-                                        <TableHead className="px-2 text-center sm:px-4">
+                                        <TableHead className="px-2 text-center font-semibold sm:px-4">
                                             Blank File
                                         </TableHead>
-                                        <TableHead className="px-2 text-center sm:px-4">
+                                        <TableHead className="px-2 text-center font-semibold sm:px-4">
                                             Guidance
                                         </TableHead>
-                                        <TableHead className="px-3 text-center sm:px-6">
+                                        <TableHead className="px-3 text-center font-semibold sm:px-6">
                                             Actions
                                         </TableHead>
                                     </TableRow>

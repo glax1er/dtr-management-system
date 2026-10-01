@@ -6,6 +6,7 @@ use App\Models\College;
 use App\Models\Hte;
 use App\Models\InternProfile;
 use App\Models\Program;
+use App\Models\ResolutionTicket;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -161,3 +162,39 @@ test('college admin dashboard does not expose superAdminAnalytics', function () 
     );
 });
 
+test('admin dashboard exposes dedicated interns and attendance metrics, trend, tickets, and recent scans', function () {
+    $admin = User::factory()->create(['role' => User::ROLE_SUPER_ADMIN]);
+
+    $hte = Hte::create(['hte_name' => 'Tech Corp', 'status' => 'active']);
+    $program = Program::create(['program_name' => 'BSIT-'.uniqid()]);
+
+    $intern = makeInternProfile($hte, $program, 'approved');
+
+    AttendanceLog::create([
+        'intern_user_id' => $intern->user_id,
+        'scan_timestamp' => Carbon::now(config('dtr.timezone'))->setTime(8, 30, 0),
+    ]);
+
+    ResolutionTicket::create([
+        'intern_user_id' => $intern->user_id,
+        'date' => Carbon::now(config('dtr.timezone'))->toDateString(),
+        'reason' => 'Kiosk issue',
+        'status' => ResolutionTicket::STATUS_PENDING,
+    ]);
+
+    $response = $this->actingAs($admin)->get(route('admin.dashboard'));
+
+    $response->assertOk();
+    $response->assertInertia(fn (Assert $page) => $page
+        ->component('admin/dashboard')
+        ->where('scansToday', 1)
+        ->where('scansThisWeek', 1)
+        ->where('pendingTickets', 1)
+        ->has('scansTrend', 14)
+        ->has('ticketBreakdown', 3)
+        ->has('topInterns', 1)
+        ->where('topInterns.0.count', 1)
+        ->has('recentScans.data', 1)
+        ->where('recentScans.data.0.label', 'time_in')
+    );
+});

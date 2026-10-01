@@ -8,7 +8,9 @@ use App\Models\Campus;
 use App\Models\College;
 use App\Models\Hte;
 use App\Models\InternProfile;
+use App\Models\ResolutionTicket;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
@@ -30,7 +32,9 @@ class DashboardController extends Controller
     {
         $validated = $request->validate([
             'page' => ['nullable', 'integer', 'min:1'],
+            'scans_page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_PER_PAGE],
+            'tab' => ['nullable', 'string', 'in:overview,operations,institution'],
         ]);
 
         $user = $request->user();
@@ -90,9 +94,91 @@ class DashboardController extends Controller
             $activeHtesQuery->where('college_id', $collegeId);
         }
 
+        $timezone = config('dtr.timezone');
+        $todayStart = Carbon::now($timezone)->startOfDay();
+        $todayEnd = Carbon::now($timezone)->endOfDay();
+        $weekStart = Carbon::now($timezone)->startOfWeek();
+        $now = Carbon::now($timezone);
+
+        $scansQuery = AttendanceLog::query()
+            ->whereIn('intern_user_id', $this->verifiedInternProfiles($collegeId)->select('user_id'));
+
+        $scansToday = (clone $scansQuery)
+            ->whereBetween('scan_timestamp', [$todayStart, $todayEnd])
+            ->count();
+
+        $scansThisWeek = (clone $scansQuery)
+            ->whereBetween('scan_timestamp', [$weekStart, $now])
+            ->count();
+
+        $ticketsQuery = ResolutionTicket::query()
+            ->where('status', ResolutionTicket::STATUS_PENDING);
+        if ($collegeId !== null) {
+            $ticketsQuery->whereHas(
+                'intern',
+                fn ($query) => $query->whereIn('id', $this->verifiedInternProfiles($collegeId)->select('user_id')),
+            );
+        }
+        $pendingTickets = $ticketsQuery->count();
+
+        $recentScansQuery = AttendanceLog::query()
+            ->whereIn('intern_user_id', $this->verifiedInternProfiles($collegeId)->select('user_id'))
+            ->with([
+                'intern:id,name,email',
+                'internProfile:user_id,id_number,hte_id,program_id',
+                'internProfile.hte:hte_id,hte_name',
+                'internProfile.program:program_id,program_name',
+                'kiosk:id,name',
+                'supervisor:id,name',
+            ])
+            ->latest('scan_timestamp');
+
+        $recentScans = $recentScansQuery
+            ->paginate($perPage, ['*'], 'scans_page', $validated['scans_page'] ?? 1)
+            ->withQueryString()
+            ->through(function (AttendanceLog $log) use ($timezone) {
+                $localTimestamp = $log->scan_timestamp->clone()->setTimezone($timezone);
+                $dayStart = $localTimestamp->clone()->startOfDay();
+                $dayEnd = $localTimestamp->clone()->endOfDay();
+                $cutoff = Carbon::parse($localTimestamp->toDateString().' '.config('dtr.time_out_cutoff'), $timezone);
+
+                $earliestScanToday = AttendanceLog::where('intern_user_id', $log->intern_user_id)
+                    ->whereBetween('scan_timestamp', [$dayStart, $dayEnd])
+                    ->orderBy('scan_timestamp', 'asc')
+                    ->first();
+
+                $isEarliestScan = $earliestScanToday?->log_id === $log->log_id;
+                $earliestIsAfterCutoff = $earliestScanToday && $earliestScanToday->scan_timestamp->clone()->setTimezone($timezone)->gt($cutoff);
+
+                $label = ($isEarliestScan && ! $earliestIsAfterCutoff) ? 'time_in' : 'time_out';
+
+                $source = 'Manual';
+                if ($log->kiosk) {
+                    $source = $log->kiosk->name;
+                } elseif ($log->resolved_ticket_id) {
+                    $source = 'Resolution Ticket';
+                } elseif ($log->supervisor) {
+                    $source = 'Supervisor: '.$log->supervisor->name;
+                }
+
+                return [
+                    'id' => $log->log_id,
+                    'intern_name' => $log->intern->name ?? 'Unknown Intern',
+                    'email' => $log->intern->email ?? '',
+                    'id_number' => $log->internProfile->id_number ?? '—',
+                    'hte_name' => optional($log->internProfile->hte)->hte_name ?? '—',
+                    'program_name' => optional($log->internProfile->program)->program_name ?? '—',
+                    'label' => $label,
+                    'source' => $source,
+                    'scanned_at' => $log->scan_timestamp->diffForHumans(),
+                    'scanned_at_full' => $localTimestamp->format('M j, Y g:i A'),
+                ];
+            });
+
         $isSuperAdmin = $user->isSuperAdmin();
 
         return Inertia::render('admin/dashboard', [
+            'tab' => $validated['tab'] ?? null,
             'pendingApprovals' => $pendingQuery->count(),
             'totalInterns' => $totalInterns,
             'totalSupervisors' => $supervisorQuery->count(),
@@ -102,6 +188,13 @@ class DashboardController extends Controller
             'registrationsTrend' => $this->registrationsTrend($collegeId),
             'topHtes' => $this->topHtes($collegeId),
             'todayAttendance' => $this->todayAttendance($totalInterns, $collegeId),
+            'scansToday' => $scansToday,
+            'scansThisWeek' => $scansThisWeek,
+            'pendingTickets' => $pendingTickets,
+            'ticketBreakdown' => $this->ticketBreakdown($collegeId),
+            'scansTrend' => $this->scansTrend($collegeId),
+            'topInterns' => $this->topInterns($collegeId),
+            'recentScans' => $recentScans,
             'college' => $user->college ? [
                 'id' => $user->college->id,
                 'name' => $user->college->name,
@@ -485,5 +578,113 @@ class DashboardController extends Controller
                 ? (int) round(($checkedIn / $totalApprovedInterns) * 100)
                 : 0,
         ];
+    }
+
+    /**
+     * Daily attendance scan counts for the last TREND_DAYS days
+     *
+     * @return array<int, array{date: string, label: string, count: int}>
+     */
+    private function scansTrend(?int $collegeId = null): array
+    {
+        $timezone = config('dtr.timezone');
+        $today = Carbon::now($timezone)->startOfDay();
+        $rangeStart = $today->clone()->subDays(self::TREND_DAYS - 1);
+
+        $query = AttendanceLog::query()
+            ->where('scan_timestamp', '>=', $rangeStart)
+            ->whereIn('intern_user_id', $this->verifiedInternProfiles($collegeId)->select('user_id'));
+
+        $countsByDate = $query
+            ->get(['scan_timestamp'])
+            ->countBy(fn (AttendanceLog $log) => $log->scan_timestamp
+                ->clone()
+                ->setTimezone($timezone)
+                ->toDateString());
+
+        return collect(range(0, self::TREND_DAYS - 1))
+            ->map(function (int $offset) use ($rangeStart, $countsByDate) {
+                $date = $rangeStart->clone()->addDays($offset);
+                $key = $date->toDateString();
+
+                return [
+                    'date' => $key,
+                    'label' => $date->format('M j'),
+                    'count' => (int) ($countsByDate[$key] ?? 0),
+                ];
+            })
+            ->all();
+    }
+
+    /**
+     * Ticket status breakdown across intern resolution tickets
+     *
+     * @return array<int, array{status: string, count: int}>
+     */
+    private function ticketBreakdown(?int $collegeId = null): array
+    {
+        $query = ResolutionTicket::query();
+        if ($collegeId !== null) {
+            $query->whereHas(
+                'intern',
+                fn ($intern) => $intern->whereIn('id', $this->verifiedInternProfiles($collegeId)->select('user_id')),
+            );
+        }
+
+        $counts = $query
+            ->selectRaw('status, count(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        return collect([
+            ResolutionTicket::STATUS_PENDING,
+            ResolutionTicket::STATUS_APPROVED,
+            ResolutionTicket::STATUS_REJECTED,
+        ])
+            ->map(fn (string $status) => [
+                'status' => $status,
+                'count' => (int) ($counts[$status] ?? 0),
+            ])
+            ->all();
+    }
+
+    /**
+     * @return Builder<InternProfile>
+     */
+    private function verifiedInternProfiles(?int $collegeId): Builder
+    {
+        $query = InternProfile::query()->verified();
+
+        if ($collegeId !== null) {
+            $query->forCollege($collegeId);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Top interns by attendance scans logged
+     *
+     * @return array<int, array{name: string, count: int}>
+     */
+    private function topInterns(?int $collegeId = null): array
+    {
+        $query = AttendanceLog::query()
+            ->whereIn('intern_user_id', $this->verifiedInternProfiles($collegeId)->select('user_id'));
+
+        return $query
+            ->selectRaw('intern_user_id, count(*) as scans_count')
+            ->groupBy('intern_user_id')
+            ->orderByDesc('scans_count')
+            ->take(self::TOP_HTE_LIMIT)
+            ->with('intern:id,name')
+            ->get()
+            ->filter(fn (AttendanceLog $log) => (int) $log->getAttribute('scans_count') > 0 && $log->intern !== null)
+            ->map(fn (AttendanceLog $log) => [
+                'name' => $log->intern->name,
+                'count' => (int) $log->getAttribute('scans_count'),
+            ])
+            ->values()
+            ->all();
     }
 }

@@ -97,7 +97,7 @@ export function IdCard({
                     <div className="flex items-center justify-between border-b border-border/60 pb-2">
                         <div className="flex min-w-0 items-center gap-2">
                             <img
-                                src="/images/cims-logo-light.png?v=3"
+                                src="/images/uims-logo-light.png?v=3"
                                 alt="Logo"
                                 className="h-10 w-auto shrink-0 object-contain"
                             />
@@ -174,7 +174,7 @@ export function IdCard({
                     <div className="flex items-center justify-between border-b border-border/60 pb-2">
                         <div className="flex min-w-0 items-center gap-2">
                             <img
-                                src="/images/cims-logo-light.png?v=3"
+                                src="/images/uims-logo-light.png?v=3"
                                 alt="Logo"
                                 className="h-10 w-auto shrink-0 object-contain"
                             />
