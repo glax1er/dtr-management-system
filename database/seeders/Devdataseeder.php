@@ -67,12 +67,20 @@ class DevDataSeeder extends Seeder
             // A handful of interns per HTE, with names varied enough to
             // actually see the name filter/sort do something.
             collect(range(1, 8))->each(function (int $i) use ($hte, $programIds, $supervisorUser) {
+                $programId = $programIds->random();
+                $program = Program::with('college')->find($programId);
+                $college = $program?->college;
+                $campusId = $college?->campus_id;
+                $campusName = $college?->campus ?? ($campusId ? \App\Models\Campus::where('id', $campusId)->value('name') : null);
+
                 $internUser = User::create([
                     'role' => User::ROLE_INTERN,
                     'name' => fake()->name(),
                     'email' => fake()->unique()->safeEmail(),
                     'password' => 'password',
                     'email_verified_at' => now(),
+                    'college_id' => $college?->id,
+                    'campus' => $campusName,
                 ]);
 
                 InternProfile::create([
@@ -81,7 +89,9 @@ class DevDataSeeder extends Seeder
                     'contact_number' => fake()->numerify('09#########'),
                     'sex' => fake()->randomElement(['male', 'female']),
                     'hte_id' => $hte->hte_id,
-                    'program_id' => $programIds->random(),
+                    'program_id' => $programId,
+                    'campus_id' => $campusId,
+                    'campus' => $campusName,
                     'status' => 'approved',
                     'qr_code_value' => (string) Str::uuid(),
                     'registered_at' => now(),

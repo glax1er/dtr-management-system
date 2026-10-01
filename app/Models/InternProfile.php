@@ -32,6 +32,7 @@ class InternProfile extends Model
         'hte_id',
         'program_id',
         'campus',
+        'campus_id',
         'status',
         'qr_code_value',
         'profile_photo_path',
@@ -41,6 +42,7 @@ class InternProfile extends Model
     ];
 
     protected $casts = [
+        'campus_id' => 'integer',
         'registered_at' => 'datetime',
         'approved_at' => 'datetime',
         'privacy_accepted_at' => 'datetime',
@@ -70,6 +72,17 @@ class InternProfile extends Model
     public function program(): BelongsTo
     {
         return $this->belongsTo(Program::class, 'program_id', 'program_id')->withTrashed();
+    }
+
+    /**
+     * The campus this intern belongs to.
+     * Populated at registration time and used as the FK scope for id_number uniqueness.
+     *
+     * @return BelongsTo<Campus, $this>
+     */
+    public function campus(): BelongsTo
+    {
+        return $this->belongsTo(Campus::class, 'campus_id', 'id');
     }
 
     /**
@@ -131,32 +144,51 @@ class InternProfile extends Model
     }
 
     /**
-     * Scope a query to only include intern profiles belonging to a given campus (via campus string, user campus, or program college campus).
+     * Scope a query to only include intern profiles belonging to a given campus.
+     *
+     * Prefers the direct campus_id FK when available. Falls back to the legacy
+     * campus string column, the user's campus string, and the program → college
+     * campus link so that older records without a campus_id still resolve.
      *
      * @param  Builder<static>  $query
+     * @param  Campus|string|int  $campus  Campus model, campus name string, or campus ID integer
      * @return Builder<static>
      */
     public function scopeForCampus($query, Campus|string|int $campus)
     {
+        // When only a campus ID (integer) is supplied, load the model so we also have the
+        // campus name. Without the name, the legacy campus-string fallback paths
+        // (orWhere('campus', ...) and the user.campus path) would be silently skipped,
+        // causing old records that were never backfilled with campus_id to be missed.
+        if (is_int($campus)) {
+            $campus = Campus::find($campus) ?? $campus; // keep the int if campus not found
+        }
+
         $campusModel = $campus instanceof Campus ? $campus : null;
         $name = $campusModel ? $campusModel->name : (is_string($campus) ? $campus : null);
-        $id = $campusModel ? $campusModel->id : (is_int($campus) ? $campus : null);
+        $id   = $campusModel ? $campusModel->id   : (is_int($campus) ? $campus : null);
 
         return $query->where(function ($q) use ($name, $id) {
-            $q->where(function ($sub) use ($name, $id) {
-                if ($name !== null) {
-                    $sub->where('campus', $name)
-                        ->orWhereHas('user', fn ($uq) => $uq->where('campus', $name));
-                }
-                $sub->orWhereHas('program.college', function (Builder $cq) use ($name, $id) {
-                    $cq->withoutGlobalScope(SoftDeletingScope::class)->where(function ($csub) use ($name, $id) {
-                        if ($id !== null) {
-                            $csub->where('campus_id', $id);
-                        }
-                        if ($name !== null) {
-                            $csub->orWhere('campus', $name);
-                        }
-                    });
+            // Primary path: intern has the campus_id FK set (new records)
+            if ($id !== null) {
+                $q->where('campus_id', $id);
+            }
+
+            // Legacy / fallback paths for records without campus_id
+            if ($name !== null) {
+                $q->orWhere('campus', $name)
+                    ->orWhereHas('user', fn ($uq) => $uq->where('campus', $name));
+            }
+
+            // Derive campus via program -> college (both old and new college linkage)
+            $q->orWhereHas('program.college', function (Builder $cq) use ($name, $id) {
+                $cq->withoutGlobalScope(SoftDeletingScope::class)->where(function ($csub) use ($name, $id) {
+                    if ($id !== null) {
+                        $csub->where('campus_id', $id);
+                    }
+                    if ($name !== null) {
+                        $csub->orWhere('campus', $name);
+                    }
                 });
             });
         });

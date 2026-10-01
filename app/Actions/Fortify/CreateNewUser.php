@@ -4,6 +4,7 @@ namespace App\Actions\Fortify;
 
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
+use App\Models\Campus;
 use App\Models\College;
 use App\Models\Hte;
 use App\Models\InternProfile;
@@ -11,6 +12,7 @@ use App\Models\Program;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 
 class CreateNewUser implements CreatesNewUsers
@@ -29,6 +31,9 @@ class CreateNewUser implements CreatesNewUsers
      */
     public function create(array $input): User
     {
+        // Resolve campus_id early so we can scope the id_number uniqueness check.
+        $resolvedCampusId = $this->resolveCampusId($input);
+
         Validator::make($input, [
             ...$this->profileRules(),
 
@@ -36,7 +41,18 @@ class CreateNewUser implements CreatesNewUsers
                 'required',
                 'string',
                 'regex:/^\d{4}-\d{5}$/',
-                'unique:intern_profiles,id_number',
+                // Scoped uniqueness: same id_number is only a conflict within the
+                // same campus. When campus_id cannot be determined yet we fall
+                // back to the global unique constraint so registration still works.
+                $resolvedCampusId !== null
+                    ? Rule::unique('intern_profiles', 'id_number')
+                        ->where(function ($q) use ($resolvedCampusId, $input) {
+                            $q->where('campus_id', $resolvedCampusId);
+                            if (! empty($input['campus'])) {
+                                $q->orWhere(fn ($sub) => $sub->whereNull('campus_id')->where('campus', $input['campus']));
+                            }
+                        })
+                    : Rule::unique('intern_profiles', 'id_number'),
             ],
 
             'contact_number' => [
@@ -95,15 +111,42 @@ class CreateNewUser implements CreatesNewUsers
             'password.min' => 'Must include uppercase, lowercase, a number, and a symbol.',
         ])->validate();
 
-        return DB::transaction(function () use ($input) {
+        return DB::transaction(function () use ($input, $resolvedCampusId) {
             $program = Program::find($input['program_id']);
             $collegeId = ! empty($input['college_id'])
                 ? (int) $input['college_id']
                 : $program?->college_id;
 
+            $college = $collegeId ? College::find($collegeId) : null;
+
+            // Resolve campus_id in full within the transaction so we have
+            // access to the final $collegeId (program may have been just resolved).
+            $campusId = $resolvedCampusId;
+            if ($campusId === null && $college) {
+                $campusId = $college->campus_id;
+                if ($campusId === null && $college->campus) {
+                    $campusId = Campus::where('name', $college->campus)
+                        ->orWhere('code', $college->campus)
+                        ->value('id');
+                }
+            }
+            if ($campusId === null && ! empty($input['campus'])) {
+                $campusId = Campus::where('name', $input['campus'])
+                    ->orWhere('code', $input['campus'])
+                    ->value('id');
+            }
+
+            // Align campus text with the resolved campus model to avoid divergence
             $campus = ! empty($input['campus'])
                 ? $input['campus']
-                : ($collegeId ? College::find($collegeId)?->campus : null);
+                : ($college?->campus ?? null);
+
+            if ($campusId !== null) {
+                $campusName = Campus::where('id', $campusId)->value('name');
+                if ($campusName) {
+                    $campus = $campusName;
+                }
+            }
 
             $user = User::create([
                 'role' => User::ROLE_INTERN,
@@ -120,6 +163,7 @@ class CreateNewUser implements CreatesNewUsers
                 'contact_number' => $input['contact_number'] ?? null,
                 'sex' => $input['sex'],
                 'campus' => $campus,
+                'campus_id' => $campusId,
                 'hte_id' => $input['hte_id'],
                 'program_id' => $input['program_id'],
                 'status' => 'pending',
@@ -132,5 +176,44 @@ class CreateNewUser implements CreatesNewUsers
 
             return $user;
         });
+    }
+
+    /**
+     * Derive campus_id from the submitted input before full validation runs.
+     * Checks (in priority order):
+     *  1. campus name/code string directly in input → match Campus by name or code
+     *  2. college_id → College::campus_id (FK)
+     *  3. program_id → program.college → College::campus_id
+     */
+    private function resolveCampusId(array $input): ?int
+    {
+        if (! empty($input['campus'])) {
+            $id = Campus::where('name', $input['campus'])
+                ->orWhere('code', $input['campus'])
+                ->value('id');
+            if ($id) {
+                return $id;
+            }
+        }
+
+        $collegeId = ! empty($input['college_id']) ? (int) $input['college_id'] : null;
+
+        if ($collegeId === null && ! empty($input['program_id'])) {
+            $collegeId = Program::where('program_id', $input['program_id'])->value('college_id');
+        }
+
+        if ($collegeId) {
+            $college = College::find($collegeId);
+            if ($college?->campus_id) {
+                return $college->campus_id;
+            }
+            if ($college?->campus) {
+                return Campus::where('name', $college->campus)
+                    ->orWhere('code', $college->campus)
+                    ->value('id');
+            }
+        }
+
+        return null;
     }
 }

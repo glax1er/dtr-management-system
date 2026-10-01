@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateInternRequest;
+use App\Models\Campus;
 use App\Models\Hte;
 use App\Models\InternProfile;
 use App\Models\Program;
@@ -99,12 +100,36 @@ class InternController extends Controller
                 'email' => $request->validated('email'),
             ]);
 
+            // Re-derive campus_id whenever program_id changes so that campus scoping
+            // (scopeForCampus, campus-scoped id_number uniqueness) stays consistent.
+            $newProgramId = (int) $request->validated('program_id');
+            $campusId = $internProfile->campus_id; // keep existing by default
+
+            if ($newProgramId !== (int) $internProfile->program_id) {
+                $newProgram = Program::where('program_id', $newProgramId)->with('college')->first();
+                if ($newProgram?->college) {
+                    $campusId = $newProgram->college->campus_id;
+                    if ($campusId === null && $newProgram->college->campus) {
+                        $campusId = Campus::where('name', $newProgram->college->campus)
+                            ->orWhere('code', $newProgram->college->campus)
+                            ->value('id');
+                    }
+                }
+            }
+
+            $campusName = $campusId ? Campus::where('id', $campusId)->value('name') : null;
+            if ($campusName) {
+                $internProfile->user->update(['campus' => $campusName]);
+            }
+
             $internProfile->update([
                 'id_number' => $request->validated('id_number'),
                 'contact_number' => $request->validated('contact_number'),
                 'sex' => $request->validated('sex'),
                 'hte_id' => $request->validated('hte_id'),
                 'program_id' => $request->validated('program_id'),
+                'campus_id' => $campusId,
+                'campus' => $campusName ?? $internProfile->campus,
             ]);
         });
 
