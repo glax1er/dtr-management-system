@@ -85,7 +85,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return redirect()->route(auth()->user()->homeRouteName());
     })->name('dashboard');
 
-    Route::middleware('role:'.User::ROLE_SUPER_ADMIN.','.User::ROLE_COLLEGE_ADMIN.','.User::ROLE_ADMIN)->prefix('admin')->name('admin.')->group(function () {
+    Route::middleware([
+        'role:'.User::ROLE_SUPER_ADMIN.','.User::ROLE_COLLEGE_ADMIN.','.User::ROLE_ADMIN,
+        'admin.2fa',
+    ])->prefix('admin')->name('admin.')->group(function () {
         Route::get('dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
         // Super Admin only: College Admin Management, Colleges & Campuses
@@ -94,13 +97,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('admins', [AdminManagementController::class, 'store'])->name('admins.store');
             Route::patch('admins/{user}', [AdminManagementController::class, 'update'])->name('admins.update');
             Route::patch('admins/{user}/status', [AdminManagementController::class, 'updateStatus'])->name('admins.updateStatus');
-            Route::delete('admins/{user}', [AdminManagementController::class, 'destroy'])->name('admins.destroy');
+            Route::delete('admins/{user}', [AdminManagementController::class, 'destroy'])
+                ->middleware('password.confirm.sensitive')
+                ->name('admins.destroy');
 
             Route::get('college-admins', [CollegeAdminController::class, 'index'])->name('college-admins.index');
             Route::post('college-admins', [CollegeAdminController::class, 'store'])->name('college-admins.store');
             Route::patch('college-admins/{user}', [CollegeAdminController::class, 'update'])->name('college-admins.update');
             Route::patch('college-admins/{user}/status', [CollegeAdminController::class, 'updateStatus'])->name('college-admins.updateStatus');
-            Route::delete('college-admins/{user}', [CollegeAdminController::class, 'destroy'])->name('college-admins.destroy');
+            Route::delete('college-admins/{user}', [CollegeAdminController::class, 'destroy'])
+                ->middleware('password.confirm.sensitive')
+                ->name('college-admins.destroy');
 
             Route::get('colleges', [CollegeController::class, 'index'])->name('colleges.index');
             Route::post('colleges', [CollegeController::class, 'store'])->name('colleges.store');
@@ -147,7 +154,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('archives', [ArchiveController::class, 'index'])->name('archives.index');
         Route::post('archives/{type}/{id}/restore', [ArchiveController::class, 'restore'])->name('archives.restore');
-        Route::delete('archives/{type}/{id}', [ArchiveController::class, 'forceDelete'])->name('archives.forceDelete');
+        Route::delete('archives/{type}/{id}', [ArchiveController::class, 'forceDelete'])
+            ->middleware('password.confirm.sensitive')
+            ->name('archives.forceDelete');
 
         Route::patch('supervisors/{supervisorProfile}', [SupervisorController::class, 'update'])->name('supervisors.update');
         Route::delete('supervisors/{supervisorProfile}', [SupervisorController::class, 'destroy'])->name('supervisors.destroy');

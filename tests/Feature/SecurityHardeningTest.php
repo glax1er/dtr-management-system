@@ -214,3 +214,80 @@ test('registration is rate limited to 5 attempts per minute', function () {
         'password_confirmation' => 'Password123!',
     ])->assertStatus(429);
 });
+
+test('session is automatically invalidated across devices when user password changes', function () {
+    $user = User::factory()->create([
+        'password' => \Illuminate\Support\Facades\Hash::make('OldPassword123!'),
+    ]);
+
+    // Initial request stores password_hash in session and succeeds
+    $this->actingAs($user)->get(route('dashboard'))
+        ->assertRedirect();
+
+    // Password is changed (e.g. from another device or password reset)
+    $user->update([
+        'password' => \Illuminate\Support\Facades\Hash::make('NewPassword123!'),
+    ]);
+
+    // Subsequent request with the stale session is immediately terminated by AuthenticateSession
+    $this->get(route('dashboard'))
+        ->assertRedirect(route('login'));
+
+    expect(auth()->check())->toBeFalse();
+});
+
+test('admin without 2fa is redirected to security settings when accessing admin panel', function () {
+    config(['auth.test_enforce_admin_2fa' => true]);
+
+    $admin = User::factory()->create([
+        'role' => User::ROLE_SUPER_ADMIN,
+        'two_factor_secret' => null,
+        'two_factor_confirmed_at' => null,
+    ]);
+
+    $response = $this->actingAs($admin)->get(route('admin.dashboard'));
+
+    $response->assertRedirect(route('security.edit'));
+    $response->assertSessionHas('error');
+});
+
+test('admin with 2fa enabled can access admin dashboard', function () {
+    config(['auth.test_enforce_admin_2fa' => true]);
+
+    $admin = User::factory()->create([
+        'role' => User::ROLE_SUPER_ADMIN,
+        'two_factor_secret' => 'encrypted-secret',
+        'two_factor_confirmed_at' => now(),
+    ]);
+
+    $response = $this->actingAs($admin)->get(route('admin.dashboard'));
+
+    $response->assertOk();
+});
+
+test('sensitive administrative actions require password confirmation when not confirmed', function () {
+    config(['auth.test_enforce_password_confirm' => true]);
+
+    $admin = User::factory()->create(['role' => User::ROLE_SUPER_ADMIN]);
+    $targetAdmin = User::factory()->create(['role' => User::ROLE_SUPER_ADMIN]);
+
+    // Attempting to destroy an admin without password confirmation in session redirects to password.confirm
+    $response = $this->actingAs($admin)->delete(route('admin.admins.destroy', $targetAdmin));
+
+    $response->assertRedirect(route('password.confirm'));
+});
+
+test('sensitive administrative actions succeed when password has been confirmed in session', function () {
+    config(['auth.test_enforce_password_confirm' => true]);
+
+    $admin = User::factory()->create(['role' => User::ROLE_SUPER_ADMIN]);
+    $targetAdmin = User::factory()->create(['role' => User::ROLE_SUPER_ADMIN]);
+
+    // With confirmed password in session, the action proceeds
+    $response = $this->actingAs($admin)
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->delete(route('admin.admins.destroy', $targetAdmin));
+
+    $response->assertRedirect();
+    $this->assertDatabaseMissing('users', ['id' => $targetAdmin->id]);
+});

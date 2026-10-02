@@ -415,6 +415,22 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         return $this->isSuperAdmin() || $this->isCollegeAdmin() || $this->role === self::ROLE_ADMIN;
     }
 
+    /**
+     * Determine if the user has an active two-factor authentication method (TOTP or Passkey).
+     */
+    public function hasTwoFactorOrPasskeyEnabled(): bool
+    {
+        if ($this->hasEnabledTwoFactorAuthentication()) {
+            return true;
+        }
+
+        if (method_exists($this, 'passkeys') && $this->passkeys()->exists()) {
+            return true;
+        }
+
+        return false;
+    }
+
     public function isSupervisor(): bool
     {
         return $this->role === self::ROLE_SUPERVISOR;
