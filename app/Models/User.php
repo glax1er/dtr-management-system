@@ -38,7 +38,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $updated_at
  */
 #[Fillable(['role', 'college_id', 'campus', 'name', 'email', 'password', 'must_change_password', 'profile_photo_path', 'notification_preferences', 'notifications_cleared_at'])]
-#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
+#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token', 'two_factor_confirmed_at', 'notification_preferences', 'notifications_cleared_at'])]
 class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */

@@ -124,13 +124,15 @@ class DocumentController extends Controller
             abort(403, 'Unauthorized access to this template.');
         }
 
-        if (! $documentTemplate->file_path || ! Storage::disk('local')->exists($documentTemplate->file_path)) {
+        if (! $documentTemplate->file_path || str_contains($documentTemplate->file_path, '..') || ! Storage::disk('local')->exists($documentTemplate->file_path)) {
             abort(404, 'Template file not found on server.');
         }
 
         $fullPath = Storage::disk('local')->path($documentTemplate->file_path);
 
-        return response()->download($fullPath, $documentTemplate->original_filename);
+        return response()->download($fullPath, $documentTemplate->original_filename, [
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -157,6 +159,25 @@ class DocumentController extends Controller
         $file = $request->file('file');
         $documentType = $validated['document_type'];
 
+        // Verify PDF signature (%PDF-) if file exists on disk with real content
+        $realPath = $file->getRealPath();
+        if ($realPath && file_exists($realPath) && filesize($realPath) >= 4) {
+            $handle = fopen($realPath, 'rb');
+            $header = fread($handle, 4);
+            fclose($handle);
+            if ($header !== '%PDF') {
+                return back()->withErrors(['file' => 'The uploaded file does not have a valid PDF header signature.']);
+            }
+        }
+
+        // Sanitize original filename
+        $clientName = basename($file->getClientOriginalName());
+        $safeName = preg_replace('/[^a-zA-Z0-9_\-\. ]/', '', $clientName);
+        $safeName = trim(substr($safeName, 0, 100));
+        if ($safeName === '' || ! str_ends_with(strtolower($safeName), '.pdf')) {
+            $safeName = 'document.pdf';
+        }
+
         $existingDoc = InternDocument::query()
             ->where('user_id', $user->id)
             ->where('document_type', $documentType)
@@ -175,7 +196,7 @@ class DocumentController extends Controller
                 'document_type' => $documentType,
             ],
             [
-                'original_filename' => $file->getClientOriginalName(),
+                'original_filename' => $safeName,
                 'file_path' => $path,
                 'file_size_bytes' => $file->getSize(),
                 'mime_type' => 'application/pdf',
@@ -222,6 +243,10 @@ class DocumentController extends Controller
             abort(403, 'Unauthorized access to this document.');
         }
 
+        if (str_contains($internDocument->file_path, '..')) {
+            abort(400, 'Invalid file path.');
+        }
+
         if (! Storage::disk('local')->exists($internDocument->file_path)) {
             abort(404, 'Document file not found.');
         }
@@ -236,6 +261,8 @@ class DocumentController extends Controller
         return response()->file($fullPath, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => $disposition,
+            'Content-Security-Policy' => "default-src 'none'; sandbox",
+            'X-Content-Type-Options' => 'nosniff',
         ]);
     }
 
@@ -243,6 +270,10 @@ class DocumentController extends Controller
     {
         if ($internDocument->user_id !== $request->user()->id) {
             abort(403, 'Unauthorized access to this document.');
+        }
+
+        if (str_contains($internDocument->file_path, '..')) {
+            abort(400, 'Invalid file path.');
         }
 
         if (! Storage::disk('local')->exists($internDocument->file_path)) {
@@ -253,6 +284,7 @@ class DocumentController extends Controller
 
         return response()->download($fullPath, $internDocument->original_filename, [
             'Content-Type' => 'application/pdf',
+            'X-Content-Type-Options' => 'nosniff',
         ]);
     }
 
@@ -260,6 +292,10 @@ class DocumentController extends Controller
     {
         if ($internDocument->user_id !== $request->user()->id) {
             abort(403, 'Unauthorized action.');
+        }
+
+        if (str_contains($internDocument->file_path, '..')) {
+            abort(400, 'Invalid file path.');
         }
 
         if ($internDocument->file_path && Storage::disk('local')->exists($internDocument->file_path)) {

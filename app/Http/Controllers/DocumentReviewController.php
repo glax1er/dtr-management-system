@@ -19,7 +19,7 @@ class DocumentReviewController extends Controller
     public function showInternDocuments(Request $request, int $internUserId): JsonResponse
     {
         $user = $request->user();
-        $internProfile = InternProfile::with(['user', 'hte', 'program'])->where('user_id', $internUserId)->firstOrFail();
+        $internProfile = InternProfile::withTrashed()->with(['user', 'hte', 'program'])->where('user_id', $internUserId)->firstOrFail();
 
         if ($user->isSuperAdmin()) {
             // Super Admin has access across all colleges
@@ -112,7 +112,7 @@ class DocumentReviewController extends Controller
                 return false;
             }
 
-            $internProfile = InternProfile::where('user_id', $internDocument->user_id)->first();
+            $internProfile = InternProfile::withTrashed()->where('user_id', $internDocument->user_id)->first();
             if (! $internProfile) {
                 return false;
             }
@@ -133,6 +133,10 @@ class DocumentReviewController extends Controller
             abort(403, 'Unauthorized access to this document.');
         }
 
+        if (str_contains($internDocument->file_path, '..')) {
+            abort(400, 'Invalid file path.');
+        }
+
         if (! Storage::disk('local')->exists($internDocument->file_path)) {
             abort(404, 'Document file not found.');
         }
@@ -147,6 +151,8 @@ class DocumentReviewController extends Controller
         return response()->file($fullPath, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => $disposition,
+            'Content-Security-Policy' => "default-src 'none'; sandbox",
+            'X-Content-Type-Options' => 'nosniff',
         ]);
     }
 
@@ -154,6 +160,10 @@ class DocumentReviewController extends Controller
     {
         if (! $this->canAccessDocument($request->user(), $internDocument)) {
             abort(403, 'Unauthorized access to this document.');
+        }
+
+        if (str_contains($internDocument->file_path, '..')) {
+            abort(400, 'Invalid file path.');
         }
 
         if (! Storage::disk('local')->exists($internDocument->file_path)) {
@@ -164,6 +174,7 @@ class DocumentReviewController extends Controller
 
         return response()->download($fullPath, $internDocument->original_filename, [
             'Content-Type' => 'application/pdf',
+            'X-Content-Type-Options' => 'nosniff',
         ]);
     }
 

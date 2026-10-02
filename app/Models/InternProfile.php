@@ -40,6 +40,10 @@ class InternProfile extends Model
         'privacy_accepted_at',
     ];
 
+    protected $hidden = [
+        'qr_code_value',
+    ];
+
     protected $casts = [
         'registered_at' => 'datetime',
         'approved_at' => 'datetime',

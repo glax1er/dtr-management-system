@@ -9,4 +9,6 @@ test('security headers are present in web responses', function () {
     $response->assertHeader('X-Content-Type-Options', 'nosniff');
     $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     $response->assertHeader('Permissions-Policy', 'camera=(self), microphone=(), geolocation=()');
+    $response->assertHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    $response->assertHeader('X-XSS-Protection', '0');
 });

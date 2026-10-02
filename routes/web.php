@@ -34,6 +34,8 @@ use App\Http\Controllers\Supervisor\ResolutionTicketController as SupervisorReso
 use App\Http\Controllers\Supervisor\SchedulePeriodController as SupervisorScheduleController;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
+use Laravel\Fortify\Http\Controllers\PasswordResetLinkController;
+use Laravel\Fortify\Http\Controllers\RegisteredUserController;
 
 Route::redirect('/', '/login')->name('home');
 
@@ -50,6 +52,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('notifications.index');
 
     Route::post('settings/profile-photo', [ProfilePhotoController::class, 'store'])
+        ->middleware('throttle:10,1')
         ->name('settings.profile-photo.store');
     Route::delete('settings/profile-photo', [ProfilePhotoController::class, 'destroy'])
         ->name('settings.profile-photo.destroy');
@@ -195,7 +198,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('manual-attendance', [ManualAttendanceController::class, 'create'])->name('manual-attendance.create');
             Route::post('manual-attendance/check', [ManualAttendanceController::class, 'checkConflicts'])->name('manual-attendance.check');
             Route::post('manual-attendance/lookup', [ManualAttendanceController::class, 'lookup'])->name('manual-attendance.lookup');
-            Route::post('manual-attendance', [ManualAttendanceController::class, 'store'])->name('manual-attendance.store');
+            Route::post('manual-attendance', [ManualAttendanceController::class, 'store'])
+                ->middleware('throttle:30,1')
+                ->name('manual-attendance.store');
 
             Route::get('schedule', [SupervisorScheduleController::class, 'index'])->name('schedule.index');
             Route::post('schedule', [SupervisorScheduleController::class, 'store'])->name('schedule.store');
@@ -211,25 +216,35 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('qr-code', [QrCodeImageController::class, 'show'])->name('qr-code.show');
 
         Route::post('resolution-tickets', [InternResolutionTicketController::class, 'store'])
+            ->middleware('throttle:10,1')
             ->name('resolution-tickets.store');
         Route::patch('resolution-tickets/{resolutionTicket}/cancel', [InternResolutionTicketController::class, 'cancel'])
             ->name('resolution-tickets.cancel');
 
         Route::get('documents', [InternDocumentController::class, 'index'])->name('documents.index');
-        Route::post('documents', [InternDocumentController::class, 'store'])->name('documents.store');
+        Route::post('documents', [InternDocumentController::class, 'store'])
+            ->middleware('throttle:10,1')
+            ->name('documents.store');
         Route::get('documents/{internDocument}/preview', [InternDocumentController::class, 'preview'])->name('documents.preview');
         Route::get('documents/{internDocument}/download', [InternDocumentController::class, 'download'])->name('documents.download');
         Route::delete('documents/{internDocument}', [InternDocumentController::class, 'destroy'])->name('documents.destroy');
         Route::get('documents/templates/{documentTemplate}/download', [InternDocumentController::class, 'downloadTemplate'])->name('documents.template.download');
     });
 
-    Route::prefix('documents')->name('documents.')->group(function () {
-        Route::get('intern/{internUserId}', [DocumentReviewController::class, 'showInternDocuments'])->name('review.intern');
-        Route::get('{internDocument}/preview', [DocumentReviewController::class, 'preview'])->name('review.preview');
-        Route::get('{internDocument}/download', [DocumentReviewController::class, 'download'])->name('review.download');
-        Route::post('{internDocument}/approve', [DocumentReviewController::class, 'approve'])->name('review.approve');
-        Route::post('{internDocument}/reject', [DocumentReviewController::class, 'reject'])->name('review.reject');
-    });
+    Route::middleware('role:'.User::ROLE_SUPER_ADMIN.','.User::ROLE_COLLEGE_ADMIN.','.User::ROLE_ADMIN.','.User::ROLE_SUPERVISOR)
+        ->prefix('documents')
+        ->name('documents.')
+        ->group(function () {
+            Route::get('intern/{internUserId}', [DocumentReviewController::class, 'showInternDocuments'])->name('review.intern');
+            Route::get('{internDocument}/preview', [DocumentReviewController::class, 'preview'])->name('review.preview');
+            Route::get('{internDocument}/download', [DocumentReviewController::class, 'download'])->name('review.download');
+            Route::post('{internDocument}/approve', [DocumentReviewController::class, 'approve'])
+                ->middleware(['role:'.User::ROLE_SUPERVISOR, 'throttle:30,1'])
+                ->name('review.approve');
+            Route::post('{internDocument}/reject', [DocumentReviewController::class, 'reject'])
+                ->middleware(['role:'.User::ROLE_SUPERVISOR, 'throttle:30,1'])
+                ->name('review.reject');
+        });
 
     Route::middleware(['auth'])->group(function () {
         Route::get('password/first-login', [FirstLoginPasswordController::class, 'show'])
@@ -247,4 +262,13 @@ Route::get('kiosk/{token}', [KioskScanController::class, 'show'])
 Route::post('kiosk/{token}/scan', [KioskScanController::class, 'store'])
     ->middleware('throttle:60,1')
     ->name('kiosk.scan.store');
+
+Route::post('register', [RegisteredUserController::class, 'store'])
+    ->middleware(['guest:'.config('fortify.guard', 'web'), 'throttle:register'])
+    ->name('register.store');
+
+Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
+    ->middleware(['guest:'.config('fortify.guard', 'web'), 'throttle:forgot-password'])
+    ->name('password.email');
+
 require __DIR__.'/settings.php';
