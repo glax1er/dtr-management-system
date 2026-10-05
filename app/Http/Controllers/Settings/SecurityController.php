@@ -18,10 +18,15 @@ class SecurityController extends Controller
      */
     public function edit(TwoFactorAuthenticationRequest $request): Response
     {
+        $user = $request->user();
+        $isTwoFactorRequired = $user && $user->isAdmin() && ! $user->hasTwoFactorOrPasskeyEnabled();
+
         $props = [
             'canManageTwoFactor' => Features::canManageTwoFactorAuthentication(),
             'canManagePasskeys' => Features::canManagePasskeys(),
+            'twoFactorRequired' => $isTwoFactorRequired,
             'passkeys' => Features::canManagePasskeys()
+
                 ? $request->user()
                     ->passkeys()
                     ->select(['id', 'name', 'credential', 'created_at', 'last_used_at'])
