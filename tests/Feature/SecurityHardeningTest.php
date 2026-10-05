@@ -7,6 +7,7 @@ use App\Models\Program;
 use App\Models\SupervisorProfile;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
 
@@ -90,7 +91,7 @@ test('document preview returns sandboxing csp headers and nosniff', function () 
 
     [$intern] = createSecurityIntern();
 
-    $fakePdfContent = "%PDF-1.4 test content";
+    $fakePdfContent = '%PDF-1.4 test content';
     Storage::disk('local')->put("intern-documents/{$intern->id}/doc.pdf", $fakePdfContent);
 
     $doc = InternDocument::create([
@@ -217,7 +218,7 @@ test('registration is rate limited to 5 attempts per minute', function () {
 
 test('session is automatically invalidated across devices when user password changes', function () {
     $user = User::factory()->create([
-        'password' => \Illuminate\Support\Facades\Hash::make('OldPassword123!'),
+        'password' => Hash::make('OldPassword123!'),
     ]);
 
     // Initial request stores password_hash in session and succeeds
@@ -226,7 +227,7 @@ test('session is automatically invalidated across devices when user password cha
 
     // Password is changed (e.g. from another device or password reset)
     $user->update([
-        'password' => \Illuminate\Support\Facades\Hash::make('NewPassword123!'),
+        'password' => Hash::make('NewPassword123!'),
     ]);
 
     // Subsequent request with the stale session is immediately terminated by AuthenticateSession
@@ -290,4 +291,60 @@ test('sensitive administrative actions succeed when password has been confirmed 
 
     $response->assertRedirect();
     $this->assertDatabaseMissing('users', ['id' => $targetAdmin->id]);
+});
+
+test('intern dtr pdf report route is rate limited against dos attacks', function () {
+    [$intern] = createSecurityIntern();
+
+    for ($i = 0; $i < 10; $i++) {
+        $response = $this->actingAs($intern)->get(route('intern.dtr-report.download'));
+        $response->assertOk();
+    }
+
+    $this->actingAs($intern)->get(route('intern.dtr-report.download'))
+        ->assertStatus(429);
+});
+
+test('supervisor completion summary report route is rate limited against dos attacks', function () {
+    [$intern, $profile, $hte, $program] = createSecurityIntern();
+    $supUser = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
+    SupervisorProfile::create([
+        'user_id' => $supUser->id,
+        'hte_id' => $hte->hte_id,
+        'program_id' => $program->program_id,
+        'supervisor_type' => 'hte',
+        'status' => 'active',
+    ]);
+
+    for ($i = 0; $i < 30; $i++) {
+        $response = $this->actingAs($supUser)->get(route('supervisor.interns.completion-summary', $intern->id));
+        $response->assertOk();
+    }
+
+    $this->actingAs($supUser)->get(route('supervisor.interns.completion-summary', $intern->id))
+        ->assertStatus(429);
+});
+
+test('document downloads are rate limited against dos attacks', function () {
+    Storage::fake('local');
+    [$intern] = createSecurityIntern();
+
+    $fakePdfContent = '%PDF-1.4 test document content';
+    Storage::disk('local')->put("intern-documents/{$intern->id}/doc.pdf", $fakePdfContent);
+
+    $doc = InternDocument::create([
+        'user_id' => $intern->id,
+        'document_type' => 'parents_consent',
+        'original_filename' => 'doc.pdf',
+        'file_path' => "intern-documents/{$intern->id}/doc.pdf",
+        'status' => InternDocument::STATUS_PENDING,
+    ]);
+
+    for ($i = 0; $i < 20; $i++) {
+        $response = $this->actingAs($intern)->get(route('intern.documents.download', $doc->id));
+        $response->assertOk();
+    }
+
+    $this->actingAs($intern)->get(route('intern.documents.download', $doc->id))
+        ->assertStatus(429);
 });

@@ -175,8 +175,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Shared between both supervisor types
         Route::get('dashboard', [SupervisorDashboardController::class, 'index'])->name('dashboard');
         Route::get('interns', [InternsController::class, 'index'])->name('interns.index');
-        Route::get('interns/{internUserId}/completion-summary', [InternsController::class, 'completionSummary'])->name('interns.completion-summary');
-        Route::get('interns/{internUserId}/dtr-report', [InternsController::class, 'downloadInternDtr'])->name('interns.dtr-report');
+        Route::get('interns/{internUserId}/completion-summary', [InternsController::class, 'completionSummary'])
+            ->middleware('throttle:30,1')
+            ->name('interns.completion-summary');
+        Route::get('interns/{internUserId}/dtr-report', [InternsController::class, 'downloadInternDtr'])
+            ->middleware('throttle:15,1')
+            ->name('interns.dtr-report');
 
         // Only an OJT Supervisor oversees a whole program across every HTE,
         // so only they get document templates to manage.
@@ -184,7 +188,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('document-templates', [SupervisorDocumentTemplateController::class, 'index'])->name('document-templates.index');
             Route::post('document-templates', [SupervisorDocumentTemplateController::class, 'store'])->name('document-templates.store');
             Route::post('document-templates/{documentType}/update', [SupervisorDocumentTemplateController::class, 'update'])->name('document-templates.update');
-            Route::get('document-templates/{documentTemplate}/download', [SupervisorDocumentTemplateController::class, 'download'])->name('document-templates.download');
+            Route::get('document-templates/{documentTemplate}/download', [SupervisorDocumentTemplateController::class, 'download'])
+                ->middleware('throttle:20,1')
+                ->name('document-templates.download');
             Route::delete('document-templates/{documentTemplate}', [SupervisorDocumentTemplateController::class, 'destroy'])->name('document-templates.destroy');
             Route::post('document-templates/{id}/restore', [SupervisorDocumentTemplateController::class, 'restore'])->name('document-templates.restore');
             Route::delete('document-templates/{id}/force', [SupervisorDocumentTemplateController::class, 'forceDelete'])->name('document-templates.forceDelete');
@@ -221,7 +227,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('role:'.User::ROLE_INTERN)->prefix('intern')->name('intern.')->group(function () {
         Route::get('dashboard', [InternDashboardController::class, 'index'])->name('dashboard');
         Route::get('schedule', [InternScheduleController::class, 'index'])->name('schedule.index');
-        Route::get('dtr-report', [DtrReportController::class, 'download'])->name('dtr-report.download');
+        Route::get('dtr-report', [DtrReportController::class, 'download'])
+            ->middleware('throttle:10,1')
+            ->name('dtr-report.download');
         Route::get('qr-code', [QrCodeImageController::class, 'show'])->name('qr-code.show');
 
         Route::post('resolution-tickets', [InternResolutionTicketController::class, 'store'])
@@ -235,9 +243,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->middleware('throttle:10,1')
             ->name('documents.store');
         Route::get('documents/{internDocument}/preview', [InternDocumentController::class, 'preview'])->name('documents.preview');
-        Route::get('documents/{internDocument}/download', [InternDocumentController::class, 'download'])->name('documents.download');
+        Route::get('documents/{internDocument}/download', [InternDocumentController::class, 'download'])
+            ->middleware('throttle:20,1')
+            ->name('documents.download');
         Route::delete('documents/{internDocument}', [InternDocumentController::class, 'destroy'])->name('documents.destroy');
-        Route::get('documents/templates/{documentTemplate}/download', [InternDocumentController::class, 'downloadTemplate'])->name('documents.template.download');
+        Route::get('documents/templates/{documentTemplate}/download', [InternDocumentController::class, 'downloadTemplate'])
+            ->middleware('throttle:20,1')
+            ->name('documents.template.download');
     });
 
     Route::middleware('role:'.User::ROLE_SUPER_ADMIN.','.User::ROLE_COLLEGE_ADMIN.','.User::ROLE_ADMIN.','.User::ROLE_SUPERVISOR)
@@ -246,7 +258,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->group(function () {
             Route::get('intern/{internUserId}', [DocumentReviewController::class, 'showInternDocuments'])->name('review.intern');
             Route::get('{internDocument}/preview', [DocumentReviewController::class, 'preview'])->name('review.preview');
-            Route::get('{internDocument}/download', [DocumentReviewController::class, 'download'])->name('review.download');
+            Route::get('{internDocument}/download', [DocumentReviewController::class, 'download'])
+                ->middleware('throttle:30,1')
+                ->name('review.download');
             Route::post('{internDocument}/approve', [DocumentReviewController::class, 'approve'])
                 ->middleware(['role:'.User::ROLE_SUPERVISOR, 'throttle:30,1'])
                 ->name('review.approve');
