@@ -171,7 +171,7 @@ class InternProfile extends Model
 
         $campusModel = $campus instanceof Campus ? $campus : null;
         $name = $campusModel ? $campusModel->name : (is_string($campus) ? $campus : null);
-        $id   = $campusModel ? $campusModel->id   : (is_int($campus) ? $campus : null);
+        $id = $campusModel ? $campusModel->id : (is_int($campus) ? $campus : null);
 
         return $query->where(function ($q) use ($name, $id) {
             // Primary path: intern has the campus_id FK set (new records)

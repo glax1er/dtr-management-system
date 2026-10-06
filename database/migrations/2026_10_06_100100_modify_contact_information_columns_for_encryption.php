@@ -39,7 +39,7 @@ return new class extends Migration
             if (! empty($row->contact_number)) {
                 try {
                     Crypt::decryptString($row->contact_number);
-                } catch (\Throwable) {
+                } catch (Throwable) {
                     DB::table('intern_profiles')
                         ->where('user_id', $row->user_id)
                         ->update(['contact_number' => Crypt::encryptString($row->contact_number)]);
@@ -51,7 +51,7 @@ return new class extends Migration
             if (! empty($row->contact_number)) {
                 try {
                     Crypt::decryptString($row->contact_number);
-                } catch (\Throwable) {
+                } catch (Throwable) {
                     DB::table('htes')
                         ->where('hte_id', $row->hte_id)
                         ->update(['contact_number' => Crypt::encryptString($row->contact_number)]);
@@ -63,7 +63,7 @@ return new class extends Migration
             if (! empty($row->contact_person)) {
                 try {
                     Crypt::decryptString($row->contact_person);
-                } catch (\Throwable) {
+                } catch (Throwable) {
                     DB::table('htes')
                         ->where('hte_id', $row->hte_id)
                         ->update(['contact_person' => Crypt::encryptString($row->contact_person)]);

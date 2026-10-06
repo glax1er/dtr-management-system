@@ -41,7 +41,8 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
     }>();
 
     const isLocked = Boolean(
-        page.props.auth?.user?.requires_two_factor || page.props.twoFactorRequired
+        page.props.auth?.user?.requires_two_factor ||
+        page.props.twoFactorRequired,
     );
 
     return (
@@ -62,7 +63,8 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                         aria-label="Settings"
                     >
                         {sidebarNavItems.map((item, index) => {
-                            const isRestricted = isLocked && item.title !== 'Security';
+                            const isRestricted =
+                                isLocked && item.title !== 'Security';
 
                             if (isRestricted) {
                                 return (
@@ -72,7 +74,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                                         variant="ghost"
                                         disabled
                                         title="Complete Two-Factor Authentication or Passkey setup first"
-                                        className="w-full justify-between opacity-50 cursor-not-allowed"
+                                        className="w-full cursor-not-allowed justify-between opacity-50"
                                     >
                                         <span>{item.title}</span>
                                         <Lock className="size-3.5 text-muted-foreground" />
@@ -87,7 +89,9 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                                     variant="ghost"
                                     asChild
                                     className={cn('w-full justify-start', {
-                                        'bg-muted': isCurrentOrParentUrl(item.href),
+                                        'bg-muted': isCurrentOrParentUrl(
+                                            item.href,
+                                        ),
                                     })}
                                 >
                                     <Link href={item.href}>
@@ -101,7 +105,6 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                         })}
                     </nav>
                 </aside>
-
 
                 <Separator className="my-6 lg:hidden" />
 

@@ -167,7 +167,10 @@ class ManualAttendanceController extends Controller
 
         $timezone = config('dtr.timezone');
 
-        $dates = collect($validated['entries'])->pluck('date')->unique()->values()->all();
+        $dates = array_values(array_unique(array_filter(
+            array_column($validated['entries'], 'date'),
+            'is_string',
+        )));
         $oldLogs = AttendanceLog::where('intern_user_id', $validated['intern_user_id'])
             ->where(function ($q) use ($dates, $timezone) {
                 foreach ($dates as $date) {
@@ -268,7 +271,9 @@ class ManualAttendanceController extends Controller
             }
         });
 
-        $internProfile = InternProfile::find($validated['intern_user_id']);
+        $internProfile = InternProfile::query()
+            ->whereKey($validated['intern_user_id'])
+            ->first();
         AuditLog::record(
             action: 'manual_attendance_override',
             description: "Supervisor manual attendance override for intern ID {$validated['intern_user_id']}",

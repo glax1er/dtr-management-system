@@ -1,5 +1,11 @@
 import { Form, Head, Link, usePage } from '@inertiajs/react';
-import { ArrowRight, KeyRound, ShieldAlert, ShieldCheck, Smartphone } from 'lucide-react';
+import {
+    ArrowRight,
+    KeyRound,
+    ShieldAlert,
+    ShieldCheck,
+    Smartphone,
+} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
 import Heading from '@/components/heading';
@@ -12,6 +18,7 @@ import PasswordInput from '@/components/password-input';
 import TwoFactorEnforcementDialog from '@/components/two-factor-enforcement-dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 import { edit } from '@/routes/security';
 
 type Props = {
@@ -19,9 +26,6 @@ type Props = {
     twoFactorRequired?: boolean;
 } & ManagePasskeysProps &
     ManageTwoFactorProps;
-
-
-import { cn } from '@/lib/utils';
 
 export default function Security(props: Props) {
     const passwordInput = useRef<HTMLInputElement>(null);
@@ -36,17 +40,21 @@ export default function Security(props: Props) {
     }>();
 
     const isAdmin = Boolean(
-        page.props.auth?.user?.is_super_admin || page.props.auth?.user?.is_college_admin
+        page.props.auth?.user?.is_super_admin ||
+        page.props.auth?.user?.is_college_admin,
     );
 
     const hasMfaConfigured = Boolean(
-        props.twoFactorEnabled || (props.passkeys && props.passkeys.length > 0)
+        props.twoFactorEnabled || (props.passkeys && props.passkeys.length > 0),
     );
 
     const isEnforced = Boolean(props.twoFactorRequired && !hasMfaConfigured);
 
-    const [showEnforceDialog, setShowEnforceDialog] = useState<boolean>(isEnforced);
+    const [showEnforceDialog, setShowEnforceDialog] =
+        useState<boolean>(isEnforced);
 
+    // Keep the dialog synchronized with server-side MFA enforcement changes.
+    /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => {
         if (isEnforced) {
             setShowEnforceDialog(true);
@@ -54,18 +62,23 @@ export default function Security(props: Props) {
             setShowEnforceDialog(false);
         }
     }, [isEnforced]);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     const handleSelectTwoFactor = () => {
         setShowEnforceDialog(false);
         setTimeout(() => {
-            document.getElementById('two-factor-section')?.scrollIntoView({ behavior: 'smooth' });
+            document
+                .getElementById('two-factor-section')
+                ?.scrollIntoView({ behavior: 'smooth' });
         }, 100);
     };
 
     const handleSelectPasskey = () => {
         setShowEnforceDialog(false);
         setTimeout(() => {
-            document.getElementById('passkeys-section')?.scrollIntoView({ behavior: 'smooth' });
+            document
+                .getElementById('passkeys-section')
+                ?.scrollIntoView({ behavior: 'smooth' });
         }, 100);
     };
 
@@ -87,22 +100,27 @@ export default function Security(props: Props) {
             {/* Top Banner when required and unfulfilled */}
             {isEnforced && (
                 <div className="rounded-xl border border-amber-300 bg-amber-50/90 p-4 shadow-sm dark:border-amber-700/60 dark:bg-amber-950/40">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                         <div className="flex items-start gap-3">
                             <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-amber-200/80 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300">
                                 <ShieldAlert className="size-5" />
                             </div>
                             <div className="space-y-0.5">
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <h2 className="font-semibold text-sm text-amber-950 dark:text-amber-200">
-                                        Security Action Required: Set Up 2FA or Passkey
+                                    <h2 className="text-sm font-semibold text-amber-950 dark:text-amber-200">
+                                        Security Action Required: Set Up 2FA or
+                                        Passkey
                                     </h2>
                                     <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[11px] font-semibold text-amber-900 dark:bg-amber-900/70 dark:text-amber-300">
                                         Mandatory for Admins
                                     </span>
                                 </div>
-                                <p className="text-xs text-amber-800 leading-relaxed dark:text-amber-300/90">
-                                    Your administrator account is restricted. You must configure an <strong>Authenticator App (2FA)</strong> or register a <strong>Passkey</strong> below to unlock the dashboard.
+                                <p className="text-xs leading-relaxed text-amber-800 dark:text-amber-300/90">
+                                    Your administrator account is restricted.
+                                    You must configure an{' '}
+                                    <strong>Authenticator App (2FA)</strong> or
+                                    register a <strong>Passkey</strong> below to
+                                    unlock the dashboard.
                                 </p>
                             </div>
                         </div>
@@ -122,24 +140,31 @@ export default function Security(props: Props) {
             {/* Success Banner when fulfilled for administrators */}
             {hasMfaConfigured && isAdmin && (
                 <div className="rounded-xl border border-emerald-300 bg-emerald-50/90 p-4 shadow-sm dark:border-emerald-700/60 dark:bg-emerald-950/40">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                         <div className="flex items-center gap-3">
                             <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-200/80 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">
                                 <ShieldCheck className="size-5" />
                             </div>
                             <div>
-                                <p className="font-semibold text-sm text-emerald-950 dark:text-emerald-200">
+                                <p className="text-sm font-semibold text-emerald-950 dark:text-emerald-200">
                                     Administrator Security Requirement Fulfilled
                                 </p>
                                 <p className="text-xs text-emerald-800 dark:text-emerald-300/90">
-                                    Your account is verified with {props.twoFactorEnabled && props.passkeys?.length ? 'Two-Factor Authentication and a Passkey' : props.twoFactorEnabled ? 'Two-Factor Authentication' : 'a Passkey'}.
+                                    Your account is verified with{' '}
+                                    {props.twoFactorEnabled &&
+                                    props.passkeys?.length
+                                        ? 'Two-Factor Authentication and a Passkey'
+                                        : props.twoFactorEnabled
+                                          ? 'Two-Factor Authentication'
+                                          : 'a Passkey'}
+                                    .
                                 </p>
                             </div>
                         </div>
                         <Button
                             size="sm"
                             asChild
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white shrink-0 shadow-sm"
+                            className="shrink-0 bg-emerald-600 text-white shadow-sm hover:bg-emerald-700"
                         >
                             <Link href="/admin/dashboard">
                                 Go to Dashboard
@@ -251,13 +276,15 @@ export default function Security(props: Props) {
                 className={cn(
                     'transition-all duration-300',
                     isEnforced &&
-                        'rounded-2xl border-2 border-amber-400/80 bg-amber-50/20 p-5 shadow-sm dark:border-amber-600/60 dark:bg-amber-950/10'
+                        'rounded-2xl border-2 border-amber-400/80 bg-amber-50/20 p-5 shadow-sm dark:border-amber-600/60 dark:bg-amber-950/10',
                 )}
             >
                 {isEnforced && (
                     <div className="mb-4 flex items-center gap-2 rounded-lg bg-amber-100/80 px-3 py-1.5 text-xs font-semibold text-amber-900 dark:bg-amber-900/40 dark:text-amber-200">
                         <Smartphone className="size-4" />
-                        <span>Required Setup Option 1: Authenticator App (2FA)</span>
+                        <span>
+                            Required Setup Option 1: Authenticator App (2FA)
+                        </span>
                     </div>
                 )}
                 <ManageTwoFactor
@@ -272,7 +299,7 @@ export default function Security(props: Props) {
                 className={cn(
                     'transition-all duration-300',
                     isEnforced &&
-                        'rounded-2xl border-2 border-amber-400/80 bg-amber-50/20 p-5 shadow-sm dark:border-amber-600/60 dark:bg-amber-950/10'
+                        'rounded-2xl border-2 border-amber-400/80 bg-amber-50/20 p-5 shadow-sm dark:border-amber-600/60 dark:bg-amber-950/10',
                 )}
             >
                 {isEnforced && (
@@ -286,7 +313,6 @@ export default function Security(props: Props) {
                     passkeys={props.passkeys}
                 />
             </div>
-
         </>
     );
 }

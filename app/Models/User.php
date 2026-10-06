@@ -426,7 +426,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             return true;
         }
 
-        if (method_exists($this, 'passkeys') && $this->passkeys()->exists()) {
+        if ($this->passkeys()->exists()) {
             return true;
         }
 

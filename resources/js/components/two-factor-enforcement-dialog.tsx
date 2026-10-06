@@ -31,11 +31,11 @@ export default function TwoFactorEnforcementDialog({
     return (
         <Dialog open={open} onOpenChange={() => {}}>
             <DialogContent
-                className="sm:max-w-lg [&>button:last-child]:hidden border-amber-300/60 dark:border-amber-700/60 shadow-2xl"
+                className="border-amber-300/60 shadow-2xl sm:max-w-lg dark:border-amber-700/60 [&>button:last-child]:hidden"
                 onPointerDownOutside={(e) => e.preventDefault()}
                 onEscapeKeyDown={(e) => e.preventDefault()}
             >
-                <DialogHeader className="items-center text-center space-y-3">
+                <DialogHeader className="items-center space-y-3 text-center">
                     <div className="flex size-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 shadow-inner dark:bg-amber-950/60 dark:text-amber-400">
                         <ShieldAlert className="size-8" />
                     </div>
@@ -49,14 +49,20 @@ export default function TwoFactorEnforcementDialog({
                         </DialogTitle>
                     </div>
 
-                    <DialogDescription className="text-sm text-muted-foreground leading-relaxed">
-                        Your account has administrative privileges. To protect sensitive intern records, official attendance logs, and institutional systems, you must configure at least one secondary security factor before accessing the system.
+                    <DialogDescription className="text-sm leading-relaxed text-muted-foreground">
+                        Your account has administrative privileges. To protect
+                        sensitive intern records, official attendance logs, and
+                        institutional systems, you must configure at least one
+                        secondary security factor before accessing the system.
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300">
                     <p className="font-medium">
-                        ⚠️ <strong>Action Required:</strong> Access to the administrator dashboard and other modules is locked. You cannot exit this screen until you configure one of the options below.
+                        ⚠️ <strong>Action Required:</strong> Access to the
+                        administrator dashboard and other modules is locked. You
+                        cannot exit this screen until you configure one of the
+                        options below.
                     </p>
                 </div>
 
@@ -68,11 +74,13 @@ export default function TwoFactorEnforcementDialog({
                                     <Smartphone className="size-5" />
                                 </div>
                                 <div className="space-y-1">
-                                    <h4 className="font-semibold text-sm leading-none">
+                                    <h4 className="text-sm leading-none font-semibold">
                                         Authenticator App (2FA)
                                     </h4>
-                                    <p className="text-xs text-muted-foreground leading-relaxed">
-                                        Use Google Authenticator, Microsoft Authenticator, or Authy on your phone to scan a QR code.
+                                    <p className="text-xs leading-relaxed text-muted-foreground">
+                                        Use Google Authenticator, Microsoft
+                                        Authenticator, or Authy on your phone to
+                                        scan a QR code.
                                     </p>
                                 </div>
                             </div>
@@ -93,11 +101,13 @@ export default function TwoFactorEnforcementDialog({
                                     <KeyRound className="size-5" />
                                 </div>
                                 <div className="space-y-1">
-                                    <h4 className="font-semibold text-sm leading-none">
+                                    <h4 className="text-sm leading-none font-semibold">
                                         Biometric Passkey
                                     </h4>
-                                    <p className="text-xs text-muted-foreground leading-relaxed">
-                                        Log in instantly with Windows Hello, Apple Touch ID / Face ID, or a hardware security key.
+                                    <p className="text-xs leading-relaxed text-muted-foreground">
+                                        Log in instantly with Windows Hello,
+                                        Apple Touch ID / Face ID, or a hardware
+                                        security key.
                                     </p>
                                 </div>
                             </div>
@@ -117,10 +127,12 @@ export default function TwoFactorEnforcementDialog({
                     <button
                         type="button"
                         onClick={handleLogout}
-                        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                        className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
                     >
                         <LogOut className="size-3.5" />
-                        <span>Need to set this up later? Log out of account</span>
+                        <span>
+                            Need to set this up later? Log out of account
+                        </span>
                     </button>
                 </div>
             </DialogContent>

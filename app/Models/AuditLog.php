@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -10,8 +9,6 @@ use RuntimeException;
 
 class AuditLog extends Model
 {
-    use HasFactory;
-
     // Audit logs are append-only. Only created_at exists.
     public $timestamps = false;
 
@@ -44,7 +41,7 @@ class AuditLog extends Model
     protected static function booted(): void
     {
         static::creating(function (AuditLog $log) {
-            if (! $log->created_at) {
+            if ($log->getAttribute('created_at') === null) {
                 $log->created_at = now();
             }
         });
@@ -60,6 +57,9 @@ class AuditLog extends Model
 
     /**
      * Convenient helper to record an immutable audit log entry.
+     *
+     * @param  array<string, mixed>|null  $oldValues
+     * @param  array<string, mixed>|null  $newValues
      */
     public static function record(
         string $action,
@@ -81,8 +81,8 @@ class AuditLog extends Model
             'description' => $description,
             'old_values' => $oldValues,
             'new_values' => $newValues,
-            'ip_address' => request()?->ip(),
-            'user_agent' => request()?->userAgent(),
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
             'created_at' => now(),
         ]);
     }
@@ -99,6 +99,8 @@ class AuditLog extends Model
 
     /**
      * The subject of the audit record (polymorphic).
+     *
+     * @return MorphTo<Model, $this>
      */
     public function auditable(): MorphTo
     {

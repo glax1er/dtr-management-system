@@ -678,7 +678,7 @@ export default function MyInterns({
                         {/* Table View - desktop */}
                         {view === 'table' && (
                             <div className="hidden sm:block">
-                                <Card className="overflow-hidden gap-0 p-0 shadow-xs">
+                                <Card className="gap-0 overflow-hidden p-0 shadow-xs">
                                     <CardHeader className="flex flex-row items-center justify-between border-b px-6 py-4">
                                         <CardTitle className="text-base font-semibold">
                                             Attendance Logs
@@ -802,98 +802,101 @@ export default function MyInterns({
                         {view === 'grid' && (
                             <div className="hidden sm:flex sm:flex-col sm:gap-4">
                                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                {logs.data.map((log) => (
-                                    <Card
-                                        key={`${log.intern_user_id}-${log.date}`}
-                                        className="flex h-full flex-col justify-between rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:border-border hover:shadow-md"
-                                    >
-                                        <CardHeader className="pb-3">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div className="flex min-w-0 items-center gap-3">
-                                                    <Avatar className="size-10 shrink-0">
-                                                        <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
-                                                            {getInitials(
-                                                                log.intern_name,
+                                    {logs.data.map((log) => (
+                                        <Card
+                                            key={`${log.intern_user_id}-${log.date}`}
+                                            className="flex h-full flex-col justify-between rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:border-border hover:shadow-md"
+                                        >
+                                            <CardHeader className="pb-3">
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="flex min-w-0 items-center gap-3">
+                                                        <Avatar className="size-10 shrink-0">
+                                                            <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
+                                                                {getInitials(
+                                                                    log.intern_name,
+                                                                )}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                        <div className="min-w-0">
+                                                            <CardTitle
+                                                                className="line-clamp-1 text-base leading-tight font-semibold"
+                                                                title={
+                                                                    log.intern_name
+                                                                }
+                                                            >
+                                                                {
+                                                                    log.intern_name
+                                                                }
+                                                            </CardTitle>
+                                                            <span className="block truncate text-xs text-muted-foreground">
+                                                                {formatLongDate(
+                                                                    log.date,
+                                                                    log.day,
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex shrink-0 flex-wrap gap-1">
+                                                        {log.punctuality && (
+                                                            <AttendanceBadge
+                                                                status={
+                                                                    log.punctuality
+                                                                }
+                                                            />
+                                                        )}
+                                                        {log.status ===
+                                                            'open' && (
+                                                            <AttendanceBadge status="open" />
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </CardHeader>
+                                            <CardContent className="flex-1 space-y-2.5 pb-3 text-sm">
+                                                <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3 text-xs">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
+                                                            <Clock className="size-3.5 text-muted-foreground" />
+                                                            Time In:
+                                                        </span>
+                                                        <span className="font-medium text-foreground">
+                                                            {formatLongTime(
+                                                                log.time_in,
                                                             )}
-                                                        </AvatarFallback>
-                                                    </Avatar>
-                                                    <div className="min-w-0">
-                                                        <CardTitle
-                                                            className="line-clamp-1 text-base leading-tight font-semibold"
-                                                            title={
-                                                                log.intern_name
-                                                            }
-                                                        >
-                                                            {log.intern_name}
-                                                        </CardTitle>
-                                                        <span className="block truncate text-xs text-muted-foreground">
-                                                            {formatLongDate(
-                                                                log.date,
-                                                                log.day,
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
+                                                            <Clock className="size-3.5 text-muted-foreground" />
+                                                            Time Out:
+                                                        </span>
+                                                        <span className="font-medium text-foreground">
+                                                            {formatLongTime(
+                                                                log.time_out,
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between gap-2 border-t pt-1.5">
+                                                        <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
+                                                            Hours Rendered:
+                                                        </span>
+                                                        <span className="font-semibold text-foreground">
+                                                            {formatLongDuration(
+                                                                log.hours_rendered,
                                                             )}
                                                         </span>
                                                     </div>
                                                 </div>
-                                                <div className="flex shrink-0 flex-wrap gap-1">
-                                                    {log.punctuality && (
-                                                        <AttendanceBadge
-                                                            status={
-                                                                log.punctuality
-                                                            }
-                                                        />
+                                            </CardContent>
+                                            <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
+                                                <span>Date: {log.date}</span>
+                                                <span className="font-medium text-foreground">
+                                                    {formatLongDuration(
+                                                        log.hours_rendered,
                                                     )}
-                                                    {log.status === 'open' && (
-                                                        <AttendanceBadge status="open" />
-                                                    )}
-                                                </div>
+                                                </span>
                                             </div>
-                                        </CardHeader>
-                                        <CardContent className="flex-1 space-y-2.5 pb-3 text-sm">
-                                            <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3 text-xs">
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
-                                                        <Clock className="size-3.5 text-muted-foreground" />
-                                                        Time In:
-                                                    </span>
-                                                    <span className="font-medium text-foreground">
-                                                        {formatLongTime(
-                                                            log.time_in,
-                                                        )}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
-                                                        <Clock className="size-3.5 text-muted-foreground" />
-                                                        Time Out:
-                                                    </span>
-                                                    <span className="font-medium text-foreground">
-                                                        {formatLongTime(
-                                                            log.time_out,
-                                                        )}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center justify-between gap-2 border-t pt-1.5">
-                                                    <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
-                                                        Hours Rendered:
-                                                    </span>
-                                                    <span className="font-semibold text-foreground">
-                                                        {formatLongDuration(
-                                                            log.hours_rendered,
-                                                        )}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                        <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
-                                            <span>Date: {log.date}</span>
-                                            <span className="font-medium text-foreground">
-                                                {formatLongDuration(
-                                                    log.hours_rendered,
-                                                )}
-                                            </span>
-                                        </div>
-                                    </Card>
-                                ))}
+                                        </Card>
+                                    ))}
                                 </div>
                                 <NumberedPagination
                                     meta={logs}
