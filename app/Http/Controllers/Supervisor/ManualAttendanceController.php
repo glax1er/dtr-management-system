@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Supervisor;
 
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceLog;
+use App\Models\AuditLog;
 use App\Models\InternProfile;
 use App\Services\Attendance\CheckHoursMilestones;
 use App\Services\Attendance\DailyAttendanceCalculator;
@@ -166,6 +167,19 @@ class ManualAttendanceController extends Controller
 
         $timezone = config('dtr.timezone');
 
+        $dates = collect($validated['entries'])->pluck('date')->unique()->values()->all();
+        $oldLogs = AttendanceLog::where('intern_user_id', $validated['intern_user_id'])
+            ->where(function ($q) use ($dates, $timezone) {
+                foreach ($dates as $date) {
+                    $q->orWhereBetween('scan_timestamp', [
+                        Carbon::parse($date, $timezone)->startOfDay(),
+                        Carbon::parse($date, $timezone)->endOfDay(),
+                    ]);
+                }
+            })
+            ->get(['id', 'scan_timestamp', 'kiosk_id', 'supervisor_user_id'])
+            ->toArray();
+
         DB::transaction(function () use ($validated, $timezone) {
             foreach ($validated['entries'] as $entry) {
                 $start = Carbon::parse($entry['date'], $timezone)->startOfDay();
@@ -196,6 +210,16 @@ class ManualAttendanceController extends Controller
                 }
             }
         });
+
+        $internProfile = InternProfile::find($validated['intern_user_id']);
+        AuditLog::record(
+            action: 'manual_attendance_override',
+            description: "Supervisor manual attendance override for intern ID {$validated['intern_user_id']}",
+            auditable: $internProfile,
+            oldValues: ['replaced_logs' => $oldLogs],
+            newValues: ['entries' => $validated['entries']],
+            user: $request->user(),
+        );
 
         app(CheckHoursMilestones::class)->check($validated['intern_user_id']);
 

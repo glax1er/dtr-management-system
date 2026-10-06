@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreHteRequest;
 use App\Http\Requests\Admin\UpdateHteRequest;
+use App\Models\AuditLog;
 use App\Models\College;
 use App\Models\Hte;
 use Illuminate\Http\RedirectResponse;
@@ -165,7 +166,17 @@ class HteController extends Controller
             'status' => ['required', 'in:active,inactive'],
         ]);
 
+        $oldStatus = $hte->status;
         $hte->update(['status' => $validated['status']]);
+
+        AuditLog::record(
+            action: 'hte_status_updated',
+            description: "HTE {$hte->hte_name} status updated to {$validated['status']} by administrator",
+            auditable: $hte,
+            oldValues: ['status' => $oldStatus],
+            newValues: ['status' => $validated['status']],
+            user: $user,
+        );
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'HTE status updated.']);
 
@@ -182,6 +193,14 @@ class HteController extends Controller
         if ($hte->status !== 'inactive') {
             return back()->with('error', 'Only inactive HTEs can be deleted.');
         }
+
+        AuditLog::record(
+            action: 'hte_archived',
+            description: "HTE {$hte->hte_name} moved to archives by administrator",
+            auditable: $hte,
+            oldValues: ['status' => 'inactive'],
+            user: $user,
+        );
 
         $hte->delete();
 

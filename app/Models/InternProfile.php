@@ -45,6 +45,7 @@ class InternProfile extends Model
     ];
 
     protected $casts = [
+        'contact_number' => 'encrypted',
         'registered_at' => 'datetime',
         'approved_at' => 'datetime',
         'privacy_accepted_at' => 'datetime',

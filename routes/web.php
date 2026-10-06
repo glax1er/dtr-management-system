@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AdminManagementController;
 use App\Http\Controllers\Admin\ArchiveController;
+use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\CampusController;
 use App\Http\Controllers\Admin\CollegeAdminController;
 use App\Http\Controllers\Admin\CollegeController;
@@ -169,6 +170,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('programs/{program}', [ProgramController::class, 'update'])->name('programs.update');
         Route::patch('programs/{program}/status', [ProgramController::class, 'updateStatus'])->name('programs.updateStatus');
         Route::delete('programs/{program}', [ProgramController::class, 'destroy'])->name('programs.destroy');
+
+        Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
     });
 
     Route::middleware('role:'.User::ROLE_SUPERVISOR)->prefix('supervisor')->name('supervisor.')->group(function () {

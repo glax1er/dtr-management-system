@@ -24,6 +24,11 @@ class CollegeAdminProfile extends Model
         'campus_id',
         'employee_id',
         'position',
+        'contact_number',
+    ];
+
+    protected $casts = [
+        'contact_number' => 'encrypted',
     ];
 
     /**

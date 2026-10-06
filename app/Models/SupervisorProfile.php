@@ -28,8 +28,14 @@ class SupervisorProfile extends Model
         'hte_id',
         'program_id',
         'supervisor_type',
+        'contact_number',
         'status',
         'created_at',
+    ];
+
+    protected $casts = [
+        'contact_number' => 'encrypted',
+        'created_at' => 'datetime',
     ];
 
     /**

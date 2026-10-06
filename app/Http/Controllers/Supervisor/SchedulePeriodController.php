@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Supervisor;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\SchedulePeriod;
 use App\Models\User;
 use App\Notifications\ScheduleUpdatedNotification;
@@ -78,6 +79,14 @@ class SchedulePeriodController extends Controller
 
         $this->notifyScheduleChange($schedulePeriod, ScheduleUpdatedNotification::ACTION_CREATED, $request->user());
 
+        AuditLog::record(
+            action: 'schedule_override_created',
+            description: "HTE schedule override created: ".($schedulePeriod->name ?? 'Override'),
+            auditable: $schedulePeriod,
+            newValues: $schedulePeriod->only(['hte_id', 'name', 'start_date', 'end_date', 'day_schedule']),
+            user: $request->user(),
+        );
+
         Inertia::flash('toast', ['type' => 'success', 'message' => 'HTE schedule override created.']);
 
         return back();
@@ -89,6 +98,7 @@ class SchedulePeriodController extends Controller
         abort_if($schedulePeriod->hte_id !== $hteId, 404);
 
         $validated = $this->validatePayload($request);
+        $oldValues = $schedulePeriod->only(['hte_id', 'name', 'start_date', 'end_date', 'day_schedule']);
 
         $schedulePeriod->update([
             'name' => $validated['name'] ?? null,
@@ -98,6 +108,15 @@ class SchedulePeriodController extends Controller
         ]);
 
         $this->notifyScheduleChange($schedulePeriod, ScheduleUpdatedNotification::ACTION_UPDATED, $request->user());
+
+        AuditLog::record(
+            action: 'schedule_override_updated',
+            description: "HTE schedule override updated: ".($schedulePeriod->name ?? 'Override'),
+            auditable: $schedulePeriod,
+            oldValues: $oldValues,
+            newValues: $schedulePeriod->only(['hte_id', 'name', 'start_date', 'end_date', 'day_schedule']),
+            user: $request->user(),
+        );
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'HTE schedule override updated.']);
 
@@ -112,6 +131,15 @@ class SchedulePeriodController extends Controller
         $scheduleName = $schedulePeriod->name ?? "{$schedulePeriod->start_date->format('M d, Y')} - {$schedulePeriod->end_date->format('M d, Y')}";
         $periodId = $schedulePeriod->id;
         $hteName = $schedulePeriod->hte?->hte_name ?? $request->user()->supervisorProfile?->hte?->hte_name;
+        $oldValues = $schedulePeriod->only(['hte_id', 'name', 'start_date', 'end_date', 'day_schedule']);
+
+        AuditLog::record(
+            action: 'schedule_override_deleted',
+            description: "HTE schedule override deleted: {$scheduleName}",
+            auditable: $schedulePeriod,
+            oldValues: $oldValues,
+            user: $request->user(),
+        );
 
         $schedulePeriod->delete();
 

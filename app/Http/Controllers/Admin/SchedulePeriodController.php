@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\College;
 use App\Models\SchedulePeriod;
 use App\Models\User;
@@ -84,6 +85,14 @@ class SchedulePeriodController extends Controller
 
         $this->notifyScheduleChange($schedulePeriod, ScheduleUpdatedNotification::ACTION_CREATED, $user);
 
+        AuditLog::record(
+            action: 'schedule_override_created',
+            description: "Schedule period created: ".($schedulePeriod->name ?? 'Baseline schedule'),
+            auditable: $schedulePeriod,
+            newValues: $schedulePeriod->only(['college_id', 'name', 'start_date', 'end_date', 'day_schedule']),
+            user: $user,
+        );
+
         $flashMessage = $collegeId === null
             ? 'University-wide global schedule period created.'
             : 'Global schedule period for '.($schedulePeriod->college->name ?? 'college').' created.';
@@ -109,6 +118,7 @@ class SchedulePeriodController extends Controller
         }
 
         $validated = $this->validatePayload($request, $isSuperAdmin);
+        $oldValues = $schedulePeriod->only(['college_id', 'name', 'start_date', 'end_date', 'day_schedule']);
 
         $updateData = [
             'name' => $validated['name'] ?? null,
@@ -125,6 +135,15 @@ class SchedulePeriodController extends Controller
         $schedulePeriod->load('college:id,name,code');
 
         $this->notifyScheduleChange($schedulePeriod, ScheduleUpdatedNotification::ACTION_UPDATED, $user);
+
+        AuditLog::record(
+            action: 'schedule_override_updated',
+            description: "Schedule period updated: ".($schedulePeriod->name ?? 'Schedule'),
+            auditable: $schedulePeriod,
+            oldValues: $oldValues,
+            newValues: $schedulePeriod->only(['college_id', 'name', 'start_date', 'end_date', 'day_schedule']),
+            user: $user,
+        );
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Schedule period updated.']);
 
@@ -149,6 +168,15 @@ class SchedulePeriodController extends Controller
         $periodId = $schedulePeriod->id;
         $collegeId = $schedulePeriod->college_id;
         $collegeName = $schedulePeriod->college?->name;
+        $oldValues = $schedulePeriod->only(['college_id', 'name', 'start_date', 'end_date', 'day_schedule']);
+
+        AuditLog::record(
+            action: 'schedule_override_deleted',
+            description: "Schedule period deleted: {$scheduleName}",
+            auditable: $schedulePeriod,
+            oldValues: $oldValues,
+            user: $user,
+        );
 
         $schedulePeriod->delete();
 
