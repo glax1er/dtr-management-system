@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\InternDocument;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Storage;
 
@@ -145,8 +146,8 @@ class InternDocumentSeeder extends Seeder
      *     type: string,
      *     filename: string,
      *     status: string,
-     *     submitted_at: \Carbon\CarbonInterface,
-     *     reviewed_at: \Carbon\CarbonInterface|null,
+     *     submitted_at: CarbonInterface,
+     *     reviewed_at: CarbonInterface|null,
      *     reviewed_by: int|null,
      *     rejection_reason: string|null
      * } $doc
@@ -156,7 +157,7 @@ class InternDocumentSeeder extends Seeder
         $storagePath = "intern-documents/{$user->id}/{$doc['type']}.pdf";
         $pdfContent = $this->generatePdf(
             title: "{$user->name} - {$doc['filename']}",
-            details: "Document Status: " . ucfirst(str_replace('_', ' ', $doc['status']))
+            details: 'Document Status: '.ucfirst(str_replace('_', ' ', $doc['status']))
         );
 
         Storage::disk('local')->put($storagePath, $pdfContent);
@@ -182,18 +183,18 @@ class InternDocumentSeeder extends Seeder
 
     private function generatePdf(string $title, string $details): string
     {
-        $content = "BT /F1 16 Tf 50 720 Td (" . addcslashes($title, "()\\") . ") Tj ET\n"
-                 . "BT /F1 11 Tf 50 680 Td (" . addcslashes($details, "()\\") . ") Tj ET\n"
-                 . "BT /F1 9 Tf 50 650 Td (Student Intern Submission Document - DTR System) Tj ET";
+        $content = 'BT /F1 16 Tf 50 720 Td ('.addcslashes($title, '()\\').") Tj ET\n"
+                 .'BT /F1 11 Tf 50 680 Td ('.addcslashes($details, '()\\').") Tj ET\n"
+                 .'BT /F1 9 Tf 50 650 Td (Student Intern Submission Document - DTR System) Tj ET';
         $len = strlen($content);
 
         return "%PDF-1.4\n"
-            . "1 0 obj <</Type /Catalog /Pages 2 0 R>> endobj\n"
-            . "2 0 obj <</Type /Pages /Kids [3 0 R] /Count 1>> endobj\n"
-            . "3 0 obj <</Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R>> endobj\n"
-            . "4 0 obj <</Type /Font /Subtype /Type1 /BaseFont /Helvetica>> endobj\n"
-            . "5 0 obj <</Length {$len}>>\nstream\n{$content}\nendstream\nendobj\n"
-            . "xref\n0 6\n0000000000 65535 f \n"
-            . "trailer <</Size 6 /Root 1 0 R>>\nstartxref\n500\n%%EOF";
+            ."1 0 obj <</Type /Catalog /Pages 2 0 R>> endobj\n"
+            ."2 0 obj <</Type /Pages /Kids [3 0 R] /Count 1>> endobj\n"
+            ."3 0 obj <</Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R>> endobj\n"
+            ."4 0 obj <</Type /Font /Subtype /Type1 /BaseFont /Helvetica>> endobj\n"
+            ."5 0 obj <</Length {$len}>>\nstream\n{$content}\nendstream\nendobj\n"
+            ."xref\n0 6\n0000000000 65535 f \n"
+            ."trailer <</Size 6 /Root 1 0 R>>\nstartxref\n500\n%%EOF";
     }
 }

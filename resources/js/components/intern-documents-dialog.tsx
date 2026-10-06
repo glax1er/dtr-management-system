@@ -113,12 +113,14 @@ export function InternDocumentsDialog({
     useEffect(() => {
         if (defaultOpen) {
             fetchDocuments();
+
             return;
         }
 
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
             const docInternId = params.get('doc_intern');
+
             if (docInternId && String(internUserId) === docInternId) {
                 setIsOpen(true);
                 fetchDocuments();
@@ -129,12 +131,20 @@ export function InternDocumentsDialog({
 
     // Determine target highlight doc from props or URL
     const effectiveHighlightDoc = useMemo(() => {
-        if (highlightDoc) return highlightDoc;
-        if (typeof window === 'undefined') return null;
+        if (highlightDoc) {
+return highlightDoc;
+}
+
+        if (typeof window === 'undefined') {
+return null;
+}
+
         const params = new URLSearchParams(window.location.search);
+
         if (params.get('doc_intern') === String(internUserId)) {
             return params.get('highlight_doc');
         }
+
         return null;
     }, [highlightDoc, internUserId]);
 
@@ -281,6 +291,7 @@ export function InternDocumentsDialog({
 
     const categoryCounts = useMemo(() => {
         const map: Record<string, { total: number; approved: number }> = {};
+
         for (const cat of categories) {
             const items = checklist.filter((i) => (i.category || 'General') === cat);
             map[cat] = {
@@ -288,6 +299,7 @@ export function InternDocumentsDialog({
                 approved: items.filter((i) => i.status === 'approved').length,
             };
         }
+
         return map;
     }, [categories, checklist]);
 
@@ -295,6 +307,7 @@ export function InternDocumentsDialog({
     const filteredChecklist = useMemo(() => {
         return checklist.filter((item) => {
             const itemCat = item.category || 'General';
+
             if (selectedCategory !== 'all' && itemCat !== selectedCategory) {
                 return false;
             }

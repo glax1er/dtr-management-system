@@ -2,6 +2,9 @@
 
 use App\Models\Campus;
 use App\Models\College;
+use App\Models\Hte;
+use App\Models\InternProfile;
+use App\Models\Program;
 use App\Models\User;
 
 beforeEach(function () {
@@ -150,14 +153,14 @@ test('super admin can permanently delete an archived campus', function () {
 });
 
 test('campuses index returns correct interns count', function () {
-    $program = \App\Models\Program::create([
+    $program = Program::create([
         'college_id' => $this->collegeA->id,
         'program_name' => 'BS IT '.uniqid(),
         'is_active' => true,
         'required_hours' => 500,
     ]);
 
-    $hte = \App\Models\Hte::create([
+    $hte = Hte::create([
         'college_id' => $this->collegeA->id,
         'hte_name' => 'HTE '.uniqid(),
         'address' => 'HTE Address',
@@ -169,7 +172,7 @@ test('campuses index returns correct interns count', function () {
         'email_verified_at' => now(),
     ]);
 
-    \App\Models\InternProfile::create([
+    InternProfile::create([
         'user_id' => $internUser->id,
         'id_number' => 'ID-'.uniqid(),
         'sex' => 'male',
@@ -195,4 +198,3 @@ test('campuses index returns correct interns count', function () {
         })
     );
 });
-

@@ -376,4 +376,3 @@ test('admin CAN update intern id_number to match an intern in a different campus
     $response->assertSessionHasNoErrors();
     expect($obreroProfile->fresh()->id_number)->toBe('2026-88881');
 });
-

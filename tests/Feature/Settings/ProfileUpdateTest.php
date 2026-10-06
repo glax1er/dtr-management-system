@@ -1,5 +1,12 @@
 <?php
 
+use App\Models\Campus;
+use App\Models\College;
+use App\Models\CollegeAdminProfile;
+use App\Models\Hte;
+use App\Models\InternProfile;
+use App\Models\Program;
+use App\Models\SupervisorProfile;
 use App\Models\User;
 
 test('profile page is displayed', function () {
@@ -124,24 +131,24 @@ test('administrator can delete their account if other administrators exist', fun
 });
 
 test('intern profile page provides college and campus in idCard and profileDetails', function () {
-    $campus = \App\Models\Campus::create([
+    $campus = Campus::create([
         'name' => 'Mintal',
         'code' => 'MIN',
     ]);
 
-    $college = \App\Models\College::create([
+    $college = College::create([
         'name' => 'College of Applied Economics',
         'code' => 'CAE',
         'campus' => 'Mintal',
         'campus_id' => $campus->id,
     ]);
 
-    $program = \App\Models\Program::create([
+    $program = Program::create([
         'college_id' => $college->id,
         'program_name' => 'BS Economics',
     ]);
 
-    $hte = \App\Models\Hte::create([
+    $hte = Hte::create([
         'hte_name' => 'NEDA Region XI',
         'address' => 'Davao City',
     ]);
@@ -152,7 +159,7 @@ test('intern profile page provides college and campus in idCard and profileDetai
         'campus' => 'Mintal',
     ]);
 
-    \App\Models\InternProfile::create([
+    InternProfile::create([
         'user_id' => $user->id,
         'id_number' => '2023-99999',
         'sex' => 'male',
@@ -179,19 +186,19 @@ test('intern profile page provides college and campus in idCard and profileDetai
 });
 
 test('supervisor profile page provides college and campus without redundancy', function () {
-    $campus = \App\Models\Campus::create([
+    $campus = Campus::create([
         'name' => 'Obrero',
         'code' => 'OBR',
     ]);
 
-    $college = \App\Models\College::create([
+    $college = College::create([
         'name' => 'College of Information and Computing',
         'code' => 'CIC',
         'campus' => 'Obrero',
         'campus_id' => $campus->id,
     ]);
 
-    $program = \App\Models\Program::create([
+    $program = Program::create([
         'college_id' => $college->id,
         'program_name' => 'BS Information Technology',
     ]);
@@ -201,7 +208,7 @@ test('supervisor profile page provides college and campus without redundancy', f
         'campus' => 'Obrero',
     ]);
 
-    \App\Models\SupervisorProfile::create([
+    SupervisorProfile::create([
         'user_id' => $user->id,
         'program_id' => $program->program_id,
         'supervisor_type' => 'ojt',
@@ -224,12 +231,12 @@ test('supervisor profile page provides college and campus without redundancy', f
 });
 
 test('college admin profile page provides college and campus without duplicate college name', function () {
-    $campus = \App\Models\Campus::create([
+    $campus = Campus::create([
         'name' => 'Tagum',
         'code' => 'TAG',
     ]);
 
-    $college = \App\Models\College::create([
+    $college = College::create([
         'name' => 'College of Agriculture',
         'code' => 'CoA',
         'campus' => 'Tagum',
@@ -242,7 +249,7 @@ test('college admin profile page provides college and campus without duplicate c
         'campus' => 'Tagum',
     ]);
 
-    \App\Models\CollegeAdminProfile::create([
+    CollegeAdminProfile::create([
         'user_id' => $user->id,
         'college_id' => $college->id,
         'campus_id' => $campus->id,
@@ -266,4 +273,3 @@ test('college admin profile page provides college and campus without duplicate c
             ->where('profileDetails.id_number', 'EMP-777')
         );
 });
-

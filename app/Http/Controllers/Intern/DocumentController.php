@@ -163,10 +163,13 @@ class DocumentController extends Controller
         $realPath = $file->getRealPath();
         if ($realPath && file_exists($realPath) && filesize($realPath) >= 4) {
             $handle = fopen($realPath, 'rb');
-            $header = fread($handle, 4);
-            fclose($handle);
-            if ($header !== '%PDF') {
-                return back()->withErrors(['file' => 'The uploaded file does not have a valid PDF header signature.']);
+            if ($handle !== false) {
+                $header = fread($handle, 4);
+                fclose($handle);
+
+                if ($header !== '%PDF') {
+                    return back()->withErrors(['file' => 'The uploaded file does not have a valid PDF header signature.']);
+                }
             }
         }
 

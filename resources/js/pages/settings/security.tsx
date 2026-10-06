@@ -1,6 +1,6 @@
 import { Form, Head, Link, usePage } from '@inertiajs/react';
 import { ArrowRight, KeyRound, ShieldAlert, ShieldCheck, Smartphone } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -12,6 +12,7 @@ import PasswordInput from '@/components/password-input';
 import TwoFactorEnforcementDialog from '@/components/two-factor-enforcement-dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 import { edit } from '@/routes/security';
 
 type Props = {
@@ -19,9 +20,6 @@ type Props = {
     twoFactorRequired?: boolean;
 } & ManagePasskeysProps &
     ManageTwoFactorProps;
-
-
-import { cn } from '@/lib/utils';
 
 export default function Security(props: Props) {
     const passwordInput = useRef<HTMLInputElement>(null);
@@ -47,14 +45,6 @@ export default function Security(props: Props) {
 
     const [showEnforceDialog, setShowEnforceDialog] = useState<boolean>(isEnforced);
 
-    useEffect(() => {
-        if (isEnforced) {
-            setShowEnforceDialog(true);
-        } else {
-            setShowEnforceDialog(false);
-        }
-    }, [isEnforced]);
-
     const handleSelectTwoFactor = () => {
         setShowEnforceDialog(false);
         setTimeout(() => {
@@ -77,7 +67,7 @@ export default function Security(props: Props) {
 
             {/* Mandatory Security Enforcement Dialog (Non-dismissible) */}
             <TwoFactorEnforcementDialog
-                open={showEnforceDialog}
+                open={showEnforceDialog && isEnforced}
                 onSelectTwoFactor={handleSelectTwoFactor}
                 onSelectPasskey={handleSelectPasskey}
                 canManageTwoFactor={props.canManageTwoFactor}

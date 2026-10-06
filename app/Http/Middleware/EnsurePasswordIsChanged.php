@@ -14,7 +14,7 @@ class EnsurePasswordIsChanged
      * If an authenticated user is flagged with must_change_password = true,
      * they must update their initial password before accessing any other application features.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {

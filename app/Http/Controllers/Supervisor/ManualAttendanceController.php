@@ -62,7 +62,10 @@ class ManualAttendanceController extends Controller
 
         $timezone = config('dtr.timezone');
 
-        $conflicts = collect($validated['dates'])
+        /** @var list<string> $dates */
+        $dates = $validated['dates'];
+
+        $conflicts = collect($dates)
             ->filter(function (string $date) use ($validated, $timezone) {
                 $start = Carbon::parse($date, $timezone)->startOfDay();
                 $end = Carbon::parse($date, $timezone)->endOfDay();
@@ -167,7 +170,10 @@ class ManualAttendanceController extends Controller
 
         $timezone = config('dtr.timezone');
 
-        $dates = collect($validated['entries'])->pluck('date')->unique()->values()->all();
+        /** @var list<array{date: string, time_in?: string|null, time_out?: string|null}> $entries */
+        $entries = $validated['entries'];
+
+        $dates = collect($entries)->pluck('date')->unique()->values()->all();
         $oldLogs = AttendanceLog::where('intern_user_id', $validated['intern_user_id'])
             ->where(function ($q) use ($dates, $timezone) {
                 foreach ($dates as $date) {
@@ -180,8 +186,8 @@ class ManualAttendanceController extends Controller
             ->get(['id', 'scan_timestamp', 'kiosk_id', 'supervisor_user_id'])
             ->toArray();
 
-        DB::transaction(function () use ($validated, $timezone) {
-            foreach ($validated['entries'] as $entry) {
+        DB::transaction(function () use ($entries, $validated, $timezone) {
+            foreach ($entries as $entry) {
                 $start = Carbon::parse($entry['date'], $timezone)->startOfDay();
                 $end = Carbon::parse($entry['date'], $timezone)->endOfDay();
 
@@ -268,13 +274,13 @@ class ManualAttendanceController extends Controller
             }
         });
 
-        $internProfile = InternProfile::find($validated['intern_user_id']);
+        $internProfile = InternProfile::query()->whereKey($validated['intern_user_id'])->first();
         AuditLog::record(
             action: 'manual_attendance_override',
             description: "Supervisor manual attendance override for intern ID {$validated['intern_user_id']}",
             auditable: $internProfile,
             oldValues: ['replaced_logs' => $oldLogs],
-            newValues: ['entries' => $validated['entries']],
+            newValues: ['entries' => $entries],
             user: $request->user(),
         );
 

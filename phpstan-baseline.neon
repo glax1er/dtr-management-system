@@ -107,11 +107,6 @@ parameters:
             path: app/Http/Controllers/Supervisor/InternsController.php
 
         -
-            identifier: argument.templateType
-            count: 2
-            path: app/Http/Controllers/Supervisor/ManualAttendanceController.php
-
-        -
             identifier: nullsafe.neverNull
             count: 3
             path: app/Http/Controllers/Supervisor/SchedulePeriodController.php
