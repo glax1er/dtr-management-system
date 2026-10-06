@@ -28,7 +28,7 @@ test('security headers including full content-security-policy are present in web
 });
 
 test('https requests receive hsts and upgrade-insecure-requests in csp', function () {
-    $response = $this->withServerVariables(['HTTPS' => 'on'])->get('/login');
+    $response = $this->get('https://localhost/login');
 
     $response->assertHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     $csp = $response->headers->get('Content-Security-Policy');
