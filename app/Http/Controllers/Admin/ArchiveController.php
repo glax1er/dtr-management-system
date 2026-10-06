@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceLog;
+use App\Models\AuditLog;
 use App\Models\Campus;
 use App\Models\College;
 use App\Models\CollegeAdminProfile;
@@ -164,7 +165,17 @@ class ArchiveController extends Controller
             }
         }
 
+        $deletedAt = $record->deleted_at?->toIso8601String();
         $record->restore();
+
+        AuditLog::record(
+            action: 'record_restored',
+            description: "Restored {$type} #{$id} from archive by administrator",
+            auditable: $record,
+            oldValues: ['deleted_at' => $deletedAt],
+            newValues: ['deleted_at' => null],
+            user: $request->user(),
+        );
 
         return back()->with('success', 'Record restored.');
     }
@@ -207,7 +218,7 @@ class ArchiveController extends Controller
         }
 
         try {
-            DB::transaction(function () use ($type, $id, $record) {
+            DB::transaction(function () use ($type, $id, $record, $request) {
                 if ($type === 'interns') {
                     $profile = $record;
 
@@ -284,6 +295,13 @@ class ArchiveController extends Controller
                 } else {
                     $this->modelFor($type)::onlyTrashed()->findOrFail($id)->forceDelete();
                 }
+
+                AuditLog::record(
+                    action: 'record_force_deleted',
+                    description: "Permanently deleted {$type} #{$id} by administrator",
+                    oldValues: ['type' => $type, 'id' => $id],
+                    user: $request->user(),
+                );
             });
         } catch (QueryException $e) {
             return back()->with(

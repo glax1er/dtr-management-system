@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Supervisor;
 
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceLog;
+use App\Models\AuditLog;
 use App\Models\InternProfile;
 use App\Models\ResolutionTicket;
 use App\Notifications\ResolutionTicketNotification;
@@ -327,6 +328,20 @@ class ResolutionTicketController extends Controller
          */
         $ticket = $resolutionTicket->fresh(['intern']);
 
+        AuditLog::record(
+            action: 'resolution_ticket_approved',
+            description: "Resolution ticket #{$resolutionTicket->id} approved by supervisor",
+            auditable: $resolutionTicket,
+            oldValues: ['status' => ResolutionTicket::STATUS_PENDING],
+            newValues: [
+                'status' => ResolutionTicket::STATUS_APPROVED,
+                'final_time_in' => $ticket?->final_time_in?->toIso8601String(),
+                'final_time_out' => $ticket?->final_time_out?->toIso8601String(),
+                'resolved_by' => $request->user()->id,
+            ],
+            user: $request->user(),
+        );
+
         if ($ticket?->intern && $ticket->intern->wantsNotification('ticket_updates')) {
             $ticket->intern->notify(
                 new ResolutionTicketNotification(
@@ -389,6 +404,19 @@ class ResolutionTicketController extends Controller
                 'resolved_at' => Carbon::now(),
             ]);
         });
+
+        AuditLog::record(
+            action: 'resolution_ticket_rejected',
+            description: "Resolution ticket #{$resolutionTicket->id} rejected by supervisor: {$validated['rejection_reason']}",
+            auditable: $resolutionTicket,
+            oldValues: ['status' => ResolutionTicket::STATUS_PENDING],
+            newValues: [
+                'status' => ResolutionTicket::STATUS_REJECTED,
+                'rejection_reason' => $validated['rejection_reason'],
+                'resolved_by' => $request->user()->id,
+            ],
+            user: $request->user(),
+        );
 
         /*
          * Notify the intern after successful rejection.

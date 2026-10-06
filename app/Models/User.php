@@ -40,7 +40,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $updated_at
  */
 #[Fillable(['role', 'college_id', 'campus', 'name', 'email', 'password', 'must_change_password', 'profile_photo_path', 'is_active', 'notification_preferences', 'notifications_cleared_at'])]
-#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
+#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token', 'two_factor_confirmed_at', 'notification_preferences', 'notifications_cleared_at'])]
 class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
@@ -415,6 +415,22 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function isAdmin(): bool
     {
         return $this->isSuperAdmin() || $this->isCollegeAdmin() || $this->role === self::ROLE_ADMIN;
+    }
+
+    /**
+     * Determine if the user has an active two-factor authentication method (TOTP or Passkey).
+     */
+    public function hasTwoFactorOrPasskeyEnabled(): bool
+    {
+        if ($this->hasEnabledTwoFactorAuthentication()) {
+            return true;
+        }
+
+        if (method_exists($this, 'passkeys') && $this->passkeys()->exists()) {
+            return true;
+        }
+
+        return false;
     }
 
     public function isSupervisor(): bool

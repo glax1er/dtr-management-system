@@ -167,6 +167,7 @@ class DocumentTemplateController extends Controller
                     'nullable',
                     'file',
                     'mimes:pdf,docx,doc',
+                    'mimetypes:application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                     'max:15360', // 15MB
                 ],
                 'instructions' => ['nullable', 'string', 'max:1000'],
@@ -176,6 +177,7 @@ class DocumentTemplateController extends Controller
                 'required' => ['nullable', 'boolean'],
             ], [
                 'file.mimes' => 'The template must be a PDF or Microsoft Word document (.pdf, .docx, .doc).',
+                'file.mimetypes' => 'The template must be a PDF or Microsoft Word document (.pdf, .docx, .doc).',
                 'file.max' => 'The template file size must not exceed 15 MB.',
             ]);
 
@@ -184,6 +186,10 @@ class DocumentTemplateController extends Controller
 
             if ($request->hasFile('file')) {
                 $file = $request->file('file');
+
+                $clientName = basename($file->getClientOriginalName());
+                $safeFilename = preg_replace('/[^a-zA-Z0-9_\-\. ]/', '', $clientName);
+                $safeFilename = trim(substr($safeFilename, 0, 100)) ?: 'template.docx';
 
                 // Store the new file and confirm it actually saved before
                 // touching the old one — store() returns false on failure
@@ -203,7 +209,7 @@ class DocumentTemplateController extends Controller
                 }
 
                 if ($existing) {
-                    $existing->original_filename = $file->getClientOriginalName();
+                    $existing->original_filename = $safeFilename;
                     $existing->file_path = $path;
                     $existing->file_size_bytes = $file->getSize();
                     $existing->mime_type = $file->getMimeType();
@@ -239,7 +245,7 @@ class DocumentTemplateController extends Controller
                         'description' => $validated['description'] ?? ($docConfig['description'] ?? null),
                         'required' => isset($validated['required']) ? $request->boolean('required', true) : ($docConfig['required'] ?? true),
                         'is_custom' => ! $isPredefined,
-                        'original_filename' => $file->getClientOriginalName(),
+                        'original_filename' => $safeFilename,
                         'file_path' => $path,
                         'file_size_bytes' => $file->getSize(),
                         'mime_type' => $file->getMimeType(),
@@ -283,12 +289,14 @@ class DocumentTemplateController extends Controller
                 'nullable',
                 'file',
                 'mimes:pdf,docx,doc',
+                'mimetypes:application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                 'max:15360', // 15MB
             ],
         ], [
             'name.required' => 'Please enter a document title.',
             'category.required' => 'Please select or enter a category.',
             'file.mimes' => 'The blank template must be a PDF or Microsoft Word document (.pdf, .docx, .doc).',
+            'file.mimetypes' => 'The blank template must be a PDF or Microsoft Word document (.pdf, .docx, .doc).',
             'file.max' => 'The template file size must not exceed 15 MB.',
         ]);
 
@@ -320,7 +328,9 @@ class DocumentTemplateController extends Controller
                 ]);
             }
 
-            $originalFilename = $file->getClientOriginalName();
+            $clientName = basename($file->getClientOriginalName());
+            $safeFilename = preg_replace('/[^a-zA-Z0-9_\-\. ]/', '', $clientName);
+            $originalFilename = trim(substr($safeFilename, 0, 100)) ?: 'template.docx';
             $fileSizeBytes = $file->getSize();
             $mimeType = $file->getMimeType();
         }
@@ -364,6 +374,7 @@ class DocumentTemplateController extends Controller
                 'nullable',
                 'file',
                 'mimes:pdf,docx,doc',
+                'mimetypes:application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                 'max:15360', // 15MB
             ],
             'remove_template' => ['nullable', 'boolean'],
@@ -371,6 +382,7 @@ class DocumentTemplateController extends Controller
             'name.required' => 'Please enter a document title.',
             'category.required' => 'Please select or enter a category.',
             'file.mimes' => 'The blank template must be a PDF or Microsoft Word document (.pdf, .docx, .doc).',
+            'file.mimetypes' => 'The blank template must be a PDF or Microsoft Word document (.pdf, .docx, .doc).',
             'file.max' => 'The template file size must not exceed 15 MB.',
         ]);
 
@@ -409,8 +421,13 @@ class DocumentTemplateController extends Controller
             if ($template->file_path && Storage::disk('local')->exists($template->file_path)) {
                 Storage::disk('local')->delete($template->file_path);
             }
+
+            $clientName = basename($file->getClientOriginalName());
+            $safeFilename = preg_replace('/[^a-zA-Z0-9_\-\. ]/', '', $clientName);
+            $safeFilename = trim(substr($safeFilename, 0, 100)) ?: 'template.docx';
+
             $template->file_path = $path;
-            $template->original_filename = $file->getClientOriginalName();
+            $template->original_filename = $safeFilename;
             $template->file_size_bytes = $file->getSize();
             $template->mime_type = $file->getMimeType();
         } elseif ($request->boolean('remove_template')) {
@@ -442,13 +459,15 @@ class DocumentTemplateController extends Controller
             }
         }
 
-        if (! $documentTemplate->file_path || ! Storage::disk('local')->exists($documentTemplate->file_path)) {
+        if (! $documentTemplate->file_path || str_contains($documentTemplate->file_path, '..') || ! Storage::disk('local')->exists($documentTemplate->file_path)) {
             abort(404, 'Template file not found.');
         }
 
         $fullPath = Storage::disk('local')->path($documentTemplate->file_path);
 
-        return response()->download($fullPath, $documentTemplate->original_filename);
+        return response()->download($fullPath, $documentTemplate->original_filename, [
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     public function destroy(Request $request, string $documentType): RedirectResponse

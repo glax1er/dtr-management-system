@@ -1,5 +1,5 @@
-import { Link } from '@inertiajs/react';
-import { SettingsIcon } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
+import { Lock, SettingsIcon } from 'lucide-react';
 import type { PropsWithChildren } from 'react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -35,6 +35,14 @@ const sidebarNavItems: NavItem[] = [
 
 export default function SettingsLayout({ children }: PropsWithChildren) {
     const { isCurrentOrParentUrl } = useCurrentUrl();
+    const page = usePage<{
+        auth?: { user?: { requires_two_factor?: boolean } };
+        twoFactorRequired?: boolean;
+    }>();
+
+    const isLocked = Boolean(
+        page.props.auth?.user?.requires_two_factor || page.props.twoFactorRequired
+    );
 
     return (
         <div className="px-4 py-4">
@@ -53,26 +61,47 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                         className="flex flex-col space-y-1 space-x-0"
                         aria-label="Settings"
                     >
-                        {sidebarNavItems.map((item, index) => (
-                            <Button
-                                key={`${toUrl(item.href)}-${index}`}
-                                size="sm"
-                                variant="ghost"
-                                asChild
-                                className={cn('w-full justify-start', {
-                                    'bg-muted': isCurrentOrParentUrl(item.href),
-                                })}
-                            >
-                                <Link href={item.href}>
-                                    {item.icon && (
-                                        <item.icon className="h-4 w-4" />
-                                    )}
-                                    {item.title}
-                                </Link>
-                            </Button>
-                        ))}
+                        {sidebarNavItems.map((item, index) => {
+                            const isRestricted = isLocked && item.title !== 'Security';
+
+                            if (isRestricted) {
+                                return (
+                                    <Button
+                                        key={`${toUrl(item.href)}-${index}`}
+                                        size="sm"
+                                        variant="ghost"
+                                        disabled
+                                        title="Complete Two-Factor Authentication or Passkey setup first"
+                                        className="w-full justify-between opacity-50 cursor-not-allowed"
+                                    >
+                                        <span>{item.title}</span>
+                                        <Lock className="size-3.5 text-muted-foreground" />
+                                    </Button>
+                                );
+                            }
+
+                            return (
+                                <Button
+                                    key={`${toUrl(item.href)}-${index}`}
+                                    size="sm"
+                                    variant="ghost"
+                                    asChild
+                                    className={cn('w-full justify-start', {
+                                        'bg-muted': isCurrentOrParentUrl(item.href),
+                                    })}
+                                >
+                                    <Link href={item.href}>
+                                        {item.icon && (
+                                            <item.icon className="h-4 w-4" />
+                                        )}
+                                        {item.title}
+                                    </Link>
+                                </Button>
+                            );
+                        })}
                     </nav>
                 </aside>
+
 
                 <Separator className="my-6 lg:hidden" />
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateInternRequest;
+use App\Models\AuditLog;
 use App\Models\Campus;
 use App\Models\College;
 use App\Models\Hte;
@@ -147,6 +148,16 @@ class InternController extends Controller
             abort_if(Hte::where('hte_id', $request->validated('hte_id'))->where('college_id', $collegeId)->doesntExist(), 422, 'Selected HTE does not belong to your college.');
         }
 
+        $oldValues = [
+            'name' => $internProfile->user?->name,
+            'email' => $internProfile->user?->email,
+            'id_number' => $internProfile->id_number,
+            'contact_number' => $internProfile->contact_number,
+            'sex' => $internProfile->sex,
+            'hte_id' => $internProfile->hte_id,
+            'program_id' => $internProfile->program_id,
+        ];
+
         DB::transaction(function () use ($request, $internProfile) {
             $internProfile->user->update([
                 'name' => $request->validated('name'),
@@ -185,6 +196,15 @@ class InternController extends Controller
                 'campus' => $campusName ?? $internProfile->campus,
             ]);
         });
+
+        AuditLog::record(
+            action: 'intern_profile_updated',
+            description: "Intern profile for {$internProfile->user?->name} updated by administrator",
+            auditable: $internProfile,
+            oldValues: $oldValues,
+            newValues: $request->validated(),
+            user: $request->user(),
+        );
 
         return back()->with('success', 'Intern updated.');
     }

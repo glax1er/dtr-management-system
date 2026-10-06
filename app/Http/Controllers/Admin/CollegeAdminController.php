@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Concerns\NotifiesSuperAdmins;
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Campus;
 use App\Models\College;
 use App\Models\CollegeAdminProfile;
@@ -253,6 +254,14 @@ class CollegeAdminController extends Controller
             );
         });
 
+        AuditLog::record(
+            action: 'admin_account_updated',
+            description: "College Admin account {$user->name} updated by administrator",
+            auditable: $user,
+            newValues: $user->fresh()->only(['name', 'email', 'role', 'college_id', 'is_active']),
+            user: $request->user(),
+        );
+
         $this->notifySuperAdminsOfAdminChange(
             CollegeAdminAccountNotification::EVENT_UPDATED,
             $user->fresh()->loadMissing('college'),
@@ -278,9 +287,19 @@ class CollegeAdminController extends Controller
             ]);
         }
 
+        $oldActive = $user->is_active;
         $user->update(['is_active' => ! $user->is_active]);
 
         $statusText = $user->is_active ? 'activated' : 'deactivated';
+
+        AuditLog::record(
+            action: 'admin_status_updated',
+            description: "College Admin {$user->name} {$statusText} by administrator",
+            auditable: $user,
+            oldValues: ['is_active' => $oldActive],
+            newValues: ['is_active' => $user->is_active],
+            user: $request->user(),
+        );
 
         $event = $user->is_active
             ? CollegeAdminAccountNotification::EVENT_ACTIVATED
@@ -310,6 +329,19 @@ class CollegeAdminController extends Controller
         // Snapshot before deletion so the notification still has name/college data
         $deletedAdmin = $user->loadMissing('college');
         $actor = $request->user();
+
+        AuditLog::record(
+            action: 'admin_account_deleted',
+            description: "College Admin account {$user->name} deleted by administrator",
+            auditable: $user,
+            oldValues: [
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'college_id' => $user->college_id,
+            ],
+            user: $actor,
+        );
 
         DB::transaction(function () use ($user) {
             $user->collegeAdminProfile?->delete();

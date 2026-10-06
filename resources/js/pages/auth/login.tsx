@@ -2,7 +2,9 @@ import { Form, Head, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import ForgotPasswordDialog from '@/components/forgot-password-dialog';
 import InputError from '@/components/input-error';
+import PasskeyVerify from '@/components/passkey-verify';
 import PasswordInput from '@/components/password-input';
+
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -71,6 +73,8 @@ export default function Login({
                     <span className="leading-relaxed">{status}</span>
                 </div>
             )}
+
+            <PasskeyVerify />
 
             <Form
                 {...store.form()}

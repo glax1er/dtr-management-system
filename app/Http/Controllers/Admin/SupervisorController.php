@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreOjtSupervisorRequest;
 use App\Http\Requests\Admin\StoreSupervisorRequest;
 use App\Http\Requests\Admin\UpdateSupervisorRequest;
+use App\Models\AuditLog;
 use App\Models\Hte;
 use App\Models\Program;
 use App\Models\SupervisorProfile;
@@ -125,8 +126,18 @@ class SupervisorController extends Controller
             'status' => ['required', 'in:active,inactive'],
         ]);
 
+        $oldStatus = $supervisorProfile->status;
         $supervisorProfile->update(['status' => $validated['status']]);
         $supervisorProfile->user?->update(['is_active' => $validated['status'] === 'active']);
+
+        AuditLog::record(
+            action: 'supervisor_status_updated',
+            description: "Supervisor {$supervisorProfile->user?->name} status changed to {$validated['status']} by administrator",
+            auditable: $supervisorProfile,
+            oldValues: ['status' => $oldStatus],
+            newValues: ['status' => $validated['status']],
+            user: $request->user(),
+        );
 
         // Keep the HTE's stored contact_person in sync — an inactive
         // HTE supervisor should stop being listed as the contact.
@@ -242,6 +253,13 @@ class SupervisorController extends Controller
             }
         }
 
+        $oldValues = [
+            'name' => $supervisorProfile->user?->name,
+            'email' => $supervisorProfile->user?->email,
+            'hte_id' => $supervisorProfile->hte_id,
+            'program_id' => $supervisorProfile->program_id,
+        ];
+
         DB::transaction(function () use ($request, $supervisorProfile) {
             $supervisorProfile->user->update([
                 'name' => $request->validated('name'),
@@ -258,6 +276,15 @@ class SupervisorController extends Controller
             }
         });
 
+        AuditLog::record(
+            action: 'supervisor_account_updated',
+            description: "Supervisor {$supervisorProfile->user?->name} updated by administrator",
+            auditable: $supervisorProfile,
+            oldValues: $oldValues,
+            newValues: $request->validated(),
+            user: $request->user(),
+        );
+
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Supervisor updated.']);
 
         return back();
@@ -270,6 +297,14 @@ class SupervisorController extends Controller
         if ($supervisorProfile->status !== 'inactive') {
             return back()->with('error', 'Only inactive supervisors can be deleted.');
         }
+
+        AuditLog::record(
+            action: 'supervisor_account_archived',
+            description: "Supervisor {$supervisorProfile->user?->name} archived by administrator",
+            auditable: $supervisorProfile,
+            oldValues: ['status' => 'inactive'],
+            user: $request->user(),
+        );
 
         $supervisorProfile->delete();
 

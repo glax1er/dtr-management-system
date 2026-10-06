@@ -35,6 +35,8 @@ class Hte extends Model
 
     protected $casts = [
         'college_id' => 'integer',
+        'contact_number' => 'encrypted',
+        'contact_person' => 'encrypted',
         'created_at' => 'datetime',
     ];
 

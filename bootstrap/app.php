@@ -3,9 +3,11 @@
 use App\Http\Middleware\EnsureHteSupervisor;
 use App\Http\Middleware\EnsureOjtSupervisor;
 use App\Http\Middleware\EnsurePasswordIsChanged;
+use App\Http\Middleware\EnsureTwoFactorEnforced;
 use App\Http\Middleware\EnsureUserRole;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RequirePasswordForSensitiveActions;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -27,10 +29,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'hte-supervisor' => EnsureHteSupervisor::class,
             'ojt-supervisor' => EnsureOjtSupervisor::class,
             'password.changed' => EnsurePasswordIsChanged::class,
+            'admin.2fa' => EnsureTwoFactorEnforced::class,
+            'password.confirm.sensitive' => RequirePasswordForSensitiveActions::class,
         ]);
 
         $middleware->web(append: [
             SecurityHeaders::class,
+            \Illuminate\Session\Middleware\AuthenticateSession::class,
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
