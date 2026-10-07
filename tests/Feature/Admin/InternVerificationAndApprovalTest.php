@@ -303,4 +303,3 @@ test('super admin and college admin have distinct notification preferences', fun
     expect($this->superAdmin->fresh()->wantsNotification('all_intern_registrations'))->toBeTrue();
     expect($this->superAdmin->fresh()->wantsNotification('admin_management'))->toBeFalse();
 });
-

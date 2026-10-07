@@ -62,7 +62,10 @@ class ManualAttendanceController extends Controller
 
         $timezone = config('dtr.timezone');
 
-        $conflicts = collect($validated['dates'])
+        /** @var list<string> $dates */
+        $dates = $validated['dates'];
+
+        $conflicts = collect($dates)
             ->filter(function (string $date) use ($validated, $timezone) {
                 $start = Carbon::parse($date, $timezone)->startOfDay();
                 $end = Carbon::parse($date, $timezone)->endOfDay();
@@ -167,8 +170,11 @@ class ManualAttendanceController extends Controller
 
         $timezone = config('dtr.timezone');
 
+        /** @var list<array{date: string, time_in?: string|null, time_out?: string|null}> $entries */
+        $entries = $validated['entries'];
+
         $dates = array_values(array_unique(array_filter(
-            array_column($validated['entries'], 'date'),
+            array_column($entries, 'date'),
             'is_string',
         )));
         $oldLogs = AttendanceLog::where('intern_user_id', $validated['intern_user_id'])
@@ -183,8 +189,8 @@ class ManualAttendanceController extends Controller
             ->get(['id', 'scan_timestamp', 'kiosk_id', 'supervisor_user_id'])
             ->toArray();
 
-        DB::transaction(function () use ($validated, $timezone) {
-            foreach ($validated['entries'] as $entry) {
+        DB::transaction(function () use ($entries, $validated, $timezone) {
+            foreach ($entries as $entry) {
                 $start = Carbon::parse($entry['date'], $timezone)->startOfDay();
                 $end = Carbon::parse($entry['date'], $timezone)->endOfDay();
 
@@ -279,7 +285,7 @@ class ManualAttendanceController extends Controller
             description: "Supervisor manual attendance override for intern ID {$validated['intern_user_id']}",
             auditable: $internProfile,
             oldValues: ['replaced_logs' => $oldLogs],
-            newValues: ['entries' => $validated['entries']],
+            newValues: ['entries' => $entries],
             user: $request->user(),
         );
 

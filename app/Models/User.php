@@ -426,11 +426,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             return true;
         }
 
-        if ($this->passkeys()->exists()) {
-            return true;
-        }
-
-        return false;
+        return $this->passkeys()->exists();
     }
 
     public function isSupervisor(): bool

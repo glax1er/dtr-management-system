@@ -90,7 +90,7 @@ export default function Security(props: Props) {
 
             {/* Mandatory Security Enforcement Dialog (Non-dismissible) */}
             <TwoFactorEnforcementDialog
-                open={showEnforceDialog}
+                open={showEnforceDialog && isEnforced}
                 onSelectTwoFactor={handleSelectTwoFactor}
                 onSelectPasskey={handleSelectPasskey}
                 canManageTwoFactor={props.canManageTwoFactor}
