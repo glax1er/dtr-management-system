@@ -597,7 +597,7 @@ export default function InternSchedule({
                     <div className="space-y-4 lg:col-span-9">
                         {view === 'grid' ? (
                             /* ── GOOGLE CALENDAR GRID VIEW ────────────────────────── */
-                            <Card className="overflow-hidden border shadow-xs">
+                            <Card className="overflow-hidden border p-0 shadow-xs">
                                 <div className="flex flex-col">
                                     {/* Weekday Column Headers */}
                                     <div className="grid grid-cols-7 border-b bg-muted/40 text-center">
@@ -777,7 +777,7 @@ export default function InternSchedule({
                             </Card>
                         ) : (
                             /* ── TABLE VIEW (With NumberedPagination matching existing pages) ── */
-                            <Card className="overflow-hidden border shadow-xs">
+                            <Card className="overflow-hidden gap-0 border p-0 shadow-xs">
                                 <CardHeader className="border-b bg-card px-4 py-3 sm:px-6">
                                     <div className="flex items-center justify-between">
                                         <CardTitle className="text-base font-semibold">

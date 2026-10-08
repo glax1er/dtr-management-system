@@ -947,7 +947,7 @@ export default function InternDocuments({
                     </div>
                 ) : (
                     /* ── Table View ── */
-                    <Card>
+                    <Card className="overflow-hidden p-0 shadow-xs">
                         <CardContent className="p-0">
                             <Table>
                                 <TableHeader>
