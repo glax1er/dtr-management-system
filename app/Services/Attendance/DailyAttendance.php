@@ -28,7 +28,18 @@ final readonly class DailyAttendance
      */
     public function isOpen(): bool
     {
-        return $this->timeIn !== null && $this->timeOut === null;
+        if ($this->timeIn === null) {
+            return false;
+        }
+
+        if ($this->timeOut === null) {
+            return true;
+        }
+
+        $timezone = config('dtr.timezone');
+        $cutoff = Carbon::parse($this->date.' '.config('dtr.time_out_cutoff'), $timezone);
+
+        return $this->timeOut->clone()->setTimezone($timezone)->lt($cutoff);
     }
 
     /**

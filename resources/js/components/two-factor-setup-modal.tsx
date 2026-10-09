@@ -158,6 +158,7 @@ function TwoFactorVerificationStep({
         <Form
             {...confirm.form()}
             onSuccess={() => onClose()}
+            onError={() => setCode('')}
             resetOnError
             resetOnSuccess
         >
@@ -178,6 +179,7 @@ function TwoFactorVerificationStep({
                                 id="otp"
                                 name="code"
                                 maxLength={OTP_MAX_LENGTH}
+                                value={code}
                                 onChange={setCode}
                                 disabled={processing}
                                 pattern={REGEXP_ONLY_DIGITS}

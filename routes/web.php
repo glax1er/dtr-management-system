@@ -1,6 +1,11 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminManagementController;
 use App\Http\Controllers\Admin\ArchiveController;
+use App\Http\Controllers\Admin\AuditLogController;
+use App\Http\Controllers\Admin\CampusController;
+use App\Http\Controllers\Admin\CollegeAdminController;
+use App\Http\Controllers\Admin\CollegeController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\HteController;
 use App\Http\Controllers\Admin\InternApprovalController;
@@ -10,6 +15,7 @@ use App\Http\Controllers\Admin\ProgramController;
 use App\Http\Controllers\Admin\SchedulePeriodController as AdminScheduleController;
 use App\Http\Controllers\Admin\SupervisorController;
 use App\Http\Controllers\Auth\EmailVerificationCodeController;
+use App\Http\Controllers\Auth\FirstLoginPasswordController;
 use App\Http\Controllers\DocumentReviewController;
 use App\Http\Controllers\Intern\DashboardController as InternDashboardController;
 use App\Http\Controllers\Intern\DocumentController as InternDocumentController;
@@ -29,6 +35,8 @@ use App\Http\Controllers\Supervisor\ResolutionTicketController as SupervisorReso
 use App\Http\Controllers\Supervisor\SchedulePeriodController as SupervisorScheduleController;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
+use Laravel\Fortify\Http\Controllers\PasswordResetLinkController;
+use Laravel\Fortify\Http\Controllers\RegisteredUserController;
 
 Route::redirect('/', '/login')->name('home');
 
@@ -45,6 +53,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('notifications.index');
 
     Route::post('settings/profile-photo', [ProfilePhotoController::class, 'store'])
+        ->middleware('throttle:10,1')
         ->name('settings.profile-photo.store');
     Route::delete('settings/profile-photo', [ProfilePhotoController::class, 'destroy'])
         ->name('settings.profile-photo.destroy');
@@ -77,8 +86,42 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return redirect()->route(auth()->user()->homeRouteName());
     })->name('dashboard');
 
-    Route::middleware('role:'.User::ROLE_ADMIN)->prefix('admin')->name('admin.')->group(function () {
+    Route::middleware([
+        'role:'.User::ROLE_SUPER_ADMIN.','.User::ROLE_COLLEGE_ADMIN.','.User::ROLE_ADMIN,
+        'admin.2fa',
+    ])->prefix('admin')->name('admin.')->group(function () {
         Route::get('dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+        // Super Admin only: College Admin Management, Colleges & Campuses
+        Route::middleware('role:'.User::ROLE_SUPER_ADMIN)->group(function () {
+            Route::get('admins', [AdminManagementController::class, 'index'])->name('admins.index');
+            Route::post('admins', [AdminManagementController::class, 'store'])->name('admins.store');
+            Route::patch('admins/{user}', [AdminManagementController::class, 'update'])->name('admins.update');
+            Route::patch('admins/{user}/status', [AdminManagementController::class, 'updateStatus'])->name('admins.updateStatus');
+            Route::delete('admins/{user}', [AdminManagementController::class, 'destroy'])
+                ->middleware('password.confirm.sensitive')
+                ->name('admins.destroy');
+
+            Route::get('college-admins', [CollegeAdminController::class, 'index'])->name('college-admins.index');
+            Route::post('college-admins', [CollegeAdminController::class, 'store'])->name('college-admins.store');
+            Route::patch('college-admins/{user}', [CollegeAdminController::class, 'update'])->name('college-admins.update');
+            Route::patch('college-admins/{user}/status', [CollegeAdminController::class, 'updateStatus'])->name('college-admins.updateStatus');
+            Route::delete('college-admins/{user}', [CollegeAdminController::class, 'destroy'])
+                ->middleware('password.confirm.sensitive')
+                ->name('college-admins.destroy');
+
+            Route::get('colleges', [CollegeController::class, 'index'])->name('colleges.index');
+            Route::post('colleges', [CollegeController::class, 'store'])->name('colleges.store');
+            Route::patch('colleges/{college}', [CollegeController::class, 'update'])->name('colleges.update');
+            Route::patch('colleges/{college}/status', [CollegeController::class, 'updateStatus'])->name('colleges.updateStatus');
+            Route::delete('colleges/{college}', [CollegeController::class, 'destroy'])->name('colleges.destroy');
+
+            Route::get('campuses', [CampusController::class, 'index'])->name('campuses.index');
+            Route::post('campuses', [CampusController::class, 'store'])->name('campuses.store');
+            Route::patch('campuses/{campus}', [CampusController::class, 'update'])->name('campuses.update');
+            Route::patch('campuses/{campus}/status', [CampusController::class, 'updateStatus'])->name('campuses.updateStatus');
+            Route::delete('campuses/{campus}', [CampusController::class, 'destroy'])->name('campuses.destroy');
+        });
 
         Route::post('interns/{internProfile}/approve', [InternApprovalController::class, 'approve'])
             ->name('interns.approve');
@@ -112,7 +155,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('archives', [ArchiveController::class, 'index'])->name('archives.index');
         Route::post('archives/{type}/{id}/restore', [ArchiveController::class, 'restore'])->name('archives.restore');
-        Route::delete('archives/{type}/{id}', [ArchiveController::class, 'forceDelete'])->name('archives.forceDelete');
+        Route::delete('archives/{type}/{id}', [ArchiveController::class, 'forceDelete'])
+            ->middleware('password.confirm.sensitive')
+            ->name('archives.forceDelete');
 
         Route::patch('supervisors/{supervisorProfile}', [SupervisorController::class, 'update'])->name('supervisors.update');
         Route::delete('supervisors/{supervisorProfile}', [SupervisorController::class, 'destroy'])->name('supervisors.destroy');
@@ -125,14 +170,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('programs/{program}', [ProgramController::class, 'update'])->name('programs.update');
         Route::patch('programs/{program}/status', [ProgramController::class, 'updateStatus'])->name('programs.updateStatus');
         Route::delete('programs/{program}', [ProgramController::class, 'destroy'])->name('programs.destroy');
+
+        Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
     });
+
+    Route::delete('supervisor/document-templates/{documentTemplate}', [SupervisorDocumentTemplateController::class, 'destroy'])
+        ->middleware('role:'.User::ROLE_SUPERVISOR.','.User::ROLE_SUPER_ADMIN)
+        ->name('supervisor.document-templates.destroy');
 
     Route::middleware('role:'.User::ROLE_SUPERVISOR)->prefix('supervisor')->name('supervisor.')->group(function () {
         // Shared between both supervisor types
         Route::get('dashboard', [SupervisorDashboardController::class, 'index'])->name('dashboard');
         Route::get('interns', [InternsController::class, 'index'])->name('interns.index');
-        Route::get('interns/{internUserId}/completion-summary', [InternsController::class, 'completionSummary'])->name('interns.completion-summary');
-        Route::get('interns/{internUserId}/dtr-report', [InternsController::class, 'downloadInternDtr'])->name('interns.dtr-report');
+        Route::get('interns/{internUserId}/completion-summary', [InternsController::class, 'completionSummary'])
+            ->middleware('throttle:30,1')
+            ->name('interns.completion-summary');
+        Route::get('interns/{internUserId}/dtr-report', [InternsController::class, 'downloadInternDtr'])
+            ->middleware('throttle:15,1')
+            ->name('interns.dtr-report');
 
         // Only an OJT Supervisor oversees a whole program across every HTE,
         // so only they get document templates to manage.
@@ -140,8 +195,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('document-templates', [SupervisorDocumentTemplateController::class, 'index'])->name('document-templates.index');
             Route::post('document-templates', [SupervisorDocumentTemplateController::class, 'store'])->name('document-templates.store');
             Route::post('document-templates/{documentType}/update', [SupervisorDocumentTemplateController::class, 'update'])->name('document-templates.update');
-            Route::get('document-templates/{documentTemplate}/download', [SupervisorDocumentTemplateController::class, 'download'])->name('document-templates.download');
-            Route::delete('document-templates/{documentTemplate}', [SupervisorDocumentTemplateController::class, 'destroy'])->name('document-templates.destroy');
+            Route::get('document-templates/{documentTemplate}/download', [SupervisorDocumentTemplateController::class, 'download'])
+                ->middleware('throttle:20,1')
+                ->name('document-templates.download');
             Route::post('document-templates/{id}/restore', [SupervisorDocumentTemplateController::class, 'restore'])->name('document-templates.restore');
             Route::delete('document-templates/{id}/force', [SupervisorDocumentTemplateController::class, 'forceDelete'])->name('document-templates.forceDelete');
         });
@@ -163,7 +219,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('manual-attendance', [ManualAttendanceController::class, 'create'])->name('manual-attendance.create');
             Route::post('manual-attendance/check', [ManualAttendanceController::class, 'checkConflicts'])->name('manual-attendance.check');
             Route::post('manual-attendance/lookup', [ManualAttendanceController::class, 'lookup'])->name('manual-attendance.lookup');
-            Route::post('manual-attendance', [ManualAttendanceController::class, 'store'])->name('manual-attendance.store');
+            Route::post('manual-attendance', [ManualAttendanceController::class, 'store'])
+                ->middleware('throttle:30,1')
+                ->name('manual-attendance.store');
 
             Route::get('schedule', [SupervisorScheduleController::class, 'index'])->name('schedule.index');
             Route::post('schedule', [SupervisorScheduleController::class, 'store'])->name('schedule.store');
@@ -175,32 +233,71 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('role:'.User::ROLE_INTERN)->prefix('intern')->name('intern.')->group(function () {
         Route::get('dashboard', [InternDashboardController::class, 'index'])->name('dashboard');
         Route::get('schedule', [InternScheduleController::class, 'index'])->name('schedule.index');
-        Route::get('dtr-report', [DtrReportController::class, 'download'])->name('dtr-report.download');
+        Route::get('dtr-report', [DtrReportController::class, 'download'])
+            ->middleware('throttle:10,1')
+            ->name('dtr-report.download');
         Route::get('qr-code', [QrCodeImageController::class, 'show'])->name('qr-code.show');
 
         Route::post('resolution-tickets', [InternResolutionTicketController::class, 'store'])
+            ->middleware('throttle:10,1')
             ->name('resolution-tickets.store');
         Route::patch('resolution-tickets/{resolutionTicket}/cancel', [InternResolutionTicketController::class, 'cancel'])
             ->name('resolution-tickets.cancel');
 
         Route::get('documents', [InternDocumentController::class, 'index'])->name('documents.index');
-        Route::post('documents', [InternDocumentController::class, 'store'])->name('documents.store');
+        Route::post('documents', [InternDocumentController::class, 'store'])
+            ->middleware('throttle:10,1')
+            ->name('documents.store');
         Route::get('documents/{internDocument}/preview', [InternDocumentController::class, 'preview'])->name('documents.preview');
-        Route::get('documents/{internDocument}/download', [InternDocumentController::class, 'download'])->name('documents.download');
+        Route::get('documents/{internDocument}/download', [InternDocumentController::class, 'download'])
+            ->middleware('throttle:20,1')
+            ->name('documents.download');
         Route::delete('documents/{internDocument}', [InternDocumentController::class, 'destroy'])->name('documents.destroy');
-        Route::get('documents/templates/{documentTemplate}/download', [InternDocumentController::class, 'downloadTemplate'])->name('documents.template.download');
+        Route::get('documents/templates/{documentTemplate}/download', [InternDocumentController::class, 'downloadTemplate'])
+            ->middleware('throttle:20,1')
+            ->name('documents.template.download');
     });
 
-    Route::prefix('documents')->name('documents.')->group(function () {
-        Route::get('intern/{internUserId}', [DocumentReviewController::class, 'showInternDocuments'])->name('review.intern');
-        Route::get('{internDocument}/preview', [DocumentReviewController::class, 'preview'])->name('review.preview');
-        Route::get('{internDocument}/download', [DocumentReviewController::class, 'download'])->name('review.download');
-        Route::post('{internDocument}/approve', [DocumentReviewController::class, 'approve'])->name('review.approve');
-        Route::post('{internDocument}/reject', [DocumentReviewController::class, 'reject'])->name('review.reject');
+    Route::middleware('role:'.User::ROLE_SUPER_ADMIN.','.User::ROLE_COLLEGE_ADMIN.','.User::ROLE_ADMIN.','.User::ROLE_SUPERVISOR)
+        ->prefix('documents')
+        ->name('documents.')
+        ->group(function () {
+            Route::get('intern/{internUserId}', [DocumentReviewController::class, 'showInternDocuments'])->name('review.intern');
+            Route::get('{internDocument}/preview', [DocumentReviewController::class, 'preview'])->name('review.preview');
+            Route::get('{internDocument}/download', [DocumentReviewController::class, 'download'])
+                ->middleware('throttle:30,1')
+                ->name('review.download');
+            Route::post('{internDocument}/approve', [DocumentReviewController::class, 'approve'])
+                ->middleware(['role:'.User::ROLE_SUPERVISOR, 'throttle:30,1'])
+                ->name('review.approve');
+            Route::post('{internDocument}/reject', [DocumentReviewController::class, 'reject'])
+                ->middleware(['role:'.User::ROLE_SUPERVISOR, 'throttle:30,1'])
+                ->name('review.reject');
+        });
+
+    Route::middleware(['auth'])->group(function () {
+        Route::get('password/first-login', [FirstLoginPasswordController::class, 'show'])
+            ->name('password.first-login');
+        Route::post('password/first-login', [FirstLoginPasswordController::class, 'update'])
+            ->middleware('throttle:10,1')
+            ->name('password.first-login.update');
     });
 
 });
 
-Route::get('kiosk/{token}', [KioskScanController::class, 'show'])->name('kiosk.scan.show');
-Route::post('kiosk/{token}/scan', [KioskScanController::class, 'store'])->name('kiosk.scan.store');
+Route::get('kiosk/{token}', [KioskScanController::class, 'show'])
+    ->middleware('throttle:30,1')
+    ->name('kiosk.scan.show');
+Route::post('kiosk/{token}/scan', [KioskScanController::class, 'store'])
+    ->middleware('throttle:60,1')
+    ->name('kiosk.scan.store');
+
+Route::post('register', [RegisteredUserController::class, 'store'])
+    ->middleware(['guest:'.config('fortify.guard', 'web'), 'throttle:register'])
+    ->name('register.store');
+
+Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
+    ->middleware(['guest:'.config('fortify.guard', 'web'), 'throttle:forgot-password'])
+    ->name('password.email');
+
 require __DIR__.'/settings.php';

@@ -17,6 +17,7 @@ import { CompletionSummaryDialog } from '@/components/completion-summary-dialog'
 import { InternDocumentsDialog } from '@/components/intern-documents-dialog';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
 import {
@@ -43,6 +44,7 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDebounce } from '@/hooks/use-debounce';
+import { useInitials } from '@/hooks/use-initials';
 import { dashboard } from '@/routes';
 
 interface StudentRow {
@@ -103,6 +105,7 @@ export default function MyStudents({
     completedCount,
     inProgressCount,
 }: StudentsProps) {
+    const getInitials = useInitials();
     const [search, setSearch] = useState(filters.search ?? '');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const [view, setView] = useState<ViewMode>(() => {
@@ -363,30 +366,30 @@ export default function MyStudents({
                         {/* Table view */}
                         {view === 'table' && (
                             <div className="hidden sm:block">
-                                <Card>
+                                <Card className="overflow-hidden p-0 shadow-xs">
                                     <CardContent className="p-0">
                                         <Table>
-                                            <TableHeader>
+                                            <TableHeader className="bg-muted/40">
                                                 <TableRow>
-                                                    <TableHead className="px-6">
+                                                    <TableHead className="px-6 font-semibold">
                                                         Name
                                                     </TableHead>
-                                                    <TableHead className="px-4 text-center">
+                                                    <TableHead className="px-6 text-center font-semibold">
                                                         ID Number
                                                     </TableHead>
-                                                    <TableHead className="px-4">
+                                                    <TableHead className="px-6 font-semibold">
                                                         Assigned HTE
                                                     </TableHead>
-                                                    <TableHead className="px-4">
+                                                    <TableHead className="px-6 font-semibold">
                                                         Hours Rendered
                                                     </TableHead>
-                                                    <TableHead className="px-4 text-center">
+                                                    <TableHead className="px-6 text-center font-semibold">
                                                         Documents
                                                     </TableHead>
-                                                    <TableHead className="px-4 text-center">
+                                                    <TableHead className="px-6 text-center font-semibold">
                                                         Requirement Status
                                                     </TableHead>
-                                                    <TableHead className="px-6 text-center">
+                                                    <TableHead className="px-6 text-center font-semibold">
                                                         Actions
                                                     </TableHead>
                                                 </TableRow>
@@ -400,7 +403,7 @@ export default function MyStudents({
                                                             }
                                                             className="transition-colors hover:bg-muted/40"
                                                         >
-                                                            <TableCell className="px-6 py-3">
+                                                            <TableCell className="px-6 py-3.5">
                                                                 <p className="font-medium whitespace-nowrap text-foreground">
                                                                     {
                                                                         student.name
@@ -417,7 +420,7 @@ export default function MyStudents({
                                                                     }
                                                                 </p>
                                                             </TableCell>
-                                                            <TableCell className="px-4 py-3 text-center whitespace-nowrap">
+                                                            <TableCell className="px-6 py-3.5 text-center whitespace-nowrap">
                                                                 <Badge
                                                                     variant="outline"
                                                                     className="font-mono text-xs"
@@ -427,7 +430,7 @@ export default function MyStudents({
                                                                 </Badge>
                                                             </TableCell>
                                                             <TableCell
-                                                                className="max-w-[160px] truncate px-4 py-3"
+                                                                className="max-w-[160px] truncate px-6 py-3.5"
                                                                 title={
                                                                     student.hte_name
                                                                 }
@@ -438,7 +441,7 @@ export default function MyStudents({
                                                                     }
                                                                 </span>
                                                             </TableCell>
-                                                            <TableCell className="px-4 py-3 whitespace-nowrap">
+                                                            <TableCell className="px-6 py-3.5 whitespace-nowrap">
                                                                 <div className="flex min-w-[110px] flex-col gap-1">
                                                                     <div className="flex justify-between text-xs">
                                                                         <span className="font-medium text-foreground">
@@ -468,7 +471,7 @@ export default function MyStudents({
                                                                     </div>
                                                                 </div>
                                                             </TableCell>
-                                                            <TableCell className="px-4 py-3 text-center whitespace-nowrap">
+                                                            <TableCell className="px-6 py-3.5 text-center whitespace-nowrap">
                                                                 <StatusBadge
                                                                     status={
                                                                         student.docs_completed
@@ -482,7 +485,7 @@ export default function MyStudents({
                                                                     className="text-xs"
                                                                 />
                                                             </TableCell>
-                                                            <TableCell className="px-4 py-3 text-center whitespace-nowrap">
+                                                            <TableCell className="px-6 py-3.5 text-center whitespace-nowrap">
                                                                 <StatusBadge
                                                                     status={
                                                                         student.is_completed
@@ -501,7 +504,7 @@ export default function MyStudents({
                                                                     className="text-xs"
                                                                 />
                                                             </TableCell>
-                                                            <TableCell className="px-6 py-3 text-center whitespace-nowrap">
+                                                            <TableCell className="px-6 py-3.5 text-center whitespace-nowrap">
                                                                 <div className="flex items-center justify-center gap-1.5">
                                                                     <CompletionSummaryDialog
                                                                         internUserId={
@@ -529,6 +532,13 @@ export default function MyStudents({
                                                 )}
                                             </TableBody>
                                         </Table>
+                                        <NumberedPagination
+                                            meta={students}
+                                            itemLabel="intern"
+                                            onPageChange={goToPage}
+                                            onPerPageChange={changePerPage}
+                                            idPrefix="students-table-per-page"
+                                        />
                                     </CardContent>
                                 </Card>
                             </div>
@@ -536,129 +546,160 @@ export default function MyStudents({
 
                         {/* Grid view */}
                         {view === 'grid' && (
-                            <div className="hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3">
-                                {students.data.map((student) => (
-                                    <Card
-                                        key={student.intern_user_id}
-                                        className="flex flex-col justify-between shadow-2xs transition-all duration-200 hover:border-primary/30"
-                                    >
-                                        <CardHeader className="pb-3">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div className="min-w-0">
-                                                    <CardTitle className="truncate text-base font-semibold text-foreground">
-                                                        {student.name}
-                                                    </CardTitle>
-                                                    <p
-                                                        className="mt-0.5 truncate text-xs text-muted-foreground"
-                                                        title={student.email}
-                                                    >
-                                                        {student.email}
-                                                    </p>
-                                                </div>
-                                                <Badge
-                                                    variant="outline"
-                                                    className="shrink-0 font-mono text-xs"
-                                                >
-                                                    {student.id_number ??
-                                                        'No ID'}
-                                                </Badge>
-                                            </div>
-                                        </CardHeader>
-                                        <CardContent className="flex flex-col gap-2.5 pt-0 text-xs text-muted-foreground">
-                                            {student.contact_number && (
-                                                <div className="flex items-center gap-2">
-                                                    <Phone className="size-3.5 shrink-0 text-muted-foreground/70" />
-                                                    <span>
-                                                        {student.contact_number}
-                                                    </span>
-                                                </div>
-                                            )}
-                                            <div className="flex items-center gap-2">
-                                                <Building2 className="size-3.5 shrink-0 text-muted-foreground/70" />
-                                                <span className="truncate font-medium text-foreground">
-                                                    {student.hte_name}
-                                                </span>
-                                            </div>
-                                            <div className="mt-1 flex items-center justify-between border-t pt-2.5">
-                                                <span className="flex items-center gap-1.5 text-muted-foreground">
-                                                    <Clock className="size-3.5 text-primary" />{' '}
-                                                    Rendered:
-                                                </span>
-                                                <span className="text-xs font-semibold text-foreground">
-                                                    {formatHours(
-                                                        student.total_hours,
-                                                    )}{' '}
-                                                    / {student.required_hours}h
-                                                    (
-                                                    {Math.round(
-                                                        student.progress_percent,
+                            <div className="hidden sm:flex sm:flex-col sm:gap-4">
+                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                    {students.data.map((student) => (
+                                        <Card
+                                            key={student.intern_user_id}
+                                            className="flex h-full flex-col justify-between rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:border-border hover:shadow-md"
+                                        >
+                                            <CardHeader className="pb-3">
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="flex min-w-0 flex-1 items-start gap-3">
+                                                        <Avatar className="size-9 shrink-0">
+                                                            <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
+                                                                {getInitials(
+                                                                    student.name,
+                                                                )}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                        <div className="min-w-0 flex-1">
+                                                            <CardTitle className="line-clamp-1 text-base font-semibold text-foreground">
+                                                                {student.name}
+                                                            </CardTitle>
+                                                            <p
+                                                                className="mt-0.5 truncate text-xs text-muted-foreground"
+                                                                title={
+                                                                    student.email
+                                                                }
+                                                            >
+                                                                {student.email}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    {student.id_number && (
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="shrink-0 font-mono text-xs"
+                                                        >
+                                                            {student.id_number}
+                                                        </Badge>
                                                     )}
-                                                    %)
-                                                </span>
-                                            </div>
-                                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                                                <div
-                                                    className={`h-full rounded-full transition-all duration-300 ${
-                                                        student.hours_completed
-                                                            ? 'bg-emerald-500'
-                                                            : 'bg-primary'
-                                                    }`}
-                                                    style={{
-                                                        width: `${Math.min(100, student.progress_percent)}%`,
-                                                    }}
-                                                />
-                                            </div>
-                                            <div className="flex items-center justify-between gap-2 pt-1">
-                                                <StatusBadge
-                                                    status={
-                                                        student.docs_completed
-                                                            ? 'approved'
-                                                            : student.approved_docs_count >
-                                                                0
-                                                              ? 'pending_review'
-                                                              : 'not_submitted'
+                                                </div>
+                                            </CardHeader>
+                                            <CardContent className="flex-1 space-y-3 pb-3 text-xs">
+                                                <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <Building2 className="size-3.5 shrink-0 text-muted-foreground/70" />
+                                                        <span className="truncate font-medium text-foreground">
+                                                            {student.hte_name}
+                                                        </span>
+                                                    </div>
+                                                    {student.contact_number && (
+                                                        <div className="flex items-center gap-2 text-muted-foreground">
+                                                            <Phone className="size-3.5 shrink-0 text-muted-foreground/70" />
+                                                            <span className="truncate">
+                                                                {
+                                                                    student.contact_number
+                                                                }
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="space-y-2 pt-0.5">
+                                                    <div className="flex items-center justify-between text-xs">
+                                                        <span className="flex items-center gap-1.5 text-muted-foreground">
+                                                            <Clock className="size-3.5 text-primary" />{' '}
+                                                            Rendered:
+                                                        </span>
+                                                        <span className="font-semibold text-foreground">
+                                                            {formatHours(
+                                                                student.total_hours,
+                                                            )}{' '}
+                                                            /{' '}
+                                                            {
+                                                                student.required_hours
+                                                            }
+                                                            h (
+                                                            {Math.round(
+                                                                student.progress_percent,
+                                                            )}
+                                                            %)
+                                                        </span>
+                                                    </div>
+                                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                                                        <div
+                                                            className={`h-full rounded-full transition-all duration-300 ${
+                                                                student.hours_completed
+                                                                    ? 'bg-emerald-500'
+                                                                    : 'bg-primary'
+                                                            }`}
+                                                            style={{
+                                                                width: `${Math.min(100, student.progress_percent)}%`,
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <div className="flex items-center justify-between gap-2 pt-1">
+                                                        <StatusBadge
+                                                            status={
+                                                                student.docs_completed
+                                                                    ? 'approved'
+                                                                    : student.approved_docs_count >
+                                                                        0
+                                                                      ? 'pending_review'
+                                                                      : 'not_submitted'
+                                                            }
+                                                            label={`${student.approved_docs_count}/${student.total_required_docs_count} Docs`}
+                                                            className="px-2 py-0.5 text-[11px]"
+                                                        />
+                                                        <StatusBadge
+                                                            status={
+                                                                student.is_completed
+                                                                    ? 'approved'
+                                                                    : student.hours_completed
+                                                                      ? 'pending_review'
+                                                                      : 'active'
+                                                            }
+                                                            label={
+                                                                student.is_completed
+                                                                    ? 'Completed'
+                                                                    : student.hours_completed
+                                                                      ? 'Docs Pending'
+                                                                      : `${Math.round(student.progress_percent)}%`
+                                                            }
+                                                            className="px-2 py-0.5 text-[11px]"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                            <CardFooter className="flex items-center justify-end gap-2 border-t bg-muted/20 px-4 py-2.5">
+                                                <CompletionSummaryDialog
+                                                    internUserId={
+                                                        student.intern_user_id
                                                     }
-                                                    label={`${student.approved_docs_count}/${student.total_required_docs_count} Docs`}
-                                                    className="px-2 py-0.5 text-[11px]"
-                                                />
-                                                <StatusBadge
-                                                    status={
+                                                    internName={student.name}
+                                                    isCompleted={
                                                         student.is_completed
-                                                            ? 'approved'
-                                                            : student.hours_completed
-                                                              ? 'pending_review'
-                                                              : 'active'
                                                     }
-                                                    label={
-                                                        student.is_completed
-                                                            ? 'Completed'
-                                                            : student.hours_completed
-                                                              ? 'Docs Pending'
-                                                              : `${Math.round(student.progress_percent)}%`
-                                                    }
-                                                    className="px-2 py-0.5 text-[11px]"
                                                 />
-                                            </div>
-                                        </CardContent>
-                                        <CardFooter className="flex items-center justify-end gap-2 border-t bg-muted/20 px-4 py-2.5">
-                                            <CompletionSummaryDialog
-                                                internUserId={
-                                                    student.intern_user_id
-                                                }
-                                                internName={student.name}
-                                                isCompleted={
-                                                    student.is_completed
-                                                }
-                                            />
-                                            <InternDocumentsDialog
-                                                internUserId={
-                                                    student.intern_user_id
-                                                }
-                                                internName={student.name}
-                                            />
-                                        </CardFooter>
-                                    </Card>
-                                ))}
+                                                <InternDocumentsDialog
+                                                    internUserId={
+                                                        student.intern_user_id
+                                                    }
+                                                    internName={student.name}
+                                                />
+                                            </CardFooter>
+                                        </Card>
+                                    ))}
+                                </div>
+                                <NumberedPagination
+                                    meta={students}
+                                    itemLabel="intern"
+                                    onPageChange={goToPage}
+                                    onPerPageChange={changePerPage}
+                                    idPrefix="students-grid-per-page"
+                                />
                             </div>
                         )}
 
@@ -748,15 +789,14 @@ export default function MyStudents({
                                     </CardContent>
                                 </Card>
                             ))}
+                            <NumberedPagination
+                                meta={students}
+                                itemLabel="intern"
+                                onPageChange={goToPage}
+                                onPerPageChange={changePerPage}
+                                idPrefix="students-mobile-per-page"
+                            />
                         </div>
-
-                        <NumberedPagination
-                            meta={students}
-                            itemLabel="intern"
-                            onPageChange={goToPage}
-                            onPerPageChange={changePerPage}
-                            idPrefix="students-per-page"
-                        />
                     </>
                 )}
             </div>

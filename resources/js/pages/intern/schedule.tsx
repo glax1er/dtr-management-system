@@ -50,7 +50,11 @@ export interface CalendarDay {
     is_workday: boolean;
     expected_start_time: string | null;
     expected_start_time_formatted: string | null;
-    source_type: 'hte_override' | 'global_schedule' | 'default_schedule';
+    source_type:
+        | 'hte_override'
+        | 'college_schedule'
+        | 'global_schedule'
+        | 'default_schedule';
     source_label: string;
     period_id: number | null;
     period_name: string | null;
@@ -67,9 +71,10 @@ export interface PaginatedDays extends PaginationMeta {
 export interface SchedulePeriodItem {
     id: number;
     name: string;
-    scope: 'hte' | 'global';
+    scope: 'hte' | 'college' | 'global';
     scope_label: string;
     hte_name?: string | null;
+    college_name?: string | null;
     start_date: string;
     end_date: string;
     formatted_range: string;
@@ -93,6 +98,7 @@ export interface InternScheduleProps {
         restdays_count: number;
         total_days: number;
         hte_overrides_count: number;
+        college_periods_count?: number;
         global_periods_count: number;
     };
     hte: {
@@ -100,6 +106,7 @@ export interface InternScheduleProps {
         name: string;
     } | null;
     globalPeriods: SchedulePeriodItem[];
+    collegePeriods?: SchedulePeriodItem[];
     htePeriods: SchedulePeriodItem[];
     recentNotifications?: Array<{
         id: string;
@@ -109,6 +116,7 @@ export interface InternScheduleProps {
         scope: string;
         schedule_name: string | null;
         hte_name: string | null;
+        college_name?: string | null;
         schedule_period_id: number | null;
         created_at: string;
         created_at_human: string;
@@ -137,8 +145,9 @@ export default function InternSchedule({
     const [dayModalOpen, setDayModalOpen] = useState(false);
     const [search] = useState('');
 
-    // Checkbox Filters for Schedule Types (HTE, Global, Standard, Rest Days)
+    // Checkbox Filters for Schedule Types (HTE, College, Global, Standard, Rest Days)
     const [showHteSchedule, setShowHteSchedule] = useState(true);
+    const [showCollegeSchedule, setShowCollegeSchedule] = useState(true);
     const [showGlobalSchedule, setShowGlobalSchedule] = useState(true);
     const [showStandardSchedule, setShowStandardSchedule] = useState(true);
     const [showRestDays, setShowRestDays] = useState(true);
@@ -195,6 +204,7 @@ export default function InternSchedule({
                     'days',
                     'paginatedDays',
                     'stats',
+                    'collegePeriods',
                     'globalPeriods',
                     'htePeriods',
                 ],
@@ -272,6 +282,13 @@ export default function InternSchedule({
                 return false;
             }
 
+            if (
+                !showCollegeSchedule &&
+                day.source_type === 'college_schedule'
+            ) {
+                return false;
+            }
+
             if (!showGlobalSchedule && day.source_type === 'global_schedule') {
                 return false;
             }
@@ -308,6 +325,7 @@ export default function InternSchedule({
     }, [
         paginatedDays.data,
         showHteSchedule,
+        showCollegeSchedule,
         showGlobalSchedule,
         showStandardSchedule,
         showRestDays,
@@ -460,7 +478,11 @@ export default function InternSchedule({
                                                         'hte_override' &&
                                                     d.is_workday
                                                       ? 'font-semibold text-purple-700 hover:bg-purple-100 dark:text-purple-300 dark:hover:bg-purple-950/50'
-                                                      : 'text-foreground hover:bg-muted/70'
+                                                      : d.source_type ===
+                                                              'college_schedule' &&
+                                                          d.is_workday
+                                                        ? 'font-semibold text-emerald-700 hover:bg-emerald-100 dark:text-emerald-300 dark:hover:bg-emerald-950/50'
+                                                        : 'text-foreground hover:bg-muted/70'
                                                   : 'text-muted-foreground/35 hover:bg-muted/20',
                                         )}
                                     >
@@ -494,6 +516,24 @@ export default function InternSchedule({
                                         </span>
                                     </div>
                                     <span className="size-2.5 shrink-0 rounded-full bg-purple-600" />
+                                </label>
+
+                                {/* 🟢 College Schedule */}
+                                <label className="group flex cursor-pointer items-center justify-between select-none">
+                                    <div className="flex items-center gap-2">
+                                        <Checkbox
+                                            checked={showCollegeSchedule}
+                                            onCheckedChange={(checked) =>
+                                                setShowCollegeSchedule(
+                                                    Boolean(checked),
+                                                )
+                                            }
+                                        />
+                                        <span className="font-medium text-foreground transition-colors group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
+                                            College Schedule
+                                        </span>
+                                    </div>
+                                    <span className="size-2.5 shrink-0 rounded-full bg-emerald-600" />
                                 </label>
 
                                 {/* 🔵 Global OJT Schedule */}
@@ -598,6 +638,14 @@ export default function InternSchedule({
                                             }
 
                                             if (
+                                                !showCollegeSchedule &&
+                                                day.source_type ===
+                                                    'college_schedule'
+                                            ) {
+                                                isVisible = false;
+                                            }
+
+                                            if (
                                                 !showGlobalSchedule &&
                                                 day.source_type ===
                                                     'global_schedule'
@@ -679,9 +727,12 @@ export default function InternSchedule({
                                                                             'hte_override'
                                                                             ? 'border-l-3 border-l-purple-600 bg-purple-500/15 text-purple-700 hover:bg-purple-500/25 dark:border-l-purple-400 dark:text-purple-300'
                                                                             : day.source_type ===
-                                                                                'global_schedule'
-                                                                              ? 'border-l-3 border-l-blue-600 bg-blue-500/15 text-blue-700 hover:bg-blue-500/25 dark:border-l-blue-400 dark:text-blue-300'
-                                                                              : 'border-l-3 border-l-slate-400 bg-muted/80 text-foreground hover:bg-muted dark:border-l-slate-500',
+                                                                                'college_schedule'
+                                                                              ? 'border-l-3 border-l-emerald-600 bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/25 dark:border-l-emerald-400 dark:text-emerald-300'
+                                                                              : day.source_type ===
+                                                                                  'global_schedule'
+                                                                                ? 'border-l-3 border-l-blue-600 bg-blue-500/15 text-blue-700 hover:bg-blue-500/25 dark:border-l-blue-400 dark:text-blue-300'
+                                                                                : 'border-l-3 border-l-slate-400 bg-muted/80 text-foreground hover:bg-muted dark:border-l-slate-500',
                                                                     )}
                                                                 >
                                                                     <span className="truncate font-bold tabular-nums">
@@ -693,6 +744,12 @@ export default function InternSchedule({
                                                                         'hte_override' && (
                                                                         <span className="hidden truncate text-[9px] font-semibold opacity-85 sm:inline-block">
                                                                             HTE
+                                                                        </span>
+                                                                    )}
+                                                                    {day.source_type ===
+                                                                        'college_schedule' && (
+                                                                        <span className="hidden truncate text-[9px] font-semibold opacity-85 sm:inline-block">
+                                                                            College
                                                                         </span>
                                                                     )}
                                                                     {day.source_type ===
@@ -873,22 +930,28 @@ export default function InternSchedule({
                                             'hte_override'
                                                 ? 'hte_override'
                                                 : selectedDay.source_type ===
-                                                    'global_schedule'
-                                                  ? 'global_schedule'
-                                                  : selectedDay.is_workday
-                                                    ? 'work_day'
-                                                    : 'rest_day'
+                                                    'college_schedule'
+                                                  ? 'college_schedule'
+                                                  : selectedDay.source_type ===
+                                                      'global_schedule'
+                                                    ? 'global_schedule'
+                                                    : selectedDay.is_workday
+                                                      ? 'work_day'
+                                                      : 'rest_day'
                                         }
                                         label={
                                             selectedDay.source_type ===
                                             'hte_override'
                                                 ? 'HTE Time Schedule'
                                                 : selectedDay.source_type ===
-                                                    'global_schedule'
-                                                  ? 'Global OJT Schedule'
-                                                  : selectedDay.is_workday
-                                                    ? 'Work Day'
-                                                    : 'Rest Day'
+                                                    'college_schedule'
+                                                  ? selectedDay.source_label
+                                                  : selectedDay.source_type ===
+                                                      'global_schedule'
+                                                    ? 'Global OJT Schedule'
+                                                    : selectedDay.is_workday
+                                                      ? 'Work Day'
+                                                      : 'Rest Day'
                                         }
                                         className="px-2.5 py-0.5 text-xs"
                                     />
@@ -918,7 +981,10 @@ export default function InternSchedule({
                                                     ? selectedDay.source_type ===
                                                       'hte_override'
                                                         ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400'
-                                                        : 'bg-primary/10 text-primary'
+                                                        : selectedDay.source_type ===
+                                                            'college_schedule'
+                                                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                                                          : 'bg-primary/10 text-primary'
                                                     : 'bg-muted text-muted-foreground',
                                             )}
                                         >

@@ -1,17 +1,20 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
-    Building,
-    CalendarClock,
-    Paperclip,
-    FileWarning,
-    GraduationCap,
-    LayoutGrid,
-    MonitorSmartphone,
-    Users,
-    PenLine,
     Archive,
     BookOpen,
+    Building,
+    CalendarClock,
     FileStack,
+    FileWarning,
+    GraduationCap,
+    Landmark,
+    LayoutGrid,
+    MapPin,
+    MonitorSmartphone,
+    Paperclip,
+    PenLine,
+    ShieldCheck,
+    Users,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -29,6 +32,8 @@ import {
 import { dashboard } from '@/routes';
 import type { NavItem, PageProps } from '@/types';
 
+// ─── Nav item definitions ─────────────────────────────────────────────────────
+
 const adminNavItems: NavItem[] = [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
     { title: 'Interns', href: '/admin/interns', icon: GraduationCap },
@@ -40,9 +45,14 @@ const adminNavItems: NavItem[] = [
     { title: 'Archives', href: '/admin/archives', icon: Archive },
 ];
 
-// HTE Supervisors get a dashboard; OJT Supervisors don't (they only
-// view/monitor their program's roster) so "My Interns" is their landing
-// page and there's no Dashboard link to show.
+const superAdminNavItems: NavItem[] = [
+    { title: 'Admins', href: '/admin/admins', icon: ShieldCheck },
+    { title: 'Colleges', href: '/admin/colleges', icon: Landmark },
+    { title: 'Campuses', href: '/admin/campuses', icon: MapPin },
+];
+
+// HTE Supervisors get a full dashboard; OJT Supervisors only monitor their
+// program's roster, so "My Interns" is their landing page with no Dashboard link.
 const hteSupervisorNavItems: NavItem[] = [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
     { title: 'My Interns', href: '/supervisor/interns', icon: GraduationCap },
@@ -50,11 +60,7 @@ const hteSupervisorNavItems: NavItem[] = [
 ];
 
 const ojtSupervisorNavItems: NavItem[] = [
-    {
-        title: 'My Interns',
-        href: '/supervisor/interns',
-        icon: GraduationCap,
-    },
+    { title: 'My Interns', href: '/supervisor/interns', icon: GraduationCap },
     {
         title: 'Document Templates',
         href: '/supervisor/document-templates',
@@ -63,18 +69,14 @@ const ojtSupervisorNavItems: NavItem[] = [
     { title: 'HTEs', href: '/supervisor/htes', icon: Building },
 ];
 
-// Only HTE Supervisors resolve time conflicts — an OJT Supervisor's role
-// is viewing/monitoring interns across the whole program, so this link
-// (and the page/routes behind it) stays hidden for them.
+// Only HTE Supervisors can resolve time conflicts and enter manual attendance —
+// these are scoped to a supervisor's own HTE (null for OJT Supervisors).
 const resolutionTicketsNavItem: NavItem = {
     title: 'Resolution Tickets',
     href: '/supervisor/resolution-tickets',
     icon: FileWarning,
 };
 
-// Same reasoning as resolutionTicketsNavItem — manual attendance entry is
-// scoped to the supervisor's own HTE (ManualAttendanceController reads
-// supervisorProfile->hte_id directly), which is null for OJT Supervisors.
 const manualAttendanceNavItem: NavItem = {
     title: 'Manual Attendance',
     href: '/supervisor/manual-attendance',
@@ -89,10 +91,19 @@ const internNavItems: NavItem[] = [
 
 const footerNavItems: NavItem[] = [];
 
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
+
 export function AppSidebar() {
     const { auth } = usePage<PageProps>().props;
 
     const isOjtSupervisor = auth.user.supervisor_type === 'ojt';
+    const isSuperAdmin =
+        auth.user.role === 'super_admin' || Boolean(auth.user.is_super_admin);
+    const isCollegeAdmin =
+        auth.user.role === 'college_admin' ||
+        Boolean(auth.user.is_college_admin);
+    const isAdmin =
+        isSuperAdmin || isCollegeAdmin || auth.user.role === 'admin';
 
     const supervisorNavItems: NavItem[] = isOjtSupervisor
         ? ojtSupervisorNavItems
@@ -102,12 +113,26 @@ export function AppSidebar() {
               manualAttendanceNavItem,
           ];
 
-    const mainNavItems =
-        auth.user.role === 'admin'
-            ? adminNavItems
-            : auth.user.role === 'supervisor'
-              ? supervisorNavItems
-              : internNavItems;
+    // Super admins see their institutional items after Dashboard, before the
+    // rest of the admin items. This keeps the nav grouped logically.
+    const currentAdminNavItems: NavItem[] = isSuperAdmin
+        ? [adminNavItems[0], ...superAdminNavItems, ...adminNavItems.slice(1)]
+        : adminNavItems;
+
+    const mainNavItems = isAdmin
+        ? currentAdminNavItems
+        : auth.user.role === 'supervisor'
+          ? supervisorNavItems
+          : internNavItems;
+
+    // For super admins, pass group labels so NavMain can render a visual separator
+    const superAdminGroupLabel = isSuperAdmin
+        ? {
+              startIndex: 1,
+              endIndex: superAdminNavItems.length,
+              label: 'Administration',
+          }
+        : undefined;
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -122,9 +147,14 @@ export function AppSidebar() {
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarHeader>
+
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                <NavMain
+                    items={mainNavItems}
+                    superAdminGroup={superAdminGroupLabel}
+                />
             </SidebarContent>
+
             <SidebarFooter>
                 <NavFooter items={footerNavItems} className="mt-auto" />
                 <NavUser />

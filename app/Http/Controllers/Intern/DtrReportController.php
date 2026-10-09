@@ -31,7 +31,7 @@ class DtrReportController extends Controller
     public function download(DownloadDtrReportRequest $request): Response
     {
         $user = $request->user();
-        $profile = $user->internProfile()->with(['hte', 'program'])->firstOrFail();
+        $profile = $user->internProfile()->with(['hte' => fn ($q) => $q->withTrashed(), 'program'])->firstOrFail();
         $timezone = config('dtr.timezone');
 
         $validated = $request->validated();

@@ -14,7 +14,9 @@ class NotificationController extends Controller
     {
         $user = $request->user();
 
-        $dbNotifications = $user->notifications()
+        $visibleNotifications = $user->visibleNotifications();
+
+        $dbNotifications = $visibleNotifications
             ->latest()
             ->get()
             ->map(fn ($notification) => [
@@ -30,7 +32,9 @@ class NotificationController extends Controller
             ->values()
             ->all();
 
-        $unreadCount = $user->unreadNotifications()->count();
+        $unreadCount = $user->visibleNotifications()
+            ->whereNull('read_at')
+            ->count();
 
         return Inertia::render('notifications/index', [
             'notifications' => [
@@ -71,7 +75,10 @@ class NotificationController extends Controller
 
     public function markAllRead(Request $request): RedirectResponse
     {
-        $request->user()->unreadNotifications->markAsRead();
+        $request->user()->visibleNotifications()
+            ->whereNull('read_at')
+            ->get()
+            ->markAsRead();
 
         return back();
     }
