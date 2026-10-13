@@ -1,5 +1,10 @@
 <?php
 
+use App\Models\Hte;
+use App\Models\InternProfile;
+use App\Models\Kiosk;
+use App\Models\Program;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -44,7 +49,49 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
-{
-    // ..
+if (! function_exists('makeHte')) {
+    function makeHte(string $name = 'CIC'): Hte
+    {
+        return Hte::create(['hte_name' => $name]);
+    }
+}
+
+if (! function_exists('makeProgram')) {
+    function makeProgram(): Program
+    {
+        return Program::create(['program_name' => 'BSIT-BTM '.uniqid()]);
+    }
+}
+
+if (! function_exists('makeIntern')) {
+    function makeIntern(Hte $hte, string $status = 'approved', ?string $qrCodeValue = null): User
+    {
+        $user = User::factory()->create(['role' => 'intern']);
+
+        InternProfile::create([
+            'user_id' => $user->id,
+            'id_number' => 'ID-'.$user->id,
+            'sex' => 'male',
+            'hte_id' => $hte->hte_id,
+            'program_id' => makeProgram()->program_id,
+            'status' => $status,
+            'qr_code_value' => $qrCodeValue ?? 'QR-'.$user->id,
+            'registered_at' => now(),
+            'approved_at' => $status === 'approved' ? now() : null,
+            'privacy_accepted_at' => now(),
+        ]);
+
+        return $user;
+    }
+}
+
+if (! function_exists('makeKiosk')) {
+    function makeKiosk(): Kiosk
+    {
+        return Kiosk::create([
+            'name' => 'Main Kiosk',
+            'device_token' => Kiosk::generateToken(),
+            'is_active' => true,
+        ]);
+    }
 }

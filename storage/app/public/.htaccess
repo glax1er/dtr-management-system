@@ -1,0 +1,8 @@
+# Deny direct execution of scripts in public storage
+<FilesMatch "(?i)\.(php|phar|phtml|php3|php4|php5|php7|php8|phps|cgi|pl|sh|bash|py|exe|bat|cmd)$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+# Disable directory indexing and execution of CGI
+Options -Indexes -ExecCGI

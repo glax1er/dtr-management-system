@@ -18,6 +18,8 @@ class ScheduleUpdatedNotification extends Notification
 
     public const SCOPE_GLOBAL = 'global';
 
+    public const SCOPE_COLLEGE = 'college';
+
     public const SCOPE_HTE = 'hte';
 
     public function __construct(
@@ -25,6 +27,7 @@ class ScheduleUpdatedNotification extends Notification
         public string $scope = self::SCOPE_GLOBAL,
         public ?string $scheduleName = null,
         public ?string $hteName = null,
+        public ?string $collegeName = null,
         public ?User $actor = null,
         public ?int $schedulePeriodId = null,
         public ?string $startDate = null,
@@ -60,6 +63,18 @@ class ScheduleUpdatedNotification extends Notification
             $href = '/intern/schedule'.($this->startDate && $this->action !== self::ACTION_DELETED
                 ? '?month='.substr($this->startDate, 0, 7).'&highlight_date='.$this->startDate
                 : '');
+        } elseif ($this->scope === self::SCOPE_COLLEGE) {
+            $collegeLabel = $this->collegeName ? "for {$this->collegeName}" : '';
+            $title = match ($this->action) {
+                self::ACTION_CREATED => 'New College OJT Schedule Created',
+                self::ACTION_DELETED => 'College OJT Schedule Removed',
+                default => 'College OJT Schedule Updated',
+            };
+            $message = trim("The college OJT schedule {$collegeLabel} ({$name}) has been {$actionVerb} by the administrator.");
+
+            $href = $isSupervisor
+                ? ('/supervisor/schedule'.($this->schedulePeriodId && $this->action !== self::ACTION_DELETED ? '?highlight='.$this->schedulePeriodId : ''))
+                : ('/intern/schedule'.($this->startDate && $this->action !== self::ACTION_DELETED ? '?month='.substr($this->startDate, 0, 7).'&highlight_date='.$this->startDate : ''));
         } else {
             $title = match ($this->action) {
                 self::ACTION_CREATED => 'New OJT Schedule Created',
@@ -82,6 +97,7 @@ class ScheduleUpdatedNotification extends Notification
             'scope' => $this->scope,
             'schedule_name' => $this->scheduleName,
             'hte_name' => $this->hteName,
+            'college_name' => $this->collegeName,
             'schedule_period_id' => $this->schedulePeriodId,
             'start_date' => $this->startDate,
         ];

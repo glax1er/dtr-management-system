@@ -4,6 +4,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Features;
+use PragmaRX\Google2FA\Google2FA;
 
 test('security page is displayed', function () {
     $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
@@ -101,4 +102,58 @@ test('correct password must be provided to update password', function () {
     $response
         ->assertSessionHasErrors('current_password')
         ->assertRedirect(route('security.edit'));
+});
+
+test('two factor authentication can be enabled and confirmed even after subsequent page visits and partial reloads', function () {
+    $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
+
+    Features::twoFactorAuthentication([
+        'confirm' => true,
+        'confirmPassword' => true,
+        'window' => 2,
+    ]);
+
+    $user = User::factory()->create();
+
+    // 1. Enable 2FA
+    $this->actingAs($user)
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->post(route('two-factor.enable'));
+
+    $user->refresh();
+    expect($user->two_factor_secret)->not->toBeNull();
+    expect($user->two_factor_confirmed_at)->toBeNull();
+
+    // 2. Initial visit to security settings (loads page props)
+    $this->actingAs($user)
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->get(route('security.edit'))
+        ->assertOk();
+
+    // 3. Subsequent visit and Inertia partial reload (such as background notification polling)
+    $this->actingAs($user)
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->withHeaders(['X-Inertia-Partial-Data' => 'notifications'])
+        ->get(route('security.edit'))
+        ->assertOk();
+
+    // Verify secret has NOT been erased
+    $user->refresh();
+    expect($user->two_factor_secret)->not->toBeNull();
+
+    // 4. Confirm 2FA using a valid TOTP code
+    $decryptedSecret = decrypt($user->two_factor_secret);
+    $engine = new Google2FA;
+    $validCode = $engine->getCurrentOtp($decryptedSecret);
+
+    $this->actingAs($user)
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->post(route('two-factor.confirm'), [
+            'code' => $validCode,
+        ])
+        ->assertSessionHasNoErrors();
+
+    $user->refresh();
+    expect($user->two_factor_confirmed_at)->not->toBeNull();
+    expect($user->hasEnabledTwoFactorAuthentication())->toBeTrue();
 });

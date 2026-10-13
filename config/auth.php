@@ -114,4 +114,29 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Enforce Two-Factor Authentication for Administrative Roles
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, Super Admin, College Admin, and Admin users must have
+    | Two-Factor Authentication (or a Passkey) configured before accessing
+    | administrative dashboard and management routes.
+    |
+    */
+
+    'enforce_admin_2fa' => env('AUTH_ENFORCE_ADMIN_2FA', true),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Enforce Password Confirmation for Sensitive Administrative Actions
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, high-impact administrative actions (permanent data purge,
+    | admin account deletion) require password re-confirmation.
+    |
+    */
+
+    'enforce_password_confirm' => env('AUTH_ENFORCE_PASSWORD_CONFIRM', true),
+
 ];

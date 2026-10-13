@@ -1,4 +1,4 @@
-﻿import {
+import {
     ArrowRight,
     Award,
     Calendar,
@@ -14,7 +14,7 @@
     Timer,
     TrendingUp,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
@@ -105,6 +105,7 @@ interface CompletionSummaryDialogProps {
     internName: string;
     isCompleted?: boolean;
     trigger?: React.ReactNode;
+    defaultOpen?: boolean;
 }
 
 export function CompletionSummaryDialog({
@@ -112,12 +113,29 @@ export function CompletionSummaryDialog({
     internName,
     isCompleted = false,
     trigger,
+    defaultOpen = false,
 }: CompletionSummaryDialogProps) {
-    const [isOpen, setIsOpen] = useState(false);
+    const initialOpen = useCallback(() => {
+        if (defaultOpen) {
+            return true;
+        }
+
+        if (typeof window === 'undefined') {
+            return false;
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const openSummary = params.get('open_summary') === '1';
+        const targetInternId = params.get('doc_intern') || params.get('highlight');
+
+        return openSummary && targetInternId === String(internUserId);
+    }, [defaultOpen, internUserId]);
+
+    const [isOpen, setIsOpen] = useState(initialOpen);
     const [isLoading, setIsLoading] = useState(false);
     const [summary, setSummary] = useState<CompletionSummaryData | null>(null);
 
-    const fetchSummary = async () => {
+    const fetchSummary = useCallback(async () => {
         setIsLoading(true);
 
         try {
@@ -142,7 +160,17 @@ export function CompletionSummaryDialog({
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [internUserId]);
+
+    useEffect(() => {
+        if (!isOpen) {
+            return;
+        }
+
+        // Initial dialog open state and URL-driven opens need to trigger a fetch as soon as the dialog becomes visible.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        fetchSummary();
+    }, [isOpen, fetchSummary]);
 
     const handleOpenChange = (open: boolean) => {
         setIsOpen(open);

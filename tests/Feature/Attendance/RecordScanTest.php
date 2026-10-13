@@ -3,53 +3,9 @@
 use App\Actions\Attendance\RecordScan;
 use App\Exceptions\Attendance\InvalidScanException;
 use App\Models\AttendanceLog;
-use App\Models\Hte;
-use App\Models\InternProfile;
-use App\Models\Kiosk;
-use App\Models\Program;
-use App\Models\User;
 use App\Support\Attendance\ScanLabel;
 use App\Support\Attendance\ScanRejectionReason;
 use Illuminate\Support\Carbon;
-
-function makeHte(string $name = 'CIC'): Hte
-{
-    return Hte::create(['hte_name' => $name]);
-}
-
-function makeProgram(): Program
-{
-    return Program::create(['program_name' => 'BSIT-BTM '.uniqid()]);
-}
-
-function makeIntern(Hte $hte, string $status = 'approved', ?string $qrCodeValue = null): User
-{
-    $user = User::factory()->create(['role' => 'intern']);
-
-    InternProfile::create([
-        'user_id' => $user->id,
-        'id_number' => 'ID-'.$user->id,
-        'sex' => 'male',
-        'hte_id' => $hte->hte_id,
-        'program_id' => makeProgram()->program_id,
-        'status' => $status,
-        'qr_code_value' => $qrCodeValue ?? 'QR-'.$user->id,
-        'registered_at' => now(),
-        'approved_at' => $status === 'approved' ? now() : null,
-        'privacy_accepted_at' => now(),
-    ]);
-
-    return $user;
-}
-
-function makeKiosk(): Kiosk
-{
-    return Kiosk::create([
-        'name' => 'Main Kiosk',
-        'device_token' => Kiosk::generateToken(),
-        'is_active' => true,
-    ]);
-}
 
 beforeEach(function () {
     $this->hte = makeHte();

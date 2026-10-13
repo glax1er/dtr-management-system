@@ -29,14 +29,18 @@ class AdminSeeder extends Seeder
             return;
         }
 
-        User::firstOrCreate(
+        $admin = User::firstOrCreate(
             ['email' => $email ?? 'admin@dtr.test'],
             [
-                'role' => User::ROLE_ADMIN,
+                'role' => User::ROLE_SUPER_ADMIN,
                 'name' => 'System Admin',
                 'password' => $password ?? 'password',
                 'email_verified_at' => now(),
             ],
         );
+
+        if ($admin->role === User::ROLE_ADMIN) {
+            $admin->update(['role' => User::ROLE_SUPER_ADMIN]);
+        }
     }
 }

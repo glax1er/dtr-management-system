@@ -1,9 +1,12 @@
 <?php
 
 use App\Models\AttendanceLog;
+use App\Models\Campus;
+use App\Models\College;
 use App\Models\Hte;
 use App\Models\InternProfile;
 use App\Models\Program;
+use App\Models\ResolutionTicket;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -19,6 +22,7 @@ function makeInternProfile(Hte $hte, Program $program, string $status = 'approve
         'hte_id' => $hte->hte_id,
         'program_id' => $program->program_id,
         'status' => $status,
+        'registered_at' => Carbon::now(config('dtr.timezone')),
         'privacy_accepted_at' => now(),
     ]);
 }
@@ -91,4 +95,106 @@ test('the registrations trend sums same-day signups instead of listing one row p
             ->where('registrationsTrend.13.date', $todayKey)
             ->where('registrationsTrend.13.count', 2)
         );
+});
+
+test('super admin dashboard exposes institutional analytics for campuses, colleges, and admins', function () {
+    $superAdmin = User::factory()->create(['role' => User::ROLE_SUPER_ADMIN]);
+
+    $campus = Campus::create([
+        'name' => 'Main Campus '.uniqid(),
+        'code' => 'MC'.rand(10, 99),
+        'is_active' => true,
+    ]);
+
+    $college = College::create([
+        'name' => 'College of Engineering '.uniqid(),
+        'code' => 'CE'.rand(10, 99),
+        'campus_id' => $campus->id,
+        'campus' => $campus->name,
+        'is_active' => true,
+    ]);
+
+    $collegeAdmin = User::factory()->create([
+        'role' => User::ROLE_COLLEGE_ADMIN,
+        'college_id' => $college->id,
+        'is_active' => true,
+    ]);
+
+    $program = Program::create([
+        'college_id' => $college->id,
+        'program_name' => 'BSCE-'.uniqid(),
+        'is_active' => true,
+    ]);
+
+    $hte = Hte::create(['hte_name' => 'Civic Builders '.uniqid(), 'status' => 'active']);
+    makeInternProfile($hte, $program, 'approved');
+
+    $response = $this->actingAs($superAdmin)->get(route('admin.dashboard'));
+
+    $response->assertOk();
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('superAdminAnalytics.campuses.total', fn ($total) => $total >= 1)
+        ->where('superAdminAnalytics.colleges.total', fn ($total) => $total >= 1)
+        ->where('superAdminAnalytics.admins.total', fn ($total) => $total >= 2)
+        ->where('superAdminAnalytics.admins.super_admins', fn ($sa) => $sa >= 1)
+        ->where('superAdminAnalytics.admins.college_admins', fn ($ca) => $ca >= 1)
+        ->where('superAdminAnalytics.admins.coverage_percent', fn ($cp) => $cp > 0)
+    );
+});
+
+test('college admin dashboard does not expose superAdminAnalytics', function () {
+    $college = College::create([
+        'name' => 'Arts & Sciences '.uniqid(),
+        'code' => 'AS'.rand(10, 99),
+        'is_active' => true,
+    ]);
+
+    $collegeAdmin = User::factory()->create([
+        'role' => User::ROLE_COLLEGE_ADMIN,
+        'college_id' => $college->id,
+    ]);
+
+    $response = $this->actingAs($collegeAdmin)->get(route('admin.dashboard'));
+
+    $response->assertOk();
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('superAdminAnalytics', null)
+    );
+});
+
+test('admin dashboard exposes dedicated interns and attendance metrics, trend, tickets, and recent scans', function () {
+    $admin = User::factory()->create(['role' => User::ROLE_SUPER_ADMIN]);
+
+    $hte = Hte::create(['hte_name' => 'Tech Corp', 'status' => 'active']);
+    $program = Program::create(['program_name' => 'BSIT-'.uniqid()]);
+
+    $intern = makeInternProfile($hte, $program, 'approved');
+
+    AttendanceLog::create([
+        'intern_user_id' => $intern->user_id,
+        'scan_timestamp' => Carbon::now(config('dtr.timezone'))->setTime(8, 30, 0),
+    ]);
+
+    ResolutionTicket::create([
+        'intern_user_id' => $intern->user_id,
+        'date' => Carbon::now(config('dtr.timezone'))->toDateString(),
+        'reason' => 'Kiosk issue',
+        'status' => ResolutionTicket::STATUS_PENDING,
+    ]);
+
+    $response = $this->actingAs($admin)->get(route('admin.dashboard'));
+
+    $response->assertOk();
+    $response->assertInertia(fn (Assert $page) => $page
+        ->component('admin/dashboard')
+        ->where('scansToday', 1)
+        ->where('scansThisWeek', 1)
+        ->where('pendingTickets', 1)
+        ->has('scansTrend', 14)
+        ->has('ticketBreakdown', 3)
+        ->has('topInterns', 1)
+        ->where('topInterns.0.count', 1)
+        ->has('recentScans.data', 1)
+        ->where('recentScans.data.0.label', 'time_in')
+    );
 });

@@ -290,7 +290,7 @@ test('an HTE supervisor receives pending resolution tickets in global notificati
         ->assertInertia(fn ($page) => $page
             ->where('notifications.count', 1)
             ->where('notifications.items.0.title', "Resolution request from {$intern->name}")
-            ->where('notifications.items.0.href', '/supervisor/resolution-tickets')
+            ->where('notifications.items.0.href', "/supervisor/resolution-tickets?highlight={$ticket->id}")
         );
 });
 
@@ -299,6 +299,9 @@ test('an intern receives a notification when their resolution request is approve
     $program = Program::create(['program_name' => 'BSIT-'.uniqid()]);
     [$intern, $ticket, $resolver] = makeInternWithResolvedTicket($hte, $program, ResolutionTicket::STATUS_APPROVED);
     $intern->notify(new ResolutionTicketNotification($ticket, ResolutionTicketNotification::REQUEST_APPROVED));
+
+    $month = substr($ticket->date->toDateString(), 0, 7);
+    $date = $ticket->date->toDateString();
 
     $this->actingAs($intern)
         ->get(route('intern.dashboard'))
@@ -309,7 +312,7 @@ test('an intern receives a notification when their resolution request is approve
                 'notifications.items.0.title',
                 'Your resolution request was approved',
             )
-            ->where('notifications.items.0.href', '/intern/dashboard')
+            ->where('notifications.items.0.href', "/intern/dashboard?month={$month}&highlight_date={$date}&highlight_ticket={$ticket->id}")
         );
 });
 
@@ -324,6 +327,9 @@ test('an intern receives a notification when their resolution request is rejecte
     );
     $intern->notify(new ResolutionTicketNotification($ticket, ResolutionTicketNotification::REQUEST_REJECTED));
 
+    $month = substr($ticket->date->toDateString(), 0, 7);
+    $date = $ticket->date->toDateString();
+
     $this->actingAs($intern)
         ->get(route('intern.dashboard'))
         ->assertOk()
@@ -333,7 +339,7 @@ test('an intern receives a notification when their resolution request is rejecte
                 'notifications.items.0.title',
                 'Your resolution request was rejected',
             )
-            ->where('notifications.items.0.href', '/intern/dashboard')
+            ->where('notifications.items.0.href', "/intern/dashboard?month={$month}&highlight_date={$date}&highlight_ticket={$ticket->id}")
             ->where('notifications.items.0.data.rejection_reason', 'Attendance log was not found in punch book.')
             ->where('notifications.items.0.data.date', '2026-07-20')
         );

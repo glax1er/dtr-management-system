@@ -7,6 +7,7 @@ import {
     Phone,
     Search,
     SlidersHorizontal,
+    Sparkles,
     Table as TableIcon,
     X,
 } from 'lucide-react';
@@ -17,6 +18,7 @@ import { CompletionSummaryDialog } from '@/components/completion-summary-dialog'
 import { InternDocumentsDialog } from '@/components/intern-documents-dialog';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
 import {
@@ -43,6 +45,8 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDebounce } from '@/hooks/use-debounce';
+import { useInitials } from '@/hooks/use-initials';
+import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 
 interface StudentRow {
@@ -103,6 +107,7 @@ export default function MyStudents({
     completedCount,
     inProgressCount,
 }: StudentsProps) {
+    const getInitials = useInitials();
     const [search, setSearch] = useState(filters.search ?? '');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const [view, setView] = useState<ViewMode>(() => {
@@ -122,6 +127,35 @@ export default function MyStudents({
     useEffect(() => {
         localStorage.setItem('supervisor_students_view', view);
     }, [view]);
+
+    const highlightId =
+        typeof window !== 'undefined'
+            ? Number(
+                  new URLSearchParams(window.location.search).get('highlight') ||
+                  new URLSearchParams(window.location.search).get('doc_intern'),
+              ) || null
+            : null;
+
+    useEffect(() => {
+        if (!highlightId) {
+            return;
+        }
+
+        const el =
+            document.getElementById(`student-row-${highlightId}`) ||
+            document.getElementById(`student-card-${highlightId}`) ||
+            document.getElementById(`student-card-mobile-${highlightId}`);
+
+        if (!el) {
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 200);
+
+        return () => clearTimeout(timer);
+    }, [highlightId, students.data]);
 
     const baseParams = () => ({
         search: search || undefined,
@@ -363,61 +397,80 @@ export default function MyStudents({
                         {/* Table view */}
                         {view === 'table' && (
                             <div className="hidden sm:block">
-                                <Card>
+                                <Card className="overflow-hidden p-0 shadow-xs">
                                     <CardContent className="p-0">
                                         <Table>
-                                            <TableHeader>
+                                            <TableHeader className="bg-muted/40">
                                                 <TableRow>
-                                                    <TableHead className="px-6">
+                                                    <TableHead className="px-6 font-semibold">
                                                         Name
                                                     </TableHead>
-                                                    <TableHead className="px-4 text-center">
+                                                    <TableHead className="px-6 text-center font-semibold">
                                                         ID Number
                                                     </TableHead>
-                                                    <TableHead className="px-4">
+                                                    <TableHead className="px-6 font-semibold">
                                                         Assigned HTE
                                                     </TableHead>
-                                                    <TableHead className="px-4">
+                                                    <TableHead className="px-6 font-semibold">
                                                         Hours Rendered
                                                     </TableHead>
-                                                    <TableHead className="px-4 text-center">
+                                                    <TableHead className="px-6 text-center font-semibold">
                                                         Documents
                                                     </TableHead>
-                                                    <TableHead className="px-4 text-center">
+                                                    <TableHead className="px-6 text-center font-semibold">
                                                         Requirement Status
                                                     </TableHead>
-                                                    <TableHead className="px-6 text-center">
+                                                    <TableHead className="px-6 text-center font-semibold">
                                                         Actions
                                                     </TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {students.data.map(
-                                                    (student) => (
-                                                        <TableRow
-                                                            key={
-                                                                student.intern_user_id
-                                                            }
-                                                            className="transition-colors hover:bg-muted/40"
-                                                        >
-                                                            <TableCell className="px-6 py-3">
-                                                                <p className="font-medium whitespace-nowrap text-foreground">
-                                                                    {
-                                                                        student.name
-                                                                    }
-                                                                </p>
-                                                                <p
-                                                                    className="max-w-[180px] truncate text-xs text-muted-foreground"
-                                                                    title={
-                                                                        student.email
-                                                                    }
+                                                    (student) => {
+                                                        const isHighlighted =
+                                                            highlightId ===
+                                                            student.intern_user_id;
+
+                                                        return (
+                                                            <TableRow
+                                                                key={
+                                                                    student.intern_user_id
+                                                                }
+                                                                id={`student-row-${student.intern_user_id}`}
+                                                                className={cn(
+                                                                    'transition-all duration-300',
+                                                                    isHighlighted
+                                                                        ? 'bg-primary/10 ring-2 ring-primary/40 dark:bg-primary/20'
+                                                                        : 'hover:bg-muted/40',
+                                                                )}
+                                                            >
+                                                                <TableCell className="px-6 py-3.5">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <p className="font-medium whitespace-nowrap text-foreground">
+                                                                            {
+                                                                                student.name
+                                                                            }
+                                                                        </p>
+                                                                        {isHighlighted && (
+                                                                            <Badge className="animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase">
+                                                                                <Sparkles className="size-2.5" />
+                                                                                Focus
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
+                                                                    <p
+                                                                        className="max-w-[180px] truncate text-xs text-muted-foreground"
+                                                                        title={
+                                                                            student.email
+                                                                        }
                                                                 >
                                                                     {
                                                                         student.email
                                                                     }
                                                                 </p>
                                                             </TableCell>
-                                                            <TableCell className="px-4 py-3 text-center whitespace-nowrap">
+                                                            <TableCell className="px-6 py-3.5 text-center whitespace-nowrap">
                                                                 <Badge
                                                                     variant="outline"
                                                                     className="font-mono text-xs"
@@ -427,7 +480,7 @@ export default function MyStudents({
                                                                 </Badge>
                                                             </TableCell>
                                                             <TableCell
-                                                                className="max-w-[160px] truncate px-4 py-3"
+                                                                className="max-w-[160px] truncate px-6 py-3.5"
                                                                 title={
                                                                     student.hte_name
                                                                 }
@@ -438,7 +491,7 @@ export default function MyStudents({
                                                                     }
                                                                 </span>
                                                             </TableCell>
-                                                            <TableCell className="px-4 py-3 whitespace-nowrap">
+                                                            <TableCell className="px-6 py-3.5 whitespace-nowrap">
                                                                 <div className="flex min-w-[110px] flex-col gap-1">
                                                                     <div className="flex justify-between text-xs">
                                                                         <span className="font-medium text-foreground">
@@ -468,7 +521,7 @@ export default function MyStudents({
                                                                     </div>
                                                                 </div>
                                                             </TableCell>
-                                                            <TableCell className="px-4 py-3 text-center whitespace-nowrap">
+                                                            <TableCell className="px-6 py-3.5 text-center whitespace-nowrap">
                                                                 <StatusBadge
                                                                     status={
                                                                         student.docs_completed
@@ -482,7 +535,7 @@ export default function MyStudents({
                                                                     className="text-xs"
                                                                 />
                                                             </TableCell>
-                                                            <TableCell className="px-4 py-3 text-center whitespace-nowrap">
+                                                            <TableCell className="px-6 py-3.5 text-center whitespace-nowrap">
                                                                 <StatusBadge
                                                                     status={
                                                                         student.is_completed
@@ -501,7 +554,7 @@ export default function MyStudents({
                                                                     className="text-xs"
                                                                 />
                                                             </TableCell>
-                                                            <TableCell className="px-6 py-3 text-center whitespace-nowrap">
+                                                            <TableCell className="px-6 py-3.5 text-center whitespace-nowrap">
                                                                 <div className="flex items-center justify-center gap-1.5">
                                                                     <CompletionSummaryDialog
                                                                         internUserId={
@@ -525,10 +578,18 @@ export default function MyStudents({
                                                                 </div>
                                                             </TableCell>
                                                         </TableRow>
-                                                    ),
+                                                        );
+                                                    },
                                                 )}
                                             </TableBody>
                                         </Table>
+                                        <NumberedPagination
+                                            meta={students}
+                                            itemLabel="intern"
+                                            onPageChange={goToPage}
+                                            onPerPageChange={changePerPage}
+                                            idPrefix="students-table-per-page"
+                                        />
                                     </CardContent>
                                 </Card>
                             </div>
@@ -536,22 +597,217 @@ export default function MyStudents({
 
                         {/* Grid view */}
                         {view === 'grid' && (
-                            <div className="hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3">
-                                {students.data.map((student) => (
+                            <div className="hidden sm:flex sm:flex-col sm:gap-4">
+                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                    {students.data.map((student) => {
+                                        const isHighlighted =
+                                            highlightId ===
+                                            student.intern_user_id;
+
+                                        return (
+                                            <Card
+                                                key={student.intern_user_id}
+                                                id={`student-card-${student.intern_user_id}`}
+                                                className={cn(
+                                                    'flex h-full flex-col justify-between rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-300 hover:border-border hover:shadow-md',
+                                                    isHighlighted &&
+                                                        'border-primary bg-primary/5 shadow-md ring-2 ring-primary dark:bg-primary/10',
+                                                )}
+                                            >
+                                                <CardHeader className="pb-3">
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div className="flex min-w-0 flex-1 items-start gap-3">
+                                                            <Avatar className="size-9 shrink-0">
+                                                                <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
+                                                                    {getInitials(
+                                                                        student.name,
+                                                                    )}
+                                                                </AvatarFallback>
+                                                            </Avatar>
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="flex items-center gap-2">
+                                                                    <CardTitle className="line-clamp-1 text-base font-semibold text-foreground">
+                                                                        {
+                                                                            student.name
+                                                                        }
+                                                                    </CardTitle>
+                                                                    {isHighlighted && (
+                                                                        <Badge className="animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase">
+                                                                            <Sparkles className="size-2.5" />
+                                                                            Focus
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+                                                                <p
+                                                                    className="mt-0.5 truncate text-xs text-muted-foreground"
+                                                                    title={
+                                                                        student.email
+                                                                    }
+                                                                >
+                                                                    {
+                                                                        student.email
+                                                                    }
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    {student.id_number && (
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="shrink-0 font-mono text-xs"
+                                                        >
+                                                            {student.id_number}
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </CardHeader>
+                                            <CardContent className="flex-1 space-y-3 pb-3 text-xs">
+                                                <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <Building2 className="size-3.5 shrink-0 text-muted-foreground/70" />
+                                                        <span className="truncate font-medium text-foreground">
+                                                            {student.hte_name}
+                                                        </span>
+                                                    </div>
+                                                    {student.contact_number && (
+                                                        <div className="flex items-center gap-2 text-muted-foreground">
+                                                            <Phone className="size-3.5 shrink-0 text-muted-foreground/70" />
+                                                            <span className="truncate">
+                                                                {
+                                                                    student.contact_number
+                                                                }
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="space-y-2 pt-0.5">
+                                                    <div className="flex items-center justify-between text-xs">
+                                                        <span className="flex items-center gap-1.5 text-muted-foreground">
+                                                            <Clock className="size-3.5 text-primary" />{' '}
+                                                            Rendered:
+                                                        </span>
+                                                        <span className="font-semibold text-foreground">
+                                                            {formatHours(
+                                                                student.total_hours,
+                                                            )}{' '}
+                                                            /{' '}
+                                                            {
+                                                                student.required_hours
+                                                            }
+                                                            h (
+                                                            {Math.round(
+                                                                student.progress_percent,
+                                                            )}
+                                                            %)
+                                                        </span>
+                                                    </div>
+                                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                                                        <div
+                                                            className={`h-full rounded-full transition-all duration-300 ${
+                                                                student.hours_completed
+                                                                    ? 'bg-emerald-500'
+                                                                    : 'bg-primary'
+                                                            }`}
+                                                            style={{
+                                                                width: `${Math.min(100, student.progress_percent)}%`,
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <div className="flex items-center justify-between gap-2 pt-1">
+                                                        <StatusBadge
+                                                            status={
+                                                                student.docs_completed
+                                                                    ? 'approved'
+                                                                    : student.approved_docs_count >
+                                                                        0
+                                                                      ? 'pending_review'
+                                                                      : 'not_submitted'
+                                                            }
+                                                            label={`${student.approved_docs_count}/${student.total_required_docs_count} Docs`}
+                                                            className="px-2 py-0.5 text-[11px]"
+                                                        />
+                                                        <StatusBadge
+                                                            status={
+                                                                student.is_completed
+                                                                    ? 'approved'
+                                                                    : student.hours_completed
+                                                                      ? 'pending_review'
+                                                                      : 'active'
+                                                            }
+                                                            label={
+                                                                student.is_completed
+                                                                    ? 'Completed'
+                                                                    : student.hours_completed
+                                                                      ? 'Docs Pending'
+                                                                      : `${Math.round(student.progress_percent)}%`
+                                                            }
+                                                            className="px-2 py-0.5 text-[11px]"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                            <CardFooter className="flex items-center justify-end gap-2 border-t bg-muted/20 px-4 py-2.5">
+                                                <CompletionSummaryDialog
+                                                    internUserId={
+                                                        student.intern_user_id
+                                                    }
+                                                    internName={student.name}
+                                                    isCompleted={
+                                                        student.is_completed
+                                                    }
+                                                />
+                                                <InternDocumentsDialog
+                                                    internUserId={
+                                                        student.intern_user_id
+                                                    }
+                                                    internName={student.name}
+                                                />
+                                            </CardFooter>
+                                        </Card>
+                                        );
+                                    })}
+                                </div>
+                                <NumberedPagination
+                                    meta={students}
+                                    itemLabel="intern"
+                                    onPageChange={goToPage}
+                                    onPerPageChange={changePerPage}
+                                    idPrefix="students-grid-per-page"
+                                />
+                            </div>
+                        )}
+
+                        {/* Mobile list view */}
+                        <div className="flex flex-col gap-3 sm:hidden">
+                            {students.data.map((student) => {
+                                const isHighlighted =
+                                    highlightId === student.intern_user_id;
+
+                                return (
                                     <Card
                                         key={student.intern_user_id}
-                                        className="flex flex-col justify-between shadow-2xs transition-all duration-200 hover:border-primary/30"
+                                        id={`student-card-mobile-${student.intern_user_id}`}
+                                        className={cn(
+                                            'shadow-2xs transition-all duration-300',
+                                            isHighlighted &&
+                                                'border-primary bg-primary/5 ring-2 ring-primary dark:bg-primary/10',
+                                        )}
                                     >
-                                        <CardHeader className="pb-3">
+                                        <CardContent className="flex flex-col gap-2.5 p-4">
                                             <div className="flex items-start justify-between gap-2">
                                                 <div className="min-w-0">
-                                                    <CardTitle className="truncate text-base font-semibold text-foreground">
-                                                        {student.name}
-                                                    </CardTitle>
-                                                    <p
-                                                        className="mt-0.5 truncate text-xs text-muted-foreground"
-                                                        title={student.email}
-                                                    >
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="truncate text-sm font-semibold text-foreground">
+                                                            {student.name}
+                                                        </p>
+                                                        {isHighlighted && (
+                                                            <Badge className="animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase">
+                                                                <Sparkles className="size-2.5" />
+                                                                Focus
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    <p className="truncate text-xs text-muted-foreground">
                                                         {student.email}
                                                     </p>
                                                 </div>
@@ -563,52 +819,18 @@ export default function MyStudents({
                                                         'No ID'}
                                                 </Badge>
                                             </div>
-                                        </CardHeader>
-                                        <CardContent className="flex flex-col gap-2.5 pt-0 text-xs text-muted-foreground">
-                                            {student.contact_number && (
-                                                <div className="flex items-center gap-2">
-                                                    <Phone className="size-3.5 shrink-0 text-muted-foreground/70" />
-                                                    <span>
-                                                        {student.contact_number}
-                                                    </span>
-                                                </div>
-                                            )}
-                                            <div className="flex items-center gap-2">
-                                                <Building2 className="size-3.5 shrink-0 text-muted-foreground/70" />
-                                                <span className="truncate font-medium text-foreground">
+                                            <div className="flex items-center justify-between border-t pt-1 text-xs text-muted-foreground">
+                                                <span className="max-w-[160px] truncate font-medium text-foreground">
                                                     {student.hte_name}
                                                 </span>
-                                            </div>
-                                            <div className="mt-1 flex items-center justify-between border-t pt-2.5">
-                                                <span className="flex items-center gap-1.5 text-muted-foreground">
-                                                    <Clock className="size-3.5 text-primary" />{' '}
-                                                    Rendered:
-                                                </span>
-                                                <span className="text-xs font-semibold text-foreground">
+                                                <span className="font-semibold text-foreground">
                                                     {formatHours(
                                                         student.total_hours,
                                                     )}{' '}
                                                     / {student.required_hours}h
-                                                    (
-                                                    {Math.round(
-                                                        student.progress_percent,
-                                                    )}
-                                                    %)
                                                 </span>
                                             </div>
-                                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                                                <div
-                                                    className={`h-full rounded-full transition-all duration-300 ${
-                                                        student.hours_completed
-                                                            ? 'bg-emerald-500'
-                                                            : 'bg-primary'
-                                                    }`}
-                                                    style={{
-                                                        width: `${Math.min(100, student.progress_percent)}%`,
-                                                    }}
-                                                />
-                                            </div>
-                                            <div className="flex items-center justify-between gap-2 pt-1">
+                                            <div className="flex items-center justify-between gap-2 text-xs">
                                                 <StatusBadge
                                                     status={
                                                         student.docs_completed
@@ -639,124 +861,35 @@ export default function MyStudents({
                                                     className="px-2 py-0.5 text-[11px]"
                                                 />
                                             </div>
-                                        </CardContent>
-                                        <CardFooter className="flex items-center justify-end gap-2 border-t bg-muted/20 px-4 py-2.5">
-                                            <CompletionSummaryDialog
-                                                internUserId={
-                                                    student.intern_user_id
-                                                }
-                                                internName={student.name}
-                                                isCompleted={
-                                                    student.is_completed
-                                                }
-                                            />
-                                            <InternDocumentsDialog
-                                                internUserId={
-                                                    student.intern_user_id
-                                                }
-                                                internName={student.name}
-                                            />
-                                        </CardFooter>
-                                    </Card>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* Mobile list view */}
-                        <div className="flex flex-col gap-3 sm:hidden">
-                            {students.data.map((student) => (
-                                <Card
-                                    key={student.intern_user_id}
-                                    className="shadow-2xs"
-                                >
-                                    <CardContent className="flex flex-col gap-2.5 p-4">
-                                        <div className="flex items-start justify-between gap-2">
-                                            <div className="min-w-0">
-                                                <p className="truncate text-sm font-semibold text-foreground">
-                                                    {student.name}
-                                                </p>
-                                                <p className="truncate text-xs text-muted-foreground">
-                                                    {student.email}
-                                                </p>
+                                            <div className="flex items-center justify-end gap-1.5 border-t pt-2">
+                                                <CompletionSummaryDialog
+                                                    internUserId={
+                                                        student.intern_user_id
+                                                    }
+                                                    internName={student.name}
+                                                    isCompleted={
+                                                        student.is_completed
+                                                    }
+                                                />
+                                                <InternDocumentsDialog
+                                                    internUserId={
+                                                        student.intern_user_id
+                                                    }
+                                                    internName={student.name}
+                                                />
                                             </div>
-                                            <Badge
-                                                variant="outline"
-                                                className="shrink-0 font-mono text-xs"
-                                            >
-                                                {student.id_number ?? 'No ID'}
-                                            </Badge>
-                                        </div>
-                                        <div className="flex items-center justify-between border-t pt-1 text-xs text-muted-foreground">
-                                            <span className="max-w-[160px] truncate font-medium text-foreground">
-                                                {student.hte_name}
-                                            </span>
-                                            <span className="font-semibold text-foreground">
-                                                {formatHours(
-                                                    student.total_hours,
-                                                )}{' '}
-                                                / {student.required_hours}h
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center justify-between gap-2 text-xs">
-                                            <StatusBadge
-                                                status={
-                                                    student.docs_completed
-                                                        ? 'approved'
-                                                        : student.approved_docs_count >
-                                                            0
-                                                          ? 'pending_review'
-                                                          : 'not_submitted'
-                                                }
-                                                label={`${student.approved_docs_count}/${student.total_required_docs_count} Docs`}
-                                                className="px-2 py-0.5 text-[11px]"
-                                            />
-                                            <StatusBadge
-                                                status={
-                                                    student.is_completed
-                                                        ? 'approved'
-                                                        : student.hours_completed
-                                                          ? 'pending_review'
-                                                          : 'active'
-                                                }
-                                                label={
-                                                    student.is_completed
-                                                        ? 'Completed'
-                                                        : student.hours_completed
-                                                          ? 'Docs Pending'
-                                                          : `${Math.round(student.progress_percent)}%`
-                                                }
-                                                className="px-2 py-0.5 text-[11px]"
-                                            />
-                                        </div>
-                                        <div className="flex items-center justify-end gap-1.5 border-t pt-2">
-                                            <CompletionSummaryDialog
-                                                internUserId={
-                                                    student.intern_user_id
-                                                }
-                                                internName={student.name}
-                                                isCompleted={
-                                                    student.is_completed
-                                                }
-                                            />
-                                            <InternDocumentsDialog
-                                                internUserId={
-                                                    student.intern_user_id
-                                                }
-                                                internName={student.name}
-                                            />
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
+                                        </CardContent>
+                                    </Card>
+                                    );
+                                })}
+                            <NumberedPagination
+                                meta={students}
+                                itemLabel="intern"
+                                onPageChange={goToPage}
+                                onPerPageChange={changePerPage}
+                                idPrefix="students-mobile-per-page"
+                            />
                         </div>
-
-                        <NumberedPagination
-                            meta={students}
-                            itemLabel="intern"
-                            onPageChange={goToPage}
-                            onPerPageChange={changePerPage}
-                            idPrefix="students-per-page"
-                        />
                     </>
                 )}
             </div>

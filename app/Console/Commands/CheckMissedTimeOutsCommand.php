@@ -33,6 +33,7 @@ class CheckMissedTimeOutsCommand extends Command
         $this->info("Checking for missed time-outs on: {$dateString}");
 
         $interns = InternProfile::query()
+            ->verified()
             ->with(['user', 'hte', 'program'])
             ->where('status', 'approved')
             ->whereNotNull('hte_id')

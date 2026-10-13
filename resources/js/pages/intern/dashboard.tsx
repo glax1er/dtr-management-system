@@ -86,8 +86,26 @@ export default function InternDashboard({
                   'highlight_hours',
               ) === '1'
             : false;
+    const highlightQr =
+        typeof window !== 'undefined'
+            ? new URLSearchParams(window.location.search).get(
+                  'highlight_qr',
+              ) === '1'
+            : false;
 
     useEffect(() => {
+        if (highlightQr) {
+            const el = document.getElementById('attendance-qr-card');
+
+            if (el) {
+                const timer = setTimeout(() => {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 250);
+
+                return () => clearTimeout(timer);
+            }
+        }
+
         if (highlightHours) {
             const el = document.getElementById('hours-progress-card');
 
@@ -135,7 +153,7 @@ export default function InternDashboard({
 
             return () => clearTimeout(timer);
         }
-    }, [highlightDate, highlightTicket, highlightHours, logs.data]);
+    }, [highlightDate, highlightTicket, highlightHours, highlightQr, logs.data]);
 
     const goToMonth = (targetMonth: string) => {
         router.get(
@@ -401,12 +419,27 @@ export default function InternDashboard({
                         </CardContent>
                     </Card>
 
-                    <Card className="flex flex-col justify-between shadow-xs lg:col-span-1">
+                    <Card
+                        id="attendance-qr-card"
+                        className={cn(
+                            'flex flex-col justify-between shadow-xs transition-all duration-300 lg:col-span-1',
+                            highlightQr &&
+                                'border-primary bg-primary/5 shadow-md ring-2 ring-primary dark:bg-primary/10',
+                        )}
+                    >
                         <CardHeader className="border-b border-border/60 pb-3">
                             <div className="flex items-center justify-between">
-                                <CardTitle className="text-base font-semibold">
-                                    Attendance QR Pass
-                                </CardTitle>
+                                <div className="flex items-center gap-2">
+                                    <CardTitle className="text-base font-semibold">
+                                        Attendance QR Pass
+                                    </CardTitle>
+                                    {highlightQr && (
+                                        <Badge className="animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase">
+                                            <Sparkles className="size-2.5" />
+                                            Focus
+                                        </Badge>
+                                    )}
+                                </div>
                                 <QrCode className="size-4 text-muted-foreground" />
                             </div>
                             <CardDescription>

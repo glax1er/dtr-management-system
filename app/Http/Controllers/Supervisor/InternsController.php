@@ -54,6 +54,7 @@ class InternsController extends Controller
             'search' => ['nullable', 'string', 'max:255'],
             'hte_id' => ['nullable', 'integer'],
             'completion_status' => ['nullable', 'string', 'in:all,completed,in_progress'],
+            'highlight' => ['nullable', 'integer', 'min:1'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
@@ -77,7 +78,10 @@ class InternsController extends Controller
         // Every HTE currently hosting an intern from this program — powers
         // the "Assigned HTE" filter dropdown.
         $hteOptions = Hte::query()
-            ->whereHas('internProfiles', fn ($query) => $query->where('program_id', $supervisorProfile->program_id))
+            ->whereHas('internProfiles', fn ($query) => $query
+                ->where('status', 'approved')
+                ->whereHas('user', fn ($user) => $user->whereNotNull('email_verified_at'))
+                ->where('program_id', $supervisorProfile->program_id))
             ->orderBy('hte_name')
             ->get(['hte_id', 'hte_name']);
 
@@ -142,6 +146,16 @@ class InternsController extends Controller
         }
 
         $perPage = (int) ($validated['per_page'] ?? 20);
+        if (isset($validated['highlight']) && ! $request->has('page')) {
+            $highlightIndex = $filteredStudents->search(
+                fn (array $student) => $student['intern_user_id'] === (int) $validated['highlight']
+            );
+
+            if ($highlightIndex !== false) {
+                $validated['page'] = (int) floor($highlightIndex / $perPage) + 1;
+            }
+        }
+
         $total = $filteredStudents->count();
         $lastPage = max(1, (int) ceil($total / $perPage));
         $page = min((int) ($validated['page'] ?? 1), $lastPage);
@@ -184,7 +198,10 @@ class InternsController extends Controller
             ->where('user_id', $internUserId)
             ->firstOrFail();
 
-        if (! $user->isAdmin()) {
+        if ($user->isCollegeAdmin()) {
+            $internCollegeId = $internProfile->program?->college_id ?? $internProfile->user?->college_id;
+            abort_if($internCollegeId !== $user->college_id, 403, 'Unauthorized.');
+        } elseif (! $user->isAdmin()) {
             if (! $user->isSupervisor()) {
                 abort(403, 'Unauthorized.');
             }
@@ -318,7 +335,10 @@ class InternsController extends Controller
         $user = $request->user();
         $internProfile = InternProfile::with(['user', 'hte', 'program'])->where('user_id', $internUserId)->firstOrFail();
 
-        if (! $user->isAdmin()) {
+        if ($user->isCollegeAdmin()) {
+            $internCollegeId = $internProfile->program?->college_id ?? $internProfile->user?->college_id;
+            abort_if($internCollegeId !== $user->college_id, 403, 'Unauthorized.');
+        } elseif (! $user->isAdmin()) {
             if (! $user->isSupervisor()) {
                 abort(403, 'Unauthorized.');
             }
@@ -432,6 +452,7 @@ class InternsController extends Controller
             'to' => ['nullable', 'required_with:from', 'date_format:Y-m-d', 'after_or_equal:from'],
             'search' => ['nullable', 'string', 'max:255'],
             'remarks' => ['nullable', 'in:on_time,late,missing_time_in,no_record,open'],
+            'highlight' => ['nullable', 'integer', 'min:1'],
             'sort' => ['nullable', 'in:date,name'],
             'direction' => ['nullable', 'in:asc,desc'],
             'page' => ['nullable', 'integer', 'min:1'],
@@ -442,6 +463,14 @@ class InternsController extends Controller
 
         $month = null;
 
+        $highlightUserId = $validated['highlight'] ?? null;
+        $highlightedIntern = $highlightUserId
+            ? $supervisorProfile->getAssignedInterns()
+                ->where('status', 'approved')
+                ->where('user_id', $highlightUserId)
+                ->first()
+            : null;
+
         if ($usingRange) {
             $rangeStart = Carbon::createFromFormat('Y-m-d', $validated['from'], $timezone)->startOfDay();
             $rangeEnd = Carbon::createFromFormat('Y-m-d', $validated['to'], $timezone)->endOfDay();
@@ -449,6 +478,16 @@ class InternsController extends Controller
             $month = isset($validated['month'])
                 ? Carbon::createFromFormat('Y-m-d', $validated['month'].'-01', $timezone)->startOfMonth()
                 : $today->clone()->startOfMonth();
+
+            if ($highlightedIntern && ! isset($validated['month'])) {
+                $latestScan = AttendanceLog::query()
+                    ->where('intern_user_id', $highlightedIntern->user_id)
+                    ->max('scan_timestamp');
+
+                if ($latestScan) {
+                    $month = Carbon::parse($latestScan)->setTimezone($timezone)->startOfMonth();
+                }
+            }
 
             $rangeStart = $month->clone()->startOfMonth();
             $rangeEnd = $month->clone()->endOfMonth();
@@ -465,6 +504,10 @@ class InternsController extends Controller
 
         if ($search !== '') {
             $internsQuery->whereHas('user', fn ($query) => $query->where('name', 'like', "%{$search}%"));
+        }
+
+        if ($highlightUserId !== null) {
+            $internsQuery->where('user_id', $highlightUserId);
         }
 
         $interns = $internsQuery->get();
@@ -484,8 +527,8 @@ class InternsController extends Controller
                     [
                         'intern_user_id' => $intern->user_id,
                         'intern_name' => $intern->user->name,
-                        'hte_name' => $intern->hte?->hte_name ?? 'Deleted HTE',
-                        'program_name' => $intern->program?->program_name ?? 'Deleted Program',
+                        'hte_name' => ($hte = $intern->hte) !== null ? $hte->hte_name : 'Deleted HTE',
+                        'program_name' => ($program = $intern->program) !== null ? $program->program_name : 'Deleted Program',
                         'punctuality' => $this->computePunctuality($day, $intern->hte_id),
                     ],
                 ));

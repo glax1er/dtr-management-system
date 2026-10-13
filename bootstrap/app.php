@@ -2,14 +2,19 @@
 
 use App\Http\Middleware\EnsureHteSupervisor;
 use App\Http\Middleware\EnsureOjtSupervisor;
+use App\Http\Middleware\EnsurePasswordIsChanged;
+use App\Http\Middleware\EnsureTwoFactorEnforced;
 use App\Http\Middleware\EnsureUserRole;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RequirePasswordForSensitiveActions;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
+use Illuminate\Session\Middleware\AuthenticateSession;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -24,12 +29,18 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => EnsureUserRole::class,
             'hte-supervisor' => EnsureHteSupervisor::class,
             'ojt-supervisor' => EnsureOjtSupervisor::class,
+            'password.changed' => EnsurePasswordIsChanged::class,
+            'admin.2fa' => EnsureTwoFactorEnforced::class,
+            'password.confirm.sensitive' => RequirePasswordForSensitiveActions::class,
         ]);
 
         $middleware->web(append: [
+            SecurityHeaders::class,
+            AuthenticateSession::class,
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
+            EnsurePasswordIsChanged::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [
