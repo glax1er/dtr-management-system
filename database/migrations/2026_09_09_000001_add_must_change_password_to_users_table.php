@@ -1,7 +1,9 @@
 <?php
 
+use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -19,11 +21,11 @@ return new class extends Migration
 
         $defaultPassword = config('supervisor.default_supervisor_password', 'Supervisor@123');
 
-        \App\Models\User::query()
-            ->where('role', \App\Models\User::ROLE_SUPERVISOR)
+        User::query()
+            ->where('role', User::ROLE_SUPERVISOR)
             ->get()
-            ->each(function (\App\Models\User $supervisor) use ($defaultPassword) {
-                if (\Illuminate\Support\Facades\Hash::check($defaultPassword, $supervisor->password)) {
+            ->each(function (User $supervisor) use ($defaultPassword) {
+                if (Hash::check($defaultPassword, $supervisor->password)) {
                     $supervisor->update(['must_change_password' => true]);
                 }
             });

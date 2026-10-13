@@ -81,7 +81,7 @@ class SchedulePeriodController extends Controller
 
         AuditLog::record(
             action: 'schedule_override_created',
-            description: "HTE schedule override created: ".($schedulePeriod->name ?? 'Override'),
+            description: 'HTE schedule override created: '.($schedulePeriod->name ?? 'Override'),
             auditable: $schedulePeriod,
             newValues: $schedulePeriod->only(['hte_id', 'name', 'start_date', 'end_date', 'day_schedule']),
             user: $request->user(),
@@ -111,7 +111,7 @@ class SchedulePeriodController extends Controller
 
         AuditLog::record(
             action: 'schedule_override_updated',
-            description: "HTE schedule override updated: ".($schedulePeriod->name ?? 'Override'),
+            description: 'HTE schedule override updated: '.($schedulePeriod->name ?? 'Override'),
             auditable: $schedulePeriod,
             oldValues: $oldValues,
             newValues: $schedulePeriod->only(['hte_id', 'name', 'start_date', 'end_date', 'day_schedule']),

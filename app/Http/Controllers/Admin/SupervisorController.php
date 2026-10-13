@@ -128,6 +128,7 @@ class SupervisorController extends Controller
 
         $oldStatus = $supervisorProfile->status;
         $supervisorProfile->update(['status' => $validated['status']]);
+        $supervisorProfile->user?->update(['is_active' => $validated['status'] === 'active']);
 
         AuditLog::record(
             action: 'supervisor_status_updated',

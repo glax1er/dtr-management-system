@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Campus;
 use App\Models\College;
 use App\Models\Hte;
 use App\Models\InternProfile;

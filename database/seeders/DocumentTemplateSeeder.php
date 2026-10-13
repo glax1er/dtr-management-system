@@ -146,18 +146,18 @@ class DocumentTemplateSeeder extends Seeder
 
     private function generatePdf(string $title, string $details): string
     {
-        $content = "BT /F1 16 Tf 50 720 Td (" . addcslashes($title, "()\\") . ") Tj ET\n"
-                 . "BT /F1 11 Tf 50 680 Td (" . addcslashes($details, "()\\") . ") Tj ET\n"
-                 . "BT /F1 9 Tf 50 650 Td (Official Blank Template - University of Southeastern Philippines) Tj ET";
+        $content = 'BT /F1 16 Tf 50 720 Td ('.addcslashes($title, '()\\').") Tj ET\n"
+                 .'BT /F1 11 Tf 50 680 Td ('.addcslashes($details, '()\\').") Tj ET\n"
+                 .'BT /F1 9 Tf 50 650 Td (Official Blank Template - University of Southeastern Philippines) Tj ET';
         $len = strlen($content);
 
         return "%PDF-1.4\n"
-            . "1 0 obj <</Type /Catalog /Pages 2 0 R>> endobj\n"
-            . "2 0 obj <</Type /Pages /Kids [3 0 R] /Count 1>> endobj\n"
-            . "3 0 obj <</Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R>> endobj\n"
-            . "4 0 obj <</Type /Font /Subtype /Type1 /BaseFont /Helvetica>> endobj\n"
-            . "5 0 obj <</Length {$len}>>\nstream\n{$content}\nendstream\nendobj\n"
-            . "xref\n0 6\n0000000000 65535 f \n"
-            . "trailer <</Size 6 /Root 1 0 R>>\nstartxref\n500\n%%EOF";
+            ."1 0 obj <</Type /Catalog /Pages 2 0 R>> endobj\n"
+            ."2 0 obj <</Type /Pages /Kids [3 0 R] /Count 1>> endobj\n"
+            ."3 0 obj <</Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R>> endobj\n"
+            ."4 0 obj <</Type /Font /Subtype /Type1 /BaseFont /Helvetica>> endobj\n"
+            ."5 0 obj <</Length {$len}>>\nstream\n{$content}\nendstream\nendobj\n"
+            ."xref\n0 6\n0000000000 65535 f \n"
+            ."trailer <</Size 6 /Root 1 0 R>>\nstartxref\n500\n%%EOF";
     }
 }

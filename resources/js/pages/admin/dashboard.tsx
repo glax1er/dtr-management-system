@@ -164,7 +164,10 @@ export default function AdminDashboard({
         'overview' | 'operations' | 'institution'
     >(() => {
         if (typeof window !== 'undefined') {
-            const urlTab = new URLSearchParams(window.location.search).get('tab');
+            const urlTab = new URLSearchParams(window.location.search).get(
+                'tab',
+            );
+
             if (
                 urlTab === 'overview' ||
                 urlTab === 'operations' ||
@@ -173,12 +176,14 @@ export default function AdminDashboard({
                 return urlTab;
             }
         }
+
         return tab || 'overview';
     });
 
     const handleTabChange = (val: string) => {
         const nextTab = val as 'overview' | 'operations' | 'institution';
         setActiveTab(nextTab);
+
         if (typeof window !== 'undefined') {
             const url = new URL(window.location.href);
             url.searchParams.set('tab', nextTab);
@@ -274,7 +279,10 @@ export default function AdminDashboard({
             label: 'Resolution Tickets',
             value: pendingTickets,
             icon: AlertCircle,
-            variant: pendingTickets > 0 ? ('warning' as const) : ('default' as const),
+            variant:
+                pendingTickets > 0
+                    ? ('warning' as const)
+                    : ('default' as const),
             badge:
                 pendingTickets > 0 ? (
                     <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
@@ -391,10 +399,7 @@ export default function AdminDashboard({
     );
     const totalHteInterns = topHtes.reduce((sum, hte) => sum + hte.count, 0);
 
-    const scansTotal = scansTrend.reduce(
-        (sum, point) => sum + point.count,
-        0,
-    );
+    const scansTotal = scansTrend.reduce((sum, point) => sum + point.count, 0);
     const totalTicketCount = ticketBreakdown.reduce(
         (sum, s) => sum + s.count,
         0,
@@ -763,7 +768,8 @@ export default function AdminDashboard({
                                                 Daily Scans Momentum
                                             </CardTitle>
                                             <CardDescription className="text-xs">
-                                                14-day cumulative scan volume across stations
+                                                14-day cumulative scan volume
+                                                across stations
                                             </CardDescription>
                                         </div>
                                     </div>
@@ -865,7 +871,8 @@ export default function AdminDashboard({
                                                 Most Active Interns
                                             </CardTitle>
                                             <CardDescription className="text-xs">
-                                                Leading interns by attendance scan logs
+                                                Leading interns by attendance
+                                                scan logs
                                             </CardDescription>
                                         </div>
                                     </div>
@@ -883,7 +890,9 @@ export default function AdminDashboard({
                                             size="sm"
                                             className="h-8 gap-1 text-xs text-muted-foreground hover:text-foreground"
                                             onClick={() =>
-                                                router.visit('/admin/interns?status=approved')
+                                                router.visit(
+                                                    '/admin/interns?status=approved',
+                                                )
                                             }
                                         >
                                             <span>Manage Interns</span>
@@ -933,7 +942,7 @@ export default function AdminDashboard({
 
                 {/* ── Recent Registrations Table (Overview tab) ───────────── */}
                 {activeTab === 'overview' && (
-                    <Card className="overflow-hidden gap-0 p-0 shadow-xs">
+                    <Card className="gap-0 overflow-hidden p-0 shadow-xs">
                         <CardHeader className="border-b px-6 py-4">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2.5">
@@ -1077,7 +1086,7 @@ export default function AdminDashboard({
 
                 {/* ── Recent Attendance Logs Table (Interns & Attendance tab) ── */}
                 {activeTab === 'operations' && recentScans && (
-                    <Card className="overflow-hidden gap-0 p-0 shadow-xs">
+                    <Card className="gap-0 overflow-hidden p-0 shadow-xs">
                         <CardHeader className="border-b px-6 py-4">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2.5">

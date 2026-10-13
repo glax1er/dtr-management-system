@@ -64,12 +64,6 @@ class InternApprovalController extends Controller
     {
         $this->authorizeCollege($request, $internProfile);
 
-        if (! $internProfile->user->hasVerifiedEmail()) {
-            Inertia::flash('toast', ['type' => 'error', 'message' => 'The intern must verify their email address before rejection.']);
-
-            return back();
-        }
-
         $oldStatus = $internProfile->status;
 
         $internProfile->update([

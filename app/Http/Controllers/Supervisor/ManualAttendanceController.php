@@ -62,7 +62,10 @@ class ManualAttendanceController extends Controller
 
         $timezone = config('dtr.timezone');
 
-        $conflicts = collect($validated['dates'])
+        /** @var list<string> $dates */
+        $dates = $validated['dates'];
+
+        $conflicts = collect($dates)
             ->filter(function (string $date) use ($validated, $timezone) {
                 $start = Carbon::parse($date, $timezone)->startOfDay();
                 $end = Carbon::parse($date, $timezone)->endOfDay();
@@ -125,7 +128,7 @@ class ManualAttendanceController extends Controller
         $validated = $request->validate([
             'intern_user_id' => ['required', 'integer', 'exists:intern_profiles,user_id'],
             'entries' => ['required', 'array', 'min:1'],
-            'entries.*.date' => ['required', 'date_format:Y-m-d'],
+            'entries.*.date' => ['required', 'date_format:Y-m-d', 'distinct'],
             // Both are individually optional now — a supervisor may only
             // know a time-out (the intern forgot to scan in) or only a
             // time-in (still ongoing / forgot to scan out). The "at least
@@ -167,7 +170,13 @@ class ManualAttendanceController extends Controller
 
         $timezone = config('dtr.timezone');
 
-        $dates = collect($validated['entries'])->pluck('date')->unique()->values()->all();
+        /** @var list<array{date: string, time_in?: string|null, time_out?: string|null}> $entries */
+        $entries = $validated['entries'];
+
+        $dates = array_values(array_unique(array_filter(
+            array_column($entries, 'date'),
+            'is_string',
+        )));
         $oldLogs = AttendanceLog::where('intern_user_id', $validated['intern_user_id'])
             ->where(function ($q) use ($dates, $timezone) {
                 foreach ($dates as $date) {
@@ -180,14 +189,71 @@ class ManualAttendanceController extends Controller
             ->get(['id', 'scan_timestamp', 'kiosk_id', 'supervisor_user_id'])
             ->toArray();
 
-        DB::transaction(function () use ($validated, $timezone) {
-            foreach ($validated['entries'] as $entry) {
+        DB::transaction(function () use ($entries, $validated, $timezone) {
+            foreach ($entries as $entry) {
                 $start = Carbon::parse($entry['date'], $timezone)->startOfDay();
                 $end = Carbon::parse($entry['date'], $timezone)->endOfDay();
 
-                AttendanceLog::where('intern_user_id', $validated['intern_user_id'])
-                    ->whereBetween('scan_timestamp', [$start, $end])
-                    ->delete();
+                $hasTimeIn = ! empty($entry['time_in']);
+                $hasTimeOut = ! empty($entry['time_out']);
+
+                if ($hasTimeIn && $hasTimeOut) {
+                    AttendanceLog::where('intern_user_id', $validated['intern_user_id'])
+                        ->whereBetween('scan_timestamp', [$start, $end])
+                        ->delete();
+                } elseif ($hasTimeOut) {
+                    // Only time_out provided: keep the earliest scan if it is a morning scan (time_in)
+                    $existingScans = AttendanceLog::where('intern_user_id', $validated['intern_user_id'])
+                        ->whereBetween('scan_timestamp', [$start, $end])
+                        ->orderBy('scan_timestamp')
+                        ->get();
+
+                    $cutoff = Carbon::parse($entry['date'].' '.config('dtr.time_out_cutoff'), $timezone);
+
+                    if ($existingScans->isNotEmpty()) {
+                        $firstScan = $existingScans->first();
+                        $firstScanLocal = $firstScan->scan_timestamp->clone()->setTimezone($timezone);
+
+                        if ($firstScanLocal->lte($cutoff)) {
+                            // First scan is a valid time_in, keep it and delete all others (e.g. previous checkout)
+                            AttendanceLog::where('intern_user_id', $validated['intern_user_id'])
+                                ->whereBetween('scan_timestamp', [$start, $end])
+                                ->where('log_id', '!=', $firstScan->log_id)
+                                ->delete();
+                        } else {
+                            // First scan itself was after cutoff (so it was an orphaned checkout), replace all
+                            AttendanceLog::where('intern_user_id', $validated['intern_user_id'])
+                                ->whereBetween('scan_timestamp', [$start, $end])
+                                ->delete();
+                        }
+                    }
+                } elseif ($hasTimeIn) {
+                    // Only time_in provided: keep the latest scan if it is an afternoon scan / time_out
+                    $existingScans = AttendanceLog::where('intern_user_id', $validated['intern_user_id'])
+                        ->whereBetween('scan_timestamp', [$start, $end])
+                        ->orderBy('scan_timestamp')
+                        ->get();
+
+                    $cutoff = Carbon::parse($entry['date'].' '.config('dtr.time_out_cutoff'), $timezone);
+
+                    if ($existingScans->isNotEmpty()) {
+                        $lastScan = $existingScans->last();
+                        $lastScanLocal = $lastScan->scan_timestamp->clone()->setTimezone($timezone);
+
+                        if ($lastScanLocal->gt($cutoff) || $existingScans->count() > 1) {
+                            // Last scan is a checkout, keep it and delete all others (e.g. previous time_in)
+                            AttendanceLog::where('intern_user_id', $validated['intern_user_id'])
+                                ->whereBetween('scan_timestamp', [$start, $end])
+                                ->where('log_id', '!=', $lastScan->log_id)
+                                ->delete();
+                        } else {
+                            // Only had a morning scan, which will be replaced by the new time_in
+                            AttendanceLog::where('intern_user_id', $validated['intern_user_id'])
+                                ->whereBetween('scan_timestamp', [$start, $end])
+                                ->delete();
+                        }
+                    }
+                }
 
                 if (! empty($entry['time_in'])) {
                     AttendanceLog::create([
@@ -211,13 +277,15 @@ class ManualAttendanceController extends Controller
             }
         });
 
-        $internProfile = InternProfile::find($validated['intern_user_id']);
+        $internProfile = InternProfile::query()
+            ->whereKey($validated['intern_user_id'])
+            ->first();
         AuditLog::record(
             action: 'manual_attendance_override',
             description: "Supervisor manual attendance override for intern ID {$validated['intern_user_id']}",
             auditable: $internProfile,
             oldValues: ['replaced_logs' => $oldLogs],
-            newValues: ['entries' => $validated['entries']],
+            newValues: ['entries' => $entries],
             user: $request->user(),
         );
 

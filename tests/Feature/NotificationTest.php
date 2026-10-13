@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\AttendanceLog;
+use App\Models\College;
 use App\Models\Hte;
 use App\Models\InternDocument;
 use App\Models\InternProfile;
@@ -458,7 +459,7 @@ test('hte supervisor can view and update role-specific notification preferences'
 });
 
 test('college admin can view and update role-specific notification preferences', function () {
-    $college = \App\Models\College::create(['name' => 'College of Arts', 'code' => 'CAS', 'is_active' => true]);
+    $college = College::create(['name' => 'College of Arts', 'code' => 'CAS', 'is_active' => true]);
     $admin = User::factory()->create([
         'role' => User::ROLE_COLLEGE_ADMIN,
         'college_id' => $college->id,

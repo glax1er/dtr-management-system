@@ -390,7 +390,7 @@ export default function SupervisorDashboard({
                 </div>
 
                 {/* Recent Scans with Shadcn UI Table & NumberedPagination */}
-                <Card className="overflow-hidden gap-0 p-0 shadow-xs">
+                <Card className="gap-0 overflow-hidden p-0 shadow-xs">
                     <CardHeader className="border-b px-6 py-4">
                         <div className="flex items-center justify-between">
                             <div>

@@ -10,6 +10,7 @@ use App\Models\Hte;
 use App\Models\InternProfile;
 use App\Models\ResolutionTicket;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
@@ -100,10 +101,7 @@ class DashboardController extends Controller
         $now = Carbon::now($timezone);
 
         $scansQuery = AttendanceLog::query()
-            ->whereHas('internProfile', fn ($q) => $q->verified());
-        if ($collegeId !== null) {
-            $scansQuery->whereHas('internProfile', fn ($q) => $q->forCollege($collegeId));
-        }
+            ->whereIn('intern_user_id', $this->verifiedInternProfiles($collegeId)->select('user_id'));
 
         $scansToday = (clone $scansQuery)
             ->whereBetween('scan_timestamp', [$todayStart, $todayEnd])
@@ -116,12 +114,15 @@ class DashboardController extends Controller
         $ticketsQuery = ResolutionTicket::query()
             ->where('status', ResolutionTicket::STATUS_PENDING);
         if ($collegeId !== null) {
-            $ticketsQuery->whereHas('intern.internProfile', fn ($q) => $q->verified()->forCollege($collegeId));
+            $ticketsQuery->whereHas(
+                'intern',
+                fn ($query) => $query->whereIn('id', $this->verifiedInternProfiles($collegeId)->select('user_id')),
+            );
         }
         $pendingTickets = $ticketsQuery->count();
 
         $recentScansQuery = AttendanceLog::query()
-            ->whereHas('internProfile', fn ($q) => $q->verified())
+            ->whereIn('intern_user_id', $this->verifiedInternProfiles($collegeId)->select('user_id'))
             ->with([
                 'intern:id,name,email',
                 'internProfile:user_id,id_number,hte_id,program_id',
@@ -131,10 +132,6 @@ class DashboardController extends Controller
                 'supervisor:id,name',
             ])
             ->latest('scan_timestamp');
-
-        if ($collegeId !== null) {
-            $recentScansQuery->whereHas('internProfile', fn ($q) => $q->forCollege($collegeId));
-        }
 
         $recentScans = $recentScansQuery
             ->paginate($perPage, ['*'], 'scans_page', $validated['scans_page'] ?? 1)
@@ -166,11 +163,11 @@ class DashboardController extends Controller
 
                 return [
                     'id' => $log->log_id,
-                    'intern_name' => $log->intern?->name ?? 'Unknown Intern',
-                    'email' => $log->intern?->email ?? '',
-                    'id_number' => $log->internProfile?->id_number ?? '—',
-                    'hte_name' => $log->internProfile?->hte?->hte_name ?? '—',
-                    'program_name' => $log->internProfile?->program?->program_name ?? '—',
+                    'intern_name' => $log->intern->name ?? 'Unknown Intern',
+                    'email' => $log->intern->email ?? '',
+                    'id_number' => $log->internProfile->id_number ?? '—',
+                    'hte_name' => optional($log->internProfile->hte)->hte_name ?? '—',
+                    'program_name' => optional($log->internProfile->program)->program_name ?? '—',
                     'label' => $label,
                     'source' => $source,
                     'scanned_at' => $log->scan_timestamp->diffForHumans(),
@@ -596,11 +593,7 @@ class DashboardController extends Controller
 
         $query = AttendanceLog::query()
             ->where('scan_timestamp', '>=', $rangeStart)
-            ->whereHas('internProfile', fn ($q) => $q->verified());
-
-        if ($collegeId !== null) {
-            $query->whereHas('internProfile', fn ($q) => $q->forCollege($collegeId));
-        }
+            ->whereIn('intern_user_id', $this->verifiedInternProfiles($collegeId)->select('user_id'));
 
         $countsByDate = $query
             ->get(['scan_timestamp'])
@@ -632,7 +625,10 @@ class DashboardController extends Controller
     {
         $query = ResolutionTicket::query();
         if ($collegeId !== null) {
-            $query->whereHas('intern.internProfile', fn ($q) => $q->verified()->forCollege($collegeId));
+            $query->whereHas(
+                'intern',
+                fn ($intern) => $intern->whereIn('id', $this->verifiedInternProfiles($collegeId)->select('user_id')),
+            );
         }
 
         $counts = $query
@@ -653,6 +649,20 @@ class DashboardController extends Controller
     }
 
     /**
+     * @return Builder<InternProfile>
+     */
+    private function verifiedInternProfiles(?int $collegeId): Builder
+    {
+        $query = InternProfile::query()->verified();
+
+        if ($collegeId !== null) {
+            $query->forCollege($collegeId);
+        }
+
+        return $query;
+    }
+
+    /**
      * Top interns by attendance scans logged
      *
      * @return array<int, array{name: string, count: int}>
@@ -660,11 +670,7 @@ class DashboardController extends Controller
     private function topInterns(?int $collegeId = null): array
     {
         $query = AttendanceLog::query()
-            ->whereHas('internProfile', fn ($q) => $q->verified());
-
-        if ($collegeId !== null) {
-            $query->whereHas('internProfile', fn ($q) => $q->forCollege($collegeId));
-        }
+            ->whereIn('intern_user_id', $this->verifiedInternProfiles($collegeId)->select('user_id'));
 
         return $query
             ->selectRaw('intern_user_id, count(*) as scans_count')
@@ -673,10 +679,10 @@ class DashboardController extends Controller
             ->take(self::TOP_HTE_LIMIT)
             ->with('intern:id,name')
             ->get()
-            ->filter(fn (AttendanceLog $log) => $log->scans_count > 0 && $log->intern !== null)
+            ->filter(fn (AttendanceLog $log) => (int) $log->getAttribute('scans_count') > 0 && $log->intern !== null)
             ->map(fn (AttendanceLog $log) => [
                 'name' => $log->intern->name,
-                'count' => (int) $log->scans_count,
+                'count' => (int) $log->getAttribute('scans_count'),
             ])
             ->values()
             ->all();

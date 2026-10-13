@@ -254,6 +254,9 @@ class AttendanceSeeder extends Seeder
         }
     }
 
+    /**
+     * @param  list<int>  $skipDaysAgo
+     */
     private function seedInternAttendance(
         User $user,
         int $daysToBackfill,

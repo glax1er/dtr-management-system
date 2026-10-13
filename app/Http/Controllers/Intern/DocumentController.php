@@ -163,9 +163,13 @@ class DocumentController extends Controller
         $realPath = $file->getRealPath();
         if ($realPath && file_exists($realPath) && filesize($realPath) >= 4) {
             $handle = fopen($realPath, 'rb');
+            if ($handle === false) {
+                return back()->withErrors(['file' => 'Unable to verify the uploaded PDF file.']);
+            }
+
             $header = fread($handle, 4);
             fclose($handle);
-            if ($header !== '%PDF') {
+            if ($header === false || $header !== '%PDF') {
                 return back()->withErrors(['file' => 'The uploaded file does not have a valid PDF header signature.']);
             }
         }
@@ -182,6 +186,10 @@ class DocumentController extends Controller
             ->where('user_id', $user->id)
             ->where('document_type', $documentType)
             ->first();
+
+        if ($existingDoc && $existingDoc->status === InternDocument::STATUS_APPROVED) {
+            abort(403, 'Cannot replace an already approved document.');
+        }
 
         // Remove old stored file if replacing
         if ($existingDoc && $existingDoc->file_path && Storage::disk('local')->exists($existingDoc->file_path)) {
@@ -292,6 +300,10 @@ class DocumentController extends Controller
     {
         if ($internDocument->user_id !== $request->user()->id) {
             abort(403, 'Unauthorized action.');
+        }
+
+        if ($internDocument->status === InternDocument::STATUS_APPROVED) {
+            abort(403, 'Cannot delete an already approved document.');
         }
 
         if (str_contains($internDocument->file_path, '..')) {

@@ -253,6 +253,9 @@ class NotificationSeeder extends Seeder
         }
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     */
     private function createNotification(User $user, string $type, array $data, bool $read, int $hoursAgo): void
     {
         $timestamp = now()->subHours($hoursAgo);

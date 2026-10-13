@@ -2,6 +2,7 @@
 
 use App\Models\College;
 use App\Models\Hte;
+use App\Models\InternProfile;
 use App\Models\Program;
 use App\Models\User;
 use Illuminate\Support\Facades\Notification;
@@ -261,7 +262,7 @@ test('colleges index returns correct interns count', function () {
         'email_verified_at' => now(),
     ]);
 
-    \App\Models\InternProfile::create([
+    InternProfile::create([
         'user_id' => $internUser->id,
         'id_number' => 'ID-'.uniqid(),
         'sex' => 'female',
@@ -286,4 +287,3 @@ test('colleges index returns correct interns count', function () {
         })
     );
 });
-

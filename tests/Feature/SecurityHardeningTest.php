@@ -8,7 +8,6 @@ use App\Models\InternDocument;
 use App\Models\InternProfile;
 use App\Models\Program;
 use App\Models\ResolutionTicket;
-use App\Models\SchedulePeriod;
 use App\Models\SupervisorProfile;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
@@ -676,4 +675,3 @@ test('audit logs route is accessible only to administrators', function () {
     $response->assertOk()
         ->assertJsonFragment(['action' => 'system_event']);
 });
-

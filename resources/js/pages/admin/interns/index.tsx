@@ -143,19 +143,10 @@ export default function InternsIndex({
     const isFirstRender = useRef(true);
 
     const [popoverOpen, setPopoverOpen] = useState(false);
-
-    const [collegeId, setCollegeId] = useState<string>(
-        filters.college_id ? String(filters.college_id) : 'all',
-    );
-    const [campusId, setCampusId] = useState<string>(
-        filters.campus_id ? String(filters.campus_id) : 'all',
-    );
-    const [programId, setProgramId] = useState<string>(
-        filters.program_id ? String(filters.program_id) : 'all',
-    );
-    const [hteId, setHteId] = useState<string>(
-        filters.hte_id ? String(filters.hte_id) : 'all',
-    );
+    const collegeId = filters.college_id ? String(filters.college_id) : 'all';
+    const campusId = filters.campus_id ? String(filters.campus_id) : 'all';
+    const programId = filters.program_id ? String(filters.program_id) : 'all';
+    const hteId = filters.hte_id ? String(filters.hte_id) : 'all';
 
     const [draftCollegeId, setDraftCollegeId] = useState<string>(
         filters.college_id ? String(filters.college_id) : 'all',
@@ -176,32 +167,24 @@ export default function InternsIndex({
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<Intern | null>(null);
 
-    // Keep filter states in sync if props change
-    useEffect(() => {
-        const nextCollege = filters.college_id ? String(filters.college_id) : 'all';
-        const nextCampus = filters.campus_id ? String(filters.campus_id) : 'all';
-        const nextProgram = filters.program_id ? String(filters.program_id) : 'all';
-        const nextHte = filters.hte_id ? String(filters.hte_id) : 'all';
+    const openFilterPopover = () => {
+        setDraftCollegeId(collegeId);
+        setDraftCampusId(campusId);
+        setDraftProgramId(programId);
+        setDraftHteId(hteId);
+        setPopoverOpen(true);
+    };
 
-        setCollegeId(nextCollege);
-        setCampusId(nextCampus);
-        setProgramId(nextProgram);
-        setHteId(nextHte);
-        setDraftCollegeId(nextCollege);
-        setDraftCampusId(nextCampus);
-        setDraftProgramId(nextProgram);
-        setDraftHteId(nextHte);
-    }, [filters.college_id, filters.campus_id, filters.program_id, filters.hte_id]);
-
-    // Sync draft states from active states whenever popover opens
-    useEffect(() => {
-        if (popoverOpen) {
+    const handleFilterPopoverChange = (open: boolean) => {
+        if (open) {
             setDraftCollegeId(collegeId);
             setDraftCampusId(campusId);
             setDraftProgramId(programId);
             setDraftHteId(hteId);
         }
-    }, [popoverOpen, collegeId, campusId, programId, hteId]);
+
+        setPopoverOpen(open);
+    };
 
     const highlightId =
         typeof window !== 'undefined'
@@ -279,14 +262,20 @@ export default function InternsIndex({
 
     const handleDraftCollegeChange = (value: string) => {
         setDraftCollegeId(value);
+
         if (value !== 'all' && draftProgramId !== 'all') {
-            const prog = programs.find((p) => String(p.program_id) === draftProgramId);
+            const prog = programs.find(
+                (p) => String(p.program_id) === draftProgramId,
+            );
+
             if (prog?.college_id && String(prog.college_id) !== value) {
                 setDraftProgramId('all');
             }
         }
+
         if (value !== 'all' && draftHteId !== 'all') {
             const hte = htes.find((h) => String(h.hte_id) === draftHteId);
+
             if (hte?.college_id && String(hte.college_id) !== value) {
                 setDraftHteId('all');
             }
@@ -306,10 +295,6 @@ export default function InternsIndex({
     };
 
     const handleApplyFilters = () => {
-        setCollegeId(draftCollegeId);
-        setCampusId(draftCampusId);
-        setProgramId(draftProgramId);
-        setHteId(draftHteId);
         setPopoverOpen(false);
         visit({
             status: currentStatus !== 'all' ? currentStatus : undefined,
@@ -328,10 +313,6 @@ export default function InternsIndex({
         setDraftCampusId('all');
         setDraftProgramId('all');
         setDraftHteId('all');
-        setCollegeId('all');
-        setCampusId('all');
-        setProgramId('all');
-        setHteId('all');
         setPopoverOpen(false);
         visit({
             status: currentStatus !== 'all' ? currentStatus : undefined,
@@ -345,26 +326,27 @@ export default function InternsIndex({
         });
     };
 
-    const removeSingleFilter = (key: 'college' | 'campus' | 'program' | 'hte') => {
+    const removeSingleFilter = (
+        key: 'college' | 'campus' | 'program' | 'hte',
+    ) => {
         const nextCollege = key === 'college' ? 'all' : collegeId;
         const nextCampus = key === 'campus' ? 'all' : campusId;
         const nextProgram = key === 'program' ? 'all' : programId;
         const nextHte = key === 'hte' ? 'all' : hteId;
 
         if (key === 'college') {
-            setCollegeId('all');
             setDraftCollegeId('all');
         }
+
         if (key === 'campus') {
-            setCampusId('all');
             setDraftCampusId('all');
         }
+
         if (key === 'program') {
-            setProgramId('all');
             setDraftProgramId('all');
         }
+
         if (key === 'hte') {
-            setHteId('all');
             setDraftHteId('all');
         }
 
@@ -380,8 +362,13 @@ export default function InternsIndex({
         });
     };
 
-    const activeFiltersList = useMemo(() => {
-        const list: { key: string; label: string; value: string; onRemove: () => void }[] = [];
+    const activeFiltersList = (() => {
+        const list: {
+            key: string;
+            label: string;
+            value: string;
+            onRemove: () => void;
+        }[] = [];
 
         if (collegeId && collegeId !== 'all') {
             const col = colleges.find((c) => String(c.id) === collegeId);
@@ -404,7 +391,9 @@ export default function InternsIndex({
         }
 
         if (programId && programId !== 'all') {
-            const prog = programs.find((p) => String(p.program_id) === programId);
+            const prog = programs.find(
+                (p) => String(p.program_id) === programId,
+            );
             list.push({
                 key: 'program',
                 label: 'Program',
@@ -424,7 +413,7 @@ export default function InternsIndex({
         }
 
         return list;
-    }, [collegeId, campusId, programId, hteId, colleges, campuses, programs, htes]);
+    })();
 
     const activeFilterCount = activeFiltersList.length;
 
@@ -449,10 +438,6 @@ export default function InternsIndex({
 
     const clearAllFilters = () => {
         setSearch('');
-        setCollegeId('all');
-        setCampusId('all');
-        setProgramId('all');
-        setHteId('all');
         setDraftCollegeId('all');
         setDraftCampusId('all');
         setDraftProgramId('all');
@@ -575,21 +560,22 @@ export default function InternsIndex({
                             {activeFilterCount > 0 && (
                                 <button
                                     type="button"
-                                    onClick={() => setPopoverOpen(true)}
+                                    onClick={openFilterPopover}
                                     className="group inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary transition-colors hover:border-primary/40 hover:bg-primary/15"
                                     title="Click to view and edit active filters"
                                 >
                                     <span className="size-1.5 rounded-full bg-primary" />
                                     <span>
                                         {activeFilterCount} filter
-                                        {activeFilterCount > 1 ? 's' : ''} applied
+                                        {activeFilterCount > 1 ? 's' : ''}{' '}
+                                        applied
                                     </span>
                                 </button>
                             )}
                         </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-end gap-2 ml-auto">
+                    <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
                         {/* Search */}
                         <form
                             onSubmit={applySearch}
@@ -626,7 +612,7 @@ export default function InternsIndex({
                                         <TabsTrigger
                                             key={tab.value}
                                             value={tab.value}
-                                            className="px-2.5 text-xs sm:px-3 sm:text-sm font-medium"
+                                            className="px-2.5 text-xs font-medium sm:px-3 sm:text-sm"
                                         >
                                             {tab.label}
                                         </TabsTrigger>
@@ -637,7 +623,10 @@ export default function InternsIndex({
 
                         {/* Consolidated Filters Popover with Tooltip Preview */}
                         <TooltipProvider delayDuration={200}>
-                            <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                            <Popover
+                                open={popoverOpen}
+                                onOpenChange={handleFilterPopoverChange}
+                            >
                                 <Tooltip open={popoverOpen ? false : undefined}>
                                     <TooltipTrigger asChild>
                                         <PopoverTrigger asChild>
@@ -651,7 +640,7 @@ export default function InternsIndex({
                                                 className={cn(
                                                     'h-9 gap-1.5 transition-colors',
                                                     activeFilterCount > 0 &&
-                                                        'border-primary/30 bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary font-medium dark:bg-primary/20',
+                                                        'border-primary/30 bg-primary/10 font-medium text-primary hover:bg-primary/15 hover:text-primary dark:bg-primary/20',
                                                 )}
                                             >
                                                 <SlidersHorizontal className="size-3.5" />
@@ -668,7 +657,9 @@ export default function InternsIndex({
                                         side="bottom"
                                         align="end"
                                         className={cn(
-                                            activeFilterCount > 0 ? 'w-56 p-2.5' : 'px-3 py-1.5',
+                                            activeFilterCount > 0
+                                                ? 'w-56 p-2.5'
+                                                : 'px-3 py-1.5',
                                         )}
                                     >
                                         {activeFilterCount > 0 ? (
@@ -676,30 +667,36 @@ export default function InternsIndex({
                                                 <div className="mb-1.5 flex items-center justify-between border-b border-primary-foreground/20 pb-1 font-semibold">
                                                     <span>Active Filters</span>
                                                     <span className="text-[10px] opacity-80">
-                                                        {activeFilterCount} applied
+                                                        {activeFilterCount}{' '}
+                                                        applied
                                                     </span>
                                                 </div>
                                                 <div className="space-y-1">
-                                                    {activeFiltersList.map((f) => (
-                                                        <div
-                                                            key={f.key}
-                                                            className="flex items-center justify-between gap-2 text-xs"
-                                                        >
-                                                            <span className="opacity-80">
-                                                                {f.label}:
-                                                            </span>
-                                                            <span className="max-w-[130px] truncate font-medium">
-                                                                {f.value}
-                                                            </span>
-                                                        </div>
-                                                    ))}
+                                                    {activeFiltersList.map(
+                                                        (f) => (
+                                                            <div
+                                                                key={f.key}
+                                                                className="flex items-center justify-between gap-2 text-xs"
+                                                            >
+                                                                <span className="opacity-80">
+                                                                    {f.label}:
+                                                                </span>
+                                                                <span className="max-w-[130px] truncate font-medium">
+                                                                    {f.value}
+                                                                </span>
+                                                            </div>
+                                                        ),
+                                                    )}
                                                 </div>
                                                 <div className="mt-2 border-t border-primary-foreground/20 pt-1 text-center text-[10px] opacity-80">
                                                     Click to modify or reset
                                                 </div>
                                             </div>
                                         ) : (
-                                            <span>Filter by college, campus, program, or HTE</span>
+                                            <span>
+                                                Filter by college, campus,
+                                                program, or HTE
+                                            </span>
                                         )}
                                     </TooltipContent>
                                 </Tooltip>
@@ -734,82 +731,105 @@ export default function InternsIndex({
 
                                     <div className="space-y-3.5">
                                         {/* College Filter (Super Admin) */}
-                                        {isSuperAdmin && colleges.length > 0 && (
-                                            <div className="space-y-1.5">
-                                                <Label className="flex items-center justify-between text-xs text-muted-foreground">
-                                                    <span className="flex items-center gap-1.5">
-                                                        <Building2 className="size-3.5" />
-                                                        College
-                                                    </span>
-                                                    {draftCollegeId !== 'all' && (
-                                                        <span className="flex items-center gap-1 text-[10px] font-medium text-primary">
-                                                            <span className="size-1.5 rounded-full bg-primary" />
-                                                            Active
+                                        {isSuperAdmin &&
+                                            colleges.length > 0 && (
+                                                <div className="space-y-1.5">
+                                                    <Label className="flex items-center justify-between text-xs text-muted-foreground">
+                                                        <span className="flex items-center gap-1.5">
+                                                            <Building2 className="size-3.5" />
+                                                            College
                                                         </span>
-                                                    )}
-                                                </Label>
-                                                <Select
-                                                    value={draftCollegeId}
-                                                    onValueChange={handleDraftCollegeChange}
-                                                >
-                                                    <SelectTrigger className="h-9 w-full text-xs">
-                                                        <SelectValue placeholder="All Colleges" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="all">
-                                                            All Colleges
-                                                        </SelectItem>
-                                                        {colleges.map((c) => (
-                                                            <SelectItem
-                                                                key={c.id}
-                                                                value={String(c.id)}
-                                                            >
-                                                                {c.code || c.name}
+                                                        {draftCollegeId !==
+                                                            'all' && (
+                                                            <span className="flex items-center gap-1 text-[10px] font-medium text-primary">
+                                                                <span className="size-1.5 rounded-full bg-primary" />
+                                                                Active
+                                                            </span>
+                                                        )}
+                                                    </Label>
+                                                    <Select
+                                                        value={draftCollegeId}
+                                                        onValueChange={
+                                                            handleDraftCollegeChange
+                                                        }
+                                                    >
+                                                        <SelectTrigger className="h-9 w-full text-xs">
+                                                            <SelectValue placeholder="All Colleges" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="all">
+                                                                All Colleges
                                                             </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                        )}
+                                                            {colleges.map(
+                                                                (c) => (
+                                                                    <SelectItem
+                                                                        key={
+                                                                            c.id
+                                                                        }
+                                                                        value={String(
+                                                                            c.id,
+                                                                        )}
+                                                                    >
+                                                                        {c.code ||
+                                                                            c.name}
+                                                                    </SelectItem>
+                                                                ),
+                                                            )}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            )}
 
                                         {/* Campus Filter (Super Admin) */}
-                                        {isSuperAdmin && campuses.length > 0 && (
-                                            <div className="space-y-1.5">
-                                                <Label className="flex items-center justify-between text-xs text-muted-foreground">
-                                                    <span className="flex items-center gap-1.5">
-                                                        <MapPin className="size-3.5" />
-                                                        Campus
-                                                    </span>
-                                                    {draftCampusId !== 'all' && (
-                                                        <span className="flex items-center gap-1 text-[10px] font-medium text-primary">
-                                                            <span className="size-1.5 rounded-full bg-primary" />
-                                                            Active
+                                        {isSuperAdmin &&
+                                            campuses.length > 0 && (
+                                                <div className="space-y-1.5">
+                                                    <Label className="flex items-center justify-between text-xs text-muted-foreground">
+                                                        <span className="flex items-center gap-1.5">
+                                                            <MapPin className="size-3.5" />
+                                                            Campus
                                                         </span>
-                                                    )}
-                                                </Label>
-                                                <Select
-                                                    value={draftCampusId}
-                                                    onValueChange={handleDraftCampusChange}
-                                                >
-                                                    <SelectTrigger className="h-9 w-full text-xs">
-                                                        <SelectValue placeholder="All Campuses" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="all">
-                                                            All Campuses
-                                                        </SelectItem>
-                                                        {campuses.map((camp) => (
-                                                            <SelectItem
-                                                                key={camp.id}
-                                                                value={String(camp.id)}
-                                                            >
-                                                                {camp.name}
+                                                        {draftCampusId !==
+                                                            'all' && (
+                                                            <span className="flex items-center gap-1 text-[10px] font-medium text-primary">
+                                                                <span className="size-1.5 rounded-full bg-primary" />
+                                                                Active
+                                                            </span>
+                                                        )}
+                                                    </Label>
+                                                    <Select
+                                                        value={draftCampusId}
+                                                        onValueChange={
+                                                            handleDraftCampusChange
+                                                        }
+                                                    >
+                                                        <SelectTrigger className="h-9 w-full text-xs">
+                                                            <SelectValue placeholder="All Campuses" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="all">
+                                                                All Campuses
                                                             </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                        )}
+                                                            {campuses.map(
+                                                                (camp) => (
+                                                                    <SelectItem
+                                                                        key={
+                                                                            camp.id
+                                                                        }
+                                                                        value={String(
+                                                                            camp.id,
+                                                                        )}
+                                                                    >
+                                                                        {
+                                                                            camp.name
+                                                                        }
+                                                                    </SelectItem>
+                                                                ),
+                                                            )}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            )}
 
                                         {/* Program Filter */}
                                         {filteredPrograms.length > 0 && (
@@ -819,7 +839,8 @@ export default function InternsIndex({
                                                         <BookOpen className="size-3.5" />
                                                         Program
                                                     </span>
-                                                    {draftProgramId !== 'all' && (
+                                                    {draftProgramId !==
+                                                        'all' && (
                                                         <span className="flex items-center gap-1 text-[10px] font-medium text-primary">
                                                             <span className="size-1.5 rounded-full bg-primary" />
                                                             Active
@@ -828,7 +849,9 @@ export default function InternsIndex({
                                                 </Label>
                                                 <Select
                                                     value={draftProgramId}
-                                                    onValueChange={handleDraftProgramChange}
+                                                    onValueChange={
+                                                        handleDraftProgramChange
+                                                    }
                                                 >
                                                     <SelectTrigger className="h-9 w-full text-xs">
                                                         <SelectValue placeholder="All Programs" />
@@ -837,16 +860,22 @@ export default function InternsIndex({
                                                         <SelectItem value="all">
                                                             All Programs
                                                         </SelectItem>
-                                                        {filteredPrograms.map((prog) => (
-                                                            <SelectItem
-                                                                key={prog.program_id}
-                                                                value={String(
-                                                                    prog.program_id,
-                                                                )}
-                                                            >
-                                                                {prog.program_name}
-                                                            </SelectItem>
-                                                        ))}
+                                                        {filteredPrograms.map(
+                                                            (prog) => (
+                                                                <SelectItem
+                                                                    key={
+                                                                        prog.program_id
+                                                                    }
+                                                                    value={String(
+                                                                        prog.program_id,
+                                                                    )}
+                                                                >
+                                                                    {
+                                                                        prog.program_name
+                                                                    }
+                                                                </SelectItem>
+                                                            ),
+                                                        )}
                                                     </SelectContent>
                                                 </Select>
                                             </div>
@@ -869,7 +898,9 @@ export default function InternsIndex({
                                                 </Label>
                                                 <Select
                                                     value={draftHteId}
-                                                    onValueChange={handleDraftHteChange}
+                                                    onValueChange={
+                                                        handleDraftHteChange
+                                                    }
                                                 >
                                                     <SelectTrigger className="h-9 w-full text-xs">
                                                         <SelectValue placeholder="All HTEs" />
@@ -878,14 +909,20 @@ export default function InternsIndex({
                                                         <SelectItem value="all">
                                                             All HTEs
                                                         </SelectItem>
-                                                        {filteredHtes.map((h) => (
-                                                            <SelectItem
-                                                                key={h.hte_id}
-                                                                value={String(h.hte_id)}
-                                                            >
-                                                                {h.hte_name}
-                                                            </SelectItem>
-                                                        ))}
+                                                        {filteredHtes.map(
+                                                            (h) => (
+                                                                <SelectItem
+                                                                    key={
+                                                                        h.hte_id
+                                                                    }
+                                                                    value={String(
+                                                                        h.hte_id,
+                                                                    )}
+                                                                >
+                                                                    {h.hte_name}
+                                                                </SelectItem>
+                                                            ),
+                                                        )}
                                                     </SelectContent>
                                                 </Select>
                                             </div>
@@ -994,7 +1031,11 @@ export default function InternsIndex({
                     <Card>
                         <CardContent className="py-12 text-center text-sm text-muted-foreground">
                             <p>
-                                No {currentStatus === 'all' ? '' : `${currentStatus} `}interns
+                                No{' '}
+                                {currentStatus === 'all'
+                                    ? ''
+                                    : `${currentStatus} `}
+                                interns
                                 {hasActiveFilters
                                     ? ' match your selected filters or search query.'
                                     : ' found.'}
@@ -1102,10 +1143,16 @@ export default function InternsIndex({
                                                                 }
                                                             >
                                                                 <div className="flex flex-col items-center">
-                                                                    <span className="font-medium">{intern.program_name}</span>
+                                                                    <span className="font-medium">
+                                                                        {
+                                                                            intern.program_name
+                                                                        }
+                                                                    </span>
                                                                     {intern.college_code && (
-                                                                        <span className="text-[10px] text-muted-foreground font-mono">
-                                                                            {intern.college_code}
+                                                                        <span className="font-mono text-[10px] text-muted-foreground">
+                                                                            {
+                                                                                intern.college_code
+                                                                            }
                                                                         </span>
                                                                     )}
                                                                 </div>
@@ -1120,8 +1167,9 @@ export default function InternsIndex({
                                                                     intern.hte_name
                                                                 }
                                                             </TableCell>
-                                                            <TableCell className="px-6 text-center whitespace-nowrap text-xs text-muted-foreground">
-                                                                {intern.campus || '—'}
+                                                            <TableCell className="px-6 text-center text-xs whitespace-nowrap text-muted-foreground">
+                                                                {intern.campus ||
+                                                                    '—'}
                                                             </TableCell>
                                                             <TableCell className="px-6 text-center">
                                                                 <StatusBadge
@@ -1253,10 +1301,16 @@ export default function InternsIndex({
                                                                 intern.program_name
                                                             }
                                                         >
-                                                            {intern.program_name}
+                                                            {
+                                                                intern.program_name
+                                                            }
                                                             {intern.college_code && (
-                                                                <span className="ml-1 text-[10px] text-muted-foreground font-mono">
-                                                                    ({intern.college_code})
+                                                                <span className="ml-1 font-mono text-[10px] text-muted-foreground">
+                                                                    (
+                                                                    {
+                                                                        intern.college_code
+                                                                    }
+                                                                    )
                                                                 </span>
                                                             )}
                                                         </span>

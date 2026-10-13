@@ -87,7 +87,7 @@ class SchedulePeriodController extends Controller
 
         AuditLog::record(
             action: 'schedule_override_created',
-            description: "Schedule period created: ".($schedulePeriod->name ?? 'Baseline schedule'),
+            description: 'Schedule period created: '.($schedulePeriod->name ?? 'Baseline schedule'),
             auditable: $schedulePeriod,
             newValues: $schedulePeriod->only(['college_id', 'name', 'start_date', 'end_date', 'day_schedule']),
             user: $user,
@@ -138,7 +138,7 @@ class SchedulePeriodController extends Controller
 
         AuditLog::record(
             action: 'schedule_override_updated',
-            description: "Schedule period updated: ".($schedulePeriod->name ?? 'Schedule'),
+            description: 'Schedule period updated: '.($schedulePeriod->name ?? 'Schedule'),
             auditable: $schedulePeriod,
             oldValues: $oldValues,
             newValues: $schedulePeriod->only(['college_id', 'name', 'start_date', 'end_date', 'day_schedule']),

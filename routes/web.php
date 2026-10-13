@@ -174,6 +174,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
     });
 
+    Route::delete('supervisor/document-templates/{documentTemplate}', [SupervisorDocumentTemplateController::class, 'destroy'])
+        ->middleware('role:'.User::ROLE_SUPERVISOR.','.User::ROLE_SUPER_ADMIN)
+        ->name('supervisor.document-templates.destroy');
+
     Route::middleware('role:'.User::ROLE_SUPERVISOR)->prefix('supervisor')->name('supervisor.')->group(function () {
         // Shared between both supervisor types
         Route::get('dashboard', [SupervisorDashboardController::class, 'index'])->name('dashboard');
@@ -194,7 +198,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('document-templates/{documentTemplate}/download', [SupervisorDocumentTemplateController::class, 'download'])
                 ->middleware('throttle:20,1')
                 ->name('document-templates.download');
-            Route::delete('document-templates/{documentTemplate}', [SupervisorDocumentTemplateController::class, 'destroy'])->name('document-templates.destroy');
             Route::post('document-templates/{id}/restore', [SupervisorDocumentTemplateController::class, 'restore'])->name('document-templates.restore');
             Route::delete('document-templates/{id}/force', [SupervisorDocumentTemplateController::class, 'forceDelete'])->name('document-templates.forceDelete');
         });

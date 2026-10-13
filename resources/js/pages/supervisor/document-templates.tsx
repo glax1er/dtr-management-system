@@ -132,7 +132,13 @@ export default function DocumentTemplates({
     program,
     total_archived = 0,
 }: DocumentTemplatesProps) {
-    const [view, setView] = useState<ViewMode>('table');
+    const [view, setView] = useState<ViewMode>(() => {
+        if (typeof window !== 'undefined' && window.innerWidth < 768) {
+            return 'grid';
+        }
+
+        return 'table';
+    });
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
     const [activeFolder, setActiveFolder] = useState<string>('all'); // 'all' | folder_name | 'trash'
@@ -370,9 +376,9 @@ export default function DocumentTemplates({
                 {/* ── Top Header Toolbar ──────────────────────────────────────── */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-foreground">
-                            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-                                <FileStack className="size-5" />
+                        <h1 className="flex items-center gap-2.5 text-xl font-semibold tracking-tight text-foreground sm:gap-3 sm:text-2xl">
+                            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm sm:size-10">
+                                <FileStack className="size-4.5 sm:size-5" />
                             </span>
                             Document Templates
                         </h1>
@@ -478,21 +484,27 @@ export default function DocumentTemplates({
                         )}
 
                         {/* View Mode Switcher (Tabs) */}
-                        <div className="hidden sm:block">
-                            <Tabs
-                                value={view}
-                                onValueChange={(v) => setView(v as ViewMode)}
-                            >
-                                <TabsList>
-                                    <TabsTrigger value="table">
-                                        <TableIcon className="size-4" />
-                                    </TabsTrigger>
-                                    <TabsTrigger value="grid">
-                                        <LayoutGrid className="size-4" />
-                                    </TabsTrigger>
-                                </TabsList>
-                            </Tabs>
-                        </div>
+                        <Tabs
+                            value={view}
+                            onValueChange={(v) => setView(v as ViewMode)}
+                        >
+                            <TabsList className="h-9">
+                                <TabsTrigger
+                                    value="table"
+                                    className="px-2.5 sm:px-3"
+                                    aria-label="Table view"
+                                >
+                                    <TableIcon className="size-4" />
+                                </TabsTrigger>
+                                <TabsTrigger
+                                    value="grid"
+                                    className="px-2.5 sm:px-3"
+                                    aria-label="Grid view"
+                                >
+                                    <LayoutGrid className="size-4" />
+                                </TabsTrigger>
+                            </TabsList>
+                        </Tabs>
 
                         {/* Primary Action Button: Add Document */}
                         <Button
@@ -557,7 +569,7 @@ export default function DocumentTemplates({
                     </div>
 
                     {/* Category Folder Cards Grid */}
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
+                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3 xl:grid-cols-4">
                         {folders.map((f) => {
                             const colors = getFolderColorClass(f.name);
                             const isSelected = activeFolder === f.name;
@@ -592,7 +604,7 @@ export default function DocumentTemplates({
                                         <div className="truncate text-sm font-semibold text-foreground">
                                             {f.name}
                                         </div>
-                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
                                             <span>
                                                 {f.total_items}{' '}
                                                 {f.total_items === 1
@@ -640,11 +652,13 @@ export default function DocumentTemplates({
                                 <div className="truncate text-sm font-semibold text-foreground">
                                     Archived Documents
                                 </div>
-                                <div className="text-xs text-muted-foreground">
-                                    {total_archived}{' '}
-                                    {total_archived === 1
-                                        ? 'archived item'
-                                        : 'archived items'}
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                                    <span>
+                                        {total_archived}{' '}
+                                        {total_archived === 1
+                                            ? 'archived item'
+                                            : 'archived items'}
+                                    </span>
                                 </div>
                             </div>
                         </button>
@@ -832,28 +846,28 @@ export default function DocumentTemplates({
                         /* Archived Table */
                         <Card className="overflow-hidden p-0 shadow-xs">
                             <CardContent className="p-0">
-                                <Table>
+                                <Table className="min-w-[680px]">
                                     <TableHeader className="bg-muted/40">
                                         <TableRow>
-                                            <TableHead className="px-6 font-semibold">
+                                            <TableHead className="px-3 font-semibold sm:px-6">
                                                 Document Name
                                             </TableHead>
-                                            <TableHead className="px-6 text-center font-semibold">
+                                            <TableHead className="px-2 text-center font-semibold sm:px-4">
                                                 Category
                                             </TableHead>
-                                            <TableHead className="px-6 text-center font-semibold">
+                                            <TableHead className="px-2 text-center font-semibold sm:px-4">
                                                 Type
                                             </TableHead>
-                                            <TableHead className="px-6 text-center font-semibold">
+                                            <TableHead className="px-2 text-center font-semibold sm:px-4">
                                                 Status
                                             </TableHead>
-                                            <TableHead className="px-6 text-center font-semibold">
+                                            <TableHead className="px-2 text-center font-semibold sm:px-4">
                                                 Template File
                                             </TableHead>
-                                            <TableHead className="px-6 text-center font-semibold">
+                                            <TableHead className="px-2 text-center font-semibold sm:px-4">
                                                 Archived Date
                                             </TableHead>
-                                            <TableHead className="px-6 text-center font-semibold">
+                                            <TableHead className="px-3 text-center font-semibold sm:px-6">
                                                 Actions
                                             </TableHead>
                                         </TableRow>
@@ -864,7 +878,7 @@ export default function DocumentTemplates({
                                                 key={item.id}
                                                 className="hover:bg-muted/30"
                                             >
-                                                <TableCell className="px-6 font-medium text-foreground">
+                                                <TableCell className="px-3 font-medium text-foreground sm:px-6">
                                                     <div className="space-y-0.5">
                                                         <div className="flex items-center gap-1.5">
                                                             <span className="font-semibold">
@@ -888,7 +902,7 @@ export default function DocumentTemplates({
                                                         )}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="px-6 text-center">
+                                                <TableCell className="px-2 text-center sm:px-4">
                                                     <Badge
                                                         variant="outline"
                                                         className="text-xs"
@@ -896,7 +910,7 @@ export default function DocumentTemplates({
                                                         {item.category}
                                                     </Badge>
                                                 </TableCell>
-                                                <TableCell className="px-6 text-center">
+                                                <TableCell className="px-2 text-center sm:px-4">
                                                     <StatusBadge
                                                         status={
                                                             item.required
@@ -905,20 +919,20 @@ export default function DocumentTemplates({
                                                         }
                                                     />
                                                 </TableCell>
-                                                <TableCell className="px-6 text-center">
+                                                <TableCell className="px-2 text-center sm:px-4">
                                                     <StatusBadge status="archived" />
                                                 </TableCell>
-                                                <TableCell className="px-6 text-center font-mono text-xs text-muted-foreground">
+                                                <TableCell className="px-2 text-center font-mono text-xs text-muted-foreground sm:px-4">
                                                     {item.original_filename || (
                                                         <span className="italic">
                                                             None
                                                         </span>
                                                     )}
                                                 </TableCell>
-                                                <TableCell className="px-6 text-center text-xs whitespace-nowrap text-muted-foreground">
+                                                <TableCell className="px-2 text-center text-xs whitespace-nowrap text-muted-foreground sm:px-4">
                                                     {item.deleted_at}
                                                 </TableCell>
-                                                <TableCell className="px-6 text-center">
+                                                <TableCell className="px-3 text-center sm:px-6">
                                                     <div className="flex items-center justify-center gap-1">
                                                         <Tooltip>
                                                             <TooltipTrigger
@@ -1136,7 +1150,7 @@ export default function DocumentTemplates({
                                 </CardContent>
 
                                 {/* Action Toolbar */}
-                                <div className="flex items-center justify-between gap-2 border-t border-border/50 bg-muted/10 px-4 py-2.5">
+                                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/50 bg-muted/10 px-4 py-2.5">
                                     <div className="flex items-center gap-1">
                                         {item.has_template &&
                                             item.download_url && (
@@ -1155,7 +1169,9 @@ export default function DocumentTemplates({
                                                                 download
                                                             >
                                                                 <Download className="size-3.5" />
-                                                                Download
+                                                                <span>
+                                                                    Download
+                                                                </span>
                                                             </a>
                                                         </Button>
                                                     </TooltipTrigger>
@@ -1166,7 +1182,7 @@ export default function DocumentTemplates({
                                             )}
                                     </div>
 
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center gap-1.5">
                                         {/* Edit Document Requirement */}
                                         <Button
                                             size="sm"
@@ -1175,7 +1191,10 @@ export default function DocumentTemplates({
                                             onClick={() => openEditModal(item)}
                                         >
                                             <Pencil className="size-3.5" />
-                                            Edit Document
+                                            <span>Edit</span>
+                                            <span className="hidden sm:inline">
+                                                Document
+                                            </span>
                                         </Button>
 
                                         {/* Archive Button */}
@@ -1208,28 +1227,28 @@ export default function DocumentTemplates({
                     /* Uniform Admin Table View */
                     <Card className="overflow-hidden p-0 shadow-xs">
                         <CardContent className="p-0">
-                            <Table>
+                            <Table className="min-w-[680px]">
                                 <TableHeader className="bg-muted/40">
                                     <TableRow>
-                                        <TableHead className="px-6 font-semibold">
+                                        <TableHead className="px-3 font-semibold sm:px-6">
                                             Document Requirement
                                         </TableHead>
-                                        <TableHead className="px-6 text-center font-semibold">
+                                        <TableHead className="px-2 text-center font-semibold sm:px-4">
                                             Category
                                         </TableHead>
-                                        <TableHead className="px-6 text-center font-semibold">
+                                        <TableHead className="px-2 text-center font-semibold sm:px-4">
                                             Requirement
                                         </TableHead>
-                                        <TableHead className="px-6 text-center font-semibold">
+                                        <TableHead className="px-2 text-center font-semibold sm:px-4">
                                             Format Status
                                         </TableHead>
-                                        <TableHead className="px-6 text-center font-semibold">
+                                        <TableHead className="px-2 text-center font-semibold sm:px-4">
                                             Blank File
                                         </TableHead>
-                                        <TableHead className="px-6 text-center font-semibold">
+                                        <TableHead className="px-2 text-center font-semibold sm:px-4">
                                             Guidance
                                         </TableHead>
-                                        <TableHead className="px-6 text-center font-semibold">
+                                        <TableHead className="px-3 text-center font-semibold sm:px-6">
                                             Actions
                                         </TableHead>
                                     </TableRow>
@@ -1240,7 +1259,7 @@ export default function DocumentTemplates({
                                             key={item.document_type}
                                             className="hover:bg-muted/30"
                                         >
-                                            <TableCell className="px-6 font-medium text-foreground">
+                                            <TableCell className="px-3 font-medium text-foreground sm:px-6">
                                                 <div className="space-y-0.5">
                                                     <div className="flex items-center gap-1.5">
                                                         <span className="font-semibold">
@@ -1261,7 +1280,7 @@ export default function DocumentTemplates({
                                                     </div>
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="px-6 text-center">
+                                            <TableCell className="px-2 text-center sm:px-4">
                                                 <Badge
                                                     variant="outline"
                                                     className="text-xs"
@@ -1269,7 +1288,7 @@ export default function DocumentTemplates({
                                                     {item.category}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell className="px-6 text-center">
+                                            <TableCell className="px-2 text-center sm:px-4">
                                                 <StatusBadge
                                                     status={
                                                         item.required
@@ -1278,7 +1297,7 @@ export default function DocumentTemplates({
                                                     }
                                                 />
                                             </TableCell>
-                                            <TableCell className="px-6 text-center">
+                                            <TableCell className="px-2 text-center sm:px-4">
                                                 <StatusBadge
                                                     status={
                                                         item.has_template
@@ -1287,7 +1306,7 @@ export default function DocumentTemplates({
                                                     }
                                                 />
                                             </TableCell>
-                                            <TableCell className="px-6 text-center text-xs">
+                                            <TableCell className="px-2 text-center text-xs sm:px-4">
                                                 {item.has_template ? (
                                                     <div className="mx-auto max-w-[180px] space-y-0.5">
                                                         <div className="flex items-center justify-center gap-1.5 truncate font-medium text-foreground">
@@ -1322,7 +1341,7 @@ export default function DocumentTemplates({
                                                     </span>
                                                 )}
                                             </TableCell>
-                                            <TableCell className="px-6 text-center text-xs">
+                                            <TableCell className="px-2 text-center text-xs sm:px-4">
                                                 {item.instructions ? (
                                                     <button
                                                         type="button"
@@ -1342,7 +1361,7 @@ export default function DocumentTemplates({
                                                     </span>
                                                 )}
                                             </TableCell>
-                                            <TableCell className="px-6 text-center">
+                                            <TableCell className="px-3 text-center sm:px-6">
                                                 <div className="flex items-center justify-center gap-1">
                                                     {item.has_template &&
                                                         item.download_url && (
