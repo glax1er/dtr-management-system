@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -30,8 +29,6 @@ use Illuminate\Support\Str;
  */
 class TwoFactorResetRequest extends Model
 {
-    use HasFactory;
-
     public const STATUS_PENDING_USER_CONFIRMATION = 'pending_user_confirmation';
 
     public const STATUS_PENDING_ADMIN_APPROVAL = 'pending_admin_approval';
@@ -168,7 +165,8 @@ class TwoFactorResetRequest extends Model
             return false;
         }
 
-        if (! hash_equals($this->token_hash ?? '', hash('sha256', $plainToken))) {
+        $expectedHash = hash('sha256', $plainToken);
+        if (! is_string($this->token_hash) || ! hash_equals($this->token_hash, $expectedHash)) {
             return false;
         }
 
@@ -197,9 +195,6 @@ class TwoFactorResetRequest extends Model
         }
 
         $targetUser = $this->user;
-        if (! $targetUser) {
-            return false;
-        }
 
         // Super Admin can manage all requests (except their own)
         if ($admin->isSuperAdmin()) {

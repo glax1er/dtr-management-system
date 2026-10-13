@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\NotificationPresenter;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -44,7 +45,7 @@ class HandleInertiaRequests extends Middleware
                 ->latest()
                 ->limit(5)
                 ->get()
-                ->map(fn ($notification) => \App\Services\NotificationPresenter::formatNotification($notification))
+                ->map(fn ($notification) => NotificationPresenter::formatNotification($notification))
                 ->values()
                 ->all()
             : [];

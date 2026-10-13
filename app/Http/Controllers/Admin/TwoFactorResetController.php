@@ -60,8 +60,8 @@ class TwoFactorResetController extends Controller
 
         // If highlighting a specific request and no status filter was explicitly requested, match the request's status
         if ($request->filled('highlight') && ! $request->has('status')) {
-            $highlightedRequest = TwoFactorResetRequest::find($request->query('highlight'));
-            if ($highlightedRequest) {
+            $highlightedRequest = TwoFactorResetRequest::query()->find($request->query('highlight'));
+            if ($highlightedRequest instanceof TwoFactorResetRequest) {
                 $status = ($highlightedRequest->status === TwoFactorResetRequest::STATUS_PENDING_ADMIN_APPROVAL)
                     ? 'pending'
                     : $highlightedRequest->status;
@@ -87,9 +87,9 @@ class TwoFactorResetController extends Controller
         if ($request->filled('highlight') && ! $request->has('page')) {
             $highlightId = (int) $request->query('highlight');
             $allIds = (clone $query)->pluck('id')->all();
-            $index = array_search($highlightId, $allIds);
+            $index = array_search($highlightId, $allIds, true);
             if ($index !== false) {
-                $targetPage = (int) floor($index / $perPage) + 1;
+                $targetPage = (int) floor((int) $index / $perPage) + 1;
                 if ($targetPage > 1) {
                     $validated['page'] = $targetPage;
                 }
@@ -134,9 +134,6 @@ class TwoFactorResetController extends Controller
         }
 
         $targetUser = $twoFactorResetRequest->user;
-        if (! $targetUser) {
-            return back()->with('error', 'Target user no longer exists.');
-        }
 
         DB::transaction(function () use ($twoFactorResetRequest, $targetUser, $admin) {
             $previousConfirmedAt = $targetUser->two_factor_confirmed_at;
@@ -205,19 +202,17 @@ class TwoFactorResetController extends Controller
 
             AuditLog::record(
                 action: 'two_factor_reset.rejected',
-                description: "Rejected 2FA reset request for {$targetUser?->name} ({$targetUser?->email}). Reason: ".($validated['rejection_reason'] ?? 'None provided'),
+                description: 'Rejected 2FA reset request for '.$targetUser->name.' ('.$targetUser->email.'). Reason: '.($validated['rejection_reason'] ?? 'None provided'),
                 auditable: $twoFactorResetRequest,
                 user: $admin,
             );
         });
 
-        if ($targetUser) {
-            $targetUser->notify(new TwoFactorResetRejectedNotification(
-                $twoFactorResetRequest,
-                $admin,
-                $validated['rejection_reason'] ?? null
-            ));
-        }
+        $targetUser->notify(new TwoFactorResetRejectedNotification(
+            $twoFactorResetRequest,
+            $admin,
+            $validated['rejection_reason'] ?? null
+        ));
 
         return back()->with('success', 'The 2FA reset request has been rejected.');
     }

@@ -28,8 +28,11 @@ class NotificationPresenter
             $ticketId = $data['resolution_ticket_id'] ?? null;
             $date = $data['date'] ?? null;
 
-            if (! $date && $ticketId) {
-                $date = ResolutionTicket::find($ticketId)?->date?->toDateString();
+            if (! $date && $ticketId !== null) {
+                $ticket = ResolutionTicket::query()->find($ticketId);
+                if ($ticket instanceof ResolutionTicket) {
+                    $date = $ticket->date?->toDateString();
+                }
             }
 
             if (str_contains($href, '/supervisor/resolution-tickets') && $ticketId) {
@@ -112,6 +115,8 @@ class NotificationPresenter
 
     /**
      * Format a single database notification into a consistent structure for Inertia.
+     *
+     * @return array<string, mixed>
      */
     public static function formatNotification(DatabaseNotification $notification): array
     {
@@ -166,7 +171,8 @@ class NotificationPresenter
                 $data['proposed_time_out'] = $data['proposed_time_out'] ?? $ticket->proposed_time_out?->clone()->setTimezone($timezone)->format('g:i A');
                 $data['reason'] = $data['reason'] ?? $ticket->reason;
                 $data['rejection_reason'] = $data['rejection_reason'] ?? $ticket->rejection_reason;
-                $data['rejected_by'] = $data['rejected_by'] ?? $ticket->resolvedBy?->name ?? 'Supervisor';
+                $resolvedBy = $ticket->resolvedBy;
+                $data['rejected_by'] = $data['rejected_by'] ?? ($resolvedBy !== null && $resolvedBy->name !== '' ? $resolvedBy->name : 'Supervisor');
                 $data['resolved_at'] = $data['resolved_at'] ?? $ticket->resolved_at?->toISOString();
                 $data['status'] = $data['status'] ?? $ticket->status;
             }

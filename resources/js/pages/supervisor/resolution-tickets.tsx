@@ -18,7 +18,6 @@ import { Badge } from '@/components/ui/badge';
 import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
 import {
     Select,
     SelectContent,
@@ -42,6 +41,7 @@ import {
 } from '@/components/ui/tooltip';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useInitials } from '@/hooks/use-initials';
+import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 
 type ResolutionTicketRow = {

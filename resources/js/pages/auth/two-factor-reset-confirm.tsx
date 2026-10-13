@@ -1,5 +1,5 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { AlertCircle, AlertTriangle, CheckCircle2, KeyRound, LoaderCircle, ShieldAlert } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CheckCircle2, LoaderCircle } from 'lucide-react';
 import type { FormEvent } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,7 @@ export default function TwoFactorResetConfirm({
 
     const submit = (e: FormEvent) => {
         e.preventDefault();
+
         if (token) {
             post(`/two-factor-reset/confirm/${token}`);
         }

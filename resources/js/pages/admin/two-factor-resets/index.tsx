@@ -19,7 +19,6 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import {
     Dialog,
@@ -46,6 +45,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useInitials } from '@/hooks/use-initials';
+import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 
 interface TwoFactorResetRequestItem {
@@ -129,6 +129,7 @@ export default function TwoFactorResetsIndex({
         }
 
         const el = document.getElementById(`reset-row-${highlightId}`);
+
         if (!el) {
             return;
         }
@@ -176,7 +177,10 @@ export default function TwoFactorResetsIndex({
     const changePerPage = (perPage: number) => applyFilters(search, statusFilter, 1, perPage);
 
     const handleConfirmApprove = () => {
-        if (!approveItem) return;
+        if (!approveItem) {
+return;
+}
+
         setActionLoading(true);
 
         router.post(
@@ -198,7 +202,10 @@ export default function TwoFactorResetsIndex({
     };
 
     const handleConfirmReject = () => {
-        if (!rejectItem) return;
+        if (!rejectItem) {
+return;
+}
+
         setActionLoading(true);
 
         router.post(

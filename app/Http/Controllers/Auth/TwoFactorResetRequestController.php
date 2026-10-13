@@ -10,7 +10,6 @@ use App\Notifications\TwoFactorResetConfirmationNotification;
 use App\Notifications\TwoFactorResetRequestNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -26,7 +25,10 @@ class TwoFactorResetRequestController extends Controller
     {
         $prefilledEmail = null;
         if ($challengedId = $request->session()->get('login.id')) {
-            $prefilledEmail = User::find($challengedId)?->email;
+            $challengedUser = User::query()->find($challengedId);
+            if ($challengedUser instanceof User) {
+                $prefilledEmail = $challengedUser->email;
+            }
         }
 
         return Inertia::render('auth/two-factor-reset', [
@@ -59,12 +61,12 @@ class TwoFactorResetRequestController extends Controller
 
         RateLimiter::hit($throttleKey, 900);
 
-        $user = User::where('email', $email)->first();
+        $user = User::query()->where('email', $email)->first();
 
         // Security / Anti-enumeration:
         // Only generate & send confirmation if the user exists AND currently has 2FA enabled.
         // In all cases, return the exact same success message to prevent user enumeration.
-        if ($user && $user->hasEnabledTwoFactorAuthentication()) {
+        if ($user instanceof User && $user->hasEnabledTwoFactorAuthentication()) {
             [$resetRequest, $plainToken] = TwoFactorResetRequest::createForUser(
                 user: $user,
                 reason: $validated['reason'] ?? null,
@@ -163,10 +165,10 @@ class TwoFactorResetRequestController extends Controller
 
         // Notify administrators only (scoped to user's college or super admins)
         $targetUser = $resetRequest->user;
-        $targetCollegeId = $targetUser?->college_id;
+        $targetCollegeId = $targetUser->college_id;
 
         $collegeAdmins = collect();
-        if ($targetCollegeId && ! $targetUser->isSuperAdmin()) {
+        if ($targetCollegeId !== null && ! $targetUser->isSuperAdmin()) {
             $collegeAdmins = User::query()
                 ->where('is_active', true)
                 ->where(function ($query) {

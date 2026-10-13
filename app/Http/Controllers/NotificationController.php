@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\NotificationPresenter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -16,7 +17,7 @@ class NotificationController extends Controller
 
         $visibleNotifications = $user->visibleNotifications();
 
-        $dbNotifications = \App\Services\NotificationPresenter::formatCollection(
+        $dbNotifications = NotificationPresenter::formatCollection(
             $visibleNotifications->latest()->get()
         );
 

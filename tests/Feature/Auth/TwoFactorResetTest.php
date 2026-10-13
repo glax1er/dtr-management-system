@@ -3,6 +3,7 @@
 use App\Models\TwoFactorResetRequest;
 use App\Models\User;
 use App\Notifications\TwoFactorResetConfirmationNotification;
+use App\Notifications\TwoFactorResetRequestNotification;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -130,8 +131,7 @@ test('admin receives notification when user confirms reset request and non-admin
     $this->post(route('two-factor.reset.confirm.submit', ['token' => $plainToken]))
         ->assertRedirect(route('login'));
 
-    Notification::assertSentTo($superAdmin, \App\Notifications\TwoFactorResetRequestNotification::class);
-    Notification::assertNotSentTo($intern, \App\Notifications\TwoFactorResetRequestNotification::class);
-    Notification::assertNotSentTo($user, \App\Notifications\TwoFactorResetRequestNotification::class);
+    Notification::assertSentTo($superAdmin, TwoFactorResetRequestNotification::class);
+    Notification::assertNotSentTo($intern, TwoFactorResetRequestNotification::class);
+    Notification::assertNotSentTo($user, TwoFactorResetRequestNotification::class);
 });
-

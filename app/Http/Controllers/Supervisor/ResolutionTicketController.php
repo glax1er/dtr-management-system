@@ -97,9 +97,9 @@ class ResolutionTicketController extends Controller
         if ($request->filled('highlight') && ! $request->has('page')) {
             $highlightId = (int) $request->query('highlight');
             $allIds = (clone $tickets)->pluck('id')->all();
-            $index = array_search($highlightId, $allIds);
+            $index = array_search($highlightId, $allIds, true);
             if ($index !== false) {
-                $targetPage = (int) floor($index / $perPage) + 1;
+                $targetPage = (int) floor((int) $index / $perPage) + 1;
                 if ($targetPage > 1) {
                     $validated['page'] = $targetPage;
                 }

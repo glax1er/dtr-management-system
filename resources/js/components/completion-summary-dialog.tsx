@@ -115,7 +115,23 @@ export function CompletionSummaryDialog({
     trigger,
     defaultOpen = false,
 }: CompletionSummaryDialogProps) {
-    const [isOpen, setIsOpen] = useState(defaultOpen);
+    const initialOpen = useCallback(() => {
+        if (defaultOpen) {
+            return true;
+        }
+
+        if (typeof window === 'undefined') {
+            return false;
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const openSummary = params.get('open_summary') === '1';
+        const targetInternId = params.get('doc_intern') || params.get('highlight');
+
+        return openSummary && targetInternId === String(internUserId);
+    }, [defaultOpen, internUserId]);
+
+    const [isOpen, setIsOpen] = useState(initialOpen);
     const [isLoading, setIsLoading] = useState(false);
     const [summary, setSummary] = useState<CompletionSummaryData | null>(null);
 
@@ -147,25 +163,14 @@ export function CompletionSummaryDialog({
     }, [internUserId]);
 
     useEffect(() => {
-        if (defaultOpen) {
-            setIsOpen(true);
-            fetchSummary();
-
+        if (!isOpen) {
             return;
         }
 
-        if (typeof window !== 'undefined') {
-            const params = new URLSearchParams(window.location.search);
-            const openSummary = params.get('open_summary') === '1';
-            const targetInternId =
-                params.get('doc_intern') || params.get('highlight');
-
-            if (openSummary && targetInternId === String(internUserId)) {
-                setIsOpen(true);
-                fetchSummary();
-            }
-        }
-    }, [defaultOpen, internUserId, fetchSummary]);
+        // Initial dialog open state and URL-driven opens need to trigger a fetch as soon as the dialog becomes visible.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        fetchSummary();
+    }, [isOpen, fetchSummary]);
 
     const handleOpenChange = (open: boolean) => {
         setIsOpen(open);

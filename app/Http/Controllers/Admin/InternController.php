@@ -107,9 +107,9 @@ class InternController extends Controller
         if ($request->filled('highlight') && ! $request->has('page')) {
             $highlightUserId = (int) $request->query('highlight');
             $allUserIds = (clone $query)->pluck('user_id')->all();
-            $index = array_search($highlightUserId, $allUserIds);
+            $index = array_search($highlightUserId, $allUserIds, true);
             if ($index !== false) {
-                $targetPage = (int) floor($index / $perPage) + 1;
+                $targetPage = (int) floor((int) $index / $perPage) + 1;
                 if ($targetPage > 1) {
                     $validated['page'] = $targetPage;
                 }
