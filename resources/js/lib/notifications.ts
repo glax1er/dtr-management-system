@@ -141,22 +141,25 @@ export function getNotificationCategory(
     }
 
     if (
+        type === 'college_admin_account' ||
+        type === 'two_factor_reset' ||
+        type.includes('two_factor') ||
+        type.includes('system_alert') ||
+        type.includes('kiosk') ||
+        title.includes('college admin account') ||
+        title.includes('2fa reset') ||
+        title.includes('system alert') ||
+        title.includes('kiosk')
+    ) {
+        return 'system';
+    }
+
+    if (
         type.includes('submitted') ||
         title.includes('request') ||
         title.includes('submitted')
     ) {
         return 'pending';
-    }
-
-    if (
-        type === 'college_admin_account' ||
-        type.includes('system_alert') ||
-        type.includes('kiosk') ||
-        title.includes('college admin account') ||
-        title.includes('system alert') ||
-        title.includes('kiosk')
-    ) {
-        return 'system';
     }
 
     return 'general';

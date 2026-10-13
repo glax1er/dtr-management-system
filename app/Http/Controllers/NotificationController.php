@@ -16,21 +16,9 @@ class NotificationController extends Controller
 
         $visibleNotifications = $user->visibleNotifications();
 
-        $dbNotifications = $visibleNotifications
-            ->latest()
-            ->get()
-            ->map(fn ($notification) => [
-                'id' => $notification->id,
-                'type' => $notification->data['type'] ?? 'general',
-                'title' => $notification->data['title'] ?? 'Notification',
-                'message' => $notification->data['message'] ?? '',
-                'href' => $notification->data['href'] ?? '/dashboard',
-                'data' => $notification->data,
-                'read_at' => $notification->read_at?->toISOString(),
-                'created_at' => $notification->created_at?->toISOString(),
-            ])
-            ->values()
-            ->all();
+        $dbNotifications = \App\Services\NotificationPresenter::formatCollection(
+            $visibleNotifications->latest()->get()
+        );
 
         $unreadCount = $user->visibleNotifications()
             ->whereNull('read_at')
@@ -55,6 +43,18 @@ class NotificationController extends Controller
             ->firstOrFail();
 
         $model->markAsRead();
+
+        if ($request->filled('redirect_to')) {
+            $redirectTo = $request->input('redirect_to');
+            if (
+                is_string($redirectTo)
+                && str_starts_with($redirectTo, '/')
+                && ! str_starts_with($redirectTo, '//')
+                && ! str_contains($redirectTo, '\\')
+            ) {
+                return redirect($redirectTo);
+            }
+        }
 
         return back();
     }

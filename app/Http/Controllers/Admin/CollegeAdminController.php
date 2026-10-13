@@ -81,6 +81,19 @@ class CollegeAdminController extends Controller
             $query->where('is_active', $status === 'active');
         }
 
+        // Auto-navigate to the page containing the highlighted college admin if not specified
+        if ($request->filled('highlight') && ! $request->has('page')) {
+            $highlightId = (int) $request->query('highlight');
+            $allIds = (clone $query)->pluck('id')->all();
+            $index = array_search($highlightId, $allIds);
+            if ($index !== false) {
+                $targetPage = (int) floor($index / $perPage) + 1;
+                if ($targetPage > 1) {
+                    $validated['page'] = $targetPage;
+                }
+            }
+        }
+
         $collegeAdmins = $query
             ->paginate($perPage, ['*'], 'page', $validated['page'] ?? 1)
             ->withQueryString()

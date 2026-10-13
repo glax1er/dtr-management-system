@@ -44,16 +44,7 @@ class HandleInertiaRequests extends Middleware
                 ->latest()
                 ->limit(5)
                 ->get()
-                ->map(fn ($notification) => [
-                    'id' => $notification->id,
-                    'type' => $notification->data['type'] ?? 'general',
-                    'title' => $notification->data['title'] ?? 'Notification',
-                    'message' => $notification->data['message'] ?? '',
-                    'href' => $notification->data['href'] ?? '/dashboard',
-                    'data' => $notification->data,
-                    'read_at' => $notification->read_at?->toISOString(),
-                    'created_at' => $notification->created_at?->toISOString(),
-                ])
+                ->map(fn ($notification) => \App\Services\NotificationPresenter::formatNotification($notification))
                 ->values()
                 ->all()
             : [];

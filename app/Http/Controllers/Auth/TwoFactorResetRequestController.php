@@ -7,9 +7,11 @@ use App\Models\AuditLog;
 use App\Models\TwoFactorResetRequest;
 use App\Models\User;
 use App\Notifications\TwoFactorResetConfirmationNotification;
+use App\Notifications\TwoFactorResetRequestNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -158,6 +160,38 @@ class TwoFactorResetRequestController extends Controller
             auditable: $resetRequest,
             user: $resetRequest->user,
         );
+
+        // Notify administrators only (scoped to user's college or super admins)
+        $targetUser = $resetRequest->user;
+        $targetCollegeId = $targetUser?->college_id;
+
+        $collegeAdmins = collect();
+        if ($targetCollegeId && ! $targetUser->isSuperAdmin()) {
+            $collegeAdmins = User::query()
+                ->where('is_active', true)
+                ->where(function ($query) {
+                    $query->where('role', User::ROLE_COLLEGE_ADMIN)
+                        ->orWhere(fn ($sub) => $sub->where('role', User::ROLE_ADMIN)->whereNotNull('college_id'));
+                })
+                ->where('college_id', $targetCollegeId)
+                ->get()
+                ->filter(fn (User $admin) => $admin->wantsNotification('two_factor_resets'));
+        }
+
+        $superAdmins = User::query()
+            ->where('is_active', true)
+            ->where(function ($query) {
+                $query->where('role', User::ROLE_SUPER_ADMIN)
+                    ->orWhere(fn ($sub) => $sub->where('role', User::ROLE_ADMIN)->whereNull('college_id'));
+            })
+            ->get()
+            ->filter(fn (User $admin) => $admin->wantsNotification('two_factor_resets'));
+
+        $adminsToNotify = $collegeAdmins->merge($superAdmins)->unique('id');
+
+        if ($adminsToNotify->isNotEmpty()) {
+            Notification::send($adminsToNotify, new TwoFactorResetRequestNotification($resetRequest));
+        }
 
         return redirect()->route('login')->with(
             'status',

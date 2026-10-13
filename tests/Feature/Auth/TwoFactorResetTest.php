@@ -110,3 +110,28 @@ test('token cannot be reused after confirmation', function () {
     $response = $this->post(route('two-factor.reset.confirm.submit', ['token' => $plainToken]));
     $response->assertSessionHasErrors(['token']);
 });
+
+test('admin receives notification when user confirms reset request and non-admins do not', function () {
+    Notification::fake();
+
+    $superAdmin = User::factory()->create([
+        'role' => User::ROLE_SUPER_ADMIN,
+        'is_active' => true,
+    ]);
+
+    $intern = User::factory()->create([
+        'role' => User::ROLE_INTERN,
+        'is_active' => true,
+    ]);
+
+    $user = User::factory()->withTwoFactor()->create();
+    [$resetRequest, $plainToken] = TwoFactorResetRequest::createForUser($user, 'Lost phone');
+
+    $this->post(route('two-factor.reset.confirm.submit', ['token' => $plainToken]))
+        ->assertRedirect(route('login'));
+
+    Notification::assertSentTo($superAdmin, \App\Notifications\TwoFactorResetRequestNotification::class);
+    Notification::assertNotSentTo($intern, \App\Notifications\TwoFactorResetRequestNotification::class);
+    Notification::assertNotSentTo($user, \App\Notifications\TwoFactorResetRequestNotification::class);
+});
+

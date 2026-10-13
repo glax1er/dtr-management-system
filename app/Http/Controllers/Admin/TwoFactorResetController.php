@@ -58,6 +58,16 @@ class TwoFactorResetController extends Controller
             });
         }
 
+        // If highlighting a specific request and no status filter was explicitly requested, match the request's status
+        if ($request->filled('highlight') && ! $request->has('status')) {
+            $highlightedRequest = TwoFactorResetRequest::find($request->query('highlight'));
+            if ($highlightedRequest) {
+                $status = ($highlightedRequest->status === TwoFactorResetRequest::STATUS_PENDING_ADMIN_APPROVAL)
+                    ? 'pending'
+                    : $highlightedRequest->status;
+            }
+        }
+
         // Filter by status
         if ($status === 'pending') {
             $query->where('status', TwoFactorResetRequest::STATUS_PENDING_ADMIN_APPROVAL);
@@ -71,6 +81,19 @@ class TwoFactorResetController extends Controller
                 $uq->where('name', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%");
             });
+        }
+
+        // Auto-navigate to the page containing the highlighted request if not specified
+        if ($request->filled('highlight') && ! $request->has('page')) {
+            $highlightId = (int) $request->query('highlight');
+            $allIds = (clone $query)->pluck('id')->all();
+            $index = array_search($highlightId, $allIds);
+            if ($index !== false) {
+                $targetPage = (int) floor($index / $perPage) + 1;
+                if ($targetPage > 1) {
+                    $validated['page'] = $targetPage;
+                }
+            }
         }
 
         $requests = $query->paginate($perPage, ['*'], 'page', $validated['page'] ?? 1);

@@ -89,6 +89,33 @@ class InternController extends Controller
             });
         }
 
+        // If highlighting a specific intern and no status filter was explicitly requested,
+        // auto-select the status tab that contains the highlighted intern.
+        if ($request->filled('highlight') && ! $request->has('status')) {
+            $highlightUserId = (int) $request->query('highlight');
+            $highlighted = InternProfile::query()
+                ->verified()
+                ->where('user_id', $highlightUserId)
+                ->value('status');
+            if ($highlighted) {
+                $status = $highlighted;
+                $query->where('status', $status);
+            }
+        }
+
+        // Auto-navigate to the page containing the highlighted intern if not specified.
+        if ($request->filled('highlight') && ! $request->has('page')) {
+            $highlightUserId = (int) $request->query('highlight');
+            $allUserIds = (clone $query)->pluck('user_id')->all();
+            $index = array_search($highlightUserId, $allUserIds);
+            if ($index !== false) {
+                $targetPage = (int) floor($index / $perPage) + 1;
+                if ($targetPage > 1) {
+                    $validated['page'] = $targetPage;
+                }
+            }
+        }
+
         $interns = $query
             ->paginate($perPage, ['*'], 'page', $validated['page'] ?? 1)
             ->withQueryString()

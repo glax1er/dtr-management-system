@@ -91,7 +91,22 @@ class ResolutionTicketController extends Controller
 
         $tickets = $query
             ->orderByDesc('date')
-            ->orderByDesc('created_at')
+            ->orderByDesc('created_at');
+
+        // Auto-navigate to the page containing the highlighted ticket if not specified.
+        if ($request->filled('highlight') && ! $request->has('page')) {
+            $highlightId = (int) $request->query('highlight');
+            $allIds = (clone $tickets)->pluck('id')->all();
+            $index = array_search($highlightId, $allIds);
+            if ($index !== false) {
+                $targetPage = (int) floor($index / $perPage) + 1;
+                if ($targetPage > 1) {
+                    $validated['page'] = $targetPage;
+                }
+            }
+        }
+
+        $tickets = $tickets
             ->paginate($perPage, ['*'], 'page', $validated['page'] ?? 1)
             ->withQueryString()
             ->through(fn (ResolutionTicket $ticket) => [

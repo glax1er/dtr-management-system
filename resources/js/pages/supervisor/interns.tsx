@@ -48,6 +48,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useInitials } from '@/hooks/use-initials';
+import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 
 interface AttendanceLogRow {
@@ -181,9 +182,37 @@ export default function MyInterns({
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const debouncedSearch = useDebounce(search, 300);
     const isFirstRender = useRef(true);
+    const highlightId =
+        typeof window !== 'undefined'
+            ? Number(
+                  new URLSearchParams(window.location.search).get('highlight'),
+              ) || null
+            : null;
+    const highlightedDate = highlightId
+        ? logs.data.find((log) => log.intern_user_id === highlightId)?.date
+        : undefined;
 
     const hasActiveFilters =
         filters.search !== '' || filters.remarks !== null || mode === 'range';
+
+    useEffect(() => {
+        if (!highlightId || !highlightedDate) {
+            return;
+        }
+
+        const timer = window.setTimeout(() => {
+            const targets = document.querySelectorAll<HTMLElement>(
+                `[data-notification-highlight="${highlightId}-${highlightedDate}"]`,
+            );
+            const target = Array.from(targets).find(
+                (element) => element.getClientRects().length > 0,
+            );
+
+            target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 200);
+
+        return () => window.clearTimeout(timer);
+    }, [highlightId, highlightedDate, logs.data, view]);
 
     const visit = (
         params: Record<string, string | undefined>,
@@ -742,6 +771,21 @@ export default function MyInterns({
                                                 {logs.data.map((log) => (
                                                     <TableRow
                                                         key={`${log.intern_user_id}-${log.date}`}
+                                                        data-notification-highlight={
+                                                            log.intern_user_id ===
+                                                                highlightId &&
+                                                            log.date ===
+                                                                highlightedDate
+                                                                ? `${log.intern_user_id}-${log.date}`
+                                                                : undefined
+                                                        }
+                                                        className={cn(
+                                                            log.intern_user_id ===
+                                                                highlightId &&
+                                                                log.date ===
+                                                                    highlightedDate &&
+                                                                'bg-primary/10 ring-1 ring-inset ring-primary/30',
+                                                        )}
                                                     >
                                                         <TableCell className="px-6 font-medium whitespace-nowrap">
                                                             {formatLongDate(
@@ -805,7 +849,21 @@ export default function MyInterns({
                                     {logs.data.map((log) => (
                                         <Card
                                             key={`${log.intern_user_id}-${log.date}`}
-                                            className="flex h-full flex-col justify-between rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:border-border hover:shadow-md"
+                                            data-notification-highlight={
+                                                log.intern_user_id ===
+                                                    highlightId &&
+                                                log.date === highlightedDate
+                                                    ? `${log.intern_user_id}-${log.date}`
+                                                    : undefined
+                                            }
+                                            className={cn(
+                                                'flex h-full flex-col justify-between rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:border-border hover:shadow-md',
+                                                log.intern_user_id ===
+                                                    highlightId &&
+                                                    log.date ===
+                                                        highlightedDate &&
+                                                    'border-primary/50 bg-primary/5 ring-1 ring-primary/30',
+                                            )}
                                         >
                                             <CardHeader className="pb-3">
                                                 <div className="flex items-start justify-between gap-2">
@@ -914,7 +972,20 @@ export default function MyInterns({
                                 {logs.data.map((log) => (
                                     <div
                                         key={`${log.intern_user_id}-${log.date}`}
-                                        className="flex flex-col gap-2.5 p-4"
+                                        data-notification-highlight={
+                                            log.intern_user_id ===
+                                                highlightId &&
+                                            log.date === highlightedDate
+                                                ? `${log.intern_user_id}-${log.date}`
+                                                : undefined
+                                        }
+                                        className={cn(
+                                            'flex flex-col gap-2.5 p-4',
+                                            log.intern_user_id ===
+                                                highlightId &&
+                                                log.date === highlightedDate &&
+                                                'bg-primary/10',
+                                        )}
                                     >
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="min-w-0">

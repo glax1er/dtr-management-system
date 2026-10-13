@@ -9,6 +9,7 @@ import {
     Power,
     PowerOff,
     Search,
+    Sparkles,
     Table as TableIcon,
     Trash2,
     UserCog,
@@ -23,6 +24,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import {
@@ -155,6 +157,33 @@ export default function CollegeAdminManagement({
     const [deleteTarget, setDeleteTarget] = useState<CollegeAdminRecord | null>(
         null,
     );
+
+    const highlightId =
+        typeof window !== 'undefined'
+            ? Number(
+                  new URLSearchParams(window.location.search).get('highlight'),
+              ) || null
+            : null;
+
+    useEffect(() => {
+        if (!highlightId) {
+            return;
+        }
+
+        const el =
+            document.getElementById(`college-admin-row-${highlightId}`) ||
+            document.getElementById(`college-admin-card-${highlightId}`);
+
+        if (!el) {
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 200);
+
+        return () => clearTimeout(timer);
+    }, [highlightId, collegeAdmins.data]);
 
     const baseParams = () => ({
         search: search || undefined,
@@ -706,44 +735,63 @@ export default function CollegeAdminManagement({
                                             </TableHeader>
                                             <TableBody>
                                                 {collegeAdmins.data.map(
-                                                    (admin) => (
-                                                        <TableRow
-                                                            key={admin.id}
-                                                        >
-                                                            <TableCell>
-                                                                <div className="flex items-center gap-3">
-                                                                    <Avatar className="size-9">
-                                                                        {admin.avatar && (
-                                                                            <AvatarImage
-                                                                                src={
-                                                                                    admin.avatar
-                                                                                }
-                                                                                alt={
-                                                                                    admin.name
-                                                                                }
-                                                                                className="object-cover"
-                                                                            />
-                                                                        )}
-                                                                        <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
-                                                                            {getInitials(
-                                                                                admin.name,
+                                                    (admin) => {
+                                                        const isHighlighted =
+                                                            highlightId ===
+                                                            admin.id;
+
+                                                        return (
+                                                            <TableRow
+                                                                key={admin.id}
+                                                                id={`college-admin-row-${admin.id}`}
+                                                                className={cn(
+                                                                    'transition-all duration-300',
+                                                                    isHighlighted &&
+                                                                        'bg-primary/10 ring-2 ring-primary/40 dark:bg-primary/20',
+                                                                )}
+                                                            >
+                                                                <TableCell>
+                                                                    <div className="flex items-center gap-3">
+                                                                        <Avatar className="size-9">
+                                                                            {admin.avatar && (
+                                                                                <AvatarImage
+                                                                                    src={
+                                                                                        admin.avatar
+                                                                                    }
+                                                                                    alt={
+                                                                                        admin.name
+                                                                                    }
+                                                                                    className="object-cover"
+                                                                                />
                                                                             )}
-                                                                        </AvatarFallback>
-                                                                    </Avatar>
-                                                                    <div className="min-w-0">
-                                                                        <div className="font-semibold text-foreground">
-                                                                            {
-                                                                                admin.name
-                                                                            }
-                                                                        </div>
-                                                                        <div className="truncate text-xs text-muted-foreground">
-                                                                            {
-                                                                                admin.email
-                                                                            }
+                                                                            <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
+                                                                                {getInitials(
+                                                                                    admin.name,
+                                                                                )}
+                                                                            </AvatarFallback>
+                                                                        </Avatar>
+                                                                        <div className="min-w-0">
+                                                                            <div className="flex items-center gap-2 font-semibold text-foreground">
+                                                                                <span>
+                                                                                    {
+                                                                                        admin.name
+                                                                                    }
+                                                                                </span>
+                                                                                {isHighlighted && (
+                                                                                    <Badge className="animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase">
+                                                                                        <Sparkles className="size-2.5" />
+                                                                                        Focus
+                                                                                    </Badge>
+                                                                                )}
+                                                                            </div>
+                                                                            <div className="truncate text-xs text-muted-foreground">
+                                                                                {
+                                                                                    admin.email
+                                                                                }
+                                                                            </div>
                                                                         </div>
                                                                     </div>
-                                                                </div>
-                                                            </TableCell>
+                                                                </TableCell>
                                                             <TableCell>
                                                                 {admin.college ? (
                                                                     <div>
@@ -883,7 +931,8 @@ export default function CollegeAdminManagement({
                                                                 </div>
                                                             </TableCell>
                                                         </TableRow>
-                                                    ),
+                                                        );
+                                                    },
                                                 )}
                                             </TableBody>
                                         </Table>
@@ -904,45 +953,68 @@ export default function CollegeAdminManagement({
                         {/* Mobile card view (always shown on mobile, or when grid view active) */}
                         <div className={view === 'table' ? 'sm:hidden' : ''}>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                {collegeAdmins.data.map((admin) => (
-                                    <Card
-                                        key={admin.id}
-                                        className="flex h-full flex-col justify-between rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:border-border hover:shadow-md"
-                                    >
-                                        <CardHeader className="pb-3">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div className="flex min-w-0 items-center gap-3">
-                                                    <Avatar className="size-10 shrink-0">
-                                                        {admin.avatar && (
-                                                            <AvatarImage
-                                                                src={
-                                                                    admin.avatar
-                                                                }
-                                                                alt={admin.name}
-                                                                className="object-cover"
-                                                            />
-                                                        )}
-                                                        <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
-                                                            {getInitials(
-                                                                admin.name,
+                                {collegeAdmins.data.map((admin) => {
+                                    const isHighlighted =
+                                        highlightId === admin.id;
+
+                                    return (
+                                        <Card
+                                            key={admin.id}
+                                            id={`college-admin-card-${admin.id}`}
+                                            className={cn(
+                                                'flex h-full flex-col justify-between rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-300 hover:border-border hover:shadow-md',
+                                                isHighlighted &&
+                                                    'border-primary bg-primary/5 shadow-md ring-2 ring-primary dark:bg-primary/10',
+                                            )}
+                                        >
+                                            <CardHeader className="pb-3">
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="flex min-w-0 items-center gap-3">
+                                                        <Avatar className="size-10 shrink-0">
+                                                            {admin.avatar && (
+                                                                <AvatarImage
+                                                                    src={
+                                                                        admin.avatar
+                                                                    }
+                                                                    alt={
+                                                                        admin.name
+                                                                    }
+                                                                    className="object-cover"
+                                                                />
                                                             )}
-                                                        </AvatarFallback>
-                                                    </Avatar>
-                                                    <div className="min-w-0">
-                                                        <CardTitle
-                                                            className="line-clamp-1 text-base leading-tight font-semibold"
-                                                            title={admin.name}
-                                                        >
-                                                            {admin.name}
-                                                        </CardTitle>
-                                                        <span
-                                                            className="block truncate text-xs text-muted-foreground"
-                                                            title={admin.email}
-                                                        >
-                                                            {admin.email}
-                                                        </span>
+                                                            <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
+                                                                {getInitials(
+                                                                    admin.name,
+                                                                )}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                        <div className="min-w-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <CardTitle
+                                                                    className="line-clamp-1 text-base leading-tight font-semibold"
+                                                                    title={
+                                                                        admin.name
+                                                                    }
+                                                                >
+                                                                    {admin.name}
+                                                                </CardTitle>
+                                                                {isHighlighted && (
+                                                                    <Badge className="animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase">
+                                                                        <Sparkles className="size-2.5" />
+                                                                        Focus
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
+                                                            <span
+                                                                className="block truncate text-xs text-muted-foreground"
+                                                                title={
+                                                                    admin.email
+                                                                }
+                                                            >
+                                                                {admin.email}
+                                                            </span>
+                                                        </div>
                                                     </div>
-                                                </div>
                                                 <StatusBadge
                                                     status={
                                                         admin.is_active
@@ -1073,7 +1145,8 @@ export default function CollegeAdminManagement({
                                             </div>
                                         </div>
                                     </Card>
-                                ))}
+                                    );
+                                })}
                             </div>
                             {collegeAdmins.total > 0 && (
                                 <NumberedPagination

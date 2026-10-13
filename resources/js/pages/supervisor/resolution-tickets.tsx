@@ -4,6 +4,7 @@ import {
     LayoutGrid,
     Search,
     SlidersHorizontal,
+    Sparkles,
     Table as TableIcon,
     X,
 } from 'lucide-react';
@@ -17,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import {
     Select,
     SelectContent,
@@ -88,6 +90,34 @@ export default function ResolutionTickets({
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const debouncedSearch = useDebounce(search, 300);
     const isFirstRender = useRef(true);
+
+    const highlightId =
+        typeof window !== 'undefined'
+            ? Number(
+                  new URLSearchParams(window.location.search).get('highlight'),
+              ) || null
+            : null;
+
+    useEffect(() => {
+        if (!highlightId) {
+            return;
+        }
+
+        const el =
+            document.getElementById(`ticket-row-${highlightId}`) ||
+            document.getElementById(`ticket-card-${highlightId}`) ||
+            document.getElementById(`ticket-card-mobile-${highlightId}`);
+
+        if (!el) {
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 200);
+
+        return () => clearTimeout(timer);
+    }, [highlightId, tickets.data]);
 
     useEffect(() => {
         // Keep the input in sync after an Inertia visit updates the server filters.
@@ -440,11 +470,36 @@ export default function ResolutionTickets({
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {tickets.data.map((ticket) => (
-                                                    <TableRow key={ticket.id}>
-                                                        <TableCell className="px-6 font-medium whitespace-nowrap text-foreground">
-                                                            {ticket.intern_name}
-                                                        </TableCell>
+                                                {tickets.data.map((ticket) => {
+                                                    const isHighlighted =
+                                                        highlightId ===
+                                                        ticket.id;
+
+                                                    return (
+                                                        <TableRow
+                                                            key={ticket.id}
+                                                            id={`ticket-row-${ticket.id}`}
+                                                            className={cn(
+                                                                'transition-all duration-300',
+                                                                isHighlighted &&
+                                                                    'bg-primary/10 ring-2 ring-primary/40 dark:bg-primary/20',
+                                                            )}
+                                                        >
+                                                            <TableCell className="px-6 font-medium whitespace-nowrap text-foreground">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span>
+                                                                        {
+                                                                            ticket.intern_name
+                                                                        }
+                                                                    </span>
+                                                                    {isHighlighted && (
+                                                                        <Badge className="animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase">
+                                                                            <Sparkles className="size-3" />
+                                                                            Focus
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+                                                            </TableCell>
                                                         <TableCell className="px-6 whitespace-nowrap text-muted-foreground">
                                                             {ticket.date}
                                                         </TableCell>
@@ -497,8 +552,9 @@ export default function ResolutionTickets({
                                                                 }
                                                             />
                                                         </TableCell>
-                                                    </TableRow>
-                                                ))}
+                                                        </TableRow>
+                                                    );
+                                                })}
                                             </TableBody>
                                         </Table>
                                         <NumberedPagination
@@ -517,11 +573,20 @@ export default function ResolutionTickets({
                         {view === 'grid' && (
                             <div className="hidden sm:flex sm:flex-col sm:gap-4">
                                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                    {tickets.data.map((ticket) => (
-                                        <Card
-                                            key={ticket.id}
-                                            className="flex h-full flex-col justify-between rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:border-border hover:shadow-md"
-                                        >
+                                    {tickets.data.map((ticket) => {
+                                        const isHighlighted =
+                                            highlightId === ticket.id;
+
+                                        return (
+                                            <Card
+                                                key={ticket.id}
+                                                id={`ticket-card-${ticket.id}`}
+                                                className={cn(
+                                                    'flex h-full flex-col justify-between rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:border-border hover:shadow-md',
+                                                    isHighlighted &&
+                                                        'border-primary bg-primary/5 shadow-md ring-2 ring-primary dark:bg-primary/10',
+                                                )}
+                                            >
                                             <CardHeader className="pb-3">
                                                 <div className="flex items-start justify-between gap-3">
                                                     <div className="flex min-w-0 flex-1 items-start gap-3">
@@ -533,11 +598,19 @@ export default function ResolutionTickets({
                                                             </AvatarFallback>
                                                         </Avatar>
                                                         <div className="min-w-0 flex-1">
-                                                            <CardTitle className="line-clamp-1 text-base font-semibold text-foreground">
-                                                                {
-                                                                    ticket.intern_name
-                                                                }
-                                                            </CardTitle>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <CardTitle className="line-clamp-1 text-base font-semibold text-foreground">
+                                                                    {
+                                                                        ticket.intern_name
+                                                                    }
+                                                                </CardTitle>
+                                                                {isHighlighted && (
+                                                                    <Badge className="shrink-0 animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase">
+                                                                        <Sparkles className="size-2.5" />
+                                                                        Focus
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
                                                             <p className="mt-0.5 text-xs text-muted-foreground">
                                                                 {ticket.date}
                                                             </p>
@@ -597,7 +670,8 @@ export default function ResolutionTickets({
                                                 />
                                             </div>
                                         </Card>
-                                    ))}
+                                    );
+                                    })}
                                 </div>
                                 <NumberedPagination
                                     meta={tickets}
@@ -612,16 +686,33 @@ export default function ResolutionTickets({
                         {/* Mobile cards list */}
                         <div className="flex flex-col gap-4 sm:hidden">
                             <div className="divide-y rounded-lg border bg-card">
-                                {tickets.data.map((ticket) => (
-                                    <div
-                                        key={ticket.id}
-                                        className="flex flex-col gap-3 p-4"
-                                    >
-                                        <div className="flex items-start justify-between gap-2">
-                                            <div className="min-w-0 flex-1">
-                                                <p className="truncate text-sm font-semibold text-foreground">
-                                                    {ticket.intern_name}
-                                                </p>
+                                {tickets.data.map((ticket) => {
+                                    const isHighlighted =
+                                        highlightId === ticket.id;
+
+                                    return (
+                                        <div
+                                            key={ticket.id}
+                                            id={`ticket-card-mobile-${ticket.id}`}
+                                            className={cn(
+                                                'flex flex-col gap-3 p-4 transition-all duration-300',
+                                                isHighlighted &&
+                                                    'bg-primary/10 ring-2 ring-primary/40 dark:bg-primary/20',
+                                            )}
+                                        >
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <p className="truncate text-sm font-semibold text-foreground">
+                                                            {ticket.intern_name}
+                                                        </p>
+                                                        {isHighlighted && (
+                                                            <Badge className="shrink-0 animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase">
+                                                                <Sparkles className="size-2.5" />
+                                                                Focus
+                                                            </Badge>
+                                                        )}
+                                                    </div>
                                                 <p className="text-xs text-muted-foreground">
                                                     {ticket.date}
                                                 </p>
@@ -672,7 +763,8 @@ export default function ResolutionTickets({
                                             />
                                         </div>
                                     </div>
-                                ))}
+                                );
+                            })}
                             </div>
                             <NumberedPagination
                                 meta={tickets}

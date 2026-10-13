@@ -6,10 +6,11 @@ import {
     Search,
     ShieldAlert,
     ShieldCheck,
+    Sparkles,
     X,
     XCircle,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { toast } from 'sonner';
 import { NumberedPagination } from '@/components/numbered-pagination';
@@ -18,6 +19,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import {
     Dialog,
@@ -38,6 +40,11 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useInitials } from '@/hooks/use-initials';
 import { dashboard } from '@/routes';
 
@@ -108,6 +115,30 @@ export default function TwoFactorResetsIndex({
     const [rejectItem, setRejectItem] = useState<TwoFactorResetRequestItem | null>(null);
     const [rejectionReason, setRejectionReason] = useState('');
     const [actionLoading, setActionLoading] = useState(false);
+
+    const highlightId =
+        typeof window !== 'undefined'
+            ? Number(
+                  new URLSearchParams(window.location.search).get('highlight'),
+              ) || null
+            : null;
+
+    useEffect(() => {
+        if (!highlightId) {
+            return;
+        }
+
+        const el = document.getElementById(`reset-row-${highlightId}`);
+        if (!el) {
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 200);
+
+        return () => clearTimeout(timer);
+    }, [highlightId, requests.data]);
 
     const applyFilters = (newSearch: string, newStatus: string, page?: number, perPage?: number) => {
         router.get(
@@ -193,35 +224,35 @@ export default function TwoFactorResetsIndex({
         switch (item.status) {
             case 'pending_admin_approval':
                 return (
-                    <Badge variant="outline" className="border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
-                        <CheckCircle2 className="mr-1 h-3 w-3" />
-                        User Confirmed • Pending Approval
+                    <Badge variant="outline" className="border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300 font-medium whitespace-nowrap">
+                        <CheckCircle2 className="mr-1.5 size-3 text-blue-600" />
+                        Pending Approval
                     </Badge>
                 );
             case 'pending_user_confirmation':
                 return (
-                    <Badge variant="outline" className="border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
-                        <Clock className="mr-1 h-3 w-3" />
-                        Awaiting User Email Consent
+                    <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300 font-medium whitespace-nowrap">
+                        <Clock className="mr-1.5 size-3 text-amber-600" />
+                        Awaiting User Consent
                     </Badge>
                 );
             case 'approved':
                 return (
-                    <Badge variant="outline" className="border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
-                        <ShieldCheck className="mr-1 h-3 w-3" />
+                    <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 font-medium whitespace-nowrap">
+                        <ShieldCheck className="mr-1.5 size-3 text-emerald-600" />
                         Approved
                     </Badge>
                 );
             case 'rejected':
                 return (
-                    <Badge variant="outline" className="border-red-500 bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300">
-                        <XCircle className="mr-1 h-3 w-3" />
+                    <Badge variant="outline" className="border-red-300 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300 font-medium whitespace-nowrap">
+                        <XCircle className="mr-1.5 size-3 text-red-600" />
                         Rejected
                     </Badge>
                 );
             case 'cancelled':
                 return (
-                    <Badge variant="outline" className="border-muted bg-muted text-muted-foreground">
+                    <Badge variant="outline" className="border-slate-300 bg-slate-100 text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-400 font-medium whitespace-nowrap">
                         Cancelled
                     </Badge>
                 );
@@ -362,139 +393,269 @@ export default function TwoFactorResetsIndex({
                         </CardContent>
                     </Card>
                 ) : (
-                    <Card>
+                    <Card className="overflow-hidden p-0">
                         <CardContent className="p-0">
                             <div className="overflow-x-auto scrollbar-none">
-                                <Table className="min-w-[740px] md:min-w-0">
+                                <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead className="min-w-[220px]">User Account</TableHead>
-                                            <TableHead className="min-w-[210px]">Status & Consent</TableHead>
-                                            <TableHead className="min-w-[180px]">Reason</TableHead>
-                                            <TableHead className="min-w-[150px]">Dates</TableHead>
-                                            <TableHead className="min-w-[180px] text-right">Actions</TableHead>
+                                            <TableHead className="px-6">
+                                                User Account
+                                            </TableHead>
+                                            <TableHead className="px-6 text-center">
+                                                Status & Consent
+                                            </TableHead>
+                                            <TableHead className="px-6">
+                                                Reason
+                                            </TableHead>
+                                            <TableHead className="px-6 text-center">
+                                                Requested
+                                            </TableHead>
+                                            <TableHead className="px-6 text-center">
+                                                Actions
+                                            </TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {requests.data.map((req) => (
-                                            <TableRow key={req.id}>
-                                                <TableCell className="whitespace-normal align-top">
-                                                    <div className="flex items-center gap-3">
-                                                        <Avatar className="h-8 w-8 shrink-0">
-                                                            <AvatarFallback className="text-xs font-semibold">
-                                                                {getInitials(req.user.name)}
-                                                            </AvatarFallback>
-                                                        </Avatar>
-                                                        <div className="min-w-0 flex-1">
-                                                            <div className="truncate font-semibold text-xs text-foreground">
-                                                                {req.user.name}
-                                                            </div>
-                                                            <div className="truncate text-[11px] text-muted-foreground font-mono">
-                                                                {req.user.email}
-                                                            </div>
-                                                            <div className="mt-1 flex flex-wrap gap-1">
-                                                                <Badge variant="secondary" className="px-1 py-0 text-[10px] uppercase">
-                                                                    {req.user.role.replace('_', ' ')}
+                                        {requests.data.map((req) => {
+                                            const isHighlighted =
+                                                highlightId === req.id;
+
+                                            return (
+                                                <TableRow
+                                                    key={req.id}
+                                                    id={`reset-row-${req.id}`}
+                                                    className={cn(
+                                                        'transition-all duration-300',
+                                                        isHighlighted &&
+                                                            'bg-primary/10 ring-2 ring-primary/40 dark:bg-primary/20',
+                                                    )}
+                                                >
+                                                    <TableCell className="px-6">
+                                                        <div className="flex items-center gap-3">
+                                                            <Avatar className="size-9 shrink-0">
+                                                                <AvatarFallback className="text-xs font-semibold">
+                                                                    {getInitials(req.user.name)}
+                                                                </AvatarFallback>
+                                                            </Avatar>
+                                                            <div className="min-w-0">
+                                                                <div className="flex items-center gap-2">
+                                                                    <p className="font-medium whitespace-nowrap text-sm text-foreground">
+                                                                        {req.user.name}
+                                                                    </p>
+                                                                    {isHighlighted && (
+                                                                        <Badge className="animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase">
+                                                                            <Sparkles className="size-3" />
+                                                                            Focus
+                                                                        </Badge>
+                                                                    )}
+                                                                <Badge
+                                                                    variant="secondary"
+                                                                    className="px-1.5 py-0 text-[10px] font-medium uppercase tracking-wider"
+                                                                >
+                                                                    {req.user.role.replace(/_/g, ' ')}
                                                                 </Badge>
                                                                 {req.user.college && (
-                                                                    <Badge variant="outline" className="px-1 py-0 text-[10px]">
+                                                                    <Badge
+                                                                        variant="outline"
+                                                                        className="px-1.5 py-0 text-[10px] font-semibold text-primary"
+                                                                    >
                                                                         {req.user.college.code}
                                                                     </Badge>
                                                                 )}
                                                             </div>
+                                                            <p
+                                                                className="max-w-[200px] truncate font-mono text-xs text-muted-foreground"
+                                                                title={req.user.email}
+                                                            >
+                                                                {req.user.email}
+                                                            </p>
                                                         </div>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="whitespace-normal align-top">
-                                                    <div className="space-y-1">
+                                                <TableCell className="px-6 text-center whitespace-nowrap">
+                                                    <div className="inline-flex flex-col items-center gap-1">
                                                         {getStatusBadge(req)}
                                                         {req.user_confirmed_at && (
-                                                            <div className="text-[11px] text-muted-foreground">
-                                                                User confirmed:{' '}
+                                                            <p className="text-[11px] text-muted-foreground">
+                                                                Confirmed:{' '}
                                                                 <span className="font-medium text-foreground">
-                                                                    {new Date(req.user_confirmed_at).toLocaleDateString()}
+                                                                    {new Date(
+                                                                        req.user_confirmed_at,
+                                                                    ).toLocaleDateString(
+                                                                        undefined,
+                                                                        {
+                                                                            month: 'short',
+                                                                            day: 'numeric',
+                                                                            year: 'numeric',
+                                                                        },
+                                                                    )}
                                                                 </span>
-                                                            </div>
+                                                            </p>
                                                         )}
                                                         {req.admin && (
-                                                            <div className="text-[11px] text-muted-foreground">
+                                                            <p className="text-[11px] text-muted-foreground">
                                                                 Reviewed by:{' '}
                                                                 <span className="font-medium text-foreground">
                                                                     {req.admin.name}
                                                                 </span>
-                                                            </div>
+                                                            </p>
                                                         )}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="max-w-xs whitespace-normal align-top">
-                                                    <p className="line-clamp-2 text-xs text-muted-foreground">
-                                                        {req.reason || 'No reason provided'}
-                                                    </p>
+                                                <TableCell className="max-w-xs px-6 text-xs text-muted-foreground">
+                                                    {req.reason ? (
+                                                        <p
+                                                            className="line-clamp-2"
+                                                            title={req.reason}
+                                                        >
+                                                            {req.reason}
+                                                        </p>
+                                                    ) : (
+                                                        <span className="italic text-muted-foreground/60">
+                                                            No reason provided
+                                                        </span>
+                                                    )}
                                                     {req.rejection_reason && (
-                                                        <p className="mt-1 text-[11px] text-red-600 dark:text-red-400">
-                                                            Rejection: {req.rejection_reason}
+                                                        <p
+                                                            className="mt-1 line-clamp-2 text-[11px] text-destructive"
+                                                            title={
+                                                                req.rejection_reason
+                                                            }
+                                                        >
+                                                            <span className="font-medium">
+                                                                Rejection note:
+                                                            </span>{' '}
+                                                            {
+                                                                req.rejection_reason
+                                                            }
                                                         </p>
                                                     )}
                                                 </TableCell>
-                                                <TableCell className="whitespace-normal align-top">
-                                                    <div className="space-y-0.5 text-xs text-muted-foreground">
-                                                        <div>
-                                                            Requested:{' '}
-                                                            <span className="text-foreground">
-                                                                {new Date(req.created_at).toLocaleDateString()}
+                                                <TableCell className="px-6 text-center whitespace-nowrap">
+                                                    <p className="text-xs font-medium text-foreground">
+                                                        {new Date(
+                                                            req.created_at,
+                                                        ).toLocaleDateString(
+                                                            undefined,
+                                                            {
+                                                                month: 'short',
+                                                                day: 'numeric',
+                                                                year: 'numeric',
+                                                            },
+                                                        )}
+                                                    </p>
+                                                    <p className="text-[11px] text-muted-foreground">
+                                                        {new Date(
+                                                            req.created_at,
+                                                        ).toLocaleTimeString(
+                                                            undefined,
+                                                            {
+                                                                hour: '2-digit',
+                                                                minute: '2-digit',
+                                                            },
+                                                        )}
+                                                    </p>
+                                                    {req.user_ip && (
+                                                        <p className="mt-0.5 font-mono text-[10px] text-muted-foreground/75">
+                                                            IP: {req.user_ip}
+                                                        </p>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell className="px-6 text-center whitespace-nowrap">
+                                                    <div className="flex justify-center gap-1">
+                                                        {req.status ===
+                                                        'pending_admin_approval' ? (
+                                                            <>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger
+                                                                        asChild
+                                                                    >
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            className="size-8 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-950/40"
+                                                                            onClick={() =>
+                                                                                setApproveItem(
+                                                                                    req,
+                                                                                )
+                                                                            }
+                                                                            aria-label={`Approve 2FA reset for ${req.user.name}`}
+                                                                        >
+                                                                            <CheckCircle2 className="size-4" />
+                                                                        </Button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>
+                                                                        Approve
+                                                                        Reset
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+
+                                                                <Tooltip>
+                                                                    <TooltipTrigger
+                                                                        asChild
+                                                                    >
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            className="size-8 text-destructive hover:bg-destructive/10"
+                                                                            onClick={() => {
+                                                                                setRejectItem(
+                                                                                    req,
+                                                                                );
+                                                                                setRejectionReason(
+                                                                                    '',
+                                                                                );
+                                                                            }}
+                                                                            aria-label={`Reject 2FA reset for ${req.user.name}`}
+                                                                        >
+                                                                            <XCircle className="size-4" />
+                                                                        </Button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>
+                                                                        Reject
+                                                                        Request
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </>
+                                                        ) : req.status ===
+                                                          'pending_user_confirmation' ? (
+                                                            <Tooltip>
+                                                                <TooltipTrigger
+                                                                    asChild
+                                                                >
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="size-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                                                        onClick={() => {
+                                                                            setRejectItem(
+                                                                                req,
+                                                                            );
+                                                                            setRejectionReason(
+                                                                                '',
+                                                                            );
+                                                                        }}
+                                                                        aria-label={`Cancel request for ${req.user.name}`}
+                                                                    >
+                                                                        <X className="size-4" />
+                                                                    </Button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    Cancel
+                                                                    Request
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground">
+                                                                —
                                                             </span>
-                                                        </div>
-                                                        {req.user_ip && (
-                                                            <div className="text-[10px] font-mono">
-                                                                IP: {req.user_ip}
-                                                            </div>
                                                         )}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="whitespace-normal align-top text-right">
-                                                    {req.status === 'pending_admin_approval' ? (
-                                                        <div className="flex flex-col items-end gap-1.5 sm:flex-row sm:justify-end">
-                                                            <Button
-                                                                size="sm"
-                                                                variant="default"
-                                                                className="h-8 bg-emerald-600 text-xs text-white hover:bg-emerald-700"
-                                                                onClick={() => setApproveItem(req)}
-                                                            >
-                                                                <ShieldCheck className="mr-1 h-3.5 w-3.5" />
-                                                                Approve Reset
-                                                            </Button>
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                className="h-8 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
-                                                                onClick={() => {
-                                                                    setRejectItem(req);
-                                                                    setRejectionReason('');
-                                                                }}
-                                                            >
-                                                                Reject
-                                                            </Button>
-                                                        </div>
-                                                    ) : req.status === 'pending_user_confirmation' ? (
-                                                        <Button
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            className="h-8 text-xs text-muted-foreground"
-                                                            onClick={() => {
-                                                                setRejectItem(req);
-                                                                setRejectionReason('');
-                                                            }}
-                                                        >
-                                                            Cancel Request
-                                                        </Button>
-                                                    ) : (
-                                                        <span className="text-xs font-medium text-muted-foreground">
-                                                            Completed
-                                                        </span>
-                                                    )}
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
+                                                </TableRow>
+                                            );
+                                        })}
                                     </TableBody>
                                 </Table>
                             </div>

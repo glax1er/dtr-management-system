@@ -143,25 +143,25 @@ export default function NotificationsPage() {
 
     const openNotification = (notification: Notification) => {
         const href = notification.href;
-        const hasMeaningfulHref =
-            href && href !== '/dashboard' && href !== '/intern/dashboard';
 
-        if (!hasMeaningfulHref) {
-            // No specific destination — just mark as read in place
+        if (!href) {
+            // No destination — just mark as read in place
             markAsRead(notification);
+
+            return;
+        }
+
+        if (notification.read_at) {
+            router.visit(href);
 
             return;
         }
 
         router.post(
             `/notifications/${notification.id}/read`,
-            {},
+            { redirect_to: href },
             {
                 preserveScroll: true,
-                preserveState: true,
-                onSuccess: () => {
-                    router.visit(href);
-                },
             },
         );
     };
