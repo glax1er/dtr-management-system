@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\NotificationPresenter;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -39,26 +40,20 @@ class HandleInertiaRequests extends Middleware
 
         // DB-backed notification items for all roles (uses Laravel's database notification channel).
         $dbItems = $user
-            ? $user->unreadNotifications()
+            ? $user->visibleNotifications()
+                ->whereNull('read_at')
                 ->latest()
                 ->limit(5)
                 ->get()
-                ->map(fn ($notification) => [
-                    'id' => $notification->id,
-                    'type' => $notification->data['type'] ?? 'general',
-                    'title' => $notification->data['title'] ?? 'Notification',
-                    'message' => $notification->data['message'] ?? '',
-                    'href' => $notification->data['href'] ?? '/dashboard',
-                    'data' => $notification->data,
-                    'read_at' => $notification->read_at?->toISOString(),
-                    'created_at' => $notification->created_at?->toISOString(),
-                ])
+                ->map(fn ($notification) => NotificationPresenter::formatNotification($notification))
                 ->values()
                 ->all()
             : [];
 
         $notifications = [
-            'count' => $user ? $user->unreadNotifications()->count() : 0,
+            'count' => $user
+                ? $user->visibleNotifications()->whereNull('read_at')->count()
+                : 0,
             'items' => $dbItems,
         ];
 
@@ -75,6 +70,14 @@ class HandleInertiaRequests extends Middleware
                         ? $user->supervisorProfile?->supervisor_type
                         : null,
                     'avatar' => $user->profile_photo_url,
+                    'is_super_admin' => $user->isSuperAdmin(),
+                    'is_college_admin' => $user->isCollegeAdmin(),
+                    'requires_two_factor' => $user->isAdmin() && ! $user->hasTwoFactorOrPasskeyEnabled(),
+                    'college' => $user->college ? [
+                        'id' => $user->college->id,
+                        'name' => $user->college->name,
+                        'code' => $user->college->code,
+                    ] : null,
                 ] : null,
             ],
             'notifications' => $notifications,

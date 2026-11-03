@@ -1,8 +1,47 @@
+export type Campus = {
+    id: number;
+    name: string;
+    code: string;
+    address?: string | null;
+    description?: string | null;
+    is_active?: boolean;
+    colleges_count?: number;
+    created_at?: string;
+    updated_at?: string;
+};
+
+export type College = {
+    id: number;
+    name: string;
+    code: string;
+    campus?: string | null;
+    campus_id?: number | null;
+    description?: string | null;
+    is_active?: boolean;
+};
+
+export type CollegeAdminProfile = {
+    user_id: number;
+    college_id?: number | null;
+    campus_id?: number | null;
+    employee_id?: string | null;
+    position?: string | null;
+    college?: College | null;
+    campus?: Campus | null;
+};
+
 export type User = {
     id: number;
     name: string;
     email: string;
-    role: 'admin' | 'supervisor' | 'intern';
+    role: 'super_admin' | 'college_admin' | 'admin' | 'supervisor' | 'intern';
+    is_super_admin?: boolean;
+    is_college_admin?: boolean;
+    college_id?: number | null;
+    college?: College | null;
+    college_admin_profile?: CollegeAdminProfile | null;
+    campus?: string | null;
+    is_active?: boolean;
     supervisor_type?: 'hte' | 'ojt' | null;
     avatar?: string;
     email_verified_at: string | null;

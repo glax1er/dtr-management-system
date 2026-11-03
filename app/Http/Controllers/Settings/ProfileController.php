@@ -47,41 +47,68 @@ class ProfileController extends Controller
         if ($user->isIntern()) {
             $profile = $user->internProfile()->with([
                 'hte' => fn ($q) => $q->withTrashed(),
-                'program' => fn ($q) => $q->withTrashed(),
+                'program.college' => fn ($q) => $q->withTrashed(),
             ])->first();
+            $hte = $profile === null ? null : $profile->hte;
+
+            $college = $profile?->program->college ?? $user->college;
+            $collegeCampus = is_string($college?->campus) && ! empty($college->campus)
+                ? $college->campus
+                : $college?->campus()?->value('name');
+            $campus = $profile?->campus
+                ?: ($user->campus ?: $collegeCampus);
 
             return [
                 'id_number' => $profile?->id_number,
                 'subtitle' => $profile?->program->program_name ?? 'Not assigned',
                 'detail' => $profile?->hte->hte_name ?? 'Not assigned',
+                'college' => $college?->name,
+                'campus' => $campus,
                 'has_qr_code' => $profile?->qr_code_value !== null,
                 'qr_code_url' => $profile?->qr_code_value !== null
                     ? route('intern.qr-code.show')
                     : null,
-                'bg_url' => $profile?->hte?->id_bg_url ?? '/images/cic-bg.jpg',
+                'bg_url' => $hte !== null && $hte->id_bg_url !== null ? $hte->id_bg_url : '/images/cic-bg.jpg',
             ];
         }
 
         if ($user->isSupervisor()) {
             $profile = $user->supervisorProfile()->with([
-                'hte' => fn ($q) => $q->withTrashed(),
-                'program' => fn ($q) => $q->withTrashed(),
+                'hte.college' => fn ($q) => $q->withTrashed(),
+                'program.college' => fn ($q) => $q->withTrashed(),
             ])->first();
+            $hte = $profile === null ? null : $profile->hte;
+
+            $college = $profile?->program->college ?? $profile?->hte->college ?? $user->college;
+            $collegeCampus = is_string($college?->campus) && ! empty($college->campus)
+                ? $college->campus
+                : $college?->campus()?->value('name');
+            $campus = $user->campus ?: $collegeCampus;
 
             return [
                 'id_number' => null,
                 'subtitle' => $profile?->isOjtSupervisor() ? 'OJT Supervisor' : 'HTE Supervisor',
                 'detail' => $profile?->getScopeName(),
+                'college' => $college?->name,
+                'campus' => $campus,
                 'has_qr_code' => false,
                 'qr_code_url' => null,
-                'bg_url' => $profile?->hte?->id_bg_url ?? '/images/cic-bg.jpg',
+                'bg_url' => $hte !== null && $hte->id_bg_url !== null ? $hte->id_bg_url : '/images/cic-bg.jpg',
             ];
         }
 
+        $collegeAdminProfile = $user->collegeAdminProfile()->with(['campus', 'college'])->first();
+        $college = $collegeAdminProfile->college ?? $user->college;
+        $campus = $collegeAdminProfile?->campus->name
+            ?? $user->campus
+            ?? (is_string($college?->campus) && ! empty($college->campus) ? $college->campus : $college?->campus()?->value('name'));
+
         return [
-            'id_number' => null,
-            'subtitle' => 'System Administrator',
-            'detail' => null,
+            'id_number' => $collegeAdminProfile?->employee_id,
+            'subtitle' => $user->isCollegeAdmin() ? 'College Administrator' : 'System Administrator',
+            'detail' => $collegeAdminProfile?->position,
+            'college' => $college?->name,
+            'campus' => $campus,
             'has_qr_code' => false,
             'qr_code_url' => null,
             'bg_url' => '/images/cic-bg.jpg',
@@ -90,7 +117,7 @@ class ProfileController extends Controller
 
     /**
      * Non-editable profile assignment details (role, id_number, program,
-     * HTE, and supervisor names) shown in the profile settings form.
+     * college, campus, HTE, and supervisor names) shown in the profile settings form.
      *
      * @return array<string, mixed>
      */
@@ -99,8 +126,15 @@ class ProfileController extends Controller
         if ($user->isIntern()) {
             $profile = $user->internProfile()->with([
                 'hte' => fn ($q) => $q->withTrashed(),
-                'program' => fn ($q) => $q->withTrashed(),
+                'program.college' => fn ($q) => $q->withTrashed(),
             ])->first();
+
+            $college = $profile?->program->college ?? $user->college;
+            $collegeCampus = is_string($college?->campus) && ! empty($college->campus)
+                ? $college->campus
+                : $college?->campus()?->value('name');
+            $campus = $profile?->campus
+                ?: ($user->campus ?: $collegeCampus);
 
             $hteSupervisorNames = null;
             if ($profile?->hte_id) {
@@ -138,6 +172,8 @@ class ProfileController extends Controller
                 'role' => 'Intern',
                 'id_number' => $profile?->id_number,
                 'program' => $profile?->program?->program_name,
+                'college' => $college?->name,
+                'campus' => $campus,
                 'hte' => $profile?->hte?->hte_name,
                 'hte_supervisor' => $hteSupervisorNames,
                 'ojt_supervisor' => $ojtSupervisorNames,
@@ -146,24 +182,40 @@ class ProfileController extends Controller
 
         if ($user->isSupervisor()) {
             $profile = $user->supervisorProfile()->with([
-                'hte' => fn ($q) => $q->withTrashed(),
-                'program' => fn ($q) => $q->withTrashed(),
+                'hte.college' => fn ($q) => $q->withTrashed(),
+                'program.college' => fn ($q) => $q->withTrashed(),
             ])->first();
+
+            $college = $profile?->program->college ?? $profile?->hte->college ?? $user->college;
+            $collegeCampus = is_string($college?->campus) && ! empty($college->campus)
+                ? $college->campus
+                : $college?->campus()?->value('name');
+            $campus = $user->campus ?: $collegeCampus;
 
             return [
                 'role' => $profile?->isOjtSupervisor() ? 'OJT Supervisor' : 'HTE Supervisor',
                 'id_number' => null,
                 'program' => $profile?->program?->program_name,
+                'college' => $college?->name,
+                'campus' => $campus,
                 'hte' => $profile?->hte?->hte_name,
                 'hte_supervisor' => null,
                 'ojt_supervisor' => null,
             ];
         }
 
+        $collegeAdminProfile = $user->collegeAdminProfile()->with(['campus', 'college'])->first();
+        $college = $collegeAdminProfile->college ?? $user->college;
+        $campus = $collegeAdminProfile?->campus->name
+            ?? $user->campus
+            ?? (is_string($college?->campus) && ! empty($college->campus) ? $college->campus : $college?->campus()?->value('name'));
+
         return [
-            'role' => 'System Administrator',
-            'id_number' => null,
+            'role' => $user->isCollegeAdmin() ? 'College Administrator' : 'System Administrator',
+            'id_number' => $collegeAdminProfile?->employee_id,
             'program' => null,
+            'college' => $college?->name,
+            'campus' => $campus,
             'hte' => null,
             'hte_supervisor' => null,
             'ojt_supervisor' => null,
@@ -195,6 +247,10 @@ class ProfileController extends Controller
     public function destroy(ProfileDeleteRequest $request): RedirectResponse
     {
         $user = $request->user();
+
+        if ($user->isAdmin() && User::where('role', User::ROLE_ADMIN)->count() <= 1) {
+            return back()->with('error', 'The system must have at least one active administrator. You cannot delete the sole administrator account.');
+        }
 
         Auth::logout();
 

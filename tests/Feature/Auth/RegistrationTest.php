@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\College;
 use App\Models\Hte;
 use App\Models\InternProfile;
 use App\Models\Program;
@@ -43,4 +44,49 @@ test('new interns can register and are sent a verification code to their email',
     expect(InternProfile::first()->status)->toBe('pending');
 
     Notification::assertSentTo($user, EmailVerificationCodeNotification::class);
+});
+
+test('intern registration rejects an HTE from a different college', function () {
+    $collegeA = College::create(['name' => 'College A', 'code' => 'CA']);
+    $collegeB = College::create(['name' => 'College B', 'code' => 'CB']);
+
+    $hteA = Hte::create(['hte_name' => 'HTE of College A', 'college_id' => $collegeA->id]);
+    $programB = Program::create(['program_name' => 'Program B', 'college_id' => $collegeB->id]);
+
+    $response = $this->post(route('register.store'), [
+        'name' => 'Student B',
+        'email' => 'student.b@usep.edu.ph',
+        'id_number' => '2026-00002',
+        'sex' => 'female',
+        'college_id' => $collegeB->id,
+        'hte_id' => $hteA->hte_id,
+        'program_id' => $programB->program_id,
+        'privacy_accepted' => true,
+        'password' => 'Password123!',
+        'password_confirmation' => 'Password123!',
+    ]);
+
+    $response->assertSessionHasErrors(['hte_id']);
+});
+
+test('intern registration succeeds when HTE belongs to the selected college', function () {
+    $collegeA = College::create(['name' => 'College Alpha', 'code' => 'CAL']);
+    $hteA = Hte::create(['hte_name' => 'HTE Alpha', 'college_id' => $collegeA->id]);
+    $programA = Program::create(['program_name' => 'Program Alpha', 'college_id' => $collegeA->id]);
+
+    $response = $this->post(route('register.store'), [
+        'name' => 'Student Alpha',
+        'email' => 'student.alpha@usep.edu.ph',
+        'id_number' => '2026-00003',
+        'sex' => 'male',
+        'college_id' => $collegeA->id,
+        'hte_id' => $hteA->hte_id,
+        'program_id' => $programA->program_id,
+        'privacy_accepted' => true,
+        'password' => 'Password123!',
+        'password_confirmation' => 'Password123!',
+    ]);
+
+    $response->assertSessionDoesntHaveErrors(['hte_id']);
+    $response->assertRedirect(route('verification.notice'));
 });

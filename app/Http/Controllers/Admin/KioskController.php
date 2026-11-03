@@ -14,10 +14,22 @@ class KioskController extends Controller
     {
         // Only one shared kiosk exists right now — create it on first visit
         // if it doesn't exist yet, so there's nothing to manually seed.
-        $kiosk = Kiosk::firstOrCreate(
-            ['name' => 'TIMS Attendance Kiosk'],
-            ['device_token' => Kiosk::generateToken(), 'is_active' => true],
-        );
+        $kiosk = Kiosk::where('name', 'UIMS Attendance Kiosk')
+            ->orWhere('name', 'TIMS Attendance Kiosk')
+            ->orWhere('name', 'CIMS Attendance Kiosk')
+            ->latest('id')
+            ->first();
+
+        if ($kiosk) {
+            if ($kiosk->name !== 'UIMS Attendance Kiosk') {
+                $kiosk->update(['name' => 'UIMS Attendance Kiosk']);
+            }
+        } else {
+            $kiosk = Kiosk::firstOrCreate(
+                ['name' => 'UIMS Attendance Kiosk'],
+                ['device_token' => Kiosk::generateToken(), 'is_active' => true],
+            );
+        }
 
         return Inertia::render('admin/kiosk', [
             'kiosk' => [

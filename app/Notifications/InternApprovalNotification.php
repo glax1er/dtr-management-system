@@ -27,7 +27,7 @@ class InternApprovalNotification extends Notification
                 'type' => 'intern_approval',
                 'title' => 'Your account has been approved!',
                 'message' => 'Your intern registration has been approved. You can now access your dashboard and DTR QR code.',
-                'href' => '/intern/dashboard',
+                'href' => '/intern/dashboard?highlight_qr=1',
                 'intern_user_id' => $this->internProfile->user_id,
             ];
         }

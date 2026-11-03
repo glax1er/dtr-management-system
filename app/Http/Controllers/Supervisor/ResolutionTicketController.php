@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Supervisor;
 
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceLog;
+use App\Models\AuditLog;
 use App\Models\InternProfile;
 use App\Models\ResolutionTicket;
 use App\Notifications\ResolutionTicketNotification;
@@ -51,6 +52,8 @@ class ResolutionTicketController extends Controller
         $perPage = (int) ($validated['per_page'] ?? self::DEFAULT_PER_PAGE);
 
         $internUserIds = InternProfile::query()
+            ->verified()
+            ->where('status', 'approved')
             ->where('hte_id', $supervisorProfile->hte_id)
             ->pluck('user_id');
 
@@ -88,7 +91,22 @@ class ResolutionTicketController extends Controller
 
         $tickets = $query
             ->orderByDesc('date')
-            ->orderByDesc('created_at')
+            ->orderByDesc('created_at');
+
+        // Auto-navigate to the page containing the highlighted ticket if not specified.
+        if ($request->filled('highlight') && ! $request->has('page')) {
+            $highlightId = (int) $request->query('highlight');
+            $allIds = (clone $tickets)->pluck('id')->all();
+            $index = array_search($highlightId, $allIds, true);
+            if ($index !== false) {
+                $targetPage = (int) floor((int) $index / $perPage) + 1;
+                if ($targetPage > 1) {
+                    $validated['page'] = $targetPage;
+                }
+            }
+        }
+
+        $tickets = $tickets
             ->paginate($perPage, ['*'], 'page', $validated['page'] ?? 1)
             ->withQueryString()
             ->through(fn (ResolutionTicket $ticket) => [
@@ -325,6 +343,20 @@ class ResolutionTicketController extends Controller
          */
         $ticket = $resolutionTicket->fresh(['intern']);
 
+        AuditLog::record(
+            action: 'resolution_ticket_approved',
+            description: "Resolution ticket #{$resolutionTicket->id} approved by supervisor",
+            auditable: $resolutionTicket,
+            oldValues: ['status' => ResolutionTicket::STATUS_PENDING],
+            newValues: [
+                'status' => ResolutionTicket::STATUS_APPROVED,
+                'final_time_in' => $ticket?->final_time_in?->toIso8601String(),
+                'final_time_out' => $ticket?->final_time_out?->toIso8601String(),
+                'resolved_by' => $request->user()->id,
+            ],
+            user: $request->user(),
+        );
+
         if ($ticket?->intern && $ticket->intern->wantsNotification('ticket_updates')) {
             $ticket->intern->notify(
                 new ResolutionTicketNotification(
@@ -388,6 +420,19 @@ class ResolutionTicketController extends Controller
             ]);
         });
 
+        AuditLog::record(
+            action: 'resolution_ticket_rejected',
+            description: "Resolution ticket #{$resolutionTicket->id} rejected by supervisor: {$validated['rejection_reason']}",
+            auditable: $resolutionTicket,
+            oldValues: ['status' => ResolutionTicket::STATUS_PENDING],
+            newValues: [
+                'status' => ResolutionTicket::STATUS_REJECTED,
+                'rejection_reason' => $validated['rejection_reason'],
+                'resolved_by' => $request->user()->id,
+            ],
+            user: $request->user(),
+        );
+
         /*
          * Notify the intern after successful rejection.
          */
@@ -429,12 +474,13 @@ class ResolutionTicketController extends Controller
             );
         }
 
-        $internHteId = $resolutionTicket
+        $internProfile = $resolutionTicket
             ->intern
-            ->internProfile
-            ->hte_id;
+            ?->internProfile()
+            ->withTrashed()
+            ->first();
 
-        if ($internHteId !== $supervisorProfile->hte_id) {
+        if (! $internProfile || $internProfile->hte_id !== $supervisorProfile->hte_id) {
             abort(403);
         }
     }

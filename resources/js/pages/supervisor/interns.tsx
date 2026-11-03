@@ -6,6 +6,7 @@ import {
     Calendar,
     ChevronLeft,
     ChevronRight,
+    Clock,
     GraduationCap,
     LayoutGrid,
     Search,
@@ -17,6 +18,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
 import { Button } from '@/components/ui/button';
@@ -45,6 +47,8 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDebounce } from '@/hooks/use-debounce';
+import { useInitials } from '@/hooks/use-initials';
+import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 
 interface AttendanceLogRow {
@@ -170,6 +174,7 @@ export default function MyInterns({
     filters,
     scopeName,
 }: MyInternsProps) {
+    const getInitials = useInitials();
     const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters.search || '');
     const [fromDraft, setFromDraft] = useState(filters.from);
@@ -177,9 +182,37 @@ export default function MyInterns({
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const debouncedSearch = useDebounce(search, 300);
     const isFirstRender = useRef(true);
+    const highlightId =
+        typeof window !== 'undefined'
+            ? Number(
+                  new URLSearchParams(window.location.search).get('highlight'),
+              ) || null
+            : null;
+    const highlightedDate = highlightId
+        ? logs.data.find((log) => log.intern_user_id === highlightId)?.date
+        : undefined;
 
     const hasActiveFilters =
         filters.search !== '' || filters.remarks !== null || mode === 'range';
+
+    useEffect(() => {
+        if (!highlightId || !highlightedDate) {
+            return;
+        }
+
+        const timer = window.setTimeout(() => {
+            const targets = document.querySelectorAll<HTMLElement>(
+                `[data-notification-highlight="${highlightId}-${highlightedDate}"]`,
+            );
+            const target = Array.from(targets).find(
+                (element) => element.getClientRects().length > 0,
+            );
+
+            target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 200);
+
+        return () => window.clearTimeout(timer);
+    }, [highlightId, highlightedDate, logs.data, view]);
 
     const visit = (
         params: Record<string, string | undefined>,
@@ -674,8 +707,8 @@ export default function MyInterns({
                         {/* Table View - desktop */}
                         {view === 'table' && (
                             <div className="hidden sm:block">
-                                <Card className="flex-1">
-                                    <CardHeader className="flex flex-row items-center justify-between">
+                                <Card className="gap-0 overflow-hidden p-0 shadow-xs">
+                                    <CardHeader className="flex flex-row items-center justify-between border-b px-6 py-4">
                                         <CardTitle className="text-base font-semibold">
                                             Attendance Logs
                                         </CardTitle>
@@ -692,7 +725,7 @@ export default function MyInterns({
                                         <Table>
                                             <TableHeader className="bg-muted/40">
                                                 <TableRow>
-                                                    <TableHead className="px-6">
+                                                    <TableHead className="px-6 font-semibold">
                                                         <button
                                                             type="button"
                                                             onClick={() =>
@@ -706,7 +739,7 @@ export default function MyInterns({
                                                             {sortIcon('date')}
                                                         </button>
                                                     </TableHead>
-                                                    <TableHead className="px-6">
+                                                    <TableHead className="px-6 font-semibold">
                                                         <button
                                                             type="button"
                                                             onClick={() =>
@@ -738,6 +771,21 @@ export default function MyInterns({
                                                 {logs.data.map((log) => (
                                                     <TableRow
                                                         key={`${log.intern_user_id}-${log.date}`}
+                                                        data-notification-highlight={
+                                                            log.intern_user_id ===
+                                                                highlightId &&
+                                                            log.date ===
+                                                                highlightedDate
+                                                                ? `${log.intern_user_id}-${log.date}`
+                                                                : undefined
+                                                        }
+                                                        className={cn(
+                                                            log.intern_user_id ===
+                                                                highlightId &&
+                                                                log.date ===
+                                                                    highlightedDate &&
+                                                                'bg-primary/10 ring-1 ring-inset ring-primary/30',
+                                                        )}
                                                     >
                                                         <TableCell className="px-6 font-medium whitespace-nowrap">
                                                             {formatLongDate(
@@ -782,6 +830,13 @@ export default function MyInterns({
                                                 ))}
                                             </TableBody>
                                         </Table>
+                                        <NumberedPagination
+                                            meta={logs}
+                                            itemLabel="record"
+                                            onPageChange={goToPage}
+                                            onPerPageChange={changePerPage}
+                                            idPrefix="attendance-logs-table-per-page"
+                                        />
                                     </CardContent>
                                 </Card>
                             </div>
@@ -789,139 +844,215 @@ export default function MyInterns({
 
                         {/* Grid View - desktop */}
                         {view === 'grid' && (
-                            <div className="hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3">
-                                {logs.data.map((log) => (
-                                    <Card
-                                        key={`${log.intern_user_id}-${log.date}`}
-                                        className="flex flex-col justify-between"
-                                    >
-                                        <CardHeader className="pb-3">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div className="min-w-0">
-                                                    <CardTitle className="truncate text-base font-semibold">
-                                                        {log.intern_name}
-                                                    </CardTitle>
-                                                    <p className="mt-0.5 text-xs text-muted-foreground">
-                                                        {formatLongDate(
-                                                            log.date,
-                                                            log.day,
+                            <div className="hidden sm:flex sm:flex-col sm:gap-4">
+                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                    {logs.data.map((log) => (
+                                        <Card
+                                            key={`${log.intern_user_id}-${log.date}`}
+                                            data-notification-highlight={
+                                                log.intern_user_id ===
+                                                    highlightId &&
+                                                log.date === highlightedDate
+                                                    ? `${log.intern_user_id}-${log.date}`
+                                                    : undefined
+                                            }
+                                            className={cn(
+                                                'flex h-full flex-col justify-between rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:border-border hover:shadow-md',
+                                                log.intern_user_id ===
+                                                    highlightId &&
+                                                    log.date ===
+                                                        highlightedDate &&
+                                                    'border-primary/50 bg-primary/5 ring-1 ring-primary/30',
+                                            )}
+                                        >
+                                            <CardHeader className="pb-3">
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="flex min-w-0 items-center gap-3">
+                                                        <Avatar className="size-10 shrink-0">
+                                                            <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
+                                                                {getInitials(
+                                                                    log.intern_name,
+                                                                )}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                        <div className="min-w-0">
+                                                            <CardTitle
+                                                                className="line-clamp-1 text-base leading-tight font-semibold"
+                                                                title={
+                                                                    log.intern_name
+                                                                }
+                                                            >
+                                                                {
+                                                                    log.intern_name
+                                                                }
+                                                            </CardTitle>
+                                                            <span className="block truncate text-xs text-muted-foreground">
+                                                                {formatLongDate(
+                                                                    log.date,
+                                                                    log.day,
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex shrink-0 flex-wrap gap-1">
+                                                        {log.punctuality && (
+                                                            <AttendanceBadge
+                                                                status={
+                                                                    log.punctuality
+                                                                }
+                                                            />
                                                         )}
-                                                    </p>
+                                                        {log.status ===
+                                                            'open' && (
+                                                            <AttendanceBadge status="open" />
+                                                        )}
+                                                    </div>
                                                 </div>
-                                                <div className="flex shrink-0 flex-wrap gap-1">
-                                                    {log.punctuality && (
-                                                        <AttendanceBadge
-                                                            status={
-                                                                log.punctuality
-                                                            }
-                                                        />
-                                                    )}
-                                                    {log.status === 'open' && (
-                                                        <AttendanceBadge status="open" />
-                                                    )}
+                                            </CardHeader>
+                                            <CardContent className="flex-1 space-y-2.5 pb-3 text-sm">
+                                                <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3 text-xs">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
+                                                            <Clock className="size-3.5 text-muted-foreground" />
+                                                            Time In:
+                                                        </span>
+                                                        <span className="font-medium text-foreground">
+                                                            {formatLongTime(
+                                                                log.time_in,
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
+                                                            <Clock className="size-3.5 text-muted-foreground" />
+                                                            Time Out:
+                                                        </span>
+                                                        <span className="font-medium text-foreground">
+                                                            {formatLongTime(
+                                                                log.time_out,
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between gap-2 border-t pt-1.5">
+                                                        <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
+                                                            Hours Rendered:
+                                                        </span>
+                                                        <span className="font-semibold text-foreground">
+                                                            {formatLongDuration(
+                                                                log.hours_rendered,
+                                                            )}
+                                                        </span>
+                                                    </div>
                                                 </div>
+                                            </CardContent>
+                                            <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
+                                                <span>Date: {log.date}</span>
+                                                <span className="font-medium text-foreground">
+                                                    {formatLongDuration(
+                                                        log.hours_rendered,
+                                                    )}
+                                                </span>
                                             </div>
-                                        </CardHeader>
-                                        <CardContent className="space-y-2 pt-0 text-xs text-muted-foreground">
-                                            <div className="flex items-center justify-between border-t pt-2">
-                                                <span>Time In:</span>
+                                        </Card>
+                                    ))}
+                                </div>
+                                <NumberedPagination
+                                    meta={logs}
+                                    itemLabel="record"
+                                    onPageChange={goToPage}
+                                    onPerPageChange={changePerPage}
+                                    idPrefix="attendance-logs-grid-per-page"
+                                />
+                            </div>
+                        )}
+
+                        {/* Mobile List View */}
+                        <div className="flex flex-col gap-3 sm:hidden">
+                            <div className="divide-y rounded-lg border bg-card">
+                                {logs.data.map((log) => (
+                                    <div
+                                        key={`${log.intern_user_id}-${log.date}`}
+                                        data-notification-highlight={
+                                            log.intern_user_id ===
+                                                highlightId &&
+                                            log.date === highlightedDate
+                                                ? `${log.intern_user_id}-${log.date}`
+                                                : undefined
+                                        }
+                                        className={cn(
+                                            'flex flex-col gap-2.5 p-4',
+                                            log.intern_user_id ===
+                                                highlightId &&
+                                                log.date === highlightedDate &&
+                                                'bg-primary/10',
+                                        )}
+                                    >
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="min-w-0">
+                                                <span className="block truncate text-sm font-semibold text-foreground">
+                                                    {log.intern_name}
+                                                </span>
+                                                <span className="text-xs text-muted-foreground">
+                                                    {formatLongDate(
+                                                        log.date,
+                                                        log.day,
+                                                    )}
+                                                </span>
+                                            </div>
+                                            <div className="flex shrink-0 flex-wrap gap-1">
+                                                {log.punctuality && (
+                                                    <AttendanceBadge
+                                                        status={log.punctuality}
+                                                    />
+                                                )}
+                                                {log.status === 'open' && (
+                                                    <AttendanceBadge status="open" />
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-1 rounded-md border bg-muted/30 p-2 text-center text-xs text-muted-foreground">
+                                            <div>
+                                                <span className="block text-[10px] text-muted-foreground">
+                                                    Time In
+                                                </span>
                                                 <span className="font-medium text-foreground">
                                                     {formatLongTime(
                                                         log.time_in,
                                                     )}
                                                 </span>
                                             </div>
-                                            <div className="flex items-center justify-between">
-                                                <span>Time Out:</span>
+                                            <div>
+                                                <span className="block text-[10px] text-muted-foreground">
+                                                    Time Out
+                                                </span>
                                                 <span className="font-medium text-foreground">
                                                     {formatLongTime(
                                                         log.time_out,
                                                     )}
                                                 </span>
                                             </div>
-                                            <div className="flex items-center justify-between">
-                                                <span>Hours Rendered:</span>
+                                            <div>
+                                                <span className="block text-[10px] text-muted-foreground">
+                                                    Hours
+                                                </span>
                                                 <span className="font-semibold text-foreground">
                                                     {formatLongDuration(
                                                         log.hours_rendered,
                                                     )}
                                                 </span>
                                             </div>
-                                        </CardContent>
-                                    </Card>
+                                        </div>
+                                    </div>
                                 ))}
                             </div>
-                        )}
-
-                        {/* Mobile List View */}
-                        <div className="divide-y rounded-lg border bg-card sm:hidden">
-                            {logs.data.map((log) => (
-                                <div
-                                    key={`${log.intern_user_id}-${log.date}`}
-                                    className="flex flex-col gap-2.5 p-4"
-                                >
-                                    <div className="flex items-start justify-between gap-2">
-                                        <div className="min-w-0">
-                                            <span className="block truncate text-sm font-semibold text-foreground">
-                                                {log.intern_name}
-                                            </span>
-                                            <span className="text-xs text-muted-foreground">
-                                                {formatLongDate(
-                                                    log.date,
-                                                    log.day,
-                                                )}
-                                            </span>
-                                        </div>
-                                        <div className="flex shrink-0 flex-wrap gap-1">
-                                            {log.punctuality && (
-                                                <AttendanceBadge
-                                                    status={log.punctuality}
-                                                />
-                                            )}
-                                            {log.status === 'open' && (
-                                                <AttendanceBadge status="open" />
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-1 rounded-md border bg-muted/30 p-2 text-center text-xs text-muted-foreground">
-                                        <div>
-                                            <span className="block text-[10px] text-muted-foreground">
-                                                Time In
-                                            </span>
-                                            <span className="font-medium text-foreground">
-                                                {formatLongTime(log.time_in)}
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <span className="block text-[10px] text-muted-foreground">
-                                                Time Out
-                                            </span>
-                                            <span className="font-medium text-foreground">
-                                                {formatLongTime(log.time_out)}
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <span className="block text-[10px] text-muted-foreground">
-                                                Hours
-                                            </span>
-                                            <span className="font-semibold text-foreground">
-                                                {formatLongDuration(
-                                                    log.hours_rendered,
-                                                )}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
+                            <NumberedPagination
+                                meta={logs}
+                                itemLabel="record"
+                                onPageChange={goToPage}
+                                onPerPageChange={changePerPage}
+                                idPrefix="attendance-logs-mobile-per-page"
+                            />
                         </div>
-
-                        <NumberedPagination
-                            meta={logs}
-                            itemLabel="record"
-                            onPageChange={goToPage}
-                            onPerPageChange={changePerPage}
-                            idPrefix="attendance-logs-per-page"
-                        />
                     </>
                 )}
             </div>

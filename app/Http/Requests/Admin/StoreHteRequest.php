@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreHteRequest extends FormRequest
 {
@@ -13,8 +14,16 @@ class StoreHteRequest extends FormRequest
 
     public function rules(): array
     {
+        $collegeId = $this->user()?->isCollegeAdmin() ? $this->user()->college_id : $this->input('college_id');
+
         return [
-            'hte_name' => ['required', 'string', 'max:150', 'unique:htes,hte_name'],
+            'hte_name' => [
+                'required',
+                'string',
+                'max:150',
+                Rule::unique('htes', 'hte_name')->where(fn ($q) => $q->where('college_id', $collegeId)),
+            ],
+            'college_id' => ['nullable', 'integer', 'exists:colleges,id'],
             'address' => ['required', 'string', 'max:255'],
             'contact_number' => ['nullable', 'string', 'max:20'],
             'id_bg' => ['nullable', 'image', 'max:5120', 'mimes:jpg,jpeg,png,webp'],

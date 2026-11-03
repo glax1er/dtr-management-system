@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Supervisor;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\SchedulePeriod;
 use App\Models\User;
 use App\Notifications\ScheduleUpdatedNotification;
@@ -16,26 +17,50 @@ class SchedulePeriodController extends Controller
 {
     public function index(Request $request): Response
     {
-        $hteId = $request->user()->supervisorProfile->hte_id;
+        $supervisorProfile = $request->user()->supervisorProfile;
+        $hteId = $supervisorProfile->hte_id;
+        $collegeId = $supervisorProfile->hte?->college_id;
         $highlightId = $request->input('highlight') ?? $request->input('highlight_id');
 
-        // Global periods first (read-only reference for the supervisor),
-        // then this HTE's own overrides — both shown together so the
-        // supervisor can see exactly what they're overriding.
+        // Global periods (read-only university baseline)
         $globalPeriods = SchedulePeriod::whereNull('hte_id')
+            ->whereNull('college_id')
             ->orderByDesc('start_date')
             ->get()
             ->map(fn (SchedulePeriod $period) => $this->toArray($period, 'global'));
+
+        // College periods (read-only college baseline)
+        $collegePeriods = $collegeId
+            ? SchedulePeriod::whereNull('hte_id')
+                ->where('college_id', $collegeId)
+                ->with('college:id,name,code')
+                ->orderByDesc('start_date')
+                ->get()
+                ->map(fn (SchedulePeriod $period) => $this->toArray($period, 'college'))
+            : collect();
 
         $ownPeriods = SchedulePeriod::where('hte_id', $hteId)
             ->orderByDesc('start_date')
             ->get()
             ->map(fn (SchedulePeriod $period) => $this->toArray($period, 'hte'));
 
+        $hte = $supervisorProfile->hte;
+        $college = $hte?->college;
+
         return Inertia::render('supervisor/schedule', [
             'globalPeriods' => $globalPeriods,
+            'collegePeriods' => $collegePeriods,
             'periods' => $ownPeriods,
             'highlightId' => $highlightId ? (int) $highlightId : null,
+            'college' => $college ? [
+                'id' => $college->id,
+                'name' => $college->name,
+                'code' => $college->code,
+            ] : null,
+            'hte' => $hte ? [
+                'id' => $hte->hte_id,
+                'name' => $hte->hte_name,
+            ] : null,
         ]);
     }
 
@@ -54,6 +79,14 @@ class SchedulePeriodController extends Controller
 
         $this->notifyScheduleChange($schedulePeriod, ScheduleUpdatedNotification::ACTION_CREATED, $request->user());
 
+        AuditLog::record(
+            action: 'schedule_override_created',
+            description: 'HTE schedule override created: '.($schedulePeriod->name ?? 'Override'),
+            auditable: $schedulePeriod,
+            newValues: $schedulePeriod->only(['hte_id', 'name', 'start_date', 'end_date', 'day_schedule']),
+            user: $request->user(),
+        );
+
         Inertia::flash('toast', ['type' => 'success', 'message' => 'HTE schedule override created.']);
 
         return back();
@@ -65,6 +98,7 @@ class SchedulePeriodController extends Controller
         abort_if($schedulePeriod->hte_id !== $hteId, 404);
 
         $validated = $this->validatePayload($request);
+        $oldValues = $schedulePeriod->only(['hte_id', 'name', 'start_date', 'end_date', 'day_schedule']);
 
         $schedulePeriod->update([
             'name' => $validated['name'] ?? null,
@@ -74,6 +108,15 @@ class SchedulePeriodController extends Controller
         ]);
 
         $this->notifyScheduleChange($schedulePeriod, ScheduleUpdatedNotification::ACTION_UPDATED, $request->user());
+
+        AuditLog::record(
+            action: 'schedule_override_updated',
+            description: 'HTE schedule override updated: '.($schedulePeriod->name ?? 'Override'),
+            auditable: $schedulePeriod,
+            oldValues: $oldValues,
+            newValues: $schedulePeriod->only(['hte_id', 'name', 'start_date', 'end_date', 'day_schedule']),
+            user: $request->user(),
+        );
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'HTE schedule override updated.']);
 
@@ -88,6 +131,15 @@ class SchedulePeriodController extends Controller
         $scheduleName = $schedulePeriod->name ?? "{$schedulePeriod->start_date->format('M d, Y')} - {$schedulePeriod->end_date->format('M d, Y')}";
         $periodId = $schedulePeriod->id;
         $hteName = $schedulePeriod->hte?->hte_name ?? $request->user()->supervisorProfile?->hte?->hte_name;
+        $oldValues = $schedulePeriod->only(['hte_id', 'name', 'start_date', 'end_date', 'day_schedule']);
+
+        AuditLog::record(
+            action: 'schedule_override_deleted',
+            description: "HTE schedule override deleted: {$scheduleName}",
+            auditable: $schedulePeriod,
+            oldValues: $oldValues,
+            user: $request->user(),
+        );
 
         $schedulePeriod->delete();
 
@@ -102,7 +154,10 @@ class SchedulePeriodController extends Controller
     {
         $recipients = User::query()
             ->where('role', User::ROLE_INTERN)
-            ->whereHas('internProfile', fn ($q) => $q->where('hte_id', $schedulePeriod->hte_id))
+            ->whereHas('internProfile', fn ($q) => $q
+                ->where('status', 'approved')
+                ->whereHas('user', fn ($user) => $user->whereNotNull('email_verified_at'))
+                ->where('hte_id', $schedulePeriod->hte_id))
             ->get()
             ->filter(fn (User $user) => $user->wantsNotification('schedule_alerts'));
 
@@ -125,7 +180,10 @@ class SchedulePeriodController extends Controller
     {
         $recipients = User::query()
             ->where('role', User::ROLE_INTERN)
-            ->whereHas('internProfile', fn ($q) => $q->where('hte_id', $hteId))
+            ->whereHas('internProfile', fn ($q) => $q
+                ->where('status', 'approved')
+                ->whereHas('user', fn ($user) => $user->whereNotNull('email_verified_at'))
+                ->where('hte_id', $hteId))
             ->get()
             ->filter(fn (User $user) => $user->wantsNotification('schedule_alerts'));
 
@@ -167,6 +225,12 @@ class SchedulePeriodController extends Controller
             'end_date' => $period->end_date->toDateString(),
             'day_schedule' => $period->day_schedule,
             'scope' => $scope,
+            'college_id' => $period->college_id,
+            'college' => $period->college ? [
+                'id' => $period->college->id,
+                'name' => $period->college->name,
+                'code' => $period->college->code,
+            ] : null,
         ];
     }
 }

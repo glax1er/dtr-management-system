@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\InternProfile;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
@@ -17,6 +18,8 @@ class HoursMilestoneNotification extends Notification
     public const MILESTONE_100 = 'milestone_100';
 
     public const SUPERVISOR_INTERN_COMPLETED = 'supervisor_intern_completed';
+
+    public const COLLEGE_ADMIN_INTERN_COMPLETED = 'college_admin_intern_completed';
 
     public function __construct(
         public string $milestone,
@@ -65,7 +68,20 @@ class HoursMilestoneNotification extends Notification
                 'type' => 'intern_completed_hours',
                 'title' => "Intern Completed Hours: {$internName}",
                 'message' => "{$internName} has rendered {$rendered} hours (100% completed) and is ready for DTR sign-off.",
-                'href' => $this->internProfile ? "/supervisor/interns?doc_intern={$this->internProfile->user_id}&open_summary=1" : '/supervisor/interns',
+                'href' => $this->internProfile
+                    ? ($notifiable instanceof User && $notifiable->supervisorProfile?->isOjtSupervisor()
+                        ? "/supervisor/interns?highlight={$this->internProfile->user_id}&doc_intern={$this->internProfile->user_id}&open_summary=1"
+                        : "/supervisor/interns?highlight={$this->internProfile->user_id}")
+                    : '/supervisor/interns',
+                'intern_user_id' => $this->internProfile?->user_id,
+                'total_hours' => $this->totalHours,
+                'required_hours' => $this->requiredHours,
+            ],
+            self::COLLEGE_ADMIN_INTERN_COMPLETED => [
+                'type' => 'college_admin_intern_completed',
+                'title' => "Intern Completed OJT Hours: {$internName}",
+                'message' => "{$internName} has completed 100% ({$rendered} of {$required} hrs) of required OJT hours and is ready for endorsement sign-off.",
+                'href' => $this->internProfile ? "/admin/interns?highlight={$this->internProfile->user_id}" : '/admin/interns',
                 'intern_user_id' => $this->internProfile?->user_id,
                 'total_hours' => $this->totalHours,
                 'required_hours' => $this->requiredHours,

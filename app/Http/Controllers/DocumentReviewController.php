@@ -12,29 +12,39 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 
 class DocumentReviewController extends Controller
 {
     public function showInternDocuments(Request $request, int $internUserId): JsonResponse
     {
         $user = $request->user();
-        $internProfile = InternProfile::with(['user', 'hte', 'program'])->where('user_id', $internUserId)->firstOrFail();
+        $internProfile = InternProfile::withTrashed()->with(['user', 'hte', 'program'])->where('user_id', $internUserId)->firstOrFail();
 
-        if (! $user->isSupervisor()) {
-            abort(403, 'Unauthorized. Only supervisors can review intern documents.');
-        }
-        $supervisor = $user->supervisorProfile;
-        if (! $supervisor) {
-            abort(403, 'Supervisor profile not found.');
-        }
-        if ($supervisor->isOjtSupervisor()) {
-            if ($internProfile->program_id !== $supervisor->program_id) {
-                abort(403, 'Intern is not under your program.');
+        if ($user->isSuperAdmin()) {
+            // Super Admin has access across all colleges
+        } elseif ($user->isCollegeAdmin()) {
+            $program = $internProfile->program;
+            $profileUser = $internProfile->user;
+            $internCollegeId = ($program !== null ? $program->college_id : null)
+                ?? ($profileUser !== null ? $profileUser->college_id : null);
+            abort_if($internCollegeId !== $user->college_id, 403, 'Unauthorized.');
+        } elseif ($user->isSupervisor()) {
+            $supervisor = $user->supervisorProfile;
+            if (! $supervisor) {
+                abort(403, 'Supervisor profile not found.');
+            }
+            if ($supervisor->isOjtSupervisor()) {
+                if ($internProfile->program_id !== $supervisor->program_id) {
+                    abort(403, 'Intern is not under your program.');
+                }
+            } else {
+                if ($internProfile->hte_id !== $supervisor->hte_id) {
+                    abort(403, 'Intern is not under your HTE.');
+                }
             }
         } else {
-            if ($internProfile->hte_id !== $supervisor->hte_id) {
-                abort(403, 'Intern is not under your HTE.');
-            }
+            abort(403, 'Unauthorized.');
         }
 
         $uploadedDocs = InternDocument::query()
@@ -70,8 +80,8 @@ class DocumentReviewController extends Controller
                 'user_id' => $internProfile->user_id,
                 'name' => $internProfile->user->name,
                 'id_number' => $internProfile->id_number,
-                'program' => $internProfile->program?->program_name ?? 'N/A',
-                'hte' => $internProfile->hte?->hte_name ?? 'N/A',
+                'program' => ($program = $internProfile->program) !== null ? $program->program_name : 'N/A',
+                'hte' => ($hte = $internProfile->hte) !== null ? $hte->hte_name : 'N/A',
             ],
             'checklist' => $checklist,
         ]);
@@ -79,13 +89,30 @@ class DocumentReviewController extends Controller
 
     private function canAccessDocument(User $user, InternDocument $internDocument): bool
     {
+        if ($user->isSuperAdmin()) {
+            return true;
+        }
+
+        if ($user->isCollegeAdmin()) {
+            $internProfile = InternProfile::withTrashed()->where('user_id', $internDocument->user_id)->first();
+            if (! $internProfile) {
+                return false;
+            }
+            $program = $internProfile->program;
+            $profileUser = $internProfile->user;
+            $internCollegeId = ($program !== null ? $program->college_id : null)
+                ?? ($profileUser !== null ? $profileUser->college_id : null);
+
+            return $internCollegeId === $user->college_id;
+        }
+
         if ($user->isSupervisor()) {
             $supervisorProfile = $user->supervisorProfile;
             if (! $supervisorProfile) {
                 return false;
             }
 
-            $internProfile = InternProfile::where('user_id', $internDocument->user_id)->first();
+            $internProfile = InternProfile::withTrashed()->where('user_id', $internDocument->user_id)->first();
             if (! $internProfile) {
                 return false;
             }
@@ -106,15 +133,26 @@ class DocumentReviewController extends Controller
             abort(403, 'Unauthorized access to this document.');
         }
 
+        if (str_contains($internDocument->file_path, '..')) {
+            abort(400, 'Invalid file path.');
+        }
+
         if (! Storage::disk('local')->exists($internDocument->file_path)) {
             abort(404, 'Document file not found.');
         }
 
         $fullPath = Storage::disk('local')->path($internDocument->file_path);
 
+        $disposition = HeaderUtils::makeDisposition(
+            HeaderUtils::DISPOSITION_INLINE,
+            $internDocument->original_filename,
+        );
+
         return response()->file($fullPath, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="'.addslashes($internDocument->original_filename).'"',
+            'Content-Disposition' => $disposition,
+            'Content-Security-Policy' => "default-src 'none'; sandbox",
+            'X-Content-Type-Options' => 'nosniff',
         ]);
     }
 
@@ -122,6 +160,10 @@ class DocumentReviewController extends Controller
     {
         if (! $this->canAccessDocument($request->user(), $internDocument)) {
             abort(403, 'Unauthorized access to this document.');
+        }
+
+        if (str_contains($internDocument->file_path, '..')) {
+            abort(400, 'Invalid file path.');
         }
 
         if (! Storage::disk('local')->exists($internDocument->file_path)) {
@@ -132,6 +174,7 @@ class DocumentReviewController extends Controller
 
         return response()->download($fullPath, $internDocument->original_filename, [
             'Content-Type' => 'application/pdf',
+            'X-Content-Type-Options' => 'nosniff',
         ]);
     }
 

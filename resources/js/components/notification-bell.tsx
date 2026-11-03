@@ -73,17 +73,34 @@ export function NotificationBell() {
     // over the imported `router` singleton) so it can be listed as a real
     // effect dependency below without changing identity on every render.
     const markAsRead = useCallback((notification: Notification) => {
-        router.post(
-            `/notifications/${notification.id}/read`,
-            {},
-            {
-                preserveScroll: true,
-                preserveState: true,
-                onSuccess: () => {
-                    router.visit(notification.href);
+        const href = notification.href;
+
+        if (notification.read_at) {
+            if (href) {
+                router.visit(href);
+            }
+
+            return;
+        }
+
+        if (href) {
+            router.post(
+                `/notifications/${notification.id}/read`,
+                { redirect_to: href },
+                {
+                    preserveScroll: true,
                 },
-            },
-        );
+            );
+        } else {
+            router.post(
+                `/notifications/${notification.id}/read`,
+                {},
+                {
+                    preserveScroll: true,
+                    preserveState: true,
+                },
+            );
+        }
     }, []);
 
     useEffect(() => {

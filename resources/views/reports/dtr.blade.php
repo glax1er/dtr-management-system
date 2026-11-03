@@ -81,15 +81,15 @@
             <td style="width:30%;">Model:</td>
         </tr>
         <tr>
-            <td colspan="2">Name of Company/Organization: <strong>{{ $profile->hte->hte_name }}</strong></td>
+            <td colspan="2">Name of Company/Organization: <strong>{{ $profile->hte?->hte_name ?? 'N/A' }}</strong></td>
         </tr>
         <tr>
-            <td>Name of OJT Supervisor: <strong>{{ $profile->hte->contact_person }}</strong></td>
-            <td>Address of Company/Organization: <strong>{{ $profile->hte->address }}</strong></td>
+            <td>Name of OJT Supervisor: <strong>{{ $profile->hte?->contact_person ?? 'N/A' }}</strong></td>
+            <td>Address of Company/Organization: <strong>{{ $profile->hte?->address ?? 'N/A' }}</strong></td>
         </tr>
         <tr>
-            <td>Contact Numbers: <strong>{{ $profile->hte->contact_number }}</strong></td>
-            <td>Department Assigned: <strong>{{ $profile->hte->hte_name }}</strong></td>
+            <td>Contact Numbers: <strong>{{ $profile->hte?->contact_number ?? 'N/A' }}</strong></td>
+            <td>Department Assigned: <strong>{{ $profile->hte?->hte_name ?? 'N/A' }}</strong></td>
         </tr>
     </table>
 

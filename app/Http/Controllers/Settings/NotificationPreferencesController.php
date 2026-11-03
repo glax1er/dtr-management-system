@@ -13,10 +13,15 @@ class NotificationPreferencesController extends Controller
     public function edit(Request $request): Response
     {
         $user = $request->user();
-        $roleLabel = $user->role;
-        if ($user->isSupervisor() && $user->supervisorProfile) {
-            $roleLabel = $user->supervisorProfile->isOjtSupervisor() ? 'OJT Supervisor' : 'HTE Supervisor';
-        }
+        $roleLabel = match (true) {
+            $user->isSuperAdmin() => 'Super Administrator',
+            $user->isCollegeAdmin() => 'College Administrator',
+            $user->isSupervisor() && $user->supervisorProfile?->isOjtSupervisor() => 'OJT Supervisor',
+            $user->isSupervisor() && $user->supervisorProfile?->isHteSupervisor() => 'HTE Supervisor',
+            $user->isSupervisor() => 'Supervisor',
+            $user->isIntern() => 'Intern',
+            default => ucfirst(str_replace('_', ' ', $user->role)),
+        };
 
         return Inertia::render('settings/notifications', [
             'preferences' => $user->getNotificationPreferences(),
