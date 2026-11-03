@@ -4,6 +4,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Features;
+use PragmaRX\Google2FA\Google2FA;
 
 test('security page is displayed', function () {
     $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
@@ -142,7 +143,7 @@ test('two factor authentication can be enabled and confirmed even after subseque
 
     // 4. Confirm 2FA using a valid TOTP code
     $decryptedSecret = decrypt($user->two_factor_secret);
-    $engine = new \PragmaRX\Google2FA\Google2FA();
+    $engine = new Google2FA;
     $validCode = $engine->getCurrentOtp($decryptedSecret);
 
     $this->actingAs($user)

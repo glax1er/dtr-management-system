@@ -7,6 +7,7 @@ import {
     Phone,
     Search,
     SlidersHorizontal,
+    Sparkles,
     Table as TableIcon,
     X,
 } from 'lucide-react';
@@ -45,6 +46,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useInitials } from '@/hooks/use-initials';
+import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 
 interface StudentRow {
@@ -125,6 +127,35 @@ export default function MyStudents({
     useEffect(() => {
         localStorage.setItem('supervisor_students_view', view);
     }, [view]);
+
+    const highlightId =
+        typeof window !== 'undefined'
+            ? Number(
+                  new URLSearchParams(window.location.search).get('highlight') ||
+                  new URLSearchParams(window.location.search).get('doc_intern'),
+              ) || null
+            : null;
+
+    useEffect(() => {
+        if (!highlightId) {
+            return;
+        }
+
+        const el =
+            document.getElementById(`student-row-${highlightId}`) ||
+            document.getElementById(`student-card-${highlightId}`) ||
+            document.getElementById(`student-card-mobile-${highlightId}`);
+
+        if (!el) {
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 200);
+
+        return () => clearTimeout(timer);
+    }, [highlightId, students.data]);
 
     const baseParams = () => ({
         search: search || undefined,
@@ -396,24 +427,43 @@ export default function MyStudents({
                                             </TableHeader>
                                             <TableBody>
                                                 {students.data.map(
-                                                    (student) => (
-                                                        <TableRow
-                                                            key={
-                                                                student.intern_user_id
-                                                            }
-                                                            className="transition-colors hover:bg-muted/40"
-                                                        >
-                                                            <TableCell className="px-6 py-3.5">
-                                                                <p className="font-medium whitespace-nowrap text-foreground">
-                                                                    {
-                                                                        student.name
-                                                                    }
-                                                                </p>
-                                                                <p
-                                                                    className="max-w-[180px] truncate text-xs text-muted-foreground"
-                                                                    title={
-                                                                        student.email
-                                                                    }
+                                                    (student) => {
+                                                        const isHighlighted =
+                                                            highlightId ===
+                                                            student.intern_user_id;
+
+                                                        return (
+                                                            <TableRow
+                                                                key={
+                                                                    student.intern_user_id
+                                                                }
+                                                                id={`student-row-${student.intern_user_id}`}
+                                                                className={cn(
+                                                                    'transition-all duration-300',
+                                                                    isHighlighted
+                                                                        ? 'bg-primary/10 ring-2 ring-primary/40 dark:bg-primary/20'
+                                                                        : 'hover:bg-muted/40',
+                                                                )}
+                                                            >
+                                                                <TableCell className="px-6 py-3.5">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <p className="font-medium whitespace-nowrap text-foreground">
+                                                                            {
+                                                                                student.name
+                                                                            }
+                                                                        </p>
+                                                                        {isHighlighted && (
+                                                                            <Badge className="animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase">
+                                                                                <Sparkles className="size-2.5" />
+                                                                                Focus
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
+                                                                    <p
+                                                                        className="max-w-[180px] truncate text-xs text-muted-foreground"
+                                                                        title={
+                                                                            student.email
+                                                                        }
                                                                 >
                                                                     {
                                                                         student.email
@@ -528,7 +578,8 @@ export default function MyStudents({
                                                                 </div>
                                                             </TableCell>
                                                         </TableRow>
-                                                    ),
+                                                        );
+                                                    },
                                                 )}
                                             </TableBody>
                                         </Table>
@@ -548,35 +599,57 @@ export default function MyStudents({
                         {view === 'grid' && (
                             <div className="hidden sm:flex sm:flex-col sm:gap-4">
                                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                    {students.data.map((student) => (
-                                        <Card
-                                            key={student.intern_user_id}
-                                            className="flex h-full flex-col justify-between rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:border-border hover:shadow-md"
-                                        >
-                                            <CardHeader className="pb-3">
-                                                <div className="flex items-start justify-between gap-3">
-                                                    <div className="flex min-w-0 flex-1 items-start gap-3">
-                                                        <Avatar className="size-9 shrink-0">
-                                                            <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
-                                                                {getInitials(
-                                                                    student.name,
-                                                                )}
-                                                            </AvatarFallback>
-                                                        </Avatar>
-                                                        <div className="min-w-0 flex-1">
-                                                            <CardTitle className="line-clamp-1 text-base font-semibold text-foreground">
-                                                                {student.name}
-                                                            </CardTitle>
-                                                            <p
-                                                                className="mt-0.5 truncate text-xs text-muted-foreground"
-                                                                title={
-                                                                    student.email
-                                                                }
-                                                            >
-                                                                {student.email}
-                                                            </p>
+                                    {students.data.map((student) => {
+                                        const isHighlighted =
+                                            highlightId ===
+                                            student.intern_user_id;
+
+                                        return (
+                                            <Card
+                                                key={student.intern_user_id}
+                                                id={`student-card-${student.intern_user_id}`}
+                                                className={cn(
+                                                    'flex h-full flex-col justify-between rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-300 hover:border-border hover:shadow-md',
+                                                    isHighlighted &&
+                                                        'border-primary bg-primary/5 shadow-md ring-2 ring-primary dark:bg-primary/10',
+                                                )}
+                                            >
+                                                <CardHeader className="pb-3">
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div className="flex min-w-0 flex-1 items-start gap-3">
+                                                            <Avatar className="size-9 shrink-0">
+                                                                <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
+                                                                    {getInitials(
+                                                                        student.name,
+                                                                    )}
+                                                                </AvatarFallback>
+                                                            </Avatar>
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="flex items-center gap-2">
+                                                                    <CardTitle className="line-clamp-1 text-base font-semibold text-foreground">
+                                                                        {
+                                                                            student.name
+                                                                        }
+                                                                    </CardTitle>
+                                                                    {isHighlighted && (
+                                                                        <Badge className="animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase">
+                                                                            <Sparkles className="size-2.5" />
+                                                                            Focus
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+                                                                <p
+                                                                    className="mt-0.5 truncate text-xs text-muted-foreground"
+                                                                    title={
+                                                                        student.email
+                                                                    }
+                                                                >
+                                                                    {
+                                                                        student.email
+                                                                    }
+                                                                </p>
+                                                            </div>
                                                         </div>
-                                                    </div>
                                                     {student.id_number && (
                                                         <Badge
                                                             variant="outline"
@@ -691,7 +764,8 @@ export default function MyStudents({
                                                 />
                                             </CardFooter>
                                         </Card>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                                 <NumberedPagination
                                     meta={students}
@@ -705,90 +779,109 @@ export default function MyStudents({
 
                         {/* Mobile list view */}
                         <div className="flex flex-col gap-3 sm:hidden">
-                            {students.data.map((student) => (
-                                <Card
-                                    key={student.intern_user_id}
-                                    className="shadow-2xs"
-                                >
-                                    <CardContent className="flex flex-col gap-2.5 p-4">
-                                        <div className="flex items-start justify-between gap-2">
-                                            <div className="min-w-0">
-                                                <p className="truncate text-sm font-semibold text-foreground">
-                                                    {student.name}
-                                                </p>
-                                                <p className="truncate text-xs text-muted-foreground">
-                                                    {student.email}
-                                                </p>
+                            {students.data.map((student) => {
+                                const isHighlighted =
+                                    highlightId === student.intern_user_id;
+
+                                return (
+                                    <Card
+                                        key={student.intern_user_id}
+                                        id={`student-card-mobile-${student.intern_user_id}`}
+                                        className={cn(
+                                            'shadow-2xs transition-all duration-300',
+                                            isHighlighted &&
+                                                'border-primary bg-primary/5 ring-2 ring-primary dark:bg-primary/10',
+                                        )}
+                                    >
+                                        <CardContent className="flex flex-col gap-2.5 p-4">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="truncate text-sm font-semibold text-foreground">
+                                                            {student.name}
+                                                        </p>
+                                                        {isHighlighted && (
+                                                            <Badge className="animate-pulse gap-1 bg-primary text-[10px] font-semibold text-primary-foreground uppercase">
+                                                                <Sparkles className="size-2.5" />
+                                                                Focus
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    <p className="truncate text-xs text-muted-foreground">
+                                                        {student.email}
+                                                    </p>
+                                                </div>
+                                                <Badge
+                                                    variant="outline"
+                                                    className="shrink-0 font-mono text-xs"
+                                                >
+                                                    {student.id_number ??
+                                                        'No ID'}
+                                                </Badge>
                                             </div>
-                                            <Badge
-                                                variant="outline"
-                                                className="shrink-0 font-mono text-xs"
-                                            >
-                                                {student.id_number ?? 'No ID'}
-                                            </Badge>
-                                        </div>
-                                        <div className="flex items-center justify-between border-t pt-1 text-xs text-muted-foreground">
-                                            <span className="max-w-[160px] truncate font-medium text-foreground">
-                                                {student.hte_name}
-                                            </span>
-                                            <span className="font-semibold text-foreground">
-                                                {formatHours(
-                                                    student.total_hours,
-                                                )}{' '}
-                                                / {student.required_hours}h
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center justify-between gap-2 text-xs">
-                                            <StatusBadge
-                                                status={
-                                                    student.docs_completed
-                                                        ? 'approved'
-                                                        : student.approved_docs_count >
-                                                            0
-                                                          ? 'pending_review'
-                                                          : 'not_submitted'
-                                                }
-                                                label={`${student.approved_docs_count}/${student.total_required_docs_count} Docs`}
-                                                className="px-2 py-0.5 text-[11px]"
-                                            />
-                                            <StatusBadge
-                                                status={
-                                                    student.is_completed
-                                                        ? 'approved'
-                                                        : student.hours_completed
-                                                          ? 'pending_review'
-                                                          : 'active'
-                                                }
-                                                label={
-                                                    student.is_completed
-                                                        ? 'Completed'
-                                                        : student.hours_completed
-                                                          ? 'Docs Pending'
-                                                          : `${Math.round(student.progress_percent)}%`
-                                                }
-                                                className="px-2 py-0.5 text-[11px]"
-                                            />
-                                        </div>
-                                        <div className="flex items-center justify-end gap-1.5 border-t pt-2">
-                                            <CompletionSummaryDialog
-                                                internUserId={
-                                                    student.intern_user_id
-                                                }
-                                                internName={student.name}
-                                                isCompleted={
-                                                    student.is_completed
-                                                }
-                                            />
-                                            <InternDocumentsDialog
-                                                internUserId={
-                                                    student.intern_user_id
-                                                }
-                                                internName={student.name}
-                                            />
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
+                                            <div className="flex items-center justify-between border-t pt-1 text-xs text-muted-foreground">
+                                                <span className="max-w-[160px] truncate font-medium text-foreground">
+                                                    {student.hte_name}
+                                                </span>
+                                                <span className="font-semibold text-foreground">
+                                                    {formatHours(
+                                                        student.total_hours,
+                                                    )}{' '}
+                                                    / {student.required_hours}h
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center justify-between gap-2 text-xs">
+                                                <StatusBadge
+                                                    status={
+                                                        student.docs_completed
+                                                            ? 'approved'
+                                                            : student.approved_docs_count >
+                                                                0
+                                                              ? 'pending_review'
+                                                              : 'not_submitted'
+                                                    }
+                                                    label={`${student.approved_docs_count}/${student.total_required_docs_count} Docs`}
+                                                    className="px-2 py-0.5 text-[11px]"
+                                                />
+                                                <StatusBadge
+                                                    status={
+                                                        student.is_completed
+                                                            ? 'approved'
+                                                            : student.hours_completed
+                                                              ? 'pending_review'
+                                                              : 'active'
+                                                    }
+                                                    label={
+                                                        student.is_completed
+                                                            ? 'Completed'
+                                                            : student.hours_completed
+                                                              ? 'Docs Pending'
+                                                              : `${Math.round(student.progress_percent)}%`
+                                                    }
+                                                    className="px-2 py-0.5 text-[11px]"
+                                                />
+                                            </div>
+                                            <div className="flex items-center justify-end gap-1.5 border-t pt-2">
+                                                <CompletionSummaryDialog
+                                                    internUserId={
+                                                        student.intern_user_id
+                                                    }
+                                                    internName={student.name}
+                                                    isCompleted={
+                                                        student.is_completed
+                                                    }
+                                                />
+                                                <InternDocumentsDialog
+                                                    internUserId={
+                                                        student.intern_user_id
+                                                    }
+                                                    internName={student.name}
+                                                />
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                    );
+                                })}
                             <NumberedPagination
                                 meta={students}
                                 itemLabel="intern"

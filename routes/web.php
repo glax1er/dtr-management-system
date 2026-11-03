@@ -14,8 +14,10 @@ use App\Http\Controllers\Admin\KioskController;
 use App\Http\Controllers\Admin\ProgramController;
 use App\Http\Controllers\Admin\SchedulePeriodController as AdminScheduleController;
 use App\Http\Controllers\Admin\SupervisorController;
+use App\Http\Controllers\Admin\TwoFactorResetController;
 use App\Http\Controllers\Auth\EmailVerificationCodeController;
 use App\Http\Controllers\Auth\FirstLoginPasswordController;
+use App\Http\Controllers\Auth\TwoFactorResetRequestController;
 use App\Http\Controllers\DocumentReviewController;
 use App\Http\Controllers\Intern\DashboardController as InternDashboardController;
 use App\Http\Controllers\Intern\DocumentController as InternDocumentController;
@@ -39,6 +41,17 @@ use Laravel\Fortify\Http\Controllers\PasswordResetLinkController;
 use Laravel\Fortify\Http\Controllers\RegisteredUserController;
 
 Route::redirect('/', '/login')->name('home');
+
+Route::get('two-factor-reset', [TwoFactorResetRequestController::class, 'create'])
+    ->name('two-factor.reset.create');
+Route::post('two-factor-reset', [TwoFactorResetRequestController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('two-factor.reset.store');
+Route::get('two-factor-reset/confirm/{token}', [TwoFactorResetRequestController::class, 'showConfirm'])
+    ->name('two-factor.reset.confirm.view');
+Route::post('two-factor-reset/confirm/{token}', [TwoFactorResetRequestController::class, 'confirm'])
+    ->middleware('throttle:5,1')
+    ->name('two-factor.reset.confirm.submit');
 
 Route::post('email/verify/code', [EmailVerificationCodeController::class, 'verify'])
     ->middleware('throttle:6,1')
@@ -172,6 +185,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('programs/{program}', [ProgramController::class, 'destroy'])->name('programs.destroy');
 
         Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+
+        Route::get('two-factor-resets', [TwoFactorResetController::class, 'index'])->name('two-factor-resets.index');
+        Route::post('two-factor-resets/{twoFactorResetRequest}/approve', [TwoFactorResetController::class, 'approve'])
+            ->middleware('password.confirm.sensitive')
+            ->name('two-factor-resets.approve');
+        Route::post('two-factor-resets/{twoFactorResetRequest}/reject', [TwoFactorResetController::class, 'reject'])
+            ->middleware('password.confirm.sensitive')
+            ->name('two-factor-resets.reject');
+        Route::post('two-factor-resets/initiate/{user}', [TwoFactorResetController::class, 'initiate'])
+            ->middleware('password.confirm.sensitive')
+            ->name('two-factor-resets.initiate');
     });
 
     Route::delete('supervisor/document-templates/{documentTemplate}', [SupervisorDocumentTemplateController::class, 'destroy'])

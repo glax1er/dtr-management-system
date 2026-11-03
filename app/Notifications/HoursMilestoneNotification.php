@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\InternProfile;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
@@ -67,7 +68,11 @@ class HoursMilestoneNotification extends Notification
                 'type' => 'intern_completed_hours',
                 'title' => "Intern Completed Hours: {$internName}",
                 'message' => "{$internName} has rendered {$rendered} hours (100% completed) and is ready for DTR sign-off.",
-                'href' => $this->internProfile ? "/supervisor/interns?doc_intern={$this->internProfile->user_id}&open_summary=1" : '/supervisor/interns',
+                'href' => $this->internProfile
+                    ? ($notifiable instanceof User && $notifiable->supervisorProfile?->isOjtSupervisor()
+                        ? "/supervisor/interns?highlight={$this->internProfile->user_id}&doc_intern={$this->internProfile->user_id}&open_summary=1"
+                        : "/supervisor/interns?highlight={$this->internProfile->user_id}")
+                    : '/supervisor/interns',
                 'intern_user_id' => $this->internProfile?->user_id,
                 'total_hours' => $this->totalHours,
                 'required_hours' => $this->requiredHours,
@@ -76,7 +81,7 @@ class HoursMilestoneNotification extends Notification
                 'type' => 'college_admin_intern_completed',
                 'title' => "Intern Completed OJT Hours: {$internName}",
                 'message' => "{$internName} has completed 100% ({$rendered} of {$required} hrs) of required OJT hours and is ready for endorsement sign-off.",
-                'href' => $this->internProfile ? "/admin/interns?intern={$this->internProfile->user_id}" : '/admin/interns',
+                'href' => $this->internProfile ? "/admin/interns?highlight={$this->internProfile->user_id}" : '/admin/interns',
                 'intern_user_id' => $this->internProfile?->user_id,
                 'total_hours' => $this->totalHours,
                 'required_hours' => $this->requiredHours,

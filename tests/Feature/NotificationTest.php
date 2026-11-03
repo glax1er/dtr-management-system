@@ -116,6 +116,49 @@ test('user can mark a single notification as read', function () {
     expect($user->fresh()->unreadNotifications()->count())->toBe(0);
 });
 
+test('marking a notification as read redirects to its destination', function () {
+    [$user] = createTestInternProfile();
+    $notification = $user->notifications()->create([
+        'id' => (string) Str::uuid(),
+        'type' => 'intern_approval',
+        'data' => [
+            'type' => 'intern_approval',
+            'title' => 'Your account has been approved',
+            'href' => '/intern/dashboard?highlight_qr=1',
+        ],
+    ]);
+
+    $response = $this->actingAs($user)
+        ->post(route('notifications.markSingleRead', $notification->id), [
+            'redirect_to' => '/intern/dashboard?highlight_qr=1',
+        ]);
+
+    $response->assertRedirect('/intern/dashboard?highlight_qr=1');
+    expect($notification->fresh()->read_at)->not->toBeNull();
+});
+
+test('marking a notification as read rejects an external redirect destination', function () {
+    [$user] = createTestInternProfile();
+    $notification = $user->notifications()->create([
+        'id' => (string) Str::uuid(),
+        'type' => 'intern_approval',
+        'data' => [
+            'type' => 'intern_approval',
+            'title' => 'Your account has been approved',
+            'href' => '/intern/dashboard?highlight_qr=1',
+        ],
+    ]);
+
+    $response = $this->actingAs($user)
+        ->from(route('notifications.index'))
+        ->post(route('notifications.markSingleRead', $notification->id), [
+            'redirect_to' => '//example.com',
+        ]);
+
+    $response->assertRedirect(route('notifications.index'));
+    expect($notification->fresh()->read_at)->not->toBeNull();
+});
+
 test('user can mark all notifications as read', function () {
     [$user] = createTestInternProfile();
 

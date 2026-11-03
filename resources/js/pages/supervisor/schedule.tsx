@@ -722,13 +722,23 @@ export default function SupervisorSchedule({
     const [search, setSearch] = useState('');
     const [filterStatus, setFilterStatus] = useState<string>('all');
 
+    const activeHighlightId =
+        highlightId ??
+        (typeof window !== 'undefined'
+            ? Number(
+                  new URLSearchParams(window.location.search).get('highlight'),
+              ) || null
+            : null);
+
     // Scroll to and briefly highlight the period indicated by the notification
     useEffect(() => {
-        if (!highlightId) {
+        if (!activeHighlightId) {
             return;
         }
 
-        const el = document.getElementById(`schedule-period-${highlightId}`);
+        const el = document.getElementById(
+            `schedule-period-${activeHighlightId}`,
+        );
 
         if (!el) {
             return;
@@ -739,7 +749,7 @@ export default function SupervisorSchedule({
         });
 
         return () => cancelAnimationFrame(raf);
-    }, [highlightId]);
+    }, [activeHighlightId]);
 
     // Derived counts
     const totalPeriodsCount =
@@ -1122,7 +1132,7 @@ export default function SupervisorSchedule({
                                                     period={period}
                                                     readOnly={false}
                                                     isHighlighted={
-                                                        highlightId ===
+                                                        activeHighlightId ===
                                                         period.id
                                                     }
                                                     onEdit={openEdit}
@@ -1164,7 +1174,7 @@ export default function SupervisorSchedule({
                                                             period={period}
                                                             readOnly
                                                             isHighlighted={
-                                                                highlightId ===
+                                                                activeHighlightId ===
                                                                 period.id
                                                             }
                                                         />
@@ -1205,7 +1215,7 @@ export default function SupervisorSchedule({
                                                     period={period}
                                                     readOnly
                                                     isHighlighted={
-                                                        highlightId ===
+                                                        activeHighlightId ===
                                                         period.id
                                                     }
                                                 />
@@ -1264,7 +1274,7 @@ export default function SupervisorSchedule({
                                                 period={period}
                                                 readOnly={false}
                                                 isHighlighted={
-                                                    highlightId === period.id
+                                                    activeHighlightId === period.id
                                                 }
                                                 onEdit={openEdit}
                                                 onDelete={openDelete}
@@ -1302,7 +1312,7 @@ export default function SupervisorSchedule({
                                                 period={period}
                                                 readOnly
                                                 isHighlighted={
-                                                    highlightId === period.id
+                                                    activeHighlightId === period.id
                                                 }
                                             />
                                         ))}
@@ -1338,7 +1348,7 @@ export default function SupervisorSchedule({
                                                 period={period}
                                                 readOnly
                                                 isHighlighted={
-                                                    highlightId === period.id
+                                                    activeHighlightId === period.id
                                                 }
                                             />
                                         ))}

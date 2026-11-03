@@ -6,6 +6,7 @@ use App\Models\InternProfile;
 use App\Models\Program;
 use App\Models\SupervisorProfile;
 use App\Models\User;
+use App\Notifications\HoursMilestoneNotification;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -188,6 +189,91 @@ test('an OJT supervisor sees a simple student roster covering every HTE within t
             ->where('studentCount', 2)
             ->has('students.data', 2)
             ->where('students.total', 2)
+        );
+});
+
+test('an OJT supervisor is taken to the roster page containing the highlighted intern', function () {
+    $program = Program::create(['program_name' => 'BSIT-BTM-'.uniqid()]);
+    [$supervisor] = makeOjtSupervisorForProgram($program);
+    $hte = Hte::create(['hte_name' => 'HTE A']);
+
+    for ($index = 0; $index < 21; $index++) {
+        $intern = makeApprovedInternForHteAndProgram($hte, $program);
+        $intern->update(['name' => sprintf('Intern %02d', $index)]);
+    }
+
+    $target = User::query()->where('name', 'Intern 20')->firstOrFail();
+
+    $this->actingAs($supervisor)
+        ->get(route('supervisor.interns.index', [
+            'highlight' => $target->id,
+            'per_page' => 5,
+        ]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('supervisor/students')
+            ->where('students.current_page', 5)
+            ->has('students.data', 1, fn ($student) => $student
+                ->where('intern_user_id', $target->id)
+                ->etc()
+            )
+        );
+});
+
+test('completed-hours notifications use the destination supported by each supervisor view', function () {
+    $program = Program::create(['program_name' => 'BSIT-BTM-'.uniqid()]);
+    $hte = Hte::create(['hte_name' => 'HTE A']);
+    [$ojtSupervisor] = makeOjtSupervisorForProgram($program);
+    $hteSupervisor = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
+    SupervisorProfile::create([
+        'user_id' => $hteSupervisor->id,
+        'hte_id' => $hte->hte_id,
+        'supervisor_type' => 'hte',
+        'status' => 'active',
+    ]);
+    $intern = makeApprovedInternForHteAndProgram($hte, $program);
+    $internProfile = InternProfile::query()->where('user_id', $intern->id)->firstOrFail();
+    $notification = new HoursMilestoneNotification(
+        HoursMilestoneNotification::SUPERVISOR_INTERN_COMPLETED,
+        500,
+        500,
+        $internProfile,
+    );
+
+    expect($notification->toArray($ojtSupervisor)['href'])
+        ->toBe("/supervisor/interns?highlight={$intern->id}&doc_intern={$intern->id}&open_summary=1")
+        ->and($notification->toArray($hteSupervisor)['href'])
+        ->toBe("/supervisor/interns?highlight={$intern->id}");
+});
+
+test('an HTE supervisor notification opens and highlights the intern attendance month', function () {
+    Carbon::setTestNow(Carbon::parse('2026-10-13 10:00:00', 'Asia/Manila'));
+    [$supervisor, $hte] = makeSupervisorWithHte();
+    $intern = makeApprovedInternForHte($hte);
+
+    AttendanceLog::create([
+        'intern_user_id' => $intern->id,
+        'supervisor_user_id' => $supervisor->id,
+        'scan_timestamp' => Carbon::parse('2026-06-15 08:00:00', 'Asia/Manila'),
+    ]);
+    AttendanceLog::create([
+        'intern_user_id' => $intern->id,
+        'supervisor_user_id' => $supervisor->id,
+        'scan_timestamp' => Carbon::parse('2026-06-15 17:00:00', 'Asia/Manila'),
+    ]);
+
+    $this->actingAs($supervisor)
+        ->get(route('supervisor.interns.index', ['highlight' => $intern->id]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('supervisor/interns')
+            ->where('month', '2026-06')
+            ->where('filters.search', '')
+            ->has('logs.data', 1, fn ($log) => $log
+                ->where('intern_user_id', $intern->id)
+                ->where('date', '2026-06-15')
+                ->etc()
+            )
         );
 });
 

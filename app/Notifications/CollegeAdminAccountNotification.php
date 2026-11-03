@@ -81,7 +81,7 @@ class CollegeAdminAccountNotification extends Notification
             'event' => $this->event,
             'title' => $title,
             'message' => $message,
-            'href' => '/admin/college-admins',
+            'href' => '/admin/college-admins'.($this->event !== self::EVENT_DELETED ? "?highlight={$this->targetAdmin->id}" : ''),
             'target_admin_id' => $this->targetAdmin->id,
             'target_admin_name' => $adminName,
             'college_name' => $collegeName,

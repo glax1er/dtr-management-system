@@ -13,6 +13,7 @@ import {
     MonitorSmartphone,
     Paperclip,
     PenLine,
+    ShieldAlert,
     ShieldCheck,
     Users,
 } from 'lucide-react';
@@ -43,6 +44,7 @@ const adminNavItems: NavItem[] = [
     { title: 'Kiosk', href: '/admin/kiosk', icon: MonitorSmartphone },
     { title: 'Schedule', href: '/admin/schedule', icon: CalendarClock },
     { title: 'Archives', href: '/admin/archives', icon: Archive },
+    { title: '2FA Resets', href: '/admin/two-factor-resets', icon: ShieldAlert },
 ];
 
 const superAdminNavItems: NavItem[] = [

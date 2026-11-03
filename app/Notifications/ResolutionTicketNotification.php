@@ -30,13 +30,17 @@ class ResolutionTicketNotification extends Notification
     {
         $timezone = config('dtr.timezone');
 
+        $dateStr = $this->ticket->date->toDateString();
+        $monthStr = substr($dateStr, 0, 7);
+        $internDashboardHref = "/intern/dashboard?month={$monthStr}&highlight_date={$dateStr}&highlight_ticket={$this->ticket->id}";
+
         return match ($this->event) {
             self::REQUEST_SUBMITTED => [
                 'type' => 'resolution_ticket',
                 'event' => self::REQUEST_SUBMITTED,
                 'title' => "Resolution request from {$this->ticket->intern->name}",
                 'message' => "Request submitted for {$this->ticket->date->toDateString()}.",
-                'href' => '/supervisor/resolution-tickets',
+                'href' => "/supervisor/resolution-tickets?highlight={$this->ticket->id}",
                 'resolution_ticket_id' => $this->ticket->id,
                 'date' => $this->ticket->date->toDateString(),
             ],
@@ -45,7 +49,7 @@ class ResolutionTicketNotification extends Notification
                 'event' => self::REQUEST_APPROVED,
                 'title' => 'Your resolution request was approved',
                 'message' => "Your request for {$this->ticket->date->toDateString()} was approved.",
-                'href' => '/intern/dashboard',
+                'href' => $internDashboardHref,
                 'resolution_ticket_id' => $this->ticket->id,
                 'date' => $this->ticket->date->toDateString(),
                 'status' => ResolutionTicket::STATUS_APPROVED,
@@ -57,7 +61,7 @@ class ResolutionTicketNotification extends Notification
                 'message' => $this->ticket->rejection_reason
                     ? "Reason: {$this->ticket->rejection_reason}"
                     : "Your request for {$this->ticket->date->toDateString()} was rejected.",
-                'href' => '/intern/dashboard',
+                'href' => $internDashboardHref,
                 'resolution_ticket_id' => $this->ticket->id,
                 'rejection_reason' => $this->ticket->rejection_reason,
                 'date' => $this->ticket->date->toDateString(),
@@ -79,7 +83,7 @@ class ResolutionTicketNotification extends Notification
                 'event' => $this->event,
                 'title' => 'Resolution ticket update',
                 'message' => "Your resolution ticket for {$this->ticket->date->toDateString()} was updated.",
-                'href' => '/intern/dashboard',
+                'href' => $internDashboardHref,
                 'resolution_ticket_id' => $this->ticket->id,
             ],
         };
