@@ -1092,30 +1092,17 @@ export default function SupervisorSchedule({
                             <div className="flex flex-col gap-6">
                                 {/* HTE Overrides Section */}
                                 <div>
-                                    <div className="mb-3 flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Building2 className="size-4 text-purple-600 dark:text-purple-400" />
-                                            <h4 className="text-sm font-semibold text-foreground">
-                                                Your HTE Overrides
-                                            </h4>
-                                            <Badge
-                                                variant="secondary"
-                                                className="text-xs"
-                                            >
-                                                {filteredOverrides.length}
-                                            </Badge>
-                                        </div>
-                                        {periods.length === 0 && (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setAddOpen(true)}
-                                                className="h-7 text-xs"
-                                            >
-                                                <Plus className="mr-1 size-3" />
-                                                Add Override
-                                            </Button>
-                                        )}
+                                    <div className="mb-3 flex items-center gap-2">
+                                        <Building2 className="size-4 text-purple-600 dark:text-purple-400" />
+                                        <h4 className="text-sm font-semibold text-foreground">
+                                            Your HTE Overrides
+                                        </h4>
+                                        <Badge
+                                            variant="secondary"
+                                            className="text-xs"
+                                        >
+                                            {filteredOverrides.length}
+                                        </Badge>
                                     </div>
 
                                     {filteredOverrides.length === 0 ? (
@@ -1382,7 +1369,7 @@ export default function SupervisorSchedule({
                         }
                         hteName={hteName}
                     />
-                    <DialogFooter className="gap-2 border-t pt-3 sm:gap-0">
+                    <DialogFooter className="gap-2 border-t pt-3 sm:gap-2">
                         <Button
                             variant="outline"
                             onClick={() => setAddOpen(false)}
@@ -1419,7 +1406,7 @@ export default function SupervisorSchedule({
                         }
                         hteName={hteName}
                     />
-                    <DialogFooter className="gap-2 border-t pt-3 sm:gap-0">
+                    <DialogFooter className="gap-2 border-t pt-3 sm:gap-2">
                         <Button
                             variant="outline"
                             onClick={() => setEditOpen(false)}

@@ -1477,7 +1477,7 @@ export default function AdminSchedule({
                         colleges={colleges}
                         userCollege={userCollege}
                     />
-                    <DialogFooter className="gap-2 border-t pt-3 sm:gap-0">
+                    <DialogFooter className="gap-2 border-t pt-3 sm:gap-2">
                         <Button
                             variant="outline"
                             onClick={() => setAddOpen(false)}
@@ -1513,7 +1513,7 @@ export default function AdminSchedule({
                         colleges={colleges}
                         userCollege={userCollege}
                     />
-                    <DialogFooter className="gap-2 border-t pt-3 sm:gap-0">
+                    <DialogFooter className="gap-2 border-t pt-3 sm:gap-2">
                         <Button
                             variant="outline"
                             onClick={() => setEditOpen(false)}
