@@ -62,7 +62,12 @@ interface AttendanceLogRow {
     lunch_deducted: boolean;
     status: 'open' | 'missing_time_in' | 'no_record' | 'complete';
     punctuality:
-        'on_time' | 'late' | 'missing_time_in' | 'no_record' | 'unscheduled';
+        | 'on_time'
+        | 'late'
+        | 'flexible'
+        | 'missing_time_in'
+        | 'no_record'
+        | 'unscheduled';
     raw_scan_count: number;
 }
 
@@ -75,15 +80,23 @@ interface AccumulatedHoursRow {
 type SortField = 'date' | 'name';
 type SortDirection = 'asc' | 'desc';
 type RemarksFilter =
-    'on_time' | 'late' | 'missing_time_in' | 'no_record' | 'open';
+    | 'on_time'
+    | 'late'
+    | 'flexible'
+    | 'missing_time_in'
+    | 'no_record'
+    | 'open'
+    | 'unscheduled';
 type ViewMode = 'table' | 'grid';
 
 const REMARKS_OPTIONS: { value: RemarksFilter; label: string }[] = [
     { value: 'on_time', label: 'On Time' },
     { value: 'late', label: 'Late' },
+    { value: 'flexible', label: 'Flexible' },
     { value: 'missing_time_in', label: 'Missing Time In' },
     { value: 'no_record', label: 'No Record' },
     { value: 'open', label: 'No time-out yet' },
+    { value: 'unscheduled', label: 'Unscheduled' },
 ];
 
 interface Filters {

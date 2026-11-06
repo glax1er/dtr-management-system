@@ -451,7 +451,7 @@ class InternsController extends Controller
             'from' => ['nullable', 'required_with:to', 'date_format:Y-m-d'],
             'to' => ['nullable', 'required_with:from', 'date_format:Y-m-d', 'after_or_equal:from'],
             'search' => ['nullable', 'string', 'max:255'],
-            'remarks' => ['nullable', 'in:on_time,late,missing_time_in,no_record,open'],
+            'remarks' => ['nullable', 'in:on_time,late,missing_time_in,no_record,open,flexible,unscheduled'],
             'highlight' => ['nullable', 'integer', 'min:1'],
             'sort' => ['nullable', 'in:date,name'],
             'direction' => ['nullable', 'in:asc,desc'],
@@ -619,10 +619,10 @@ class InternsController extends Controller
      * start time for that specific day of the week (see SchedulePeriod),
      * plus the grace period. "Late" otherwise. "missing_time_in" if there
      * was a scan but it landed after the time-out cutoff. "no_record" if
-     * there were no scans at all that day. "unscheduled" if there IS a
-     * scan, but that day has no expected start time configured at all
-     * (e.g. a weekend, or a day this HTE has no schedule for) — hours
-     * still count normally, this only affects the punctuality label.
+     * there were no scans at all that day. "unscheduled" if there IS an
+     * active schedule period, but that specific day has no expected start
+     * time (e.g. weekend or rest day). "flexible" if NO schedule period has
+     * been configured at all across the tiers.
      */
     private function computePunctuality(DailyAttendance $day, int $hteId): string
     {
@@ -639,13 +639,15 @@ class InternsController extends Controller
 
         $expectedStart = SchedulePeriod::expectedStartTimeFor($date, $hteId);
 
-        // No schedule configured for this day (e.g. weekend, or a day
-        // this HTE has no expected start time for). The intern still
-        // scanned/rendered hours though, so this isn't hidden as a
-        // normal on-time day — it's labeled distinctly so admins/
-        // supervisors can see it was outside the official schedule.
         if ($expectedStart === null) {
-            return 'unscheduled';
+            // Check if there is an active schedule period covering this date:
+            if (SchedulePeriod::hasActivePeriodFor($date, $hteId)) {
+                // An active period exists, but this specific day has no start time (rest day/weekend)
+                return 'unscheduled';
+            }
+
+            // No active schedule period configured -> Flexible schedule!
+            return 'flexible';
         }
 
         $graceMinutes = config('dtr.grace_period_minutes', 30);

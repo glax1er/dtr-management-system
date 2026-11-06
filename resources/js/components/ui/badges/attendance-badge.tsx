@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 type AttendanceStatus =
     | 'on_time'
     | 'late'
+    | 'flexible'
     | 'unscheduled'
     | 'missing_time_in'
     | 'no_record'
@@ -14,6 +15,7 @@ export function AttendanceBadge({ status }: { status: AttendanceStatus }) {
     const styles: Record<AttendanceStatus, string> = {
         on_time: 'bg-emerald-100 text-emerald-500 border-emerald-300',
         late: 'bg-red-100 text-red-500 border-red-300',
+        flexible: 'bg-sky-100 text-sky-700 border-sky-300 dark:bg-sky-950 dark:text-sky-300 dark:border-sky-800',
         unscheduled: 'bg-blue-100 text-blue-500 border-blue-300',
         missing_time_in: 'bg-amber-100 text-amber-600 border-amber-300',
         no_record: 'bg-muted text-muted-foreground border-border',
@@ -25,6 +27,7 @@ export function AttendanceBadge({ status }: { status: AttendanceStatus }) {
     const labels: Record<AttendanceStatus, string> = {
         on_time: 'On Time',
         late: 'Late',
+        flexible: 'Flexible',
         unscheduled: 'Unscheduled',
         missing_time_in: 'Missing Time In',
         no_record: 'No Record',

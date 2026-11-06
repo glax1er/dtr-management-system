@@ -100,6 +100,7 @@ class ScheduleController extends Controller
         $monthDays = [];
         $monthWorkdayCount = 0;
         $monthRestdayCount = 0;
+        $monthFlexibleCount = 0;
 
         for ($cursor = $startOfGrid->copy(); $cursor->lte($endOfGrid); $cursor = $cursor->addDay()) {
             $dateStr = $cursor->toDateString();
@@ -144,18 +145,30 @@ class ScheduleController extends Controller
                 $isWorkday = ! empty($dayTime);
                 $expectedTime = $dayTime;
             } else {
-                $isWeekend = in_array($dayName, ['saturday', 'sunday'], true);
-                $dayTime = $isWeekend ? null : $defaultExpectedStartTime;
-                $sourceType = 'default_schedule';
-                $sourceLabel = 'Standard 8:00 AM';
-                $activePeriod = null;
-                $isWorkday = ! $isWeekend && ! empty($dayTime);
-                $expectedTime = $dayTime;
+                if (config('dtr.flexible_by_default', true)) {
+                    $sourceType = 'flexible_schedule';
+                    $sourceLabel = 'Flexible Hours';
+                    $activePeriod = null;
+                    $isWorkday = false;
+                    $expectedTime = null;
+                } else {
+                    $isWeekend = in_array($dayName, ['saturday', 'sunday'], true);
+                    $dayTime = $isWeekend ? null : $defaultExpectedStartTime;
+                    $sourceType = 'default_schedule';
+                    $sourceLabel = 'Standard 8:00 AM';
+                    $activePeriod = null;
+                    $isWorkday = ! $isWeekend && ! empty($dayTime);
+                    $expectedTime = $dayTime;
+                }
             }
+
+            $isFlexible = ($sourceType === 'flexible_schedule');
 
             if ($isCurrentMonth) {
                 if ($isWorkday) {
                     $monthWorkdayCount++;
+                } elseif ($isFlexible) {
+                    $monthFlexibleCount++;
                 } else {
                     $monthRestdayCount++;
                 }
@@ -171,8 +184,9 @@ class ScheduleController extends Controller
                 'is_today' => $dateStr === $now->toDateString(),
                 'is_past' => $cursor->copy()->endOfDay()->isPast(),
                 'is_workday' => $isWorkday,
+                'is_flexible' => $isFlexible,
                 'expected_start_time' => $expectedTime,
-                'expected_start_time_formatted' => $formatTime12($expectedTime),
+                'expected_start_time_formatted' => $expectedTime ? $formatTime12($expectedTime) : ($isFlexible ? 'Flexible' : null),
                 'source_type' => $sourceType,
                 'source_label' => $sourceLabel,
                 'period_id' => $activePeriod?->id,
@@ -269,6 +283,8 @@ class ScheduleController extends Controller
             'stats' => [
                 'workdays_count' => $monthWorkdayCount,
                 'restdays_count' => $monthRestdayCount,
+                'flexible_days_count' => $monthFlexibleCount,
+                'is_flexible_default' => config('dtr.flexible_by_default', true),
                 'total_days' => $month->daysInMonth,
                 'hte_overrides_count' => $formattedHtePeriods->where('status', '!=', 'past')->count(),
                 'college_periods_count' => $formattedCollegePeriods->where('status', '!=', 'past')->count(),
