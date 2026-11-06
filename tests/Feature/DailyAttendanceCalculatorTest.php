@@ -5,6 +5,7 @@ use App\Models\Hte;
 use App\Models\InternProfile;
 use App\Models\Kiosk;
 use App\Models\Program;
+use App\Models\SchedulePeriod;
 use App\Models\User;
 use App\Services\Attendance\DailyAttendanceCalculator;
 use Illuminate\Support\Carbon;
@@ -156,9 +157,19 @@ test('an early scan-in beyond the allowance does not inflate rendered hours', fu
     $intern = makeApprovedIntern();
     $supervisor = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
 
-    // Expected start is 08:00 (config('dtr.expected_start_time') default),
-    // with a 60-minute early-arrival allowance (config('dtr.early_arrival_allowance_minutes')
-    // default) — so counting only ever starts at 07:00 at the earliest.
+    // Global schedule baseline with 08:00 start on Monday
+    SchedulePeriod::create([
+        'hte_id' => null,
+        'college_id' => null,
+        'name' => 'Baseline 2026',
+        'start_date' => '2026-07-01',
+        'end_date' => '2026-07-31',
+        'day_schedule' => ['monday' => '08:00'],
+    ]);
+
+    // Expected start is 08:00, with a 60-minute early-arrival allowance
+    // (config('dtr.early_arrival_allowance_minutes') default) — so counting
+    // only ever starts at 07:00 at the earliest.
     // Intern scans in at 06:30 and out at 17:00 — the 30 minutes before
     // 07:00 must not be counted as rendered time.
     AttendanceLog::create([
@@ -175,11 +186,64 @@ test('an early scan-in beyond the allowance does not inflate rendered hours', fu
     $day = (new DailyAttendanceCalculator)->forIntern($intern->id, $intern->internProfile->hte_id)->first();
 
     // 07:00 to 17:00 is 10 hours, minus the 1-hour lunch deduction = 9.
-    // (Not 8, which is what clamping straight to 08:00 would give; not
-    // 10.5, which is what 06:30-17:00 minus lunch would give.)
     expect($day->timeIn->clone()->setTimezone('Asia/Manila')->format('H:i'))->toBe('06:30')
         ->and($day->hoursRendered)->toBe(9.0)
         ->and($day->lunchDeducted)->toBeTrue();
+});
+
+test('when no schedule is configured, early scan-in is not clamped and full rendered hours count', function () {
+    $intern = makeApprovedIntern();
+    $supervisor = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
+
+    // No SchedulePeriod created — flexible by default
+    AttendanceLog::create([
+        'intern_user_id' => $intern->id,
+        'supervisor_user_id' => $supervisor->id,
+        'scan_timestamp' => Carbon::parse('2026-07-20 06:30:00', 'Asia/Manila'),
+    ]);
+    AttendanceLog::create([
+        'intern_user_id' => $intern->id,
+        'supervisor_user_id' => $supervisor->id,
+        'scan_timestamp' => Carbon::parse('2026-07-20 17:00:00', 'Asia/Manila'),
+    ]);
+
+    $day = (new DailyAttendanceCalculator)->forIntern($intern->id, $intern->internProfile->hte_id)->first();
+
+    // 06:30 to 17:00 is 10.5 hours minus 1 hour lunch = 9.5 hours (no clamping)
+    expect($day->timeIn->clone()->setTimezone('Asia/Manila')->format('H:i'))->toBe('06:30')
+        ->and($day->hoursRendered)->toBe(9.5)
+        ->and($day->lunchDeducted)->toBeTrue();
+});
+
+test('when no schedule is configured, days without scans are not marked as missing days', function () {
+    Carbon::setTestNow('2026-07-25 18:00:00'); // Saturday
+    $intern = makeApprovedIntern();
+    $supervisor = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
+
+    // Intern only scans on Monday 2026-07-20
+    AttendanceLog::create([
+        'intern_user_id' => $intern->id,
+        'supervisor_user_id' => $supervisor->id,
+        'scan_timestamp' => Carbon::parse('2026-07-20 08:00:00', 'Asia/Manila'),
+    ]);
+    AttendanceLog::create([
+        'intern_user_id' => $intern->id,
+        'supervisor_user_id' => $supervisor->id,
+        'scan_timestamp' => Carbon::parse('2026-07-20 17:00:00', 'Asia/Manila'),
+    ]);
+
+    $days = (new DailyAttendanceCalculator)->forIntern(
+        $intern->id,
+        $intern->internProfile->hte_id,
+        Carbon::parse('2026-07-20'),
+        Carbon::parse('2026-07-24')
+    );
+
+    // Only the day with actual scans exists; Tuesday to Friday are not generated as missing days
+    expect($days)->toHaveCount(1)
+        ->and($days->first()->date)->toBe('2026-07-20');
+
+    Carbon::setTestNow();
 });
 
 test('a scan-in within the early-arrival allowance counts in full', function () {

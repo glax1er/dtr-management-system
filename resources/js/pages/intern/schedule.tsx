@@ -48,13 +48,15 @@ export interface CalendarDay {
     is_today: boolean;
     is_past: boolean;
     is_workday: boolean;
+    is_flexible?: boolean;
     expected_start_time: string | null;
     expected_start_time_formatted: string | null;
     source_type:
         | 'hte_override'
         | 'college_schedule'
         | 'global_schedule'
-        | 'default_schedule';
+        | 'default_schedule'
+        | 'flexible_schedule';
     source_label: string;
     period_id: number | null;
     period_name: string | null;
@@ -150,6 +152,7 @@ export default function InternSchedule({
     const [showCollegeSchedule, setShowCollegeSchedule] = useState(true);
     const [showGlobalSchedule, setShowGlobalSchedule] = useState(true);
     const [showStandardSchedule, setShowStandardSchedule] = useState(true);
+    const [showFlexibleSchedule, setShowFlexibleSchedule] = useState(true);
     const [showRestDays, setShowRestDays] = useState(true);
 
     const highlightDate =
@@ -293,6 +296,10 @@ export default function InternSchedule({
                 return false;
             }
 
+            if (!showFlexibleSchedule && day.source_type === 'flexible_schedule') {
+                return false;
+            }
+
             if (
                 !showStandardSchedule &&
                 day.source_type === 'default_schedule' &&
@@ -301,7 +308,7 @@ export default function InternSchedule({
                 return false;
             }
 
-            if (!showRestDays && !day.is_workday) {
+            if (!showRestDays && !day.is_workday && day.source_type !== 'flexible_schedule') {
                 return false;
             }
 
@@ -328,6 +335,7 @@ export default function InternSchedule({
         showCollegeSchedule,
         showGlobalSchedule,
         showStandardSchedule,
+        showFlexibleSchedule,
         showRestDays,
         search,
     ]);
@@ -554,6 +562,24 @@ export default function InternSchedule({
                                     <span className="size-2.5 shrink-0 rounded-full bg-blue-600" />
                                 </label>
 
+                                {/* 🌟 Flexible Hours */}
+                                <label className="group flex cursor-pointer items-center justify-between select-none">
+                                    <div className="flex items-center gap-2">
+                                        <Checkbox
+                                            checked={showFlexibleSchedule}
+                                            onCheckedChange={(checked) =>
+                                                setShowFlexibleSchedule(
+                                                    Boolean(checked),
+                                                )
+                                            }
+                                        />
+                                        <span className="font-medium text-foreground transition-colors group-hover:text-sky-600 dark:group-hover:text-sky-400">
+                                            Flexible Hours
+                                        </span>
+                                    </div>
+                                    <span className="size-2.5 shrink-0 rounded-full bg-sky-500" />
+                                </label>
+
                                 {/* ⚪ Standard 8:00 AM */}
                                 <label className="group flex cursor-pointer items-center justify-between select-none">
                                     <div className="flex items-center gap-2">
@@ -654,10 +680,27 @@ export default function InternSchedule({
                                             }
 
                                             if (
+                                                !showFlexibleSchedule &&
+                                                day.source_type ===
+                                                    'flexible_schedule'
+                                            ) {
+                                                isVisible = false;
+                                            }
+
+                                            if (
                                                 !showStandardSchedule &&
                                                 day.source_type ===
                                                     'default_schedule' &&
                                                 day.is_workday
+                                            ) {
+                                                isVisible = false;
+                                            }
+
+                                            if (
+                                                !showRestDays &&
+                                                !day.is_workday &&
+                                                day.source_type !==
+                                                    'flexible_schedule'
                                             ) {
                                                 isVisible = false;
                                             }
@@ -719,7 +762,17 @@ export default function InternSchedule({
                                                     {/* Event Chip */}
                                                     {isVisible && (
                                                         <div className="mt-auto w-full">
-                                                            {day.is_workday ? (
+                                                            {day.source_type ===
+                                                            'flexible_schedule' ? (
+                                                                <div className="flex w-full items-center justify-between gap-1 rounded-md border-l-3 border-l-sky-500 bg-sky-500/15 px-1.5 py-1 text-[11px] font-medium text-sky-700 shadow-2xs transition-all hover:bg-sky-500/25 dark:border-l-sky-400 dark:text-sky-300">
+                                                                    <span className="truncate font-bold">
+                                                                        Flexible
+                                                                    </span>
+                                                                    <span className="hidden truncate text-[9px] font-semibold opacity-85 sm:inline-block">
+                                                                        Open
+                                                                    </span>
+                                                                </div>
+                                                            ) : day.is_workday ? (
                                                                 <div
                                                                     className={cn(
                                                                         'flex w-full items-center justify-between gap-1 rounded-md px-1.5 py-1 text-[11px] font-medium shadow-2xs transition-all',
@@ -853,7 +906,11 @@ export default function InternSchedule({
                                                             {day.day_name}
                                                         </TableCell>
                                                         <TableCell className="text-center text-xs font-semibold tabular-nums">
-                                                            {day.is_workday ? (
+                                                            {day.source_type === 'flexible_schedule' ? (
+                                                                <span className="font-medium text-sky-600 dark:text-sky-400">
+                                                                    Flexible
+                                                                </span>
+                                                            ) : day.is_workday ? (
                                                                 <span className="text-foreground">
                                                                     {
                                                                         day.expected_start_time_formatted
@@ -868,14 +925,18 @@ export default function InternSchedule({
                                                         <TableCell className="text-center">
                                                             <StatusBadge
                                                                 status={
-                                                                    !day.is_workday
-                                                                        ? 'rest_day'
-                                                                        : day.source_type
+                                                                    day.source_type === 'flexible_schedule'
+                                                                        ? 'flexible_schedule'
+                                                                        : !day.is_workday
+                                                                          ? 'rest_day'
+                                                                          : day.source_type
                                                                 }
                                                                 label={
-                                                                    day.is_workday
-                                                                        ? day.source_label
-                                                                        : 'Rest Days'
+                                                                    day.source_type === 'flexible_schedule'
+                                                                        ? 'Flexible Hours'
+                                                                        : day.is_workday
+                                                                          ? day.source_label
+                                                                          : 'Rest Days'
                                                                 }
                                                                 className="text-xs font-medium"
                                                             />
@@ -977,18 +1038,22 @@ export default function InternSchedule({
                                         <div
                                             className={cn(
                                                 'shrink-0 rounded-lg p-2',
-                                                selectedDay.is_workday
-                                                    ? selectedDay.source_type ===
-                                                      'hte_override'
-                                                        ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400'
-                                                        : selectedDay.source_type ===
-                                                            'college_schedule'
-                                                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                                                          : 'bg-primary/10 text-primary'
-                                                    : 'bg-muted text-muted-foreground',
+                                                selectedDay.source_type === 'flexible_schedule'
+                                                    ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400'
+                                                    : selectedDay.is_workday
+                                                      ? selectedDay.source_type ===
+                                                        'hte_override'
+                                                          ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400'
+                                                          : selectedDay.source_type ===
+                                                              'college_schedule'
+                                                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                                                            : 'bg-primary/10 text-primary'
+                                                      : 'bg-muted text-muted-foreground',
                                             )}
                                         >
-                                            {selectedDay.is_workday ? (
+                                            {selectedDay.source_type === 'flexible_schedule' ? (
+                                                <Sparkles className="size-5" />
+                                            ) : selectedDay.is_workday ? (
                                                 <Clock className="size-5" />
                                             ) : (
                                                 <Coffee className="size-5" />
@@ -999,9 +1064,11 @@ export default function InternSchedule({
                                                 Expected Check-in Time
                                             </span>
                                             <strong className="text-lg font-bold text-foreground">
-                                                {selectedDay.is_workday
-                                                    ? selectedDay.expected_start_time_formatted
-                                                    : 'No Check-in Required'}
+                                                {selectedDay.source_type === 'flexible_schedule'
+                                                    ? 'Flexible (Open Shift)'
+                                                    : selectedDay.is_workday
+                                                      ? selectedDay.expected_start_time_formatted
+                                                      : 'No Check-in Required'}
                                             </strong>
                                         </div>
                                     </div>
@@ -1012,6 +1079,18 @@ export default function InternSchedule({
                                         </span>
                                     )}
                                 </div>
+
+                                {selectedDay.source_type === 'flexible_schedule' && (
+                                    <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-3 text-xs text-sky-800 dark:border-sky-900/50 dark:bg-sky-950/20 dark:text-sky-300">
+                                        <div className="flex items-center gap-1.5 font-semibold">
+                                            <Sparkles className="size-3.5 shrink-0" />
+                                            Flexible Schedule Active
+                                        </div>
+                                        <p className="mt-1 text-muted-foreground">
+                                            No fixed start time is required. You can check in at any time on this day and your rendered hours will count in full without tardiness penalties.
+                                        </p>
+                                    </div>
+                                )}
 
                                 {/* Active Schedule Period Specifications (Only shown for configured HTE / Global periods) */}
                                 {selectedDay.period_name && (

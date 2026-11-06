@@ -78,7 +78,9 @@ class SchedulePeriod extends Model
      * 1. HTE-specific override (Tier 3, supervisor-managed)
      * 2. College-specific schedule (Tier 2, set by college admin or for college)
      * 3. University-wide global default (Tier 1, super admin-managed)
-     * 4. Hardcoded fallback (08:00 on weekdays, null on weekends).
+     * 4. Fallback:
+     *    - If flexible_by_default is true (default): null (flexible schedule)
+     *    - Otherwise: 08:00 on weekdays, null on weekends.
      */
     public static function expectedStartTimeFor(CarbonInterface $date, ?int $hteId = null, ?int $collegeId = null): ?string
     {
@@ -125,10 +127,68 @@ class SchedulePeriod extends Model
             return $global->day_schedule[$dayName] ?? null;
         }
 
+        // 4. Default fallback when no schedule period is active
+        if (config('dtr.flexible_by_default', true)) {
+            return null;
+        }
+
         if ($date->isWeekend()) {
             return null;
         }
 
         return config('dtr.expected_start_time', '08:00');
+    }
+
+    /**
+     * Checks if an active SchedulePeriod exists covering the given date
+     * across Tier 3 (HTE), Tier 2 (College), or Tier 1 (Global).
+     */
+    public static function hasActivePeriodFor(CarbonInterface $date, ?int $hteId = null, ?int $collegeId = null): bool
+    {
+        return static::activePeriodFor($date, $hteId, $collegeId) !== null;
+    }
+
+    /**
+     * Resolves the highest-priority active SchedulePeriod covering the given date.
+     */
+    public static function activePeriodFor(CarbonInterface $date, ?int $hteId = null, ?int $collegeId = null): ?SchedulePeriod
+    {
+        $dateStr = $date->toDateString();
+
+        // 1. Tier 3: HTE-specific override
+        if ($hteId !== null) {
+            $hteOverride = static::where('hte_id', $hteId)
+                ->whereDate('start_date', '<=', $dateStr)
+                ->whereDate('end_date', '>=', $dateStr)
+                ->first();
+
+            if ($hteOverride) {
+                return $hteOverride;
+            }
+
+            if ($collegeId === null) {
+                $collegeId = Hte::where('hte_id', $hteId)->value('college_id');
+            }
+        }
+
+        // 2. Tier 2: College-specific schedule
+        if ($collegeId !== null) {
+            $collegeSchedule = static::where('college_id', $collegeId)
+                ->whereNull('hte_id')
+                ->whereDate('start_date', '<=', $dateStr)
+                ->whereDate('end_date', '>=', $dateStr)
+                ->first();
+
+            if ($collegeSchedule) {
+                return $collegeSchedule;
+            }
+        }
+
+        // 3. Tier 1: University-wide global default
+        return static::whereNull('college_id')
+            ->whereNull('hte_id')
+            ->whereDate('start_date', '<=', $dateStr)
+            ->whereDate('end_date', '>=', $dateStr)
+            ->first();
     }
 }

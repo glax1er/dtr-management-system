@@ -187,3 +187,21 @@ test('non-intern users cannot access intern schedule page', function () {
     $response = $this->actingAs($admin)->get(route('intern.schedule.index'));
     $response->assertForbidden();
 });
+
+test('calendar shows flexible schedule when no schedule period has been configured', function () {
+    [$intern] = createScheduleTestIntern();
+
+    // No SchedulePeriod created
+    $response = $this->actingAs($intern)->get(route('intern.schedule.index', ['month' => '2026-09']));
+
+    $response->assertOk();
+    $response->assertInertia(fn (Assert $page) => $page
+        ->component('intern/schedule')
+        ->where('month', '2026-09')
+        ->where('days.1.source_type', 'flexible_schedule')
+        ->where('days.1.source_label', 'Flexible Hours')
+        ->where('days.1.is_flexible', true)
+        ->where('days.1.expected_start_time', null)
+        ->where('stats.is_flexible_default', true)
+    );
+});

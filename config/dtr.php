@@ -49,15 +49,28 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Expected start time (fallback)
+    | Default schedule mode (when no schedule is set)
+    |--------------------------------------------------------------------------
+    |
+    | When true, if no SchedulePeriod is configured by Super Admin, College Admin,
+    | or HTE Supervisor for a given date, the schedule is treated as flexible:
+    | - No fixed expected start time (no clamping of rendered hours).
+    | - Punctuality is marked as 'flexible' (never 'late').
+    | - Days without scans are NOT penalized as missing/absent days.
+    |
+    | When false, the system falls back to a standard Monday-Friday 08:00 AM shift.
+    |
+    */
+    'flexible_by_default' => env('DTR_FLEXIBLE_BY_DEFAULT', true),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Expected start time (fallback when flexible_by_default is false)
     |--------------------------------------------------------------------------
     |
     | Used for both the "on time"/"late" punctuality label AND the hours-
-    | rendered clamp. This is only the last-resort fallback now — a given
-    | day's actual expected start time is resolved via SchedulePeriod first
-    | (HTE-specific override, then the global admin default), and this
-    | value is only used if neither of those has a period configured for
-    | that day at all.
+    | rendered clamp when flexible_by_default is set to false and no
+    | SchedulePeriod is configured for that day.
     |
     */
     'expected_start_time' => env('DTR_EXPECTED_START_TIME', '08:00'),
