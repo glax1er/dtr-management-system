@@ -132,3 +132,28 @@ test('logging in with an unverified intern account sends a fresh code and report
         EmailVerificationCodeNotification::class,
     );
 });
+
+test('approved intern ignores unauthorized admin intended url on standard login', function () {
+    $hte = Hte::create(['hte_name' => 'Test HTE']);
+    $program = Program::create(['program_name' => 'BSIT']);
+    $user = User::factory()->create(['role' => User::ROLE_INTERN]);
+    InternProfile::create([
+        'user_id' => $user->id,
+        'id_number' => '2026-33333',
+        'sex' => 'male',
+        'hte_id' => $hte->hte_id,
+        'program_id' => $program->program_id,
+        'status' => 'approved',
+        'privacy_accepted_at' => now(),
+    ]);
+
+    $response = $this->withSession(['url.intended' => route('admin.dashboard')])
+        ->post(route('login.store'), [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+    $this->assertAuthenticated();
+    $response->assertRedirect(route('intern.dashboard'));
+    $this->assertNull(session('url.intended'));
+});
