@@ -12,6 +12,7 @@ import {
     MapPin,
     ShieldCheck,
     TrendingUp,
+    User as UserIcon,
     Users,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -422,27 +423,42 @@ export default function AdminDashboard({
 
             <div className="flex h-full flex-1 flex-col gap-3 p-3 sm:gap-4 sm:p-4 md:p-6">
                 {/* ── Header ─────────────────────────────────────────────── */}
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-black sm:gap-3 sm:text-2xl dark:text-white">
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm sm:size-10">
-                            <LayoutGrid className="size-4 sm:size-5" />
-                        </span>
-                        <span>
-                            Welcome, {auth.user?.name || 'User'}
-                            <span className="mt-0.5 block text-xs font-normal text-muted-foreground sm:text-sm">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <div className="shrink-0">
+                            <div className="flex size-14 items-center justify-center overflow-hidden rounded-2xl border border-border bg-muted shadow-xs sm:size-16">
+                                {auth.user?.avatar ? (
+                                    <img
+                                        src={auth.user.avatar}
+                                        alt={auth.user?.name || 'Admin'}
+                                        className="size-full object-cover"
+                                    />
+                                ) : (
+                                    <UserIcon className="size-7 text-muted-foreground sm:size-8" />
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="space-y-0.5">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+                                    Welcome, {auth.user?.name || 'User'}
+                                </h1>
+                                {isSuperAdmin && (
+                                    <Badge
+                                        variant="secondary"
+                                        className="text-xs font-normal"
+                                    >
+                                        <ShieldCheck className="mr-1 size-3.5" />
+                                        Super Admin
+                                    </Badge>
+                                )}
+                            </div>
+                            <span className="block text-xs font-normal text-muted-foreground sm:text-sm">
                                 Dashboard overview
                             </span>
-                        </span>
-                        {isSuperAdmin && (
-                            <Badge
-                                variant="secondary"
-                                className="text-xs font-normal"
-                            >
-                                <ShieldCheck className="mr-1 size-3.5" />
-                                Super Admin
-                            </Badge>
-                        )}
-                    </h1>
+                        </div>
+                    </div>
                 </div>
 
                 {/* ── Tab Navigation (Super Admin only) ──────────────────── */}
