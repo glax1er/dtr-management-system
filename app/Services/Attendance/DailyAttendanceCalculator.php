@@ -210,9 +210,13 @@ class DailyAttendanceCalculator
             // time-out, not a time-in.
             $timeIn = null;
             $timeOut = $scansForDay->last()->scan_timestamp;
+            $timeInPhotoUrl = null;
+            $timeOutPhotoUrl = $scansForDay->last()?->captured_photo_url;
         } else {
             $timeIn = $earliestScan;
             $timeOut = $latestScan;
+            $timeInPhotoUrl = $scansForDay->first()?->captured_photo_url;
+            $timeOutPhotoUrl = $scansForDay->count() > 1 ? $scansForDay->last()?->captured_photo_url : null;
         }
 
         [$hours, $lunchDeducted] = ($timeIn !== null && $timeOut !== null)
@@ -226,6 +230,8 @@ class DailyAttendanceCalculator
             hoursRendered: $hours,
             lunchDeducted: $lunchDeducted,
             rawScanCount: $scansForDay->count(),
+            timeInPhotoUrl: $timeInPhotoUrl,
+            timeOutPhotoUrl: $timeOutPhotoUrl,
         );
     }
 

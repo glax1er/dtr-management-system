@@ -1,6 +1,7 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import {
     CalendarCheck2,
+    Camera,
     ClipboardCheck,
     Clock,
     GraduationCap,
@@ -18,6 +19,10 @@ import {
 } from '@/components/dashboard-analytics';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
+import {
+    ScanPhotoDialog,
+    type ScanPhotoDialogData,
+} from '@/components/scan-photo-dialog';
 import { Badge } from '@/components/ui/badge';
 import {
     Card,
@@ -44,6 +49,7 @@ interface RecentScan {
     label: 'time_in' | 'time_out';
     scanned_at: string;
     scanned_at_full: string;
+    captured_photo_url?: string | null;
 }
 
 interface TrendPoint {
@@ -116,6 +122,7 @@ export default function SupervisorDashboard({
 }: SupervisorDashboardProps) {
     const { auth } = usePage<PageProps>().props;
 
+    const [photoModalData, setPhotoModalData] = useState<ScanPhotoDialogData | null>(null);
     const [mounted, setMounted] = useState(false);
     useEffect(() => {
         const id = requestAnimationFrame(() => setMounted(true));
@@ -449,6 +456,9 @@ export default function SupervisorDashboard({
                                                 <TableHead className="px-6 text-center font-semibold">
                                                     Type
                                                 </TableHead>
+                                                <TableHead className="px-6 text-center font-semibold">
+                                                    Snapshot
+                                                </TableHead>
                                                 <TableHead className="px-6 text-right font-semibold">
                                                     Scanned At
                                                 </TableHead>
@@ -473,6 +483,35 @@ export default function SupervisorDashboard({
                                                             <span className="inline-flex items-center rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-0.5 text-xs font-semibold text-sky-700 dark:text-sky-400">
                                                                 Time Out
                                                             </span>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell className="px-6 text-center">
+                                                        {scan.captured_photo_url ? (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setPhotoModalData({
+                                                                        internName: scan.intern_name,
+                                                                        idNumber: scan.id_number,
+                                                                        label: scan.label,
+                                                                        scannedAt: scan.scanned_at_full,
+                                                                        capturedPhotoUrl: scan.captured_photo_url,
+                                                                    })
+                                                                }
+                                                                className="group relative inline-flex size-9 items-center justify-center overflow-hidden rounded-lg border border-primary/30 bg-muted transition-all hover:border-primary hover:shadow-sm"
+                                                                title="Click to view snapshot"
+                                                            >
+                                                                <img
+                                                                    src={scan.captured_photo_url}
+                                                                    alt="Scan snapshot"
+                                                                    className="size-full object-cover transition-transform group-hover:scale-105"
+                                                                />
+                                                                <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity group-hover:opacity-100">
+                                                                    <Camera className="size-3.5 text-white" />
+                                                                </div>
+                                                            </button>
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground">—</span>
                                                         )}
                                                     </TableCell>
                                                     <TableCell
@@ -507,15 +546,35 @@ export default function SupervisorDashboard({
                                                     {scan.scanned_at}
                                                 </span>
                                             </div>
-                                            {scan.label === 'time_in' ? (
-                                                <span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-                                                    Time In
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-0.5 text-xs font-semibold text-sky-700 dark:text-sky-400">
-                                                    Time Out
-                                                </span>
-                                            )}
+                                            <div className="flex items-center gap-2">
+                                                {scan.captured_photo_url && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            setPhotoModalData({
+                                                                internName: scan.intern_name,
+                                                                idNumber: scan.id_number,
+                                                                label: scan.label,
+                                                                scannedAt: scan.scanned_at_full,
+                                                                capturedPhotoUrl: scan.captured_photo_url,
+                                                            })
+                                                        }
+                                                        className="flex size-7 items-center justify-center rounded-md border border-primary/30 bg-muted text-primary"
+                                                        title="View snapshot"
+                                                    >
+                                                        <Camera className="size-3.5" />
+                                                    </button>
+                                                )}
+                                                {scan.label === 'time_in' ? (
+                                                    <span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                                                        Time In
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-0.5 text-xs font-semibold text-sky-700 dark:text-sky-400">
+                                                        Time Out
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -532,6 +591,12 @@ export default function SupervisorDashboard({
                     </CardContent>
                 </Card>
             </div>
+
+            <ScanPhotoDialog
+                open={Boolean(photoModalData)}
+                onOpenChange={(open) => !open && setPhotoModalData(null)}
+                data={photoModalData}
+            />
         </>
     );
 }

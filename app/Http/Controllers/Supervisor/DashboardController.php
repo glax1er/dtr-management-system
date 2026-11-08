@@ -104,6 +104,7 @@ class DashboardController extends Controller
                     'label' => $label,
                     'scanned_at' => $log->scan_timestamp->diffForHumans(),
                     'scanned_at_full' => $localTimestamp->format('M j, Y g:i A'),
+                    'captured_photo_url' => $log->captured_photo_url,
                 ];
             });
 

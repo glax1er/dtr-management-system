@@ -15,13 +15,19 @@ use App\Support\Attendance\ScanResult;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class RecordScan
 {
     private const int DEBOUNCE_MINUTES = 5;
 
-    public function __invoke(string $qrCodeValue, Kiosk $kiosk, ?CarbonInterface $at = null): ScanResult
-    {
+    public function __invoke(
+        string $qrCodeValue,
+        Kiosk $kiosk,
+        ?CarbonInterface $at = null,
+        ?string $capturedPhotoData = null,
+    ): ScanResult {
         $at ??= Date::now();
 
         $internProfile = InternProfile::query()
@@ -46,13 +52,22 @@ class RecordScan
             && $lastScan->scan_timestamp->diffInMinutes($at) < self::DEBOUNCE_MINUTES;
 
         if (! $isDuplicate) {
+            $capturedPhotoPath = $this->storeCapturedPhoto($capturedPhotoData);
+
             AttendanceLog::create([
                 'intern_user_id' => $internProfile->user_id,
                 'kiosk_id' => $kiosk->id,
+                'captured_photo_path' => $capturedPhotoPath,
                 'scan_timestamp' => $at,
             ]);
 
+            $capturedPhotoUrl = $capturedPhotoPath
+                ? Storage::disk('public')->url($capturedPhotoPath)
+                : null;
+
             app(CheckHoursMilestones::class)->check($internProfile);
+        } else {
+            $capturedPhotoUrl = $lastScan->captured_photo_url;
         }
 
         return new ScanResult(
@@ -61,11 +76,45 @@ class RecordScan
             idNumber: $internProfile->id_number,
             programName: $internProfile->program?->program_name ?? 'Deleted Program',
             hteName: $internProfile->hte?->hte_name ?? 'Deleted HTE',
-            photoUrl: $internProfile->profile_photo_url,
             label: $this->labelForScanCountToday($internProfile->user_id, $at),
             timestamp: $isDuplicate ? $lastScan->scan_timestamp : $at,
             isDuplicate: $isDuplicate,
+            photoUrl: $internProfile->profile_photo_url,
+            capturedPhotoUrl: $capturedPhotoUrl,
         );
+    }
+
+    private function storeCapturedPhoto(?string $photoData): ?string
+    {
+        if (empty($photoData)) {
+            return null;
+        }
+
+        try {
+            if (preg_match('/^data:image\/(\w+);base64,/', $photoData, $matches)) {
+                $photoData = substr($photoData, strpos($photoData, ',') + 1);
+                $extension = strtolower($matches[1]);
+                if (! in_array($extension, ['jpg', 'jpeg', 'png', 'webp'])) {
+                    $extension = 'jpg';
+                }
+            } else {
+                $extension = 'jpg';
+            }
+
+            $binary = base64_decode($photoData, true);
+            if ($binary === false || strlen($binary) === 0) {
+                return null;
+            }
+
+            $filename = 'attendance-snapshots/'.Str::uuid().'.'.$extension;
+            Storage::disk('public')->put($filename, $binary);
+
+            return $filename;
+        } catch (\Throwable $e) {
+            report($e);
+
+            return null;
+        }
     }
 
     private function labelForScanCountToday(int $internUserId, CarbonInterface $at): ScanLabel

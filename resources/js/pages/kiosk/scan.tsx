@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { User as UserIcon } from 'lucide-react';
+import { Camera, User as UserIcon } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const SCANNER_ELEMENT_ID = 'qr-scanner-viewport';
@@ -13,9 +13,58 @@ interface ScannedIntern {
     programName: string;
     hteName: string;
     photoUrl: string | null;
+    capturedPhotoUrl: string | null;
     label: 'time_in' | 'time_out';
     timestamp: string;
     isDuplicate: boolean;
+}
+
+function captureVideoSnapshot(): string | null {
+    try {
+        const video = document.querySelector<HTMLVideoElement>(
+            `#${SCANNER_ELEMENT_ID} video`,
+        );
+        if (
+            !video ||
+            video.readyState < 2 ||
+            !video.videoWidth ||
+            !video.videoHeight
+        ) {
+            return null;
+        }
+
+        const maxDim = 800;
+        let width = video.videoWidth;
+        let height = video.videoHeight;
+
+        if (width > maxDim || height > maxDim) {
+            if (width > height) {
+                height = Math.round((height * maxDim) / width);
+                width = maxDim;
+            } else {
+                width = Math.round((width * maxDim) / height);
+                height = maxDim;
+            }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            return null;
+        }
+
+        // Mirror horizontally to match what was displayed in the mirrored viewfinder
+        ctx.translate(width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0, width, height);
+
+        return canvas.toDataURL('image/jpeg', 0.85);
+    } catch (err) {
+        console.warn('Could not capture video snapshot:', err);
+        return null;
+    }
 }
 
 type ScanFlash = { kind: 'success' } | { kind: 'error'; message: string };
@@ -86,7 +135,7 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
     }, []);
 
     const submitScan = useCallback(
-        (qrCodeValue: string) => {
+        (qrCodeValue: string, photo: string | null = null) => {
             const now = Date.now();
 
             if (inFlightRef.current) {
@@ -114,7 +163,10 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
                 },
-                body: JSON.stringify({ qr_code_value: qrCodeValue }),
+                body: JSON.stringify({
+                    qr_code_value: qrCodeValue,
+                    photo: photo,
+                }),
             })
                 .then(async (response) => {
                     const data = await response.json();
@@ -141,6 +193,7 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                         programName: data.program_name,
                         hteName: data.hte_name,
                         photoUrl: data.photo_url,
+                        capturedPhotoUrl: data.captured_photo_url,
                         label: data.label,
                         timestamp: data.timestamp,
                         isDuplicate: data.is_duplicate,
@@ -232,7 +285,8 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                 },
                 (decodedText) => {
                     if (!cancelled) {
-                        submitScan(decodedText);
+                        const photo = captureVideoSnapshot();
+                        submitScan(decodedText, photo);
                     }
                 },
                 () => {},
@@ -355,19 +409,54 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                                 </div>
                             ) : (
                                 <div className="flex flex-col gap-4">
-                                    {/* Photo — falls back to the generic icon if the
-                                    intern hasn't uploaded one */}
-                                    <div className="mx-auto flex size-28 items-center justify-center overflow-hidden rounded-full bg-white/10">
-                                        {lastIntern.photoUrl ? (
-                                            <img
-                                                src={lastIntern.photoUrl}
-                                                alt={lastIntern.internName}
-                                                className="size-full object-cover"
-                                            />
-                                        ) : (
-                                            <UserIcon className="size-14 text-white/40" />
-                                        )}
-                                    </div>
+                                    {/* Photos — shows live captured face snapshot alongside registered profile photo */}
+                                    {lastIntern.capturedPhotoUrl ? (
+                                        <div className="flex items-center justify-center gap-4">
+                                            {/* Live Snapshot */}
+                                            <div className="flex flex-col items-center gap-1.5">
+                                                <div className="relative flex size-24 items-center justify-center overflow-hidden rounded-xl border-2 border-emerald-400 bg-white/10 shadow-lg ring-2 ring-emerald-400/20">
+                                                    <img
+                                                        src={lastIntern.capturedPhotoUrl}
+                                                        alt="Snapshot"
+                                                        className="size-full object-cover"
+                                                    />
+                                                </div>
+                                                <span className="text-xs font-medium tracking-wide text-white/80">
+                                                    Snapshot
+                                                </span>
+                                            </div>
+
+                                            {/* Registered Profile Photo */}
+                                            <div className="flex flex-col items-center gap-1.5">
+                                                <div className="relative flex size-24 items-center justify-center overflow-hidden rounded-xl border border-white/20 bg-white/10 shadow-md">
+                                                    {lastIntern.photoUrl ? (
+                                                        <img
+                                                            src={lastIntern.photoUrl}
+                                                            alt={lastIntern.internName}
+                                                            className="size-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <UserIcon className="size-10 text-white/40" />
+                                                    )}
+                                                </div>
+                                                <span className="text-xs font-medium tracking-wide text-white/60">
+                                                    Profile Photo
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="mx-auto flex size-28 items-center justify-center overflow-hidden rounded-full bg-white/10">
+                                            {lastIntern.photoUrl ? (
+                                                <img
+                                                    src={lastIntern.photoUrl}
+                                                    alt={lastIntern.internName}
+                                                    className="size-full object-cover"
+                                                />
+                                            ) : (
+                                                <UserIcon className="size-14 text-white/40" />
+                                            )}
+                                        </div>
+                                    )}
 
                                     <div className="text-center">
                                         <p className="text-2xl font-semibold">

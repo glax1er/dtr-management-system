@@ -4,6 +4,7 @@ import {
     ArrowRight,
     Building2,
     CalendarCheck2,
+    Camera,
     ClipboardCheck,
     Clock,
     GraduationCap,
@@ -25,6 +26,10 @@ import {
 } from '@/components/dashboard-analytics';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
+import {
+    ScanPhotoDialog,
+    type ScanPhotoDialogData,
+} from '@/components/scan-photo-dialog';
 import { InstitutionalOverviewCard } from '@/components/super-admin-analytics';
 import type { SuperAdminAnalytics } from '@/components/super-admin-analytics';
 import { Badge } from '@/components/ui/badge';
@@ -74,6 +79,7 @@ interface RecentScan {
     source: string;
     scanned_at: string;
     scanned_at_full: string;
+    captured_photo_url?: string | null;
 }
 
 interface StatusCount {
@@ -160,6 +166,8 @@ export default function AdminDashboard({
         Boolean(auth.user?.is_super_admin) ||
         auth.user?.role === 'super_admin' ||
         Boolean(superAdminAnalytics);
+
+    const [photoModalData, setPhotoModalData] = useState<ScanPhotoDialogData | null>(null);
 
     const [activeTab, setActiveTab] = useState<
         'overview' | 'operations' | 'institution'
@@ -1154,6 +1162,9 @@ export default function AdminDashboard({
                                                     Scan Type
                                                 </TableHead>
                                                 <TableHead className="px-6 text-center font-semibold">
+                                                    Snapshot
+                                                </TableHead>
+                                                <TableHead className="px-6 text-center font-semibold">
                                                     Scanned At
                                                 </TableHead>
                                             </TableRow>
@@ -1207,6 +1218,40 @@ export default function AdminDashboard({
                                                         )}
                                                     </TableCell>
                                                     <TableCell
+                                                        className="px-6 text-center"
+                                                        onClick={(e) => {
+                                                            if (scan.captured_photo_url) {
+                                                                e.stopPropagation();
+                                                                setPhotoModalData({
+                                                                    internName: scan.intern_name,
+                                                                    idNumber: scan.id_number,
+                                                                    label: scan.label,
+                                                                    scannedAt: scan.scanned_at_full,
+                                                                    capturedPhotoUrl: scan.captured_photo_url,
+                                                                });
+                                                            }
+                                                        }}
+                                                    >
+                                                        {scan.captured_photo_url ? (
+                                                            <button
+                                                                type="button"
+                                                                className="group relative inline-flex size-9 items-center justify-center overflow-hidden rounded-lg border border-primary/30 bg-muted transition-all hover:border-primary hover:shadow-sm"
+                                                                title="Click to view snapshot"
+                                                            >
+                                                                <img
+                                                                    src={scan.captured_photo_url}
+                                                                    alt="Scan snapshot"
+                                                                    className="size-full object-cover transition-transform group-hover:scale-105"
+                                                                />
+                                                                <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity group-hover:opacity-100">
+                                                                    <Camera className="size-3.5 text-white" />
+                                                                </div>
+                                                            </button>
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground">—</span>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell
                                                         className="px-6 text-center text-xs whitespace-nowrap text-muted-foreground"
                                                         title={
                                                             scan.scanned_at_full
@@ -1232,6 +1277,12 @@ export default function AdminDashboard({
                     </Card>
                 )}
             </div>
+
+            <ScanPhotoDialog
+                open={Boolean(photoModalData)}
+                onOpenChange={(open) => !open && setPhotoModalData(null)}
+                data={photoModalData}
+            />
         </>
     );
 }

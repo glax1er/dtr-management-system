@@ -4,6 +4,7 @@ import {
     ArrowUp,
     ArrowUpDown,
     Calendar,
+    Camera,
     ChevronLeft,
     ChevronRight,
     Clock,
@@ -18,6 +19,10 @@ import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
+import {
+    ScanPhotoDialog,
+    type ScanPhotoDialogData,
+} from '@/components/scan-photo-dialog';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
@@ -69,6 +74,8 @@ interface AttendanceLogRow {
         | 'no_record'
         | 'unscheduled';
     raw_scan_count: number;
+    time_in_photo_url?: string | null;
+    time_out_photo_url?: string | null;
 }
 
 interface AccumulatedHoursRow {
@@ -188,6 +195,7 @@ export default function MyInterns({
     scopeName,
 }: MyInternsProps) {
     const getInitials = useInitials();
+    const [photoModalData, setPhotoModalData] = useState<ScanPhotoDialogData | null>(null);
     const [view, setView] = useState<ViewMode>('table');
     const [search, setSearch] = useState(filters.search || '');
     const [fromDraft, setFromDraft] = useState(filters.from);
@@ -810,14 +818,56 @@ export default function MyInterns({
                                                             {log.intern_name}
                                                         </TableCell>
                                                         <TableCell className="px-6 text-center whitespace-nowrap text-muted-foreground">
-                                                            {formatLongTime(
-                                                                log.time_in,
-                                                            )}
+                                                            <div className="inline-flex items-center justify-center gap-1.5">
+                                                                <span>
+                                                                    {formatLongTime(
+                                                                        log.time_in,
+                                                                    )}
+                                                                </span>
+                                                                {log.time_in_photo_url && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            setPhotoModalData({
+                                                                                internName: log.intern_name,
+                                                                                label: 'time_in',
+                                                                                scannedAt: `${log.date} ${log.time_in}`,
+                                                                                capturedPhotoUrl: log.time_in_photo_url!,
+                                                                            })
+                                                                        }
+                                                                        className="text-muted-foreground hover:text-primary transition-colors"
+                                                                        title="View Time In snapshot"
+                                                                    >
+                                                                        <Camera className="size-3.5" />
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </TableCell>
                                                         <TableCell className="px-6 text-center whitespace-nowrap text-muted-foreground">
-                                                            {formatLongTime(
-                                                                log.time_out,
-                                                            )}
+                                                            <div className="inline-flex items-center justify-center gap-1.5">
+                                                                <span>
+                                                                    {formatLongTime(
+                                                                        log.time_out,
+                                                                    )}
+                                                                </span>
+                                                                {log.time_out_photo_url && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            setPhotoModalData({
+                                                                                internName: log.intern_name,
+                                                                                label: 'time_out',
+                                                                                scannedAt: `${log.date} ${log.time_out}`,
+                                                                                capturedPhotoUrl: log.time_out_photo_url!,
+                                                                            })
+                                                                        }
+                                                                        className="text-muted-foreground hover:text-primary transition-colors"
+                                                                        title="View Time Out snapshot"
+                                                                    >
+                                                                        <Camera className="size-3.5" />
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </TableCell>
                                                         <TableCell className="px-6 text-center font-medium whitespace-nowrap">
                                                             {formatLongDuration(
@@ -929,22 +979,60 @@ export default function MyInterns({
                                                             <Clock className="size-3.5 text-muted-foreground" />
                                                             Time In:
                                                         </span>
-                                                        <span className="font-medium text-foreground">
-                                                            {formatLongTime(
-                                                                log.time_in,
+                                                        <div className="inline-flex items-center gap-1.5">
+                                                            <span className="font-medium text-foreground">
+                                                                {formatLongTime(
+                                                                    log.time_in,
+                                                                )}
+                                                            </span>
+                                                            {log.time_in_photo_url && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        setPhotoModalData({
+                                                                            internName: log.intern_name,
+                                                                            label: 'time_in',
+                                                                            scannedAt: `${log.date} ${log.time_in}`,
+                                                                            capturedPhotoUrl: log.time_in_photo_url!,
+                                                                        })
+                                                                    }
+                                                                    className="text-muted-foreground hover:text-primary transition-colors"
+                                                                    title="View Time In photo"
+                                                                >
+                                                                    <Camera className="size-3.5" />
+                                                                </button>
                                                             )}
-                                                        </span>
+                                                        </div>
                                                     </div>
                                                     <div className="flex items-center justify-between gap-2">
                                                         <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
                                                             <Clock className="size-3.5 text-muted-foreground" />
                                                             Time Out:
                                                         </span>
-                                                        <span className="font-medium text-foreground">
-                                                            {formatLongTime(
-                                                                log.time_out,
+                                                        <div className="inline-flex items-center gap-1.5">
+                                                            <span className="font-medium text-foreground">
+                                                                {formatLongTime(
+                                                                    log.time_out,
+                                                                )}
+                                                            </span>
+                                                            {log.time_out_photo_url && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        setPhotoModalData({
+                                                                            internName: log.intern_name,
+                                                                            label: 'time_out',
+                                                                            scannedAt: `${log.date} ${log.time_out}`,
+                                                                            capturedPhotoUrl: log.time_out_photo_url!,
+                                                                        })
+                                                                    }
+                                                                    className="text-muted-foreground hover:text-primary transition-colors"
+                                                                    title="View Time Out photo"
+                                                                >
+                                                                    <Camera className="size-3.5" />
+                                                                </button>
                                                             )}
-                                                        </span>
+                                                        </div>
                                                     </div>
                                                     <div className="flex items-center justify-between gap-2 border-t pt-1.5">
                                                         <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
@@ -1028,21 +1116,59 @@ export default function MyInterns({
                                                 <span className="block text-[10px] text-muted-foreground">
                                                     Time In
                                                 </span>
-                                                <span className="font-medium text-foreground">
-                                                    {formatLongTime(
-                                                        log.time_in,
+                                                <div className="inline-flex items-center justify-center gap-1 font-medium text-foreground">
+                                                    <span>
+                                                        {formatLongTime(
+                                                            log.time_in,
+                                                        )}
+                                                    </span>
+                                                    {log.time_in_photo_url && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                setPhotoModalData({
+                                                                    internName: log.intern_name,
+                                                                    label: 'time_in',
+                                                                    scannedAt: `${log.date} ${log.time_in}`,
+                                                                    capturedPhotoUrl: log.time_in_photo_url!,
+                                                                })
+                                                            }
+                                                            className="text-muted-foreground hover:text-primary"
+                                                            title="View snapshot"
+                                                        >
+                                                            <Camera className="size-3" />
+                                                        </button>
                                                     )}
-                                                </span>
+                                                </div>
                                             </div>
                                             <div>
                                                 <span className="block text-[10px] text-muted-foreground">
                                                     Time Out
                                                 </span>
-                                                <span className="font-medium text-foreground">
-                                                    {formatLongTime(
-                                                        log.time_out,
+                                                <div className="inline-flex items-center justify-center gap-1 font-medium text-foreground">
+                                                    <span>
+                                                        {formatLongTime(
+                                                            log.time_out,
+                                                        )}
+                                                    </span>
+                                                    {log.time_out_photo_url && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                setPhotoModalData({
+                                                                    internName: log.intern_name,
+                                                                    label: 'time_out',
+                                                                    scannedAt: `${log.date} ${log.time_out}`,
+                                                                    capturedPhotoUrl: log.time_out_photo_url!,
+                                                                })
+                                                            }
+                                                            className="text-muted-foreground hover:text-primary"
+                                                            title="View snapshot"
+                                                        >
+                                                            <Camera className="size-3" />
+                                                        </button>
                                                     )}
-                                                </span>
+                                                </div>
                                             </div>
                                             <div>
                                                 <span className="block text-[10px] text-muted-foreground">
@@ -1069,6 +1195,12 @@ export default function MyInterns({
                     </>
                 )}
             </div>
+
+            <ScanPhotoDialog
+                open={Boolean(photoModalData)}
+                onOpenChange={(open) => !open && setPhotoModalData(null)}
+                data={photoModalData}
+            />
         </>
     );
 }

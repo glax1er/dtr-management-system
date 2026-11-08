@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class AttendanceLog extends Model
 {
@@ -19,6 +20,7 @@ class AttendanceLog extends Model
         'intern_user_id',
         'supervisor_user_id',
         'kiosk_id',
+        'captured_photo_path',
         'scan_timestamp',
         'resolved_ticket_id',
     ];
@@ -27,6 +29,16 @@ class AttendanceLog extends Model
         'scan_timestamp' => 'datetime',
         'created_at' => 'datetime',
     ];
+
+    /**
+     * Public URL for the captured snapshot taken at scan time, or null if not available.
+     */
+    public function getCapturedPhotoUrlAttribute(): ?string
+    {
+        return $this->captured_photo_path
+            ? Storage::disk('public')->url($this->captured_photo_path)
+            : null;
+    }
 
     /**
      * The intern who was scanned (a User with role = intern).

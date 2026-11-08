@@ -45,10 +45,15 @@ class ScanController extends Controller
 
         $data = $request->validate([
             'qr_code_value' => ['required', 'string'],
+            'photo' => ['nullable', 'string'],
         ]);
 
         try {
-            $result = $recordScan($data['qr_code_value'], $kiosk);
+            $result = $recordScan(
+                $data['qr_code_value'],
+                $kiosk,
+                capturedPhotoData: $data['photo'] ?? null,
+            );
         } catch (InvalidScanException $e) {
             return response()->json([
                 'message' => $e->getMessage(),
@@ -62,6 +67,7 @@ class ScanController extends Controller
             'program_name' => $result->programName,
             'hte_name' => $result->hteName,
             'photo_url' => $result->photoUrl,
+            'captured_photo_url' => $result->capturedPhotoUrl,
             'label' => $result->label->value,
             'timestamp' => $result->timestamp->toIso8601String(),
             'is_duplicate' => $result->isDuplicate,

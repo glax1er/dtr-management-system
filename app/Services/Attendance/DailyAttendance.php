@@ -20,6 +20,8 @@ final readonly class DailyAttendance
         public float $hoursRendered,
         public bool $lunchDeducted,
         public int $rawScanCount,   // total raw scans that day, incl. accidental double-scans
+        public ?string $timeInPhotoUrl = null,
+        public ?string $timeOutPhotoUrl = null,
     ) {}
 
     /**
@@ -85,6 +87,8 @@ final readonly class DailyAttendance
             'lunch_deducted' => $this->lunchDeducted,
             'status' => $status,
             'raw_scan_count' => $this->rawScanCount,
+            'time_in_photo_url' => $this->timeInPhotoUrl,
+            'time_out_photo_url' => $this->timeOutPhotoUrl,
         ];
     }
 }

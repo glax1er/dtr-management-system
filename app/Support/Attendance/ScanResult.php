@@ -23,5 +23,6 @@ final readonly class ScanResult
         public CarbonInterface $timestamp,
         public bool $isDuplicate,
         public ?string $photoUrl = null,
+        public ?string $capturedPhotoUrl = null,
     ) {}
 }
