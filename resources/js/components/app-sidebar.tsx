@@ -53,8 +53,6 @@ const superAdminNavItems: NavItem[] = [
     { title: 'Campuses', href: '/admin/campuses', icon: MapPin },
 ];
 
-// HTE Supervisors get a full dashboard; OJT Supervisors only monitor their
-// program's roster, so "My Interns" is their landing page with no Dashboard link.
 const hteSupervisorNavItems: NavItem[] = [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
     { title: 'My Interns', href: '/supervisor/interns', icon: GraduationCap },
@@ -62,6 +60,7 @@ const hteSupervisorNavItems: NavItem[] = [
 ];
 
 const ojtSupervisorNavItems: NavItem[] = [
+    { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
     { title: 'My Interns', href: '/supervisor/interns', icon: GraduationCap },
     {
         title: 'Document Templates',

@@ -51,8 +51,11 @@ test('an HTE supervisor sees their dashboard with paginated recent scans and sta
         );
 });
 
-test('an OJT supervisor is redirected to interns index when accessing dashboard', function () {
-    $program = Program::create(['program_name' => 'BSCS-'.uniqid()]);
+test('an OJT supervisor sees their program dashboard with milestone breakdown, finished interns, and stats', function () {
+    $program = Program::create([
+        'program_name' => 'BSCS-'.uniqid(),
+        'required_hours' => 300,
+    ]);
     $supervisor = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
     SupervisorProfile::create([
         'user_id' => $supervisor->id,
@@ -61,9 +64,33 @@ test('an OJT supervisor is redirected to interns index when accessing dashboard'
         'status' => 'active',
     ]);
 
+    $hte = Hte::create(['hte_name' => 'Tech Solutions']);
+
+    $intern = User::factory()->create(['role' => User::ROLE_INTERN]);
+    InternProfile::create([
+        'user_id' => $intern->id,
+        'id_number' => '2026-'.$intern->id,
+        'sex' => 'female',
+        'hte_id' => $hte->hte_id,
+        'program_id' => $program->program_id,
+        'status' => 'approved',
+        'privacy_accepted_at' => now(),
+    ]);
+
     $this->actingAs($supervisor)
         ->get(route('supervisor.dashboard'))
-        ->assertRedirect(route('supervisor.interns.index'));
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('supervisor/ojt-dashboard')
+            ->where('scopeName', $program->program_name)
+            ->where('programName', $program->program_name)
+            ->where('stats.totalInterns', 1)
+            ->where('stats.totalHtes', 1)
+            ->has('milestones', 5)
+            ->has('students', 1)
+            ->where('students.0.name', $intern->name)
+            ->where('students.0.hte_name', 'Tech Solutions')
+        );
 });
 
 test('recent scans on supervisor dashboard honors pagination per_page and page query parameters', function () {

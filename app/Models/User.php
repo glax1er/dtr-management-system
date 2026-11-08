@@ -493,16 +493,11 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     /**
      * The named route this user should land on after login, or when
      * hitting the generic /dashboard redirect.
-     *
-     * OJT Supervisors don't get a dashboard of their own — they only
-     * view/monitor their program's roster — so they land straight on
-     * "My Interns" instead of the (HTE-only) supervisor dashboard.
      */
     public function homeRouteName(): string
     {
         return match (true) {
             $this->isAdmin() => 'admin.dashboard',
-            $this->isSupervisor() && $this->supervisorProfile?->isOjtSupervisor() => 'supervisor.interns.index',
             $this->isSupervisor() => 'supervisor.dashboard',
             $this->isIntern() => 'intern.dashboard',
             default => throw new \UnexpectedValueException('Invalid user role.'),
