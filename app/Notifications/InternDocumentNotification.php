@@ -40,7 +40,7 @@ class InternDocumentNotification extends Notification
                 'type' => 'document_submitted',
                 'title' => "Document submitted: {$docName}",
                 'message' => "{$actorName} submitted {$docName} for review.",
-                'href' => "/supervisor/interns?highlight={$this->internDocument->user_id}&doc_intern={$this->internDocument->user_id}&highlight_doc={$this->internDocument->document_type}",
+                'href' => "/supervisor/interns?highlight={$this->internDocument->user_id}&doc_intern={$this->internDocument->user_id}&highlight_doc={$this->internDocument->document_type}&preview_doc={$this->internDocument->document_type}",
                 'intern_document_id' => $this->internDocument->id,
                 'intern_user_id' => $this->internDocument->user_id,
                 'document_type' => $this->internDocument->document_type,

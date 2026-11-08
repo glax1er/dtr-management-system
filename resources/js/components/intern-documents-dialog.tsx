@@ -17,7 +17,7 @@ import {
     Sparkles,
     X,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -50,6 +50,9 @@ interface InternDocumentsDialogProps {
     trigger?: React.ReactNode;
     defaultOpen?: boolean;
     highlightDoc?: string | null;
+    autoPreviewDoc?: string | null;
+    onOpenChange?: (open: boolean) => void;
+    onDismissDeepLink?: () => void;
 }
 
 type ViewMode = 'grid' | 'list';
@@ -62,6 +65,9 @@ export function InternDocumentsDialog({
     trigger,
     defaultOpen = false,
     highlightDoc = null,
+    autoPreviewDoc = null,
+    onOpenChange,
+    onDismissDeepLink,
 }: InternDocumentsDialogProps) {
     const [isOpen, setIsOpen] = useState(defaultOpen);
     const [isLoading, setIsLoading] = useState(false);
@@ -109,60 +115,75 @@ export function InternDocumentsDialog({
         }
     }, [internUserId]);
 
-    // Support opening automatically if defaultOpen is true or URL deep-link points to this intern
     /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => {
-        if (defaultOpen) {
+        if (isOpen) {
             fetchDocuments();
+        }
+    }, [isOpen, fetchDocuments]);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
+    // Manage highlight and auto-preview targets with capability to dismiss/clear
+    const [isDismissed, setIsDismissed] = useState(false);
+
+    const currentHighlightDoc = isDismissed ? null : (highlightDoc ?? null);
+    const currentPreviewDocType = isDismissed ? null : (autoPreviewDoc ?? null);
+
+    const cleanDeepLinkParams = useCallback(() => {
+        if (typeof window !== 'undefined') {
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.delete('preview_doc');
+            currentUrl.searchParams.delete('preview');
+            currentUrl.searchParams.delete('highlight_doc');
+            currentUrl.searchParams.delete('doc_intern');
+            currentUrl.searchParams.delete('highlight');
+            currentUrl.searchParams.delete('open_summary');
+            window.history.replaceState({}, '', currentUrl.toString());
+        }
+    }, []);
+
+    const hasAutoOpenedPreviewRef = useRef<string | null>(null);
+
+    // Auto-open file preview directly if deep-link (e.g. notification / toast view) targets preview
+    /* eslint-disable react-hooks/set-state-in-effect */
+    useEffect(() => {
+        if (!isOpen || !currentPreviewDocType || checklist.length === 0) {
             return;
         }
 
-        if (typeof window !== 'undefined') {
-            const params = new URLSearchParams(window.location.search);
-            const docInternId = params.get('doc_intern');
+        const autoOpenKey = `${internUserId}-${currentPreviewDocType}`;
 
-            if (docInternId && String(internUserId) === docInternId) {
-                setIsOpen(true);
-                fetchDocuments();
-            }
+        if (hasAutoOpenedPreviewRef.current === autoOpenKey) {
+            return;
         }
-    }, [defaultOpen, internUserId, fetchDocuments]);
+
+        const docToPreview = checklist.find(
+            (d) =>
+                d.document_type === currentPreviewDocType ||
+                (d.id !== null && String(d.id) === currentPreviewDocType),
+        );
+
+        if (docToPreview && docToPreview.preview_url) {
+            hasAutoOpenedPreviewRef.current = autoOpenKey;
+            setPreviewDoc(docToPreview);
+        }
+    }, [isOpen, currentPreviewDocType, checklist, internUserId]);
     /* eslint-enable react-hooks/set-state-in-effect */
-
-    // Determine target highlight doc from props or URL
-    const effectiveHighlightDoc = useMemo(() => {
-        if (highlightDoc) {
-            return highlightDoc;
-        }
-
-        if (typeof window === 'undefined') {
-            return null;
-        }
-
-        const params = new URLSearchParams(window.location.search);
-
-        if (params.get('doc_intern') === String(internUserId)) {
-            return params.get('highlight_doc');
-        }
-
-        return null;
-    }, [highlightDoc, internUserId]);
 
     // Scroll to highlighted doc when checklist loads
     useEffect(() => {
-        if (!isOpen || !effectiveHighlightDoc || checklist.length === 0) {
+        if (!isOpen || !currentHighlightDoc || checklist.length === 0) {
             return;
         }
 
         const targetDoc = checklist.find(
             (d) =>
-                d.document_type === effectiveHighlightDoc ||
-                (d.id !== null && String(d.id) === effectiveHighlightDoc),
+                d.document_type === currentHighlightDoc ||
+                (d.id !== null && String(d.id) === currentHighlightDoc),
         );
         const typeKey = targetDoc
             ? targetDoc.document_type
-            : effectiveHighlightDoc;
+            : currentHighlightDoc;
 
         const el = document.getElementById(`dialog-doc-${typeKey}`);
 
@@ -173,14 +194,19 @@ export function InternDocumentsDialog({
 
             return () => clearTimeout(timer);
         }
-    }, [isOpen, effectiveHighlightDoc, checklist]);
+    }, [isOpen, currentHighlightDoc, checklist]);
 
     const handleOpenChange = (open: boolean) => {
         setIsOpen(open);
+        onOpenChange?.(open);
 
         if (open) {
+            setIsDismissed(false);
             fetchDocuments();
         } else {
+            hasAutoOpenedPreviewRef.current = null;
+            setPreviewDoc(null);
+            setIsDismissed(true);
             setRejectingDocId(null);
             setRejectionReason('');
             setDtrStartDate('');
@@ -188,6 +214,8 @@ export function InternDocumentsDialog({
             setSearch('');
             setSelectedCategory('all');
             setSelectedStatus('all');
+            cleanDeepLinkParams();
+            onDismissDeepLink?.();
         }
     };
 
@@ -206,6 +234,7 @@ export function InternDocumentsDialog({
                 onSuccess: () => {
                     toast.success(`Approved "${doc.name}".`);
                     fetchDocuments();
+                    setPreviewDoc(null);
                 },
                 onError: () => {
                     toast.error('Failed to approve document.');
@@ -371,18 +400,20 @@ export function InternDocumentsDialog({
     return (
         <>
             <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-                <DialogTrigger asChild>
-                    {trigger || (
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-8 gap-1.5 text-xs shadow-2xs hover:border-primary/50"
-                        >
-                            <FileCheck2 className="h-3.5 w-3.5 text-primary" />
-                            <span>Documents</span>
-                        </Button>
-                    )}
-                </DialogTrigger>
+                {trigger !== null && (
+                    <DialogTrigger asChild>
+                        {trigger || (
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 gap-1.5 text-xs shadow-2xs hover:border-primary/50"
+                            >
+                                <FileCheck2 className="h-3.5 w-3.5 text-primary" />
+                                <span>Documents</span>
+                            </Button>
+                        )}
+                    </DialogTrigger>
+                )}
 
                 <DialogContent className="flex max-h-[92vh] w-[96vw] max-w-6xl flex-col overflow-hidden p-0 shadow-2xl sm:max-h-[88vh] xl:max-w-7xl">
                     {/* Header */}
@@ -812,12 +843,12 @@ export function InternDocumentsDialog({
                                                     doc.id !== null &&
                                                     rejectingDocId === doc.id;
                                                 const isHighlighted =
-                                                    effectiveHighlightDoc !==
+                                                    currentHighlightDoc !==
                                                         null &&
-                                                    (effectiveHighlightDoc ===
+                                                    (currentHighlightDoc ===
                                                         doc.document_type ||
                                                         (doc.id !== null &&
-                                                            effectiveHighlightDoc ===
+                                                            currentHighlightDoc ===
                                                                 String(
                                                                     doc.id,
                                                                 )));
@@ -1314,21 +1345,87 @@ export function InternDocumentsDialog({
                 onOpenChange={(open) => {
                     if (!open) {
                         setPreviewDoc(null);
+                        setIsDismissed(true);
+                        cleanDeepLinkParams();
+                        onDismissDeepLink?.();
                     }
                 }}
             >
                 <DialogContent className="z-50 flex h-[92vh] w-[96vw] max-w-6xl flex-col gap-0 overflow-hidden p-0 shadow-2xl sm:h-[88vh] xl:max-w-7xl">
                     <DialogHeader className="flex shrink-0 flex-col gap-2.5 border-b border-border bg-card/60 px-4 py-3.5 pr-14 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:pr-16">
                         <div className="min-w-0 pr-2">
-                            <DialogTitle className="truncate text-sm font-semibold text-foreground sm:text-base">
-                                {previewDoc?.name}
-                            </DialogTitle>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <DialogTitle className="truncate text-sm font-semibold text-foreground sm:text-base">
+                                    {previewDoc?.name}
+                                </DialogTitle>
+                                {previewDoc?.status === 'approved' && (
+                                    <Badge
+                                        variant="outline"
+                                        className="border-emerald-500/30 bg-emerald-500/15 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300"
+                                    >
+                                        Approved
+                                    </Badge>
+                                )}
+                                {previewDoc?.status === 'rejected' && (
+                                    <Badge
+                                        variant="outline"
+                                        className="border-rose-500/30 bg-rose-500/15 text-[11px] font-semibold text-rose-700 dark:text-rose-300"
+                                    >
+                                        Needs Revision
+                                    </Badge>
+                                )}
+                                {previewDoc?.status === 'pending_review' && (
+                                    <Badge
+                                        variant="outline"
+                                        className="border-amber-500/30 bg-amber-500/15 text-[11px] font-semibold text-amber-700 dark:text-amber-300"
+                                    >
+                                        Pending Review
+                                    </Badge>
+                                )}
+                            </div>
                             <DialogDescription className="max-w-md truncate text-xs text-muted-foreground">
                                 {previewDoc?.original_filename ||
                                     'PDF Document Preview'}
                             </DialogDescription>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
+                            {previewDoc &&
+                                previewDoc.id !== null &&
+                                previewDoc.status !== 'approved' && (
+                                    <Button
+                                        size="sm"
+                                        className="h-8 gap-1.5 bg-emerald-600 text-xs text-white shadow-2xs hover:bg-emerald-700"
+                                        disabled={isSubmittingAction}
+                                        onClick={() => handleApprove(previewDoc)}
+                                    >
+                                        <Check className="size-3.5" />
+                                        <span>Approve</span>
+                                    </Button>
+                                )}
+                            {previewDoc &&
+                                previewDoc.id !== null &&
+                                previewDoc.status !== 'rejected' && (
+                                    <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        className="h-8 gap-1.5 text-xs shadow-2xs"
+                                        disabled={isSubmittingAction}
+                                        onClick={() => {
+                                            if (
+                                                previewDoc &&
+                                                previewDoc.id !== null
+                                            ) {
+                                                const docId = previewDoc.id;
+                                                setPreviewDoc(null);
+                                                setRejectingDocId(docId);
+                                                setRejectionReason('');
+                                            }
+                                        }}
+                                    >
+                                        <X className="size-3.5" />
+                                        <span>Reject</span>
+                                    </Button>
+                                )}
                             {previewDoc?.download_url && (
                                 <Button
                                     size="sm"

@@ -1,7 +1,10 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import {
+    Award,
     Building2,
     Clock,
+    FileCheck2,
+    FileText,
     GraduationCap,
     LayoutGrid,
     Phone,
@@ -11,7 +14,7 @@ import {
     Table as TableIcon,
     X,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 
 import { CompletionSummaryDialog } from '@/components/completion-summary-dialog';
@@ -21,6 +24,7 @@ import type { Paginated } from '@/components/pagination-footer';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/badges/status-badge';
+import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
@@ -107,6 +111,7 @@ export default function MyStudents({
     completedCount,
     inProgressCount,
 }: StudentsProps) {
+    const { url } = usePage();
     const getInitials = useInitials();
     const [search, setSearch] = useState(filters.search ?? '');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -124,27 +129,198 @@ export default function MyStudents({
     const debouncedSearch = useDebounce(search, 300);
     const isFirstRender = useRef(true);
 
+    const [currentHighlightStudentId, setCurrentHighlightStudentId] = useState<number | null>(() => {
+        if (typeof window === 'undefined') {
+            return null;
+        }
+
+        return (
+            Number(
+                new URLSearchParams(window.location.search).get('highlight') ||
+                new URLSearchParams(window.location.search).get('doc_intern'),
+            ) || null
+        );
+    });
+
+    const [autoPreviewDoc, setAutoPreviewDoc] = useState<string | null>(() => {
+        if (typeof window === 'undefined') {
+            return null;
+        }
+
+        const params = new URLSearchParams(window.location.search);
+
+        return params.get('preview_doc') || (params.get('preview') === '1' ? params.get('highlight_doc') : null);
+    });
+
+    const [activeHighlightDoc, setActiveHighlightDoc] = useState<string | null>(() => {
+        if (typeof window === 'undefined') {
+            return null;
+        }
+
+        const params = new URLSearchParams(window.location.search);
+
+        return params.get('highlight_doc');
+    });
+
+    const lastHandledUrlRef = useRef<string>(url);
+
+    const cleanUrlDeepLink = useCallback(() => {
+        if (typeof window !== 'undefined') {
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.delete('preview_doc');
+            currentUrl.searchParams.delete('preview');
+            currentUrl.searchParams.delete('highlight_doc');
+            currentUrl.searchParams.delete('doc_intern');
+            currentUrl.searchParams.delete('highlight');
+            currentUrl.searchParams.delete('open_summary');
+            window.history.replaceState({}, '', currentUrl.toString());
+        }
+
+        lastHandledUrlRef.current = '';
+        setCurrentHighlightStudentId(null);
+        setAutoPreviewDoc(null);
+        setActiveHighlightDoc(null);
+    }, []);
+
+    const [activeDocIntern, setActiveDocIntern] = useState<{
+        id: number;
+        name: string;
+    } | null>(() => {
+        if (typeof window === 'undefined') {
+            return null;
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const docInternId = params.get('doc_intern');
+        const openSummary = params.get('open_summary') === '1';
+
+        if (docInternId && !openSummary) {
+            const student = students.data.find(
+                (s) => String(s.intern_user_id) === docInternId,
+            );
+
+            return {
+                id: Number(docInternId),
+                name: student ? student.name : 'Intern',
+            };
+        }
+
+        return null;
+    });
+
+    const [activeSummaryIntern, setActiveSummaryIntern] = useState<{
+        id: number;
+        name: string;
+        isCompleted: boolean;
+    } | null>(() => {
+        if (typeof window === 'undefined') {
+            return null;
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const targetInternId =
+            params.get('doc_intern') || params.get('highlight');
+        const openSummary = params.get('open_summary') === '1';
+
+        if (openSummary && targetInternId) {
+            const student = students.data.find(
+                (s) => String(s.intern_user_id) === targetInternId,
+            );
+
+            return {
+                id: Number(targetInternId),
+                name: student ? student.name : 'Intern',
+                isCompleted: student ? student.is_completed : false,
+            };
+        }
+
+        return null;
+    });
+
+    const openDocumentsDialog = (student: { intern_user_id: number; name: string }) => {
+        cleanUrlDeepLink();
+        setActiveDocIntern({
+            id: student.intern_user_id,
+            name: student.name,
+        });
+    };
+
+    const openSummaryDialog = (student: { intern_user_id: number; name: string; is_completed: boolean }) => {
+        cleanUrlDeepLink();
+        setActiveSummaryIntern({
+            id: student.intern_user_id,
+            name: student.name,
+            isCompleted: student.is_completed,
+        });
+    };
+
     useEffect(() => {
         localStorage.setItem('supervisor_students_view', view);
     }, [view]);
 
-    const highlightId =
-        typeof window !== 'undefined'
-            ? Number(
-                  new URLSearchParams(window.location.search).get('highlight') ||
-                  new URLSearchParams(window.location.search).get('doc_intern'),
-              ) || null
-            : null;
+    /* eslint-disable react-hooks/set-state-in-effect */
+    useEffect(() => {
+        if (lastHandledUrlRef.current === url) {
+            return;
+        }
+
+        lastHandledUrlRef.current = url;
+
+        const queryIndex = url.indexOf('?');
+
+        if (queryIndex === -1) {
+            return;
+        }
+
+        const params = new URLSearchParams(url.substring(queryIndex));
+        const docInternId = params.get('doc_intern');
+        const openSummary = params.get('open_summary') === '1';
+
+        if (docInternId && !openSummary) {
+            const student = students.data.find(
+                (s) => String(s.intern_user_id) === docInternId,
+            );
+
+            setAutoPreviewDoc(
+                params.get('preview_doc') ||
+                    (params.get('preview') === '1'
+                        ? params.get('highlight_doc')
+                        : null),
+            );
+            setActiveHighlightDoc(params.get('highlight_doc'));
+            setCurrentHighlightStudentId(Number(docInternId));
+            setActiveDocIntern({
+                id: Number(docInternId),
+                name: student ? student.name : 'Intern',
+            });
+        }
+
+        const targetSummaryId =
+            params.get('doc_intern') || params.get('highlight');
+
+        if (openSummary && targetSummaryId) {
+            const student = students.data.find(
+                (s) => String(s.intern_user_id) === targetSummaryId,
+            );
+
+            setActiveSummaryIntern({
+                id: Number(targetSummaryId),
+                name: student ? student.name : 'Intern',
+                isCompleted: student ? student.is_completed : false,
+            });
+        }
+    }, [url, students.data]);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     useEffect(() => {
-        if (!highlightId) {
+        if (!currentHighlightStudentId) {
             return;
         }
 
         const el =
-            document.getElementById(`student-row-${highlightId}`) ||
-            document.getElementById(`student-card-${highlightId}`) ||
-            document.getElementById(`student-card-mobile-${highlightId}`);
+            document.getElementById(`student-row-${currentHighlightStudentId}`) ||
+            document.getElementById(`student-card-${currentHighlightStudentId}`) ||
+            document.getElementById(`student-card-mobile-${currentHighlightStudentId}`);
 
         if (!el) {
             return;
@@ -155,7 +331,7 @@ export default function MyStudents({
         }, 200);
 
         return () => clearTimeout(timer);
-    }, [highlightId, students.data]);
+    }, [currentHighlightStudentId, students.data]);
 
     const baseParams = () => ({
         search: search || undefined,
@@ -429,7 +605,7 @@ export default function MyStudents({
                                                 {students.data.map(
                                                     (student) => {
                                                         const isHighlighted =
-                                                            highlightId ===
+                                                            currentHighlightStudentId ===
                                                             student.intern_user_id;
 
                                                         return (
@@ -556,25 +732,45 @@ export default function MyStudents({
                                                             </TableCell>
                                                             <TableCell className="px-6 py-3.5 text-center whitespace-nowrap">
                                                                 <div className="flex items-center justify-center gap-1.5">
-                                                                    <CompletionSummaryDialog
-                                                                        internUserId={
-                                                                            student.intern_user_id
+                                                                    {student.is_completed ? (
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            size="sm"
+                                                                            className="border-emerald-500/40 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 hover:text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300"
+                                                                            onClick={() =>
+                                                                                openSummaryDialog(student)
+                                                                            }
+                                                                        >
+                                                                            <Award className="mr-1.5 size-4 text-emerald-600 dark:text-emerald-400" />
+                                                                            <span className="hidden md:inline">
+                                                                                Summary of Completion
+                                                                            </span>
+                                                                            <span className="md:hidden">Summary</span>
+                                                                        </Button>
+                                                                    ) : (
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            className="text-muted-foreground hover:text-foreground"
+                                                                            onClick={() =>
+                                                                                openSummaryDialog(student)
+                                                                            }
+                                                                        >
+                                                                            <FileText className="mr-1.5 size-4" />
+                                                                            <span className="hidden md:inline">Summary</span>
+                                                                        </Button>
+                                                                    )}
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="outline"
+                                                                        className="h-8 gap-1.5 text-xs shadow-2xs hover:border-primary/50"
+                                                                        onClick={() =>
+                                                                            openDocumentsDialog(student)
                                                                         }
-                                                                        internName={
-                                                                            student.name
-                                                                        }
-                                                                        isCompleted={
-                                                                            student.is_completed
-                                                                        }
-                                                                    />
-                                                                    <InternDocumentsDialog
-                                                                        internUserId={
-                                                                            student.intern_user_id
-                                                                        }
-                                                                        internName={
-                                                                            student.name
-                                                                        }
-                                                                    />
+                                                                    >
+                                                                        <FileCheck2 className="h-3.5 w-3.5 text-primary" />
+                                                                        <span>Documents</span>
+                                                                    </Button>
                                                                 </div>
                                                             </TableCell>
                                                         </TableRow>
@@ -601,7 +797,7 @@ export default function MyStudents({
                                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                     {students.data.map((student) => {
                                         const isHighlighted =
-                                            highlightId ===
+                                            currentHighlightStudentId ===
                                             student.intern_user_id;
 
                                         return (
@@ -747,21 +943,45 @@ export default function MyStudents({
                                                 </div>
                                             </CardContent>
                                             <CardFooter className="flex items-center justify-end gap-2 border-t bg-muted/20 px-4 py-2.5">
-                                                <CompletionSummaryDialog
-                                                    internUserId={
-                                                        student.intern_user_id
+                                                {student.is_completed ? (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="border-emerald-500/40 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 hover:text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300"
+                                                        onClick={() =>
+                                                            openSummaryDialog(student)
+                                                        }
+                                                    >
+                                                        <Award className="mr-1.5 size-4 text-emerald-600 dark:text-emerald-400" />
+                                                        <span className="hidden md:inline">
+                                                            Summary of Completion
+                                                        </span>
+                                                        <span className="md:hidden">Summary</span>
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="text-muted-foreground hover:text-foreground"
+                                                        onClick={() =>
+                                                            openSummaryDialog(student)
+                                                        }
+                                                    >
+                                                        <FileText className="mr-1.5 size-4" />
+                                                        <span className="hidden md:inline">Summary</span>
+                                                    </Button>
+                                                )}
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="h-8 gap-1.5 text-xs shadow-2xs hover:border-primary/50"
+                                                    onClick={() =>
+                                                        openDocumentsDialog(student)
                                                     }
-                                                    internName={student.name}
-                                                    isCompleted={
-                                                        student.is_completed
-                                                    }
-                                                />
-                                                <InternDocumentsDialog
-                                                    internUserId={
-                                                        student.intern_user_id
-                                                    }
-                                                    internName={student.name}
-                                                />
+                                                >
+                                                    <FileCheck2 className="h-3.5 w-3.5 text-primary" />
+                                                    <span>Documents</span>
+                                                </Button>
                                             </CardFooter>
                                         </Card>
                                         );
@@ -781,7 +1001,7 @@ export default function MyStudents({
                         <div className="flex flex-col gap-3 sm:hidden">
                             {students.data.map((student) => {
                                 const isHighlighted =
-                                    highlightId === student.intern_user_id;
+                                    currentHighlightStudentId === student.intern_user_id;
 
                                 return (
                                     <Card
@@ -862,21 +1082,45 @@ export default function MyStudents({
                                                 />
                                             </div>
                                             <div className="flex items-center justify-end gap-1.5 border-t pt-2">
-                                                <CompletionSummaryDialog
-                                                    internUserId={
-                                                        student.intern_user_id
+                                                {student.is_completed ? (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="border-emerald-500/40 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 hover:text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300"
+                                                        onClick={() =>
+                                                            openSummaryDialog(student)
+                                                        }
+                                                    >
+                                                        <Award className="mr-1.5 size-4 text-emerald-600 dark:text-emerald-400" />
+                                                        <span className="hidden md:inline">
+                                                            Summary of Completion
+                                                        </span>
+                                                        <span className="md:hidden">Summary</span>
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="text-muted-foreground hover:text-foreground"
+                                                        onClick={() =>
+                                                            openSummaryDialog(student)
+                                                        }
+                                                    >
+                                                        <FileText className="mr-1.5 size-4" />
+                                                        <span className="hidden md:inline">Summary</span>
+                                                    </Button>
+                                                )}
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="h-8 gap-1.5 text-xs shadow-2xs hover:border-primary/50"
+                                                    onClick={() =>
+                                                        openDocumentsDialog(student)
                                                     }
-                                                    internName={student.name}
-                                                    isCompleted={
-                                                        student.is_completed
-                                                    }
-                                                />
-                                                <InternDocumentsDialog
-                                                    internUserId={
-                                                        student.intern_user_id
-                                                    }
-                                                    internName={student.name}
-                                                />
+                                                >
+                                                    <FileCheck2 className="h-3.5 w-3.5 text-primary" />
+                                                    <span>Documents</span>
+                                                </Button>
                                             </div>
                                         </CardContent>
                                     </Card>
@@ -891,6 +1135,44 @@ export default function MyStudents({
                             />
                         </div>
                     </>
+                )}
+
+                {activeDocIntern && (
+                    <InternDocumentsDialog
+                        key={`doc-dialog-${activeDocIntern.id}`}
+                        internUserId={activeDocIntern.id}
+                        internName={activeDocIntern.name}
+                        defaultOpen={true}
+                        trigger={null}
+                        autoPreviewDoc={autoPreviewDoc}
+                        highlightDoc={activeHighlightDoc}
+                        onDismissDeepLink={() => {
+                            cleanUrlDeepLink();
+                        }}
+                        onOpenChange={(open) => {
+                            if (!open) {
+                                cleanUrlDeepLink();
+                                setActiveDocIntern(null);
+                            }
+                        }}
+                    />
+                )}
+
+                {activeSummaryIntern && (
+                    <CompletionSummaryDialog
+                        key={`summary-dialog-${activeSummaryIntern.id}`}
+                        internUserId={activeSummaryIntern.id}
+                        internName={activeSummaryIntern.name}
+                        isCompleted={activeSummaryIntern.isCompleted}
+                        defaultOpen={true}
+                        trigger={null}
+                        onOpenChange={(open) => {
+                            if (!open) {
+                                cleanUrlDeepLink();
+                                setActiveSummaryIntern(null);
+                            }
+                        }}
+                    />
                 )}
             </div>
         </>

@@ -20,6 +20,12 @@ class NotificationPresenter
 
         // If href already has a highlight parameter, return as-is
         if (str_contains($href, 'highlight')) {
+            if ($type === 'document_submitted' && ! empty($data['document_type']) && ! str_contains($href, 'preview_doc')) {
+                $separator = str_contains($href, '?') ? '&' : '?';
+
+                return $href.$separator.'preview_doc='.urlencode((string) $data['document_type']);
+            }
+
             return $href;
         }
 
@@ -77,7 +83,7 @@ class NotificationPresenter
         if ($type === 'document_submitted' && ! empty($data['intern_user_id'])) {
             $docType = $data['document_type'] ?? null;
             if ($docType) {
-                return "/supervisor/interns?highlight={$data['intern_user_id']}&doc_intern={$data['intern_user_id']}&highlight_doc={$docType}";
+                return "/supervisor/interns?highlight={$data['intern_user_id']}&doc_intern={$data['intern_user_id']}&highlight_doc={$docType}&preview_doc={$docType}";
             }
 
             return "/supervisor/interns?highlight={$data['intern_user_id']}&doc_intern={$data['intern_user_id']}";

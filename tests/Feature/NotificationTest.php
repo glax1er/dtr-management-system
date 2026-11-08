@@ -797,3 +797,42 @@ test('reset password notification renders custom HTML email correctly', function
     expect($html)->toContain('Jane Doe');
     expect($html)->toContain('test-token-123');
 });
+
+test('document submitted notification includes preview_doc in href for supervisor', function () {
+    [$internUser, $internProfile, $hte, $program] = createTestInternProfile();
+
+    $internDoc = InternDocument::create([
+        'user_id' => $internUser->id,
+        'document_type' => 'medical_certificate',
+        'file_path' => 'documents/medical.pdf',
+        'original_filename' => 'medical.pdf',
+        'file_size' => 1024,
+        'mime_type' => 'application/pdf',
+        'status' => 'submitted',
+        'submitted_at' => now(),
+    ]);
+
+    $notification = new InternDocumentNotification(
+        internDocument: $internDoc,
+        event: InternDocumentNotification::DOCUMENT_SUBMITTED,
+        actor: $internUser,
+        docName: 'Medical Certificate',
+    );
+
+    $data = $notification->toArray($internUser);
+
+    expect($data['href'])->toContain('preview_doc=medical_certificate');
+    expect($data['href'])->toContain('doc_intern='.$internUser->id);
+    expect($data['href'])->toContain('highlight_doc=medical_certificate');
+
+    // Test NotificationPresenter resolves preview_doc even from legacy payloads
+    $legacyData = [
+        'type' => 'document_submitted',
+        'intern_user_id' => $internUser->id,
+        'document_type' => 'medical_certificate',
+        'href' => "/supervisor/interns?highlight={$internUser->id}&doc_intern={$internUser->id}&highlight_doc=medical_certificate",
+    ];
+
+    $resolvedHref = \App\Services\NotificationPresenter::resolveHref($legacyData);
+    expect($resolvedHref)->toContain('preview_doc=medical_certificate');
+});
