@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\EmailVerificationCode;
 use App\Models\User;
 use App\Notifications\NewInternRegistrationNotification;
+use App\Support\SafeIntendedRedirect;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,7 +26,7 @@ class EmailVerificationCodeController extends Controller
         $user = $request->user();
 
         if ($user && $user->hasVerifiedEmail()) {
-            return redirect()->intended(route('dashboard'));
+            return SafeIntendedRedirect::redirect($request, $user, route('dashboard'));
         }
 
         return Inertia::render('auth/verify-email', [
@@ -60,7 +61,7 @@ class EmailVerificationCodeController extends Controller
         }
 
         if ($user->hasVerifiedEmail()) {
-            return redirect()->intended(route('dashboard'));
+            return SafeIntendedRedirect::redirect($request, $user, route('dashboard'));
         }
 
         $isValid = EmailVerificationCode::verify($email, $request->code);
@@ -128,7 +129,7 @@ class EmailVerificationCodeController extends Controller
             Auth::login($user);
         }
 
-        return redirect()->intended(route('dashboard'))->with(
+        return SafeIntendedRedirect::redirect($request, $user, route('dashboard'))->with(
             'status',
             'Email verified successfully! Welcome to the system.',
         );
@@ -156,7 +157,7 @@ class EmailVerificationCodeController extends Controller
         }
 
         if ($user->hasVerifiedEmail()) {
-            return redirect()->intended(route('dashboard'));
+            return SafeIntendedRedirect::redirect($request, $user, route('dashboard'));
         }
 
         $user->sendEmailVerificationNotification();

@@ -6,6 +6,7 @@ import {
     GraduationCap,
     TrendingUp,
     FileWarning,
+    User as UserIcon,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
@@ -187,15 +188,31 @@ export default function SupervisorDashboard({
             <Head title="Supervisor Dashboard" />
             <div className="flex h-full flex-1 flex-col gap-5 p-4 sm:p-6">
                 {/* Header banner */}
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex flex-col gap-1">
-                        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                            Welcome back, {auth.user.name}
-                        </h1>
-                        <p className="text-sm text-muted-foreground">
-                            Real-time overview of attendance tracking, kiosk
-                            scans, and resolution requests.
-                        </p>
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <div className="shrink-0">
+                            <div className="flex size-14 items-center justify-center overflow-hidden rounded-2xl border border-border bg-muted shadow-xs sm:size-16">
+                                {auth.user?.avatar ? (
+                                    <img
+                                        src={auth.user.avatar}
+                                        alt={auth.user?.name || 'Supervisor'}
+                                        className="size-full object-cover"
+                                    />
+                                ) : (
+                                    <UserIcon className="size-7 text-muted-foreground sm:size-8" />
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="space-y-0.5">
+                            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                                Welcome back, {auth.user?.name || 'Supervisor'}
+                            </h1>
+                            <p className="text-sm text-muted-foreground">
+                                Real-time overview of attendance tracking, kiosk
+                                scans, and resolution requests.
+                            </p>
+                        </div>
                     </div>
                     {scopeName && (
                         <Badge

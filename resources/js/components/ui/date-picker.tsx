@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { format, parseISO } from 'date-fns';
+import { endOfDay, format, parseISO, startOfDay } from 'date-fns';
 import { Calendar as CalendarIcon, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,7 @@ export interface DatePickerProps {
     clearable?: boolean;
     align?: 'start' | 'center' | 'end';
     side?: 'top' | 'right' | 'bottom' | 'left';
+    modal?: boolean;
 }
 
 export function DatePicker({
@@ -36,6 +37,7 @@ export function DatePicker({
     clearable = false,
     align = 'start',
     side = 'bottom',
+    modal = true,
 }: DatePickerProps) {
     const [open, setOpen] = React.useState(false);
 
@@ -62,20 +64,27 @@ export function DatePicker({
 
     const min = React.useMemo(() => {
         if (!minDate) return undefined;
-        if (minDate instanceof Date) return minDate;
+        if (minDate instanceof Date) return startOfDay(minDate);
         const parsed = parseISO(minDate);
-        return isNaN(parsed.getTime()) ? undefined : parsed;
+        return isNaN(parsed.getTime()) ? undefined : startOfDay(parsed);
     }, [minDate]);
 
     const max = React.useMemo(() => {
         if (!maxDate) return undefined;
-        if (maxDate instanceof Date) return maxDate;
+        if (maxDate instanceof Date) return endOfDay(maxDate);
         const parsed = parseISO(maxDate);
-        return isNaN(parsed.getTime()) ? undefined : parsed;
+        return isNaN(parsed.getTime()) ? undefined : endOfDay(parsed);
     }, [maxDate]);
 
+    const defaultMonth = React.useMemo(() => {
+        if (selectedDate) return selectedDate;
+        if (min) return min;
+        if (max) return max;
+        return undefined;
+    }, [selectedDate, min, max]);
+
     return (
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover open={open} onOpenChange={setOpen} modal={modal}>
             <PopoverTrigger asChild>
                 <Button
                     id={id}
@@ -113,7 +122,7 @@ export function DatePicker({
                 </Button>
             </PopoverTrigger>
             <PopoverContent
-                className="w-auto p-0 shadow-lg max-w-[calc(100vw-1rem)]"
+                className="w-auto p-0 shadow-lg max-w-[calc(100vw-1rem)] z-50"
                 align={align}
                 side={side}
                 sideOffset={4}
@@ -123,6 +132,7 @@ export function DatePicker({
                 <Calendar
                     mode="single"
                     selected={selectedDate}
+                    defaultMonth={defaultMonth}
                     onSelect={handleSelect}
                     autoFocus
                     disabled={(d) => {

@@ -34,7 +34,7 @@ test('an HTE supervisor is redirected from /dashboard to the supervisor dashboar
         ->assertRedirect(route('supervisor.dashboard'));
 });
 
-test('an OJT supervisor is redirected from /dashboard straight to their roster, not the dashboard', function () {
+test('an OJT supervisor is redirected from /dashboard to the supervisor dashboard', function () {
     $program = Program::create(['program_name' => 'BSIT-'.uniqid()]);
     $supervisor = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
 
@@ -47,11 +47,5 @@ test('an OJT supervisor is redirected from /dashboard straight to their roster, 
 
     $this->actingAs($supervisor)
         ->get(route('dashboard'))
-        ->assertRedirect(route('supervisor.interns.index'));
-
-    // Defense in depth: even a direct/bookmarked hit to the dashboard
-    // route itself bounces an OJT supervisor back to their roster.
-    $this->actingAs($supervisor)
-        ->get(route('supervisor.dashboard'))
-        ->assertRedirect(route('supervisor.interns.index'));
+        ->assertRedirect(route('supervisor.dashboard'));
 });

@@ -6,8 +6,11 @@ namespace App\Http\Controllers\Supervisor;
 
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceLog;
+use App\Models\InternDocument;
+use App\Models\InternProfile;
 use App\Models\ResolutionTicket;
 use App\Models\User;
+use App\Services\Attendance\DailyAttendanceCalculator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -27,13 +30,17 @@ class DashboardController extends Controller
     /** How many interns to surface in the "Top Interns" ranking. */
     private const TOP_INTERN_LIMIT = 5;
 
+    public function __construct(
+        private readonly DailyAttendanceCalculator $calculator,
+    ) {}
+
     public function index(Request $request): Response|RedirectResponse
     {
         $supervisor = auth()->user();
         $supervisorProfile = $supervisor->supervisorProfile;
 
         if ($supervisorProfile?->isOjtSupervisor()) {
-            return redirect()->route('supervisor.interns.index');
+            return $this->ojtDashboard($request, $supervisorProfile);
         }
 
         $validated = $request->validate([
@@ -239,5 +246,199 @@ class DashboardController extends Controller
                 ];
             })
             ->all();
+    }
+
+    /**
+     * Dedicated comprehensive landing dashboard for OJT Supervisors.
+     * Provides an instant high-level overview of their program's interns:
+     * milestone breakdown (0-24%, 25-49%, 50-74%, 75-99%, 100%+ finished),
+     * finished & cleared interns, HTE deployment distribution, document clearance
+     * compliance, and quick inspection actions.
+     */
+    private function ojtDashboard(Request $request, $supervisorProfile): Response
+    {
+        $programId = $supervisorProfile->program_id;
+
+        // Fetch verified, approved interns assigned to this supervisor's program
+        $interns = $supervisorProfile->getAssignedInterns()
+            ->where('status', 'approved')
+            ->with(['user', 'hte', 'program', 'internDocuments'])
+            ->get();
+
+        $internUserIds = $interns->pluck('user_id');
+
+        // Attendance scans for all program interns
+        $allScansByIntern = AttendanceLog::query()
+            ->whereIn('intern_user_id', $internUserIds)
+            ->orderBy('scan_timestamp')
+            ->get()
+            ->groupBy('intern_user_id');
+
+        // Document requirements for this program
+        $programDocTypes = $programId ? InternDocument::getDocumentTypesForProgram($programId) : [];
+        $requiredDocKeys = array_keys(array_filter($programDocTypes, fn ($c) => $c['required'] ?? false));
+        $totalRequiredDocsCount = count($requiredDocKeys);
+
+        // Compute metrics for each intern
+        $allStudents = $interns->map(function (InternProfile $intern) use ($requiredDocKeys, $totalRequiredDocsCount, $allScansByIntern) {
+            $requiredHours = (int) ($intern->program->required_hours ?? config('dtr.default_required_hours'));
+            $internScans = $allScansByIntern->get($intern->user_id, collect());
+            $totalHours = $this->calculator->totalHoursForScans($internScans, (int) ($intern->hte_id ?? 0));
+            $hoursCompleted = $totalHours >= $requiredHours;
+
+            $approvedRequiredDocs = $intern->internDocuments
+                ->where('status', InternDocument::STATUS_APPROVED)
+                ->whereIn('document_type', $requiredDocKeys)
+                ->count();
+
+            $pendingDocs = $intern->internDocuments
+                ->where('status', InternDocument::STATUS_PENDING)
+                ->count();
+
+            $docsCompleted = $approvedRequiredDocs >= $totalRequiredDocsCount;
+            $isFullyCompleted = $hoursCompleted && $docsCompleted;
+
+            $progressPercent = $requiredHours > 0
+                ? min(100, round(($totalHours / $requiredHours) * 100, 1))
+                : 0;
+
+            $milestone = match (true) {
+                $progressPercent >= 100 => 'completed',
+                $progressPercent >= 75 => 'near_completion',
+                $progressPercent >= 50 => 'midway',
+                $progressPercent >= 25 => 'in_progress',
+                default => 'early_stage',
+            };
+
+            $milestoneLabel = match ($milestone) {
+                'completed' => '100% Completed',
+                'near_completion' => 'Near Completion (75–99%)',
+                'midway' => 'Midway (50–74%)',
+                'in_progress' => 'Steady Progress (25–49%)',
+                default => 'Early Stage (<25%)',
+            };
+
+            return [
+                'intern_user_id' => $intern->user_id,
+                'name' => $intern->user->name,
+                'email' => $intern->user->email,
+                'id_number' => $intern->id_number,
+                'contact_number' => $intern->contact_number,
+                'hte_name' => $intern->hte?->hte_name ?? 'Unassigned HTE',
+                'hte_id' => $intern->hte_id,
+                'total_hours' => $totalHours,
+                'required_hours' => $requiredHours,
+                'progress_percent' => $progressPercent,
+                'hours_completed' => $hoursCompleted,
+                'approved_docs_count' => $approvedRequiredDocs,
+                'total_required_docs_count' => $totalRequiredDocsCount,
+                'pending_docs_count' => $pendingDocs,
+                'docs_completed' => $docsCompleted,
+                'is_completed' => $isFullyCompleted,
+                'milestone' => $milestone,
+                'milestone_label' => $milestoneLabel,
+                'profile_photo_url' => $intern->profile_photo_url,
+            ];
+        })->sortByDesc('progress_percent')->values();
+
+        // Milestone progression breakdown (ordered left-to-right from 0% to 100%)
+        $milestones = [
+            [
+                'key' => 'early_stage',
+                'label' => 'Early Stage (0%–24%)',
+                'description' => 'Newly started or beginning internship',
+                'count' => $allStudents->where('milestone', 'early_stage')->count(),
+                'color' => 'slate',
+            ],
+            [
+                'key' => 'in_progress',
+                'label' => 'Steady Progress (25%–49%)',
+                'description' => 'Past initial orientation and onboarding',
+                'count' => $allStudents->where('milestone', 'in_progress')->count(),
+                'color' => 'purple',
+            ],
+            [
+                'key' => 'midway',
+                'label' => 'Midway (50%–74%)',
+                'description' => 'Crossed the 50% midpoint of training',
+                'count' => $allStudents->where('milestone', 'midway')->count(),
+                'color' => 'blue',
+            ],
+            [
+                'key' => 'near_completion',
+                'label' => 'Near Completion (75%–99%)',
+                'description' => 'Final stretch, approaching target hours',
+                'count' => $allStudents->where('milestone', 'near_completion')->count(),
+                'color' => 'amber',
+            ],
+            [
+                'key' => 'completed',
+                'label' => 'Completed (100%+)',
+                'description' => 'Met or exceeded required training hours',
+                'count' => $allStudents->where('milestone', 'completed')->count(),
+                'color' => 'emerald',
+            ],
+        ];
+
+        $totalInterns = $allStudents->count();
+        $hoursCompletedCount = $allStudents->where('hours_completed', true)->count();
+        $fullyCompletedCount = $allStudents->where('is_completed', true)->count();
+        $nearCompletionCount = $allStudents->where('milestone', 'near_completion')->count();
+        $totalHoursRendered = round((float) $allStudents->sum('total_hours'), 1);
+        $averageProgress = $totalInterns > 0 ? round((float) $allStudents->avg('progress_percent'), 1) : 0;
+        $totalPendingDocs = (int) $allStudents->sum('pending_docs_count');
+
+        // Document compliance breakdown across all program interns
+        $allDocs = InternDocument::whereIn('user_id', $internUserIds)->get();
+        $docStats = [
+            'total_submitted' => $allDocs->count(),
+            'approved' => $allDocs->where('status', InternDocument::STATUS_APPROVED)->count(),
+            'pending_review' => $allDocs->where('status', InternDocument::STATUS_PENDING)->count(),
+            'rejected' => $allDocs->where('status', InternDocument::STATUS_REJECTED)->count(),
+        ];
+
+        // HTE Partner placement distribution
+        $hteDistribution = $interns
+            ->groupBy('hte_id')
+            ->map(function ($group) {
+                $first = $group->first();
+
+                return [
+                    'hte_id' => $first->hte_id,
+                    'name' => $first->hte?->hte_name ?? 'Unassigned HTE',
+                    'count' => $group->count(),
+                ];
+            })
+            ->sortByDesc('count')
+            ->values()
+            ->all();
+
+        // Finished interns list
+        $finishedInterns = $allStudents
+            ->where('hours_completed', true)
+            ->values()
+            ->all();
+
+        return Inertia::render('supervisor/ojt-dashboard', [
+            'scopeName' => $supervisorProfile->getScopeName(),
+            'programName' => $supervisorProfile->program?->program_name ?? 'Program',
+            'stats' => [
+                'totalInterns' => $totalInterns,
+                'hoursCompletedCount' => $hoursCompletedCount,
+                'fullyCompletedCount' => $fullyCompletedCount,
+                'nearCompletionCount' => $nearCompletionCount,
+                'totalHoursRendered' => $totalHoursRendered,
+                'averageProgress' => $averageProgress,
+                'totalPendingDocs' => $totalPendingDocs,
+                'totalHtes' => count($hteDistribution),
+            ],
+            'milestones' => $milestones,
+            'students' => $allStudents->all(),
+            'finishedInterns' => $finishedInterns,
+            'hteDistribution' => $hteDistribution,
+            'docStats' => $docStats,
+            'scansTrend' => $this->scansTrend($internUserIds),
+            'todayAttendance' => $this->todayAttendance($internUserIds, $totalInterns),
+        ]);
     }
 }

@@ -106,6 +106,7 @@ interface CompletionSummaryDialogProps {
     isCompleted?: boolean;
     trigger?: React.ReactNode;
     defaultOpen?: boolean;
+    onOpenChange?: (open: boolean) => void;
 }
 
 export function CompletionSummaryDialog({
@@ -114,6 +115,7 @@ export function CompletionSummaryDialog({
     isCompleted = false,
     trigger,
     defaultOpen = false,
+    onOpenChange,
 }: CompletionSummaryDialogProps) {
     const initialOpen = useCallback(() => {
         if (defaultOpen) {
@@ -174,6 +176,7 @@ export function CompletionSummaryDialog({
 
     const handleOpenChange = (open: boolean) => {
         setIsOpen(open);
+        onOpenChange?.(open);
 
         if (open) {
             fetchSummary();
@@ -211,32 +214,34 @@ export function CompletionSummaryDialog({
 
     return (
         <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-            <DialogTrigger asChild>
-                {trigger ? (
-                    trigger
-                ) : isCompleted ? (
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-emerald-500/40 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 hover:text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300"
-                    >
-                        <Award className="mr-1.5 size-4 text-emerald-600 dark:text-emerald-400" />
-                        <span className="hidden md:inline">
-                            Summary of Completion
-                        </span>
-                        <span className="md:hidden">Summary</span>
-                    </Button>
-                ) : (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-muted-foreground hover:text-foreground"
-                    >
-                        <FileText className="mr-1.5 size-4" />
-                        <span className="hidden md:inline">Summary</span>
-                    </Button>
-                )}
-            </DialogTrigger>
+            {trigger !== null && (
+                <DialogTrigger asChild>
+                    {trigger ? (
+                        trigger
+                    ) : isCompleted ? (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-emerald-500/40 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 hover:text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300"
+                        >
+                            <Award className="mr-1.5 size-4 text-emerald-600 dark:text-emerald-400" />
+                            <span className="hidden md:inline">
+                                Summary of Completion
+                            </span>
+                            <span className="md:hidden">Summary</span>
+                        </Button>
+                    ) : (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-muted-foreground hover:text-foreground"
+                        >
+                            <FileText className="mr-1.5 size-4" />
+                            <span className="hidden md:inline">Summary</span>
+                        </Button>
+                    )}
+                </DialogTrigger>
+            )}
 
             <DialogContent className="flex max-h-[90vh] w-[96vw] flex-col overflow-hidden p-0 shadow-2xl sm:max-w-4xl md:max-w-5xl lg:max-w-6xl">
                 {isLoading || !summary ? (

@@ -19,6 +19,7 @@ export interface DateRangePickerProps {
     placeholder?: string;
     disabled?: boolean;
     clearable?: boolean;
+    modal?: boolean;
 }
 
 export function DateRangePicker({
@@ -29,6 +30,7 @@ export function DateRangePicker({
     placeholder = 'Pick a date range',
     disabled = false,
     clearable = false,
+    modal = true,
 }: DateRangePickerProps) {
     const [open, setOpen] = React.useState(false);
 
@@ -67,7 +69,7 @@ export function DateRangePicker({
     };
 
     return (
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover open={open} onOpenChange={setOpen} modal={modal}>
             <PopoverTrigger asChild>
                 <Button
                     variant="outline"
