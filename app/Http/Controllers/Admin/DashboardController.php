@@ -124,7 +124,7 @@ class DashboardController extends Controller
         $recentScansQuery = AttendanceLog::query()
             ->whereIn('intern_user_id', $this->verifiedInternProfiles($collegeId)->select('user_id'))
             ->with([
-                'intern:id,name,email',
+                'intern:id,name,email,profile_photo_path',
                 'internProfile:user_id,id_number,hte_id,program_id',
                 'internProfile.hte:hte_id,hte_name',
                 'internProfile.program:program_id,program_name',
@@ -164,6 +164,7 @@ class DashboardController extends Controller
                 return [
                     'id' => $log->log_id,
                     'intern_name' => $log->intern->name ?? 'Unknown Intern',
+                    'profile_photo_url' => $log->intern?->profile_photo_url,
                     'email' => $log->intern->email ?? '',
                     'id_number' => $log->internProfile->id_number ?? '—',
                     'hte_name' => optional($log->internProfile->hte)->hte_name ?? '—',

@@ -76,7 +76,7 @@ class DashboardController extends Controller
             ->count();
 
         $recentScans = $baseQuery()
-            ->with(['intern:id,name', 'intern.internProfile'])
+            ->with(['intern:id,name,profile_photo_path', 'intern.internProfile'])
             ->latest('scan_timestamp')
             ->paginate($perPage, ['*'], 'page', $validated['page'] ?? 1)
             ->withQueryString()
@@ -100,6 +100,7 @@ class DashboardController extends Controller
                 return [
                     'id' => $log->log_id,
                     'intern_name' => $log->intern->name,
+                    'profile_photo_url' => $log->intern->profile_photo_url,
                     'id_number' => $log->intern->internProfile?->id_number,
                     'label' => $label,
                     'scanned_at' => $log->scan_timestamp->diffForHumans(),

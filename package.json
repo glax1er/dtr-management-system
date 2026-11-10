@@ -54,6 +54,7 @@
         "clsx": "^2.1.1",
         "concurrently": "^9.0.1",
         "date-fns": "^4.4.0",
+        "face-api.js": "^0.22.2",
         "globals": "^15.14.0",
         "html-to-image": "^1.11.13",
         "html5-qrcode": "^2.3.8",

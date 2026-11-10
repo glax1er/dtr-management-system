@@ -18,7 +18,29 @@ class InternSeeder extends Seeder
      */
     public function run(): void
     {
-        $password = Hash::make('password');
+        $password = Hash::make('Test@123');
+
+        $programNames = ['BSIT-BTM', 'BSIT-IS', 'BSCS', 'BLIS', 'BSCE', 'BSEE', 'BSBA', 'BSAgri'];
+        $hteNames = [
+            'Accenture Solutions Philippines',
+            'Department of Information and Communications Technology (DICT RO11)',
+            'USeP Knowledge and Technology Transfer Division (USeP-KTTD)',
+            'Davao City Water District (DCWD)',
+            'Mindanao Development Authority (MinDA)',
+            'Department of Agriculture - RFO XI',
+        ];
+
+        if (
+            Program::whereIn('program_name', $programNames)->count() < count($programNames)
+            || Hte::whereIn('hte_name', $hteNames)->count() < count($hteNames)
+        ) {
+            $this->call([
+                CampusSeeder::class,
+                CollegeSeeder::class,
+                ProgramSeeder::class,
+                HteSeeder::class,
+            ]);
+        }
 
         $bsitBtm = Program::where('program_name', 'BSIT-BTM')->first();
         $bsitIs = Program::where('program_name', 'BSIT-IS')->first();

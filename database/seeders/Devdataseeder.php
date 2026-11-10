@@ -78,7 +78,7 @@ class DevDataSeeder extends Seeder
                     'role' => User::ROLE_INTERN,
                     'name' => fake()->name(),
                     'email' => fake()->unique()->safeEmail(),
-                    'password' => 'password',
+                    'password' => 'Test@123',
                     'email_verified_at' => now(),
                     'college_id' => $college?->id,
                     'campus' => $campusName,

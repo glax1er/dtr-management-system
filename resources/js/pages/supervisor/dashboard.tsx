@@ -50,6 +50,7 @@ interface RecentScan {
     scanned_at: string;
     scanned_at_full: string;
     captured_photo_url?: string | null;
+    profile_photo_url?: string | null;
 }
 
 interface TrendPoint {
@@ -496,6 +497,7 @@ export default function SupervisorDashboard({
                                                                         label: scan.label,
                                                                         scannedAt: scan.scanned_at_full,
                                                                         capturedPhotoUrl: scan.captured_photo_url,
+                                                                        profilePhotoUrl: scan.profile_photo_url,
                                                                     })
                                                                 }
                                                                 className="group relative inline-flex size-9 items-center justify-center overflow-hidden rounded-lg border border-primary/30 bg-muted transition-all hover:border-primary hover:shadow-sm"
@@ -557,6 +559,7 @@ export default function SupervisorDashboard({
                                                                 label: scan.label,
                                                                 scannedAt: scan.scanned_at_full,
                                                                 capturedPhotoUrl: scan.captured_photo_url,
+                                                                profilePhotoUrl: scan.profile_photo_url,
                                                             })
                                                         }
                                                         className="flex size-7 items-center justify-center rounded-md border border-primary/30 bg-muted text-primary"

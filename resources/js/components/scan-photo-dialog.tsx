@@ -52,13 +52,34 @@ export function ScanPhotoDialog({
                 </DialogHeader>
 
                 <div className="space-y-4 pt-1">
-                    {/* Photo display */}
-                    <div className="relative mx-auto flex aspect-4/3 w-full items-center justify-center overflow-hidden rounded-xl border bg-black/5 dark:bg-black/40">
-                        <img
-                            src={data.capturedPhotoUrl}
-                            alt={`Scan snapshot of ${data.internName}`}
-                            className="size-full object-contain"
-                        />
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div className="space-y-1.5">
+                            <p className="text-xs font-medium text-muted-foreground">
+                                Scan photo
+                            </p>
+                            <div className="relative flex aspect-4/3 w-full items-center justify-center overflow-hidden rounded-xl border bg-black/5 dark:bg-black/40">
+                                <img
+                                    src={data.capturedPhotoUrl}
+                                    alt={`Scan snapshot of ${data.internName}`}
+                                    className="size-full object-contain"
+                                />
+                            </div>
+                        </div>
+
+                        {data.profilePhotoUrl && (
+                            <div className="space-y-1.5">
+                                <p className="text-xs font-medium text-muted-foreground">
+                                    Profile photo
+                                </p>
+                                <div className="relative flex aspect-4/3 w-full items-center justify-center overflow-hidden rounded-xl border bg-black/5 dark:bg-black/40">
+                                    <img
+                                        src={data.profilePhotoUrl}
+                                        alt={`Profile photo of ${data.internName}`}
+                                        className="size-full object-contain"
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Metadata card */}

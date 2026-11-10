@@ -80,6 +80,7 @@ interface RecentScan {
     scanned_at: string;
     scanned_at_full: string;
     captured_photo_url?: string | null;
+    profile_photo_url?: string | null;
 }
 
 interface StatusCount {
@@ -1228,6 +1229,7 @@ export default function AdminDashboard({
                                                                     label: scan.label,
                                                                     scannedAt: scan.scanned_at_full,
                                                                     capturedPhotoUrl: scan.captured_photo_url,
+                                                                    profilePhotoUrl: scan.profile_photo_url,
                                                                 });
                                                             }
                                                         }}
