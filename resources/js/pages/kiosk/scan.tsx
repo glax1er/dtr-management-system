@@ -1,9 +1,6 @@
 import { Head } from '@inertiajs/react';
 import * as faceapi from 'face-api.js';
-import {
-    Html5Qrcode,
-    Html5QrcodeSupportedFormats,
-} from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import {
     AlertTriangle,
     Camera,
@@ -161,7 +158,7 @@ function CountdownProgressBar({
  */
 function IdleStandbyCard() {
     return (
-        <div className="flex min-h-[360px] flex-col gap-5 py-2">
+        <div className="flex h-full min-h-[360px] flex-col justify-between gap-5 py-2">
             <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                     <div className="mx-auto flex aspect-square w-full max-w-40 items-center justify-center rounded-md border border-white/20 bg-white/5 text-white/40">
@@ -197,7 +194,7 @@ function IdleStandbyCard() {
 
 function PendingScanCard({ photo }: { photo: string | null }) {
     return (
-        <div className="flex min-h-[360px] flex-col gap-4">
+        <div className="flex h-full min-h-[360px] flex-col justify-between gap-4">
             <div className="flex items-center justify-between border-b border-white/15 pb-3">
                 <span className="text-sm font-medium text-white">
                     Recording attendance
@@ -250,87 +247,92 @@ function ScannedInternCard({ intern }: { intern: ScannedIntern }) {
             };
 
     return (
-        <div className="flex min-h-[360px] flex-col gap-4">
-            <div className="flex items-center justify-between border-b border-white/15 pb-3">
-                <span className={`text-sm font-semibold ${cardBadge.class}`}>
-                    {cardBadge.text}
-                </span>
-                <span className="text-xs text-white/70">
-                    {formatTime(intern.timestamp)}
-                </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                    <div className="mx-auto aspect-square w-full max-w-40 overflow-hidden rounded-md border border-white/20 bg-black/40">
-                        {intern.capturedPhotoUrl ? (
-                            <img
-                                src={intern.capturedPhotoUrl}
-                                alt={`Scan snapshot of ${intern.internName}`}
-                                className="size-full object-cover"
-                            />
-                        ) : (
-                            <div className="flex size-full items-center justify-center text-white/40">
-                                <Camera className="size-7" />
-                            </div>
-                        )}
-                    </div>
-                    <p className="text-center text-[11px] text-white/65">
-                        Scan photo
-                    </p>
-                </div>
-                <div className="space-y-1.5">
-                    <div className="mx-auto aspect-square w-full max-w-40 overflow-hidden rounded-md border border-white/20 bg-white/5">
-                        {intern.photoUrl ? (
-                            <img
-                                src={intern.photoUrl}
-                                alt={`Profile photo of ${intern.internName}`}
-                                className="size-full object-cover"
-                            />
-                        ) : (
-                            <div className="flex size-full items-center justify-center text-white/40">
-                                <UserIcon className="size-8" />
-                            </div>
-                        )}
-                    </div>
-                    <p className="text-center text-[11px] text-white/65">
-                        Profile photo
-                    </p>
-                </div>
-            </div>
-
-            <div className="text-center">
-                <h2 className="text-lg font-semibold leading-snug text-white">
-                    {intern.internName}
-                </h2>
-                <p className="mt-1 font-mono text-xs text-white/60">
-                    {intern.idNumber}
-                </p>
-            </div>
-
-            <div className="space-y-2 border-t border-white/15 pt-3 text-xs">
-                <div className="flex items-start justify-between gap-3">
-                    <span className="shrink-0 text-white/55">Program</span>
-                    <span className="text-right text-white/90">
-                        {intern.programName}
+        <div className="flex h-full min-h-[360px] flex-col justify-between gap-4">
+            <div className="space-y-4">
+                <div className="flex items-center justify-between border-b border-white/15 pb-3">
+                    <span
+                        className={`text-sm font-semibold ${cardBadge.class}`}
+                    >
+                        {cardBadge.text}
+                    </span>
+                    <span className="text-xs text-white/70">
+                        {formatTime(intern.timestamp)}
                     </span>
                 </div>
-                <div className="flex items-start justify-between gap-3">
-                    <span className="shrink-0 text-white/55">HTE</span>
-                    <span className="text-right text-white/90">
-                        {intern.hteName}
-                    </span>
-                </div>
-            </div>
 
-            {isDuplicate && (
-                <div className="border-t border-rose-400/30 pt-3 text-center text-xs text-rose-200">
-                    <p className="font-medium">Already recorded</p>
-                    <p className="mt-1 text-rose-200/75">
-                        Attendance was recorded within the last five minutes.
+                <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                        <div className="mx-auto aspect-square w-full max-w-40 overflow-hidden rounded-md border border-white/20 bg-black/40">
+                            {intern.capturedPhotoUrl ? (
+                                <img
+                                    src={intern.capturedPhotoUrl}
+                                    alt={`Scan snapshot of ${intern.internName}`}
+                                    className="size-full object-cover"
+                                />
+                            ) : (
+                                <div className="flex size-full items-center justify-center text-white/40">
+                                    <Camera className="size-7" />
+                                </div>
+                            )}
+                        </div>
+                        <p className="text-center text-[11px] text-white/65">
+                            Scan photo
+                        </p>
+                    </div>
+                    <div className="space-y-1.5">
+                        <div className="mx-auto aspect-square w-full max-w-40 overflow-hidden rounded-md border border-white/20 bg-white/5">
+                            {intern.photoUrl ? (
+                                <img
+                                    src={intern.photoUrl}
+                                    alt={`Profile photo of ${intern.internName}`}
+                                    className="size-full object-cover"
+                                />
+                            ) : (
+                                <div className="flex size-full items-center justify-center text-white/40">
+                                    <UserIcon className="size-8" />
+                                </div>
+                            )}
+                        </div>
+                        <p className="text-center text-[11px] text-white/65">
+                            Profile photo
+                        </p>
+                    </div>
+                </div>
+
+                <div className="text-center">
+                    <h2 className="text-lg leading-snug font-semibold text-white">
+                        {intern.internName}
+                    </h2>
+                    <p className="mt-1 font-mono text-xs text-white/60">
+                        {intern.idNumber}
                     </p>
                 </div>
-            )}
+
+                <div className="space-y-2 border-t border-white/15 pt-3 text-xs">
+                    <div className="flex items-start justify-between gap-3">
+                        <span className="shrink-0 text-white/55">Program</span>
+                        <span className="text-right text-white/90">
+                            {intern.programName}
+                        </span>
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                        <span className="shrink-0 text-white/55">HTE</span>
+                        <span className="text-right text-white/90">
+                            {intern.hteName}
+                        </span>
+                    </div>
+                </div>
+
+                {isDuplicate && (
+                    <div className="border-t border-rose-400/30 pt-3 text-center text-xs text-rose-200">
+                        <p className="font-medium">Already recorded</p>
+                        <p className="mt-1 text-rose-200/75">
+                            Attendance was recorded within the last five
+                            minutes.
+                        </p>
+                    </div>
+                )}
+            </div>
 
             <CountdownProgressBar
                 durationMs={FLASH_DURATION_MS}
@@ -562,10 +564,7 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                     aspectRatio: 16 / 9,
                 },
                 (decodedText) => {
-                    if (
-                        !cancelled &&
-                        faceStatusRef.current === 'detected'
-                    ) {
+                    if (!cancelled && faceStatusRef.current === 'detected') {
                         submitScan(decodedText, captureSnapshot());
                     }
                 },
@@ -620,9 +619,7 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                                 );
                                 const sourceRight = Math.min(
                                     video.videoWidth,
-                                    result.box.x +
-                                        result.box.width +
-                                        paddingX,
+                                    result.box.x + result.box.width + paddingX,
                                 );
                                 const top = Math.max(
                                     0,
@@ -630,12 +627,9 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                                 );
                                 const bottom = Math.min(
                                     video.videoHeight,
-                                    result.box.y +
-                                        result.box.height +
-                                        paddingY,
+                                    result.box.y + result.box.height + paddingY,
                                 );
-                                const left =
-                                    video.videoWidth - sourceRight;
+                                const left = video.videoWidth - sourceRight;
                                 const width = sourceRight - sourceLeft;
                                 const height = bottom - top;
 
@@ -649,10 +643,10 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                                             videoRect.height) *
                                         100,
                                     width:
-                                        (width * scale / videoRect.width) *
+                                        ((width * scale) / videoRect.width) *
                                         100,
                                     height:
-                                        (height * scale / videoRect.height) *
+                                        ((height * scale) / videoRect.height) *
                                         100,
                                 });
                                 updateFaceStatus('detected');
@@ -739,7 +733,7 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                     backgroundPosition: 'center',
                 }}
             >
-                <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-center px-4 py-6 sm:px-6 sm:py-8">
+                <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col justify-center px-4 py-6 sm:px-6 sm:py-8 lg:max-w-7xl">
                     <header className="mb-5 text-center sm:mb-6">
                         <div className="mb-2 flex items-end justify-center gap-3">
                             <div className="flex items-end gap-0">
@@ -765,120 +759,111 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                         </h1>
                     </header>
 
-                    <main className="grid w-full gap-4 md:grid-cols-[1.08fr_0.92fr] md:items-start md:gap-5">
-                        <section className="flex min-w-0 flex-col gap-2">
+                    <main className="grid w-full gap-4 md:grid-cols-[1.35fr_1fr] md:gap-5 lg:grid-cols-[1.45fr_1fr] lg:gap-6">
+                        <section className="relative aspect-video w-full overflow-hidden rounded-md border border-white/20 bg-black md:aspect-auto md:h-full md:min-h-[440px]">
                             <div
-                                className="relative aspect-video w-full overflow-hidden rounded-md border border-white/20 bg-black"
-                            >
-                                <div
-                                    id={SCANNER_ELEMENT_ID}
-                                    className={
-                                        cameraError
-                                            ? 'hidden'
-                                            : 'h-full w-full [&_#qr-shaded-region]:hidden [&_video]:h-full [&_video]:w-full [&_video]:scale-x-[-1] [&_video]:object-cover'
-                                    }
-                                />
+                                id={SCANNER_ELEMENT_ID}
+                                className={
+                                    cameraError
+                                        ? 'hidden'
+                                        : 'h-full w-full [&_#qr-shaded-region]:hidden [&_video]:!h-full [&_video]:!max-h-none [&_video]:!w-full [&_video]:!max-w-none [&_video]:scale-x-[-1] [&_video]:!object-cover'
+                                }
+                            />
 
-                                {cameraError && (
-                                    <div className="flex h-full w-full flex-col items-center justify-center gap-3 p-6 text-center">
-                                        <div className="flex size-12 items-center justify-center rounded-full bg-rose-500/15 text-rose-300">
-                                            <Camera className="size-7" />
-                                        </div>
-                                        <p className="text-sm font-medium text-white">
-                                            Camera Feed Unavailable
-                                        </p>
-                                        <p className="max-w-md text-xs text-white/60">
-                                            {cameraError}
-                                        </p>
+                            {cameraError && (
+                                <div className="flex h-full w-full flex-col items-center justify-center gap-3 p-6 text-center">
+                                    <div className="flex size-12 items-center justify-center rounded-full bg-rose-500/15 text-rose-300">
+                                        <Camera className="size-7" />
                                     </div>
-                                )}
+                                    <p className="text-sm font-medium text-white">
+                                        Camera Feed Unavailable
+                                    </p>
+                                    <p className="max-w-md text-xs text-white/60">
+                                        {cameraError}
+                                    </p>
+                                </div>
+                            )}
 
-                                {!cameraError && (
-                                    <>
-                                        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-2 p-2.5 sm:p-3">
-                                            <div
-                                                className={`flex min-w-0 items-center gap-1.5 rounded-sm bg-black/65 px-2 py-1 text-[11px] font-medium ${faceStatus === 'detected' ? 'text-emerald-200' : faceStatus === 'missing' ? 'text-amber-100' : 'text-white/75'}`}
-                                            >
-                                                {faceStatus === 'loading' ? (
-                                                    <Loader2 className="size-3.5 animate-spin" />
-                                                ) : faceStatus ===
-                                                  'detected' ? (
-                                                    <ScanFace className="size-3.5 text-emerald-400" />
-                                                ) : faceStatus === 'missing' ? (
-                                                    <ScanFace className="size-3.5 text-amber-400" />
-                                                ) : (
-                                                    <ScanFace className="size-3.5 text-white/40" />
-                                                )}
-                                                <span>{fc.text}</span>
-                                            </div>
-
-                                            <div className="flex shrink-0 items-center gap-1.5 rounded-sm bg-black/65 px-2 py-1 text-[10px] text-white/85 sm:text-[11px]">
-                                                <span className="size-1.5 rounded-full bg-emerald-400" />
-                                                <span>Camera on</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="pointer-events-none absolute inset-0">
-                                            {faceFrame ? (
-                                                <div
-                                                    className="absolute rounded-sm border-2 border-emerald-300/90 transition-all duration-300"
-                                                    style={{
-                                                        left: `${faceFrame.left}%`,
-                                                        top: `${faceFrame.top}%`,
-                                                        width: `${faceFrame.width}%`,
-                                                        height: `${faceFrame.height}%`,
-                                                    }}
-                                                />
+                            {!cameraError && (
+                                <>
+                                    <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-2 p-2.5 sm:p-3">
+                                        <div
+                                            className={`flex min-w-0 items-center gap-1.5 rounded-sm bg-black/65 px-2 py-1 text-[11px] font-medium ${faceStatus === 'detected' ? 'text-emerald-200' : faceStatus === 'missing' ? 'text-amber-100' : 'text-white/75'}`}
+                                        >
+                                            {faceStatus === 'loading' ? (
+                                                <Loader2 className="size-3.5 animate-spin" />
+                                            ) : faceStatus === 'detected' ? (
+                                                <ScanFace className="size-3.5 text-emerald-400" />
+                                            ) : faceStatus === 'missing' ? (
+                                                <ScanFace className="size-3.5 text-amber-400" />
                                             ) : (
-                                                <div
-                                                    className={`absolute top-[8%] left-1/2 h-[48%] w-[34%] -translate-x-1/2 rounded-sm border border-dashed transition-colors sm:w-[28%] ${
-                                                        faceStatus === 'missing'
-                                                            ? 'border-amber-300/70'
-                                                            : 'border-white/45'
-                                                    }`}
-                                                />
+                                                <ScanFace className="size-3.5 text-white/40" />
                                             )}
+                                            <span>{fc.text}</span>
                                         </div>
 
-                                        {faceStatus === 'missing' &&
-                                            flash?.kind !== 'error' && (
-                                                <div className="pointer-events-none absolute inset-x-3 bottom-3 z-20 flex items-center justify-center gap-2 rounded-sm bg-black/80 px-3 py-2 text-center text-xs font-medium text-amber-100 sm:inset-x-4 sm:bottom-4">
-                                                    <ScanFace className="size-4 shrink-0 animate-pulse text-amber-400" />
-                                                    <span>
-                                                        Please look directly at
-                                                        the camera while
-                                                        presenting your QR code
-                                                    </span>
-                                                </div>
-                                            )}
+                                        <div className="flex shrink-0 items-center gap-1.5 rounded-sm bg-black/65 px-2 py-1 text-[10px] text-white/85 sm:text-[11px]">
+                                            <span className="size-1.5 rounded-full bg-emerald-400" />
+                                            <span>Camera on</span>
+                                        </div>
+                                    </div>
 
-                                        {flash?.kind === 'error' && (
-                                            <div className="pointer-events-none absolute inset-x-2 top-14 z-20 flex items-center gap-3 rounded-sm bg-rose-800/95 px-3 py-2.5 text-white sm:inset-x-3 sm:top-14">
-                                                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/15">
-                                                    <AlertTriangle className="size-4 text-white" />
-                                                </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="text-xs font-semibold text-rose-100">
-                                                        Scan Rejected
-                                                    </p>
-                                                    <p className="text-xs font-medium text-white">
-                                                        {flash.message}
-                                                    </p>
-                                                </div>
+                                    <div className="pointer-events-none absolute inset-0">
+                                        {faceFrame ? (
+                                            <div
+                                                className="absolute rounded-sm border-2 border-emerald-300/90 transition-all duration-300"
+                                                style={{
+                                                    left: `${faceFrame.left}%`,
+                                                    top: `${faceFrame.top}%`,
+                                                    width: `${faceFrame.width}%`,
+                                                    height: `${faceFrame.height}%`,
+                                                }}
+                                            />
+                                        ) : (
+                                            <div
+                                                className={`absolute top-[10%] left-1/2 aspect-[3/4] h-[52%] max-h-64 -translate-x-1/2 rounded-sm border border-dashed transition-colors ${
+                                                    faceStatus === 'missing'
+                                                        ? 'border-amber-300/70'
+                                                        : 'border-white/45'
+                                                }`}
+                                            />
+                                        )}
+                                    </div>
+
+                                    {faceStatus === 'missing' &&
+                                        flash?.kind !== 'error' && (
+                                            <div className="pointer-events-none absolute inset-x-3 bottom-3 z-20 flex items-center justify-center gap-2 rounded-sm bg-black/80 px-3 py-2 text-center text-xs font-medium text-amber-100 sm:inset-x-4 sm:bottom-4">
+                                                <ScanFace className="size-4 shrink-0 animate-pulse text-amber-400" />
+                                                <span>
+                                                    Please look directly at the
+                                                    camera while presenting your
+                                                    QR code
+                                                </span>
                                             </div>
                                         )}
-                                    </>
-                                )}
-                            </div>
-                            <p className="text-center text-xs text-white/60">
-                                Keep your face in view. Your QR code can be
-                                anywhere in the frame.
-                            </p>
+
+                                    {flash?.kind === 'error' && (
+                                        <div className="pointer-events-none absolute inset-x-2 top-14 z-20 flex items-center gap-3 rounded-sm bg-rose-800/95 px-3 py-2.5 text-white sm:inset-x-3 sm:top-14">
+                                            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/15">
+                                                <AlertTriangle className="size-4 text-white" />
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-xs font-semibold text-rose-100">
+                                                    Scan Rejected
+                                                </p>
+                                                <p className="text-xs font-medium text-white">
+                                                    {flash.message}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
+                            )}
                         </section>
 
                         <section
                             aria-live="polite"
-                            className={`min-w-0 rounded-md border p-4 transition-colors duration-200 sm:p-5 ${cardBorder}`}
+                            className={`flex min-w-0 flex-col rounded-md border p-4 transition-colors duration-200 sm:p-5 md:min-h-[440px] ${cardBorder}`}
                         >
                             {pendingScan ? (
                                 <PendingScanCard photo={pendingPhoto} />
@@ -889,6 +874,11 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                             )}
                         </section>
                     </main>
+
+                    <p className="mt-3 text-center text-xs text-white/60 sm:mt-4">
+                        Keep your face in view. Your QR code can be anywhere in
+                        the frame.
+                    </p>
                 </div>
             </div>
         </>
