@@ -1,4 +1,5 @@
 import { Head } from '@inertiajs/react';
+
 import * as faceapi from 'face-api.js';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import {

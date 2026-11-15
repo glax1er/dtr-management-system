@@ -84,19 +84,6 @@ class FortifyServiceProvider extends ServiceProvider
                 return null;
             }
 
-            if ($user->isIntern()) {
-                $status = $user->internProfile?->status;
-
-                if ($status !== 'approved') {
-                    throw ValidationException::withMessages([
-                        Fortify::username() => match ($status) {
-                            'rejected' => 'Your registration was not approved. Please contact your program coordinator.',
-                            default => 'Your registration is still pending admin approval. Please check back later.',
-                        },
-                    ]);
-                }
-            }
-
             // Admin accounts bypass approval, verification, and supervisor checks.
             if ($user->isAdmin()) {
                 return $user;
@@ -109,6 +96,19 @@ class FortifyServiceProvider extends ServiceProvider
                     'unverified_email' => $user->email,
                     Fortify::username() => 'Your email address is not verified yet. We have sent a 6-digit verification code to your email.',
                 ]);
+            }
+
+            if ($user->isIntern()) {
+                $status = $user->internProfile?->status;
+
+                if ($status !== 'approved') {
+                    throw ValidationException::withMessages([
+                        Fortify::username() => match ($status) {
+                            'rejected' => 'Your registration was not approved. Please contact your program coordinator.',
+                            default => 'Your registration is still pending admin approval. Please check back later.',
+                        },
+                    ]);
+                }
             }
 
             if ($user->isSupervisor()) {

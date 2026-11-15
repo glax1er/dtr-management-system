@@ -133,6 +133,35 @@ test('logging in with an unverified intern account sends a fresh code and report
     );
 });
 
+test('unverified interns are prompted to verify before admin approval is enforced', function () {
+    Notification::fake();
+
+    $hte = Hte::create(['hte_name' => 'Test HTE']);
+    $program = Program::create(['program_name' => 'BSIT']);
+    $user = User::factory()->unverified()->create(['role' => User::ROLE_INTERN]);
+    InternProfile::create([
+        'user_id' => $user->id,
+        'id_number' => '2026-33333',
+        'sex' => 'female',
+        'hte_id' => $hte->hte_id,
+        'program_id' => $program->program_id,
+        'status' => 'pending',
+        'privacy_accepted_at' => now(),
+    ]);
+
+    $response = $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $this->assertGuest();
+    $response->assertSessionHasErrors('unverified_email');
+    Notification::assertSentTo(
+        $user,
+        EmailVerificationCodeNotification::class,
+    );
+});
+
 test('approved intern ignores unauthorized admin intended url on standard login', function () {
     $hte = Hte::create(['hte_name' => 'Test HTE']);
     $program = Program::create(['program_name' => 'BSIT']);

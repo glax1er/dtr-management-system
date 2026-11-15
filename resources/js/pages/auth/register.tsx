@@ -1,5 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
@@ -76,22 +76,25 @@ export default function Register({
     const [hasReadPolicy, setHasReadPolicy] = useState(false);
     const [passwordInput, setPasswordInput] = useState('');
 
-    const passwordChecks = [
-        { label: 'At least 8 characters', met: passwordInput.length >= 8 },
-        {
-            label: 'At least 1 uppercase letter (A-Z)',
-            met: /[A-Z]/.test(passwordInput),
-        },
-        {
-            label: 'At least 1 lowercase letter (a-z)',
-            met: /[a-z]/.test(passwordInput),
-        },
-        { label: 'At least 1 number (0-9)', met: /\d/.test(passwordInput) },
-        {
-            label: 'At least 1 symbol (@$!%*#?&)',
-            met: /[^A-Za-z0-9]/.test(passwordInput),
-        },
-    ];
+    const passwordChecks = useMemo(
+        () => [
+            { label: 'At least 8 characters', met: passwordInput.length >= 8 },
+            {
+                label: 'At least 1 uppercase letter (A-Z)',
+                met: /[A-Z]/.test(passwordInput),
+            },
+            {
+                label: 'At least 1 lowercase letter (a-z)',
+                met: /[a-z]/.test(passwordInput),
+            },
+            { label: 'At least 1 number (0-9)', met: /\d/.test(passwordInput) },
+            {
+                label: 'At least 1 symbol (@$!%*#?&)',
+                met: /[^A-Za-z0-9]/.test(passwordInput),
+            },
+        ],
+        [passwordInput],
+    );
 
     const [selectedSex, setSelectedSex] = useState<string>('');
     const [selectedCampus, setSelectedCampus] = useState<string>('');
@@ -99,35 +102,57 @@ export default function Register({
     const [selectedProgram, setSelectedProgram] = useState<string>('');
     const [selectedHte, setSelectedHte] = useState<string>('');
 
-    const defaultCampuses = ['Mabini', 'Malabog', 'Mintal', 'Obrero', 'Tagum'];
-    const campusOptions =
-        campuses && campuses.length > 0
-            ? campuses
-            : Array.from(
-                  new Set([
-                      ...defaultCampuses,
-                      ...colleges
-                          .map((c) => c.campus)
-                          .filter((c): c is string => Boolean(c)),
-                  ]),
-              ).sort();
+    const defaultCampuses = useMemo(
+        () => ['Mabini', 'Malabog', 'Mintal', 'Obrero', 'Tagum'],
+        [],
+    );
 
-    const availableColleges = selectedCampus
-        ? colleges.filter((c) => c.campus === selectedCampus)
-        : colleges;
+    const campusOptions = useMemo(
+        () =>
+            campuses && campuses.length > 0
+                ? campuses
+                : Array.from(
+                      new Set([
+                          ...defaultCampuses,
+                          ...colleges
+                              .map((c) => c.campus)
+                              .filter((c): c is string => Boolean(c)),
+                      ]),
+                  ).sort(),
+        [campuses, colleges, defaultCampuses],
+    );
 
-    const availablePrograms = selectedCollege
-        ? programs.filter(
-              (p) => String(p.college_id) === String(selectedCollege),
-          )
-        : [];
+    const availableColleges = useMemo(
+        () =>
+            selectedCampus
+                ? colleges.filter((c) => c.campus === selectedCampus)
+                : colleges,
+        [selectedCampus, colleges],
+    );
 
-    const availableHtes = selectedCollege
-        ? htes.filter((h) => String(h.college_id) === String(selectedCollege))
-        : [];
+    const availablePrograms = useMemo(
+        () =>
+            selectedCollege
+                ? programs.filter(
+                      (p) => String(p.college_id) === String(selectedCollege),
+                  )
+                : [],
+        [selectedCollege, programs],
+    );
 
-    const selectedCollegeObj = colleges.find(
-        (c) => String(c.id) === String(selectedCollege),
+    const availableHtes = useMemo(
+        () =>
+            selectedCollege
+                ? htes.filter(
+                      (h) => String(h.college_id) === String(selectedCollege),
+                  )
+                : [],
+        [selectedCollege, htes],
+    );
+
+    const selectedCollegeObj = useMemo(
+        () => colleges.find((c) => String(c.id) === String(selectedCollege)),
+        [selectedCollege, colleges],
     );
 
     /* eslint-disable react-hooks/set-state-in-effect */
@@ -228,7 +253,9 @@ export default function Register({
 
     return (
         <>
-            <Head title="Register" />
+            <Head title="Register">
+                <link rel="preload" as="image" href="/images/USeP-Eagle-opt.jpg" />
+            </Head>
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
                 <div className="grid gap-4">
                     {/* Name / Email */}
@@ -532,8 +559,47 @@ export default function Register({
                     </div>
 
                     {/* Password / Confirm password */}
-                    <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
-                        <div className="grid min-w-0 gap-2">
+                    <div className="relative grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
+                        {/* Floating password requirements placed BESIDE the card on desktop */}
+                        {passwordInput.length > 0 && (
+                            <div className="hidden lg:flex flex-col gap-2 absolute right-[calc(100%+3rem)] top-0 w-64 rounded-xl border border-border/80 bg-card/95 dark:bg-card/90 backdrop-blur-xl p-3.5 shadow-2xl z-40 animate-in fade-in slide-in-from-right-3 duration-200">
+                                <div className="flex items-center justify-between pb-1.5 border-b border-border/60">
+                                    <span className="text-[11px] font-semibold tracking-wider text-foreground/85 uppercase">
+                                        Password requirements
+                                    </span>
+                                    <span className="text-[10px] font-medium text-muted-foreground">
+                                        {passwordChecks.filter((c) => c.met).length}/{passwordChecks.length}
+                                    </span>
+                                </div>
+                                <div className="space-y-1.5 text-xs">
+                                    {passwordChecks.map((rule) => (
+                                        <div
+                                            key={rule.label}
+                                            className={
+                                                rule.met
+                                                    ? 'flex items-center gap-2 font-medium text-emerald-600 dark:text-emerald-400'
+                                                    : 'flex items-center gap-2 text-muted-foreground'
+                                            }
+                                        >
+                                            <span
+                                                className={`size-4 flex shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                                                    rule.met
+                                                        ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                                                        : 'bg-muted text-muted-foreground'
+                                                }`}
+                                            >
+                                                {rule.met ? '✓' : '•'}
+                                            </span>
+                                            <span className="leading-tight">{rule.label}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                {/* Pointer arrow pointing toward the card */}
+                                <div className="absolute -right-1.5 top-7 size-3 rotate-45 border-r border-t border-border/80 bg-card/95 dark:bg-card/90" />
+                            </div>
+                        )}
+
+                        <div className="relative grid min-w-0 gap-2">
                             <Label htmlFor="password">
                                 Password <span className="text-red-500">*</span>
                             </Label>
@@ -551,26 +617,36 @@ export default function Register({
                                 }
                                 disabled={isSubmitting}
                             />
+                            
+                            {/* Mobile-only compact overlay: floats below password field without pushing grid layout */}
                             {passwordInput.length > 0 && (
-                                <div className="space-y-1 rounded-lg border bg-muted/40 p-2.5 text-xs">
-                                    <span className="block text-[11px] font-medium tracking-wider text-foreground/80 uppercase">
-                                        Password requirements:
-                                    </span>
-                                    {passwordChecks.map((rule) => (
-                                        <div
-                                            key={rule.label}
-                                            className={
-                                                rule.met
-                                                    ? 'flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400'
-                                                    : 'flex items-center gap-1.5 text-muted-foreground'
-                                            }
-                                        >
-                                            <span>{rule.met ? '✓' : '•'}</span>
-                                            <span>{rule.label}</span>
-                                        </div>
-                                    ))}
+                                <div className="lg:hidden absolute top-[calc(100%+0.25rem)] left-0 w-full rounded-lg border border-border/80 bg-card/95 backdrop-blur-md p-2.5 text-xs shadow-xl z-30 animate-in fade-in slide-in-from-top-1 duration-150">
+                                    <div className="flex items-center justify-between pb-1 mb-1 border-b border-border/50">
+                                        <span className="text-[10px] font-semibold tracking-wider text-foreground/80 uppercase">
+                                            Password requirements
+                                        </span>
+                                        <span className="text-[10px] text-muted-foreground">
+                                            {passwordChecks.filter((c) => c.met).length}/{passwordChecks.length}
+                                        </span>
+                                    </div>
+                                    <div className="space-y-1">
+                                        {passwordChecks.map((rule) => (
+                                            <div
+                                                key={rule.label}
+                                                className={
+                                                    rule.met
+                                                        ? 'flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400'
+                                                        : 'flex items-center gap-1.5 text-muted-foreground'
+                                                }
+                                            >
+                                                <span className="text-[10px]">{rule.met ? '✓' : '•'}</span>
+                                                <span className="leading-snug">{rule.label}</span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
+
                             <InputError message={formErrors.password} />
                         </div>
 
