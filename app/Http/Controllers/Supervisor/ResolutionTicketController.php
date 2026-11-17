@@ -10,6 +10,7 @@ use App\Models\ResolutionTicket;
 use App\Notifications\ResolutionTicketNotification;
 use App\Services\Attendance\CheckHoursMilestones;
 use App\Services\Attendance\DailyAttendanceCalculator;
+use App\Services\Attendance\FirstScanLookup;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -27,6 +28,7 @@ class ResolutionTicketController extends Controller
 
     public function __construct(
         private readonly DailyAttendanceCalculator $calculator,
+        private readonly FirstScanLookup $firstScanLookup,
     ) {}
 
     private function dateString(mixed $date): string
@@ -703,20 +705,19 @@ class ResolutionTicketController extends Controller
             ->whereNotNull('captured_photo_path');
 
         $totalSnapshots = (clone $baseQuery)->count();
-        $totalPending = ResolutionTicket::query()
+        $ticketCounts = ResolutionTicket::query()
             ->whereIn('intern_user_id', $internUserIds)
-            ->where('status', ResolutionTicket::STATUS_PENDING)
-            ->count();
-        $totalResolved = ResolutionTicket::query()
-            ->whereIn('intern_user_id', $internUserIds)
-            ->whereIn('status', [
-                ResolutionTicket::STATUS_APPROVED,
-                ResolutionTicket::STATUS_REJECTED,
-                ResolutionTicket::STATUS_CANCELLED,
-            ])
-            ->count();
+            ->selectRaw('status, count(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+        $totalPending = (int) ($ticketCounts[ResolutionTicket::STATUS_PENDING] ?? 0);
+        $totalResolved = (int) ($ticketCounts[ResolutionTicket::STATUS_APPROVED] ?? 0)
+            + (int) ($ticketCounts[ResolutionTicket::STATUS_REJECTED] ?? 0)
+            + (int) ($ticketCounts[ResolutionTicket::STATUS_CANCELLED] ?? 0);
 
-        $query = (clone $baseQuery)->with(['intern.internProfile', 'kiosk']);
+        $query = (clone $baseQuery)
+            ->select(['log_id', 'intern_user_id', 'kiosk_id', 'scan_timestamp', 'captured_photo_path'])
+            ->with(['intern:id,name,profile_photo_path', 'intern.internProfile', 'kiosk']);
 
         if ($date !== null) {
             $dayStart = Carbon::parse($date, $timezone)->startOfDay();
@@ -736,19 +737,18 @@ class ResolutionTicketController extends Controller
             ->paginate($perPage, ['*'], 'page', $validated['page'] ?? 1)
             ->withQueryString();
 
-        $snapshots = $snapshotsPaginated->through(function (AttendanceLog $log) use ($timezone) {
+        $firstScans = $this->firstScanLookup->forLogsByLocalDay(
+            $snapshotsPaginated->getCollection(),
+            $timezone,
+        );
+
+        $snapshots = $snapshotsPaginated->through(function (AttendanceLog $log) use ($timezone, $firstScans) {
             $localTime = $log->scan_timestamp->clone()->setTimezone($timezone);
             $cutoff = Carbon::parse($localTime->toDateString().' '.config('dtr.time_out_cutoff'), $timezone);
             $internName = $log->intern?->name;
             $kioskName = $log->kiosk?->name;
 
-            $dayStart = $localTime->clone()->startOfDay();
-            $dayEnd = $localTime->clone()->endOfDay();
-            $firstScanToday = AttendanceLog::where('intern_user_id', $log->intern_user_id)
-                ->whereBetween('scan_timestamp', [$dayStart, $dayEnd])
-                ->orderBy('scan_timestamp')
-                ->first();
-
+            $firstScanToday = $firstScans->get($log->intern_user_id.'_'.$localTime->toDateString());
             $isFirstScan = $firstScanToday?->log_id === $log->log_id;
             $isAfterCutoff = $firstScanToday && $firstScanToday->scan_timestamp->clone()->setTimezone($timezone)->gt($cutoff);
 

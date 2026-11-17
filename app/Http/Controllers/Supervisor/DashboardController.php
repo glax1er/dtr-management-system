@@ -12,10 +12,12 @@ use App\Models\ResolutionTicket;
 use App\Models\SupervisorProfile;
 use App\Models\User;
 use App\Services\Attendance\DailyAttendanceCalculator;
+use App\Services\Attendance\FirstScanLookup;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -25,6 +27,8 @@ class DashboardController extends Controller
 
     private const MAX_PER_PAGE = 50;
 
+    private const ATTENDANCE_SCAN_CHUNK_SIZE = 1000;
+
     /** How many days of scan history to chart on the dashboard. */
     private const TREND_DAYS = 14;
 
@@ -33,6 +37,7 @@ class DashboardController extends Controller
 
     public function __construct(
         private readonly DailyAttendanceCalculator $calculator,
+        private readonly FirstScanLookup $firstScanLookup,
     ) {}
 
     public function index(Request $request): Response|RedirectResponse
@@ -68,47 +73,56 @@ class DashboardController extends Controller
         $weekStart = Carbon::now($timezone)->startOfWeek();
         $now = Carbon::now($timezone);
 
-        $scansToday = $baseQuery()
+        $todayScanStats = DB::table('attendance_logs')
+            ->whereIn('intern_user_id', $internUserIds)
             ->whereBetween('scan_timestamp', [$todayStart, $todayEnd])
-            ->count();
+            ->selectRaw('count(*) as total_scans, count(distinct intern_user_id) as checked_in')
+            ->first();
+        $scansToday = (int) $todayScanStats->total_scans;
+        $todayAttendance = [
+            'checked_in' => (int) $todayScanStats->checked_in,
+            'total' => $myInternsCount,
+            'percent' => $myInternsCount > 0
+                ? (int) round(($todayScanStats->checked_in / $myInternsCount) * 100)
+                : 0,
+        ];
 
         $scansThisWeek = $baseQuery()
             ->whereBetween('scan_timestamp', [$weekStart, $now])
             ->count();
 
-        $recentScans = $baseQuery()
+        $recentScansPaginated = $baseQuery()
+            ->select(['log_id', 'intern_user_id', 'scan_timestamp', 'captured_photo_path'])
             ->with(['intern:id,name,profile_photo_path', 'intern.internProfile'])
             ->latest('scan_timestamp')
             ->paginate($perPage, ['*'], 'page', $validated['page'] ?? 1)
-            ->withQueryString()
-            ->through(function (AttendanceLog $log) {
-                $timezone = config('dtr.timezone');
-                $localTimestamp = $log->scan_timestamp->clone()->setTimezone($timezone);
-                $dayStart = $localTimestamp->clone()->startOfDay();
-                $dayEnd = $localTimestamp->clone()->endOfDay();
-                $cutoff = Carbon::parse($localTimestamp->toDateString().' '.config('dtr.time_out_cutoff'), $timezone);
+            ->withQueryString();
+        $firstScans = $this->firstScanLookup->forLogsByLocalDay(
+            $recentScansPaginated->getCollection(),
+            $timezone,
+        );
 
-                $earliestScanToday = AttendanceLog::where('intern_user_id', $log->intern_user_id)
-                    ->whereBetween('scan_timestamp', [$dayStart, $dayEnd])
-                    ->orderBy('scan_timestamp', 'asc')
-                    ->first();
+        $recentScans = $recentScansPaginated->through(function (AttendanceLog $log) use ($firstScans, $timezone) {
+            $localTimestamp = $log->scan_timestamp->clone()->setTimezone($timezone);
+            $cutoff = Carbon::parse($localTimestamp->toDateString().' '.config('dtr.time_out_cutoff'), $timezone);
 
-                $isEarliestScan = $earliestScanToday?->log_id === $log->log_id;
-                $earliestIsAfterCutoff = $earliestScanToday && $earliestScanToday->scan_timestamp->clone()->setTimezone($timezone)->gt($cutoff);
+            $firstScanToday = $firstScans->get($log->intern_user_id.'_'.$localTimestamp->toDateString());
+            $isEarliestScan = $firstScanToday?->log_id === $log->log_id;
+            $earliestIsAfterCutoff = $firstScanToday && $firstScanToday->scan_timestamp->clone()->setTimezone($timezone)->gt($cutoff);
 
-                $label = ($isEarliestScan && ! $earliestIsAfterCutoff) ? 'time_in' : 'time_out';
+            $label = ($isEarliestScan && ! $earliestIsAfterCutoff) ? 'time_in' : 'time_out';
 
-                return [
-                    'id' => $log->log_id,
-                    'intern_name' => $log->intern->name,
-                    'profile_photo_url' => $log->intern->profile_photo_url,
-                    'id_number' => $log->intern->internProfile?->id_number,
-                    'label' => $label,
-                    'scanned_at' => $log->scan_timestamp->diffForHumans(),
-                    'scanned_at_full' => $localTimestamp->format('M j, Y g:i A'),
-                    'captured_photo_url' => $log->captured_photo_url,
-                ];
-            });
+            return [
+                'id' => $log->log_id,
+                'intern_name' => $log->intern->name,
+                'profile_photo_url' => $log->intern->profile_photo_url,
+                'id_number' => $log->intern->internProfile?->id_number,
+                'label' => $label,
+                'scanned_at' => $log->scan_timestamp->diffForHumans(),
+                'scanned_at_full' => $localTimestamp->format('M j, Y g:i A'),
+                'captured_photo_url' => $log->captured_photo_url,
+            ];
+        });
 
         return Inertia::render('supervisor/dashboard', [
             'myInternsCount' => $myInternsCount,
@@ -119,7 +133,7 @@ class DashboardController extends Controller
                 ->count(),
             'recentScans' => $recentScans,
             'scansTrend' => $this->scansTrend($internUserIds),
-            'todayAttendance' => $this->todayAttendance($internUserIds, $myInternsCount),
+            'todayAttendance' => $todayAttendance,
             'ticketBreakdown' => $this->ticketBreakdown($internUserIds),
             'topInterns' => $this->topInterns($internUserIds),
             'scopeName' => $supervisorProfile->getScopeName(),
@@ -231,20 +245,22 @@ class DashboardController extends Controller
     {
         $rangeStart = Carbon::now(config('dtr.timezone'))->startOfDay()->subDays(self::TREND_DAYS - 1);
 
-        return AttendanceLog::query()
+        $topInternRows = DB::table('attendance_logs')
             ->whereIn('intern_user_id', $internUserIds)
             ->where('scan_timestamp', '>=', $rangeStart)
             ->selectRaw('intern_user_id, count(*) as aggregate')
             ->groupBy('intern_user_id')
             ->orderByDesc('aggregate')
             ->take(self::TOP_INTERN_LIMIT)
-            ->get()
-            ->map(function ($row) {
-                /** @var User|null $intern */
-                $intern = User::find($row->intern_user_id, ['id', 'name']);
+            ->get();
+        $internNames = User::query()
+            ->whereIn('id', $topInternRows->pluck('intern_user_id'))
+            ->pluck('name', 'id');
 
+        return $topInternRows
+            ->map(function ($row) use ($internNames) {
                 return [
-                    'name' => $intern?->name ?? 'Deleted Intern',
+                    'name' => $internNames->get($row->intern_user_id, 'Deleted Intern'),
                     'count' => (int) $row->aggregate,
                 ];
             })
@@ -270,12 +286,17 @@ class DashboardController extends Controller
 
         $internUserIds = $interns->pluck('user_id');
 
-        // Attendance scans for all program interns
-        $allScansByIntern = AttendanceLog::query()
-            ->whereIn('intern_user_id', $internUserIds)
-            ->orderBy('scan_timestamp')
-            ->get()
-            ->groupBy('intern_user_id');
+        $hteIdsByIntern = $interns
+            ->mapWithKeys(fn (InternProfile $intern) => [$intern->user_id => (int) ($intern->hte_id ?? 0)])
+            ->all();
+
+        $totalHoursByIntern = $this->calculator->totalHoursByInternFromScans(
+            AttendanceLog::query()
+                ->whereIn('intern_user_id', $internUserIds)
+                ->select(['log_id', 'intern_user_id', 'scan_timestamp'])
+                ->lazyById(self::ATTENDANCE_SCAN_CHUNK_SIZE, 'log_id'),
+            $hteIdsByIntern,
+        );
 
         // Document requirements for this program
         $programDocTypes = $programId ? InternDocument::getDocumentTypesForProgram($programId) : [];
@@ -283,10 +304,9 @@ class DashboardController extends Controller
         $totalRequiredDocsCount = count($requiredDocKeys);
 
         // Compute metrics for each intern
-        $allStudents = $interns->map(function (InternProfile $intern) use ($requiredDocKeys, $totalRequiredDocsCount, $allScansByIntern) {
+        $allStudents = $interns->map(function (InternProfile $intern) use ($requiredDocKeys, $totalRequiredDocsCount, $totalHoursByIntern) {
             $requiredHours = (int) ($intern->program->required_hours ?? config('dtr.default_required_hours'));
-            $internScans = $allScansByIntern->get($intern->user_id, collect());
-            $totalHours = $this->calculator->totalHoursForScans($internScans, (int) ($intern->hte_id ?? 0));
+            $totalHours = $totalHoursByIntern[$intern->user_id] ?? 0.0;
             $hoursCompleted = $totalHours >= $requiredHours;
 
             $approvedRequiredDocs = $intern->internDocuments

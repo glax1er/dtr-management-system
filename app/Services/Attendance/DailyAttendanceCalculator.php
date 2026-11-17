@@ -164,6 +164,67 @@ class DailyAttendanceCalculator
     }
 
     /**
+     * Calculate totals while consuming scans in chunks, retaining only one summary per intern/day.
+     *
+     * @param  iterable<AttendanceLog>  $scans
+     * @param  array<int, int>  $hteIdsByIntern
+     * @return array<int, float>
+     */
+    public function totalHoursByInternFromScans(iterable $scans, array $hteIdsByIntern): array
+    {
+        $timezone = config('dtr.timezone');
+        $dailyScansByIntern = [];
+
+        foreach ($scans as $scan) {
+            $internUserId = (int) $scan->intern_user_id;
+            $date = $scan->scan_timestamp->clone()->setTimezone($timezone)->toDateString();
+            $scanTime = $scan->scan_timestamp;
+
+            if (! isset($dailyScansByIntern[$internUserId][$date])) {
+                $dailyScansByIntern[$internUserId][$date] = [
+                    'first' => $scanTime,
+                    'last' => $scanTime,
+                    'count' => 1,
+                ];
+
+                continue;
+            }
+
+            $dailyScansByIntern[$internUserId][$date]['count']++;
+
+            if ($scanTime->lt($dailyScansByIntern[$internUserId][$date]['first'])) {
+                $dailyScansByIntern[$internUserId][$date]['first'] = $scanTime;
+            }
+
+            if ($scanTime->gt($dailyScansByIntern[$internUserId][$date]['last'])) {
+                $dailyScansByIntern[$internUserId][$date]['last'] = $scanTime;
+            }
+        }
+
+        $totals = [];
+
+        foreach ($hteIdsByIntern as $internUserId => $hteId) {
+            $total = 0.0;
+
+            foreach ($dailyScansByIntern[$internUserId] ?? [] as $date => $dailyScan) {
+                $earliestScanLocal = $dailyScan['first']->clone()->setTimezone($timezone);
+                $cutoff = Carbon::parse($date.' '.config('dtr.time_out_cutoff'), $timezone);
+
+                if ($dailyScan['count'] < 2 || $earliestScanLocal->gt($cutoff)) {
+                    continue;
+                }
+
+                [$hours] = $this->computeHours($date, $dailyScan['first'], $dailyScan['last'], $hteId);
+                $total += $hours;
+            }
+
+            $totals[$internUserId] = round($total, 2);
+        }
+
+        return $totals;
+    }
+
+    /**
      * Sum of hours_rendered across every day in range (FR-27). Recomputed
      * from the daily breakdown rather than stored anywhere, so it's
      * always consistent with what the intern sees in their log table.

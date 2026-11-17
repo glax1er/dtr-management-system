@@ -77,6 +77,17 @@ test('an OJT supervisor sees their program dashboard with milestone breakdown, f
         'privacy_accepted_at' => now(),
     ]);
 
+    AttendanceLog::create([
+        'intern_user_id' => $intern->id,
+        'supervisor_user_id' => $supervisor->id,
+        'scan_timestamp' => Carbon::parse('2026-07-20 08:00:00', 'Asia/Manila'),
+    ]);
+    AttendanceLog::create([
+        'intern_user_id' => $intern->id,
+        'supervisor_user_id' => $supervisor->id,
+        'scan_timestamp' => Carbon::parse('2026-07-20 17:00:00', 'Asia/Manila'),
+    ]);
+
     $this->actingAs($supervisor)
         ->get(route('supervisor.dashboard'))
         ->assertOk()
@@ -90,6 +101,7 @@ test('an OJT supervisor sees their program dashboard with milestone breakdown, f
             ->has('students', 1)
             ->where('students.0.name', $intern->name)
             ->where('students.0.hte_name', 'Tech Solutions')
+            ->where('students.0.total_hours', 8)
         );
 });
 

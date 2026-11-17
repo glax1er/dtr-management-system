@@ -306,3 +306,53 @@ test('a scan exactly at the time-out cutoff still counts as a normal time-in', f
     expect($day->isMissingTimeIn())->toBeFalse()
         ->and($day->timeIn->clone()->setTimezone('Asia/Manila')->format('H:i'))->toBe('13:00');
 });
+
+test('chunked OJT attendance totals match the existing full-scan calculation', function () {
+    $supervisor = User::factory()->create(['role' => User::ROLE_SUPERVISOR]);
+    $internA = makeApprovedIntern();
+    $internB = makeApprovedIntern();
+
+    foreach ([
+        [$internA, '2026-07-20 08:00:00'],
+        [$internA, '2026-07-20 17:00:00'],
+        [$internA, '2026-07-21 17:00:00'],
+        [$internA, '2026-07-21 18:00:00'],
+        [$internA, '2026-07-22 17:00:00'],
+        [$internA, '2026-07-22 08:00:00'],
+        [$internA, '2026-07-23 17:00:00'],
+        [$internB, '2026-07-20 09:00:00'],
+        [$internB, '2026-07-20 12:00:00'],
+    ] as [$intern, $timestamp]) {
+        AttendanceLog::create([
+            'intern_user_id' => $intern->id,
+            'supervisor_user_id' => $supervisor->id,
+            'scan_timestamp' => Carbon::parse($timestamp, 'Asia/Manila'),
+        ]);
+    }
+
+    $interns = [$internA, $internB];
+    $internIds = collect($interns)->map(fn (User $intern) => $intern->id);
+    $hteIdsByIntern = collect($interns)
+        ->mapWithKeys(fn (User $intern) => [$intern->id => $intern->internProfile->hte_id])
+        ->all();
+    $calculator = new DailyAttendanceCalculator;
+    $actualTotals = $calculator->totalHoursByInternFromScans(
+        AttendanceLog::query()
+            ->whereIn('intern_user_id', $internIds)
+            ->select(['log_id', 'intern_user_id', 'scan_timestamp'])
+            ->lazyById(2, 'log_id'),
+        $hteIdsByIntern,
+    );
+
+    foreach ($interns as $intern) {
+        $expectedTotal = $calculator->totalHoursForScans(
+            AttendanceLog::query()
+                ->where('intern_user_id', $intern->id)
+                ->orderBy('scan_timestamp')
+                ->get(),
+            $intern->internProfile->hte_id,
+        );
+
+        expect($actualTotals[$intern->id])->toBe($expectedTotal);
+    }
+});
