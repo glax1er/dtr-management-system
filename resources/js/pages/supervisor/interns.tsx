@@ -20,9 +20,10 @@ import type { FormEvent } from 'react';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
 import {
-    ScanPhotoDialog,
-    type ScanPhotoDialogData,
+    ScanPhotoDialog
+    
 } from '@/components/scan-photo-dialog';
+import type {ScanPhotoDialogData} from '@/components/scan-photo-dialog';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';

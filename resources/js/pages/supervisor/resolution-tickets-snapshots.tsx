@@ -1,14 +1,10 @@
 import { Head, router } from '@inertiajs/react';
 import {
-    Calendar,
     Camera,
-    Clock,
-    FolderArchive,
     HardDrive,
     Info,
     LayoutGrid,
     Search,
-    SlidersHorizontal,
     Table as TableIcon,
     X,
 } from 'lucide-react';
@@ -18,13 +14,14 @@ import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
 import { ResolutionTicketsNav } from '@/components/resolution-tickets-nav';
 import {
-    ScanPhotoDialog,
-    type ScanPhotoDialogData,
+    ScanPhotoDialog
+    
 } from '@/components/scan-photo-dialog';
+import type {ScanPhotoDialogData} from '@/components/scan-photo-dialog';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
     Select,
     SelectContent,
@@ -48,7 +45,6 @@ import {
 } from '@/components/ui/tooltip';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useInitials } from '@/hooks/use-initials';
-import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 
 export type ScanSnapshotRow = {
@@ -106,8 +102,8 @@ export default function ScanSnapshots({
     filters = { search: '', date: null, label: 'all', per_page: 20 },
 }: ScanSnapshotsProps) {
     const getInitials = useInitials();
-    const [search, setSearch] = useState(filters.search || '');
-    const [date, setDate] = useState(filters.date || '');
+    const [search, setSearch] = useState<string>(() => filters.search || '');
+    const [date, setDate] = useState<string>(() => filters.date || '');
     const [view, setView] = useState<ViewMode>('table');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const [photoModalData, setPhotoModalData] =
@@ -115,14 +111,6 @@ export default function ScanSnapshots({
 
     const debouncedSearch = useDebounce(search, 300);
     const isFirstRender = useRef(true);
-
-    useEffect(() => {
-        setSearch(filters.search || '');
-    }, [filters.search]);
-
-    useEffect(() => {
-        setDate(filters.date || '');
-    }, [filters.date]);
 
     const visit = (
         params: Record<string, string | undefined>,
@@ -138,6 +126,7 @@ export default function ScanSnapshots({
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
+
             return;
         }
 

@@ -9,6 +9,7 @@ use App\Models\AttendanceLog;
 use App\Models\InternDocument;
 use App\Models\InternProfile;
 use App\Models\ResolutionTicket;
+use App\Models\SupervisorProfile;
 use App\Models\User;
 use App\Services\Attendance\DailyAttendanceCalculator;
 use Illuminate\Http\RedirectResponse;
@@ -257,7 +258,7 @@ class DashboardController extends Controller
      * finished & cleared interns, HTE deployment distribution, document clearance
      * compliance, and quick inspection actions.
      */
-    private function ojtDashboard(Request $request, $supervisorProfile): Response
+    private function ojtDashboard(Request $request, SupervisorProfile $supervisorProfile): Response
     {
         $programId = $supervisorProfile->program_id;
 
@@ -320,13 +321,15 @@ class DashboardController extends Controller
                 default => 'Early Stage (<25%)',
             };
 
+            $hteName = $intern->hte?->hte_name;
+
             return [
                 'intern_user_id' => $intern->user_id,
                 'name' => $intern->user->name,
                 'email' => $intern->user->email,
                 'id_number' => $intern->id_number,
                 'contact_number' => $intern->contact_number,
-                'hte_name' => $intern->hte?->hte_name ?? 'Unassigned HTE',
+                'hte_name' => $hteName ?? 'Unassigned HTE',
                 'hte_id' => $intern->hte_id,
                 'total_hours' => $totalHours,
                 'required_hours' => $requiredHours,
@@ -405,9 +408,11 @@ class DashboardController extends Controller
             ->map(function ($group) {
                 $first = $group->first();
 
+                $hteName = $first->hte?->hte_name;
+
                 return [
                     'hte_id' => $first->hte_id,
-                    'name' => $first->hte?->hte_name ?? 'Unassigned HTE',
+                    'name' => $hteName ?? 'Unassigned HTE',
                     'count' => $group->count(),
                 ];
             })
@@ -421,9 +426,11 @@ class DashboardController extends Controller
             ->values()
             ->all();
 
+        $programName = $supervisorProfile->program?->program_name;
+
         return Inertia::render('supervisor/ojt-dashboard', [
             'scopeName' => $supervisorProfile->getScopeName(),
-            'programName' => $supervisorProfile->program?->program_name ?? 'Program',
+            'programName' => $programName ?? 'Program',
             'stats' => [
                 'totalInterns' => $totalInterns,
                 'hoursCompletedCount' => $hoursCompletedCount,

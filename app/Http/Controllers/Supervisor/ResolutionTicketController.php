@@ -29,6 +29,19 @@ class ResolutionTicketController extends Controller
         private readonly DailyAttendanceCalculator $calculator,
     ) {}
 
+    private function dateString(mixed $date): string
+    {
+        if ($date instanceof Carbon) {
+            return $date->toDateString();
+        }
+
+        if ($date instanceof \DateTimeInterface) {
+            return Carbon::instance($date)->toDateString();
+        }
+
+        return Carbon::parse($date)->toDateString();
+    }
+
     public function index(Request $request): Response
     {
         // Same HTE-based scoping used by the other supervisor features.
@@ -124,13 +137,15 @@ class ResolutionTicketController extends Controller
             ->withQueryString();
 
         $ticketsTransformed = $ticketsPaginated->through(function (ResolutionTicket $ticket) use ($timezone) {
+            $dateString = $this->dateString($ticket->date);
+
             return [
                 'id' => $ticket->id,
                 'intern_user_id' => $ticket->intern_user_id,
                 'intern_name' => $ticket->intern->name,
                 'intern_id_number' => $ticket->intern->internProfile?->id_number,
                 'intern_profile_photo_url' => $ticket->intern->profile_photo_url,
-                'date' => $ticket->date->toDateString(),
+                'date' => $dateString,
 
                 // Determine which time fields the request contains.
                 'type' => match (true) {
@@ -202,7 +217,7 @@ class ResolutionTicketController extends Controller
                 ]);
             }
 
-            $date = $ticket->date->toDateString();
+            $date = $this->dateString($ticket->date);
 
             /*
              * Resolve Time In.
@@ -597,13 +612,15 @@ class ResolutionTicketController extends Controller
         $scanMap = $this->buildDayScansMap($ticketsPaginated->items(), $timezone);
 
         $tickets = $ticketsPaginated->through(function (ResolutionTicket $ticket) use ($timezone, $scanMap) {
-            $key = $ticket->intern_user_id.'_'.$ticket->date->toDateString();
+            $dateString = $this->dateString($ticket->date);
+            $key = $ticket->intern_user_id.'_'.$dateString;
             $dayScans = $scanMap[$key] ?? [
                 'time_in_photo_url' => null,
                 'time_in_scanned_at' => null,
                 'time_out_photo_url' => null,
                 'time_out_scanned_at' => null,
             ];
+            $resolvedByName = $ticket->resolvedBy?->name;
 
             return [
                 'id' => $ticket->id,
@@ -611,7 +628,7 @@ class ResolutionTicketController extends Controller
                 'intern_name' => $ticket->intern->name,
                 'intern_id_number' => $ticket->intern->internProfile?->id_number,
                 'intern_profile_photo_url' => $ticket->intern->profile_photo_url,
-                'date' => $ticket->date->toDateString(),
+                'date' => $dateString,
                 'type' => match (true) {
                     $ticket->proposed_time_in !== null && $ticket->proposed_time_out !== null => 'no_record',
                     $ticket->proposed_time_in !== null => 'missing_time_in',
@@ -624,7 +641,7 @@ class ResolutionTicketController extends Controller
                 'final_time_out' => $ticket->final_time_out?->clone()->setTimezone($timezone)->format('g:i A'),
                 'reason' => $ticket->reason,
                 'rejection_reason' => $ticket->rejection_reason,
-                'resolved_by_name' => $ticket->resolvedBy?->name ?? ($ticket->status === ResolutionTicket::STATUS_CANCELLED ? 'Intern (Self-cancelled)' : 'System'),
+                'resolved_by_name' => $resolvedByName ?? ($ticket->status === ResolutionTicket::STATUS_CANCELLED ? 'Intern (Self-cancelled)' : 'System'),
                 'resolved_at' => $ticket->resolved_at?->clone()->setTimezone($timezone)->format('M j, Y g:i A'),
                 'resolved_at_relative' => $ticket->resolved_at?->diffForHumans(),
                 'created_at' => $ticket->created_at?->clone()->setTimezone($timezone)->format('M j, Y g:i A'),
@@ -722,6 +739,8 @@ class ResolutionTicketController extends Controller
         $snapshots = $snapshotsPaginated->through(function (AttendanceLog $log) use ($timezone) {
             $localTime = $log->scan_timestamp->clone()->setTimezone($timezone);
             $cutoff = Carbon::parse($localTime->toDateString().' '.config('dtr.time_out_cutoff'), $timezone);
+            $internName = $log->intern?->name;
+            $kioskName = $log->kiosk?->name;
 
             $dayStart = $localTime->clone()->startOfDay();
             $dayEnd = $localTime->clone()->endOfDay();
@@ -738,13 +757,13 @@ class ResolutionTicketController extends Controller
             return [
                 'id' => $log->log_id,
                 'intern_user_id' => $log->intern_user_id,
-                'intern_name' => $log->intern?->name ?? 'Unknown Intern',
+                'intern_name' => $internName ?? 'Unknown Intern',
                 'intern_id_number' => $log->intern?->internProfile?->id_number,
                 'intern_profile_photo_url' => $log->intern?->profile_photo_url,
                 'label' => $computedLabel,
                 'captured_photo_url' => $log->captured_photo_url,
                 'captured_photo_path' => $log->captured_photo_path,
-                'kiosk_name' => $log->kiosk?->name ?? 'Scanner Device',
+                'kiosk_name' => $kioskName ?? 'Scanner Device',
                 'storage_disk' => 'public',
                 'storage_location' => 'attendance-snapshots (in storage/app/public/attendance-snapshots)',
                 'date' => $localTime->toDateString(),
@@ -779,8 +798,8 @@ class ResolutionTicketController extends Controller
         }
 
         $internUserIds = $ticketCollection->pluck('intern_user_id')->unique()->all();
-        $minDate = Carbon::parse($ticketCollection->min('date')->toDateString(), $timezone)->startOfDay();
-        $maxDate = Carbon::parse($ticketCollection->max('date')->toDateString(), $timezone)->endOfDay();
+        $minDate = Carbon::parse($this->dateString($ticketCollection->min('date')), $timezone)->startOfDay();
+        $maxDate = Carbon::parse($this->dateString($ticketCollection->max('date')), $timezone)->endOfDay();
 
         $allScans = AttendanceLog::query()
             ->whereIn('intern_user_id', $internUserIds)

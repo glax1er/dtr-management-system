@@ -1,11 +1,8 @@
 import { Head, router } from '@inertiajs/react';
 import {
     AlertCircle,
-    Calendar,
     Camera,
     CheckCircle2,
-    Clock,
-    FileText,
     History,
     LayoutGrid,
     Search,
@@ -21,9 +18,10 @@ import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
 import { ResolutionTicketsNav } from '@/components/resolution-tickets-nav';
 import {
-    ScanPhotoDialog,
-    type ScanPhotoDialogData,
+    ScanPhotoDialog
+    
 } from '@/components/scan-photo-dialog';
+import type {ScanPhotoDialogData} from '@/components/scan-photo-dialog';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
@@ -52,7 +50,6 @@ import {
 } from '@/components/ui/tooltip';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useInitials } from '@/hooks/use-initials';
-import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 
 export type ResolvedTicketRow = {
@@ -119,13 +116,12 @@ export default function ResolutionTicketLogs({
     totalResolved = tickets.total,
     totalApproved = 0,
     totalRejected = 0,
-    totalCancelled = 0,
     totalPending = 0,
     totalSnapshots = 0,
     filters = { search: '', status: 'all', type: 'all', per_page: 20 },
 }: ResolutionTicketLogsProps) {
     const getInitials = useInitials();
-    const [search, setSearch] = useState(filters.search || '');
+    const [search, setSearch] = useState<string>(() => filters.search || '');
     const [view, setView] = useState<ViewMode>('table');
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const [photoModalData, setPhotoModalData] =
@@ -133,10 +129,6 @@ export default function ResolutionTicketLogs({
 
     const debouncedSearch = useDebounce(search, 300);
     const isFirstRender = useRef(true);
-
-    useEffect(() => {
-        setSearch(filters.search || '');
-    }, [filters.search]);
 
     const visit = (
         params: Record<string, string | undefined>,
@@ -152,6 +144,7 @@ export default function ResolutionTicketLogs({
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
+
             return;
         }
 

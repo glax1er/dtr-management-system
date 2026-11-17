@@ -1,6 +1,5 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import {
-    AlertCircle,
     ArrowRight,
     Award,
     Building2,
@@ -12,29 +11,18 @@ import {
     FileCheck2,
     FileStack,
     FileText,
-    Filter,
     GraduationCap,
-    LayoutGrid,
     Search,
-    ShieldCheck,
-    SlidersHorizontal,
     TrendingUp,
     Users,
     X,
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { CompletionSummaryDialog } from '@/components/completion-summary-dialog';
-import {
-    AttendanceRing,
-    CountUp,
-    RankedList,
-    StatCard,
-    TrendBarChart,
-} from '@/components/dashboard-analytics';
+import { CountUp, RankedList, StatCard, TrendBarChart } from '@/components/dashboard-analytics';
 import { InternDocumentsDialog } from '@/components/intern-documents-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { StatusBadge } from '@/components/ui/badges/status-badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -60,10 +48,9 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
-import type { BreadcrumbItem, PageProps } from '@/types';
+import type { PageProps } from '@/types';
 
 export interface StudentMilestoneItem {
     intern_user_id: number;
@@ -144,13 +131,6 @@ export interface OjtDashboardProps {
     todayAttendance: TodayAttendance;
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'OJT Dashboard',
-        href: '/supervisor/dashboard',
-    },
-];
-
 const MILESTONE_COLORS: Record<string, { bg: string; text: string; bar: string; badge: string; border: string }> = {
     completed: {
         bg: 'bg-emerald-500/10 dark:bg-emerald-500/20',
@@ -197,11 +177,9 @@ export default function OjtDashboard({
     stats,
     milestones,
     students,
-    finishedInterns,
     hteDistribution,
     docStats,
     scansTrend,
-    todayAttendance,
 }: OjtDashboardProps) {
     const { auth } = usePage<PageProps>().props;
     const getInitials = useInitials();
@@ -225,6 +203,7 @@ export default function OjtDashboard({
         setSelectedHte('all');
         setCurrentPage(1);
         const el = document.getElementById('interns-section');
+
         if (el) {
             el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
@@ -234,7 +213,9 @@ export default function OjtDashboard({
         return students.filter((student) => {
             // Milestone filter
             if (selectedMilestone === 'pending_docs') {
-                if (student.pending_docs_count === 0) return false;
+                if (student.pending_docs_count === 0) {
+return false;
+}
             } else if (selectedMilestone !== 'all' && student.milestone !== selectedMilestone) {
                 return false;
             }
@@ -242,7 +223,10 @@ export default function OjtDashboard({
             // HTE filter
             if (selectedHte !== 'all') {
                 const hteIdNum = Number(selectedHte);
-                if (student.hte_id !== hteIdNum) return false;
+
+                if (student.hte_id !== hteIdNum) {
+return false;
+}
             }
 
             // Search query
@@ -252,6 +236,7 @@ export default function OjtDashboard({
                 const matchesId = student.id_number?.toLowerCase().includes(q) ?? false;
                 const matchesEmail = student.email.toLowerCase().includes(q);
                 const matchesHte = student.hte_name.toLowerCase().includes(q);
+
                 return matchesName || matchesId || matchesEmail || matchesHte;
             }
 
@@ -263,6 +248,7 @@ export default function OjtDashboard({
     const totalPages = Math.max(1, Math.ceil(filteredStudents.length / ITEMS_PER_PAGE));
     const paginatedStudents = useMemo(() => {
         const start = (currentPage - 1) * ITEMS_PER_PAGE;
+
         return filteredStudents.slice(start, start + ITEMS_PER_PAGE);
     }, [filteredStudents, currentPage]);
 
@@ -281,11 +267,13 @@ export default function OjtDashboard({
 
     const handleHteClick = (hteName: string) => {
         const found = hteDistribution.find((h) => h.name === hteName);
+
         if (found && found.hte_id) {
             setSelectedHte(String(found.hte_id));
         } else {
             setSearch(hteName);
         }
+
         setCurrentPage(1);
     };
 
@@ -463,7 +451,11 @@ export default function OjtDashboard({
                                 {stats.totalInterns > 0 ? (
                                     milestones.map((m) => {
                                         const pct = (m.count / stats.totalInterns) * 100;
-                                        if (pct <= 0) return null;
+
+                                        if (pct <= 0) {
+return null;
+}
+
                                         const colors = MILESTONE_COLORS[m.key] || MILESTONE_COLORS.early_stage;
 
                                         return (
@@ -1207,7 +1199,9 @@ export default function OjtDashboard({
                     key={`summary-${summaryIntern.id}`}
                     defaultOpen={true}
                     onOpenChange={(open) => {
-                        if (!open) setSummaryIntern(null);
+                        if (!open) {
+setSummaryIntern(null);
+}
                     }}
                     internUserId={summaryIntern.id}
                     internName={summaryIntern.name}
@@ -1220,7 +1214,9 @@ export default function OjtDashboard({
                     internName={docsIntern.name}
                     defaultOpen={true}
                     onOpenChange={(open) => {
-                        if (!open) setDocsIntern(null);
+                        if (!open) {
+setDocsIntern(null);
+}
                     }}
                 />
             )}

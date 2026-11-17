@@ -1,5 +1,4 @@
-import { Camera, Calendar, Clock, User as UserIcon } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Camera, Clock, User as UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -30,7 +29,9 @@ export function ScanPhotoDialog({
     onOpenChange,
     data,
 }: ScanPhotoDialogProps) {
-    if (!data) return null;
+    if (!data) {
+        return null;
+    }
 
     const isTimeIn = data.label === 'time_in';
 

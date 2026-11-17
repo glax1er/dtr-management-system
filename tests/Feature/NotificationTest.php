@@ -16,6 +16,7 @@ use App\Notifications\MissedTimeOutNotification;
 use App\Notifications\ResetPasswordNotification;
 use App\Notifications\ScheduleUpdatedNotification;
 use App\Services\Attendance\CheckHoursMilestones;
+use App\Services\NotificationPresenter;
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
@@ -833,6 +834,6 @@ test('document submitted notification includes preview_doc in href for superviso
         'href' => "/supervisor/interns?highlight={$internUser->id}&doc_intern={$internUser->id}&highlight_doc=medical_certificate",
     ];
 
-    $resolvedHref = \App\Services\NotificationPresenter::resolveHref($legacyData);
+    $resolvedHref = NotificationPresenter::resolveHref($legacyData);
     expect($resolvedHref)->toContain('preview_doc=medical_certificate');
 });

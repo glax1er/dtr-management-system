@@ -121,6 +121,7 @@ export default function AdminManagement({
 
     const debouncedSearch = useDebounce(search, 300);
     const isFirstRender = useRef(true);
+    const lastDebouncedSearch = useRef(debouncedSearch);
 
     // Add dialog state
     const [addOpen, setAddOpen] = useState(false);
@@ -182,14 +183,30 @@ export default function AdminManagement({
             return;
         }
 
+        if (lastDebouncedSearch.current === debouncedSearch) {
+            return;
+        }
+
+        lastDebouncedSearch.current = debouncedSearch;
+
         if (debouncedSearch !== (filters.search || '')) {
             visit({
-                ...baseParams(),
+                status: statusFilter !== 'all' ? statusFilter : undefined,
+                role: roleFilter !== 'all' ? roleFilter : undefined,
+                per_page: filters.per_page
+                    ? String(filters.per_page)
+                    : undefined,
                 search: debouncedSearch || undefined,
                 page: undefined,
             });
         }
-    }, [debouncedSearch]);
+    }, [
+        debouncedSearch,
+        filters.search,
+        filters.per_page,
+        roleFilter,
+        statusFilter,
+    ]);
 
     const handleSearchSubmit = (e: FormEvent) => {
         e.preventDefault();

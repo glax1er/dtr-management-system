@@ -121,6 +121,7 @@ export default function CollegeAdminManagement({
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const debouncedSearch = useDebounce(search, 300);
     const isFirstRender = useRef(true);
+    const lastDebouncedSearch = useRef(debouncedSearch);
 
     // Modal states
     const [addOpen, setAddOpen] = useState(false);
@@ -211,14 +212,32 @@ export default function CollegeAdminManagement({
             return;
         }
 
+        if (lastDebouncedSearch.current === debouncedSearch) {
+            return;
+        }
+
+        lastDebouncedSearch.current = debouncedSearch;
+
         if (debouncedSearch !== (filters.search || '')) {
             visit({
-                ...baseParams(),
+                college_id: collegeId !== 'all' ? collegeId : undefined,
+                campus_id: campusId !== 'all' ? campusId : undefined,
+                status: status !== 'all' ? status : undefined,
+                per_page: filters.per_page
+                    ? String(filters.per_page)
+                    : undefined,
                 search: debouncedSearch || undefined,
                 page: undefined,
             });
         }
-    }, [debouncedSearch]);
+    }, [
+        campusId,
+        collegeId,
+        debouncedSearch,
+        filters.per_page,
+        filters.search,
+        status,
+    ]);
 
     const applySearch = (e: FormEvent) => {
         e.preventDefault();

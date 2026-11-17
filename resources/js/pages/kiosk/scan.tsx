@@ -65,7 +65,10 @@ function speakAnnouncement(intern: ScannedIntern) {
     if ('speechSynthesis' in window) {
         window.speechSynthesis.getVoices();
     }
-    if (intern.isDuplicate) return;
+
+    if (intern.isDuplicate) {
+return;
+}
 
     const statusText = intern.label === 'time_in' ? 'Timed In' : 'Timed Out';
     const utterance = new SpeechSynthesisUtterance(
@@ -86,7 +89,10 @@ function captureSnapshot(): string | null {
         const video = document.querySelector<HTMLVideoElement>(
             `#${SCANNER_ELEMENT_ID} video`,
         );
-        if (!video || video.readyState < 2 || !video.videoWidth) return null;
+
+        if (!video || video.readyState < 2 || !video.videoWidth) {
+return null;
+}
 
         const maxDim = 640;
         let w = video.videoWidth;
@@ -106,12 +112,17 @@ function captureSnapshot(): string | null {
         canvas.width = w;
         canvas.height = h;
         const ctx = canvas.getContext('2d');
-        if (!ctx) return null;
+
+        if (!ctx) {
+return null;
+}
 
         ctx.drawImage(video, 0, 0, w, h);
+
         return canvas.toDataURL('image/jpeg', 0.75);
     } catch (err) {
         console.warn('Could not capture snapshot:', err);
+
         return null;
     }
 }
@@ -377,7 +388,11 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
     // ── Sound helpers ─────────────────────────────────────────────────────────
     const playSound = useCallback((src: string) => {
         const audio = audioRef.current[src];
-        if (!audio) return;
+
+        if (!audio) {
+return;
+}
+
         audio.currentTime = 0;
         audio
             .play()
@@ -389,7 +404,9 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
         (qrCodeValue: string, photo: string | null = null) => {
             const now = Date.now();
 
-            if (inFlightRef.current) return;
+            if (inFlightRef.current) {
+return;
+}
 
             if (
                 lastProcessedRef.current &&
@@ -423,7 +440,10 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
             })
                 .then(async (response) => {
                     const data = await response.json();
-                    if (mySeq !== requestSeqRef.current) return;
+
+                    if (mySeq !== requestSeqRef.current) {
+return;
+}
 
                     if (!response.ok) {
                         setFlash({
@@ -431,6 +451,7 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                             message: data.message ?? 'Scan rejected.',
                         });
                         playSound('/sounds/scan-error.mp3');
+
                         return;
                     }
 
@@ -462,7 +483,10 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                     speakAnnouncement(internData);
                 })
                 .catch(() => {
-                    if (mySeq !== requestSeqRef.current) return;
+                    if (mySeq !== requestSeqRef.current) {
+return;
+}
+
                     setFlash({
                         kind: 'error',
                         message:
@@ -472,10 +496,15 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                 .finally(() => {
                     inFlightRef.current = false;
                     setPendingScan(false);
-                    if (mySeq !== requestSeqRef.current) return;
 
-                    if (flashTimerRef.current)
-                        clearTimeout(flashTimerRef.current);
+                    if (mySeq !== requestSeqRef.current) {
+return;
+}
+
+                    if (flashTimerRef.current) {
+clearTimeout(flashTimerRef.current);
+}
+
                     flashTimerRef.current = setTimeout(() => {
                         setFlash(null);
                         setLastIntern(null);
@@ -574,20 +603,26 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                 },
             )
             .then(() => {
-                if (cancelled) return;
+                if (cancelled) {
+return;
+}
 
                 // Start periodic face detection once the camera stream is live
                 faceDetectTimerRef.current = setInterval(async () => {
-                    if (cancelled || !modelsLoadedRef.current || isDetecting)
-                        return;
+                    if (cancelled || !modelsLoadedRef.current || isDetecting) {
+return;
+}
 
                     const video = document.querySelector<HTMLVideoElement>(
                         `#${SCANNER_ELEMENT_ID} video`,
                     );
-                    if (!video || video.readyState < 2 || !video.videoWidth)
-                        return;
+
+                    if (!video || video.readyState < 2 || !video.videoWidth) {
+return;
+}
 
                     isDetecting = true;
+
                     try {
                         const result = await faceapi.detectSingleFace(
                             video,
@@ -658,6 +693,7 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
                         }
                     } catch (err) {
                         console.warn('Face detection error:', err);
+
                         if (!cancelled) {
                             updateFaceFrame(null);
                             updateFaceStatus('error');
@@ -678,9 +714,15 @@ export default function KioskScan({ kioskName }: KioskScanProps) {
 
         return () => {
             cancelled = true;
-            if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-            if (faceDetectTimerRef.current)
-                clearInterval(faceDetectTimerRef.current);
+
+            if (flashTimerRef.current) {
+clearTimeout(flashTimerRef.current);
+}
+
+            if (faceDetectTimerRef.current) {
+clearInterval(faceDetectTimerRef.current);
+}
+
             startPromise.finally(() => {
                 scanner.stop().catch(() => {});
             });

@@ -108,6 +108,7 @@ export default function CollegesIndex({
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const debouncedSearch = useDebounce(search, 300);
     const isFirstRender = useRef(true);
+    const lastDebouncedSearch = useRef(debouncedSearch);
 
     // Accordion / Expanded rows state for viewing programs
     const [expandedColleges, setExpandedColleges] = useState<Set<number>>(
@@ -194,14 +195,24 @@ export default function CollegesIndex({
             return;
         }
 
-        if (debouncedSearch !== filters.search) {
+        if (lastDebouncedSearch.current === debouncedSearch) {
+            return;
+        }
+
+        lastDebouncedSearch.current = debouncedSearch;
+
+        if (debouncedSearch !== (filters.search || '')) {
             visit({
-                ...baseParams(),
+                status: status || undefined,
+                campus: campus || undefined,
+                per_page: filters.per_page
+                    ? String(filters.per_page)
+                    : undefined,
                 search: debouncedSearch || undefined,
                 page: undefined,
             });
         }
-    }, [debouncedSearch]);
+    }, [campus, debouncedSearch, filters.per_page, filters.search, status]);
 
     const applySearch = (e: FormEvent) => {
         e.preventDefault();

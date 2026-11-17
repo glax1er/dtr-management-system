@@ -27,9 +27,10 @@ import {
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
 import {
-    ScanPhotoDialog,
-    type ScanPhotoDialogData,
+    ScanPhotoDialog
+    
 } from '@/components/scan-photo-dialog';
+import type {ScanPhotoDialogData} from '@/components/scan-photo-dialog';
 import { InstitutionalOverviewCard } from '@/components/super-admin-analytics';
 import type { SuperAdminAnalytics } from '@/components/super-admin-analytics';
 import { Badge } from '@/components/ui/badge';
