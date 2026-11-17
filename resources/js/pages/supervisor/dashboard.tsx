@@ -496,7 +496,7 @@ export default function SupervisorDashboard({
                                                                         idNumber: scan.id_number,
                                                                         label: scan.label,
                                                                         scannedAt: scan.scanned_at_full,
-                                                                        capturedPhotoUrl: scan.captured_photo_url,
+                                                                        capturedPhotoUrl: scan.captured_photo_url!,
                                                                         profilePhotoUrl: scan.profile_photo_url,
                                                                     })
                                                                 }
@@ -558,7 +558,7 @@ export default function SupervisorDashboard({
                                                                 idNumber: scan.id_number,
                                                                 label: scan.label,
                                                                 scannedAt: scan.scanned_at_full,
-                                                                capturedPhotoUrl: scan.captured_photo_url,
+                                                                capturedPhotoUrl: scan.captured_photo_url!,
                                                                 profilePhotoUrl: scan.profile_photo_url,
                                                             })
                                                         }

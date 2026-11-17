@@ -235,6 +235,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::middleware('hte-supervisor')->group(function () {
             Route::get('resolution-tickets', [SupervisorResolutionTicketController::class, 'index'])
                 ->name('resolution-tickets.index');
+            Route::get('resolution-tickets/logs', [SupervisorResolutionTicketController::class, 'logs'])
+                ->name('resolution-tickets.logs');
+            Route::get('resolution-tickets/snapshots', [SupervisorResolutionTicketController::class, 'snapshots'])
+                ->name('resolution-tickets.snapshots');
             Route::patch('resolution-tickets/{resolutionTicket}/approve', [SupervisorResolutionTicketController::class, 'approve'])
                 ->name('resolution-tickets.approve');
             Route::patch('resolution-tickets/{resolutionTicket}/reject', [SupervisorResolutionTicketController::class, 'reject'])

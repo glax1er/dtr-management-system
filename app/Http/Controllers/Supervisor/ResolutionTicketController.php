@@ -13,6 +13,7 @@ use App\Services\Attendance\DailyAttendanceCalculator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -64,8 +65,20 @@ class ResolutionTicketController extends Controller
             ->where('status', ResolutionTicket::STATUS_PENDING);
 
         $totalPending = (clone $baseQuery)->count();
+        $totalResolved = ResolutionTicket::query()
+            ->whereIn('intern_user_id', $internUserIds)
+            ->whereIn('status', [
+                ResolutionTicket::STATUS_APPROVED,
+                ResolutionTicket::STATUS_REJECTED,
+                ResolutionTicket::STATUS_CANCELLED,
+            ])
+            ->count();
+        $totalSnapshots = AttendanceLog::query()
+            ->whereIn('intern_user_id', $internUserIds)
+            ->whereNotNull('captured_photo_path')
+            ->count();
 
-        $query = (clone $baseQuery)->with('intern');
+        $query = (clone $baseQuery)->with(['intern.internProfile']);
 
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
@@ -106,12 +119,17 @@ class ResolutionTicketController extends Controller
             }
         }
 
-        $tickets = $tickets
+        $ticketsPaginated = $tickets
             ->paginate($perPage, ['*'], 'page', $validated['page'] ?? 1)
-            ->withQueryString()
-            ->through(fn (ResolutionTicket $ticket) => [
+            ->withQueryString();
+
+        $ticketsTransformed = $ticketsPaginated->through(function (ResolutionTicket $ticket) use ($timezone) {
+            return [
                 'id' => $ticket->id,
+                'intern_user_id' => $ticket->intern_user_id,
                 'intern_name' => $ticket->intern->name,
+                'intern_id_number' => $ticket->intern->internProfile?->id_number,
+                'intern_profile_photo_url' => $ticket->intern->profile_photo_url,
                 'date' => $ticket->date->toDateString(),
 
                 // Determine which time fields the request contains.
@@ -135,11 +153,14 @@ class ResolutionTicketController extends Controller
                     ->format('g:i A'),
 
                 'reason' => $ticket->reason,
-            ]);
+            ];
+        });
 
         return Inertia::render('supervisor/resolution-tickets', [
-            'tickets' => $tickets,
+            'tickets' => $ticketsTransformed,
             'totalPending' => $totalPending,
+            'totalResolved' => $totalResolved,
+            'totalSnapshots' => $totalSnapshots,
             'filters' => [
                 'search' => $search,
                 'type' => $type,
@@ -483,5 +504,335 @@ class ResolutionTicketController extends Controller
         if (! $internProfile || $internProfile->hte_id !== $supervisorProfile->hte_id) {
             abort(403);
         }
+    }
+
+    public function logs(Request $request): Response
+    {
+        $supervisorProfile = $request->user()->supervisorProfile;
+
+        if ($supervisorProfile->isOjtSupervisor()) {
+            abort(403, 'OJT Supervisors cannot resolve time conflicts.');
+        }
+
+        $validated = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', 'string', 'in:all,approved,rejected,cancelled'],
+            'type' => ['nullable', 'string', 'in:all,missing_time_in,open,no_record'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_PER_PAGE],
+        ]);
+
+        $search = trim($validated['search'] ?? '');
+        $status = $validated['status'] ?? 'all';
+        $type = $validated['type'] ?? 'all';
+        $perPage = (int) ($validated['per_page'] ?? self::DEFAULT_PER_PAGE);
+
+        $internUserIds = InternProfile::query()
+            ->verified()
+            ->where('status', 'approved')
+            ->where('hte_id', $supervisorProfile->hte_id)
+            ->pluck('user_id');
+
+        $timezone = config('dtr.timezone');
+
+        $baseQuery = ResolutionTicket::query()
+            ->whereIn('intern_user_id', $internUserIds)
+            ->whereIn('status', [
+                ResolutionTicket::STATUS_APPROVED,
+                ResolutionTicket::STATUS_REJECTED,
+                ResolutionTicket::STATUS_CANCELLED,
+            ]);
+
+        $totalResolved = (clone $baseQuery)->count();
+        $totalApproved = (clone $baseQuery)->where('status', ResolutionTicket::STATUS_APPROVED)->count();
+        $totalRejected = (clone $baseQuery)->where('status', ResolutionTicket::STATUS_REJECTED)->count();
+        $totalCancelled = (clone $baseQuery)->where('status', ResolutionTicket::STATUS_CANCELLED)->count();
+        $totalPending = ResolutionTicket::query()
+            ->whereIn('intern_user_id', $internUserIds)
+            ->where('status', ResolutionTicket::STATUS_PENDING)
+            ->count();
+        $totalSnapshots = AttendanceLog::query()
+            ->whereIn('intern_user_id', $internUserIds)
+            ->whereNotNull('captured_photo_path')
+            ->count();
+
+        $query = (clone $baseQuery)->with(['intern.internProfile', 'resolvedBy']);
+
+        if ($status !== 'all') {
+            $query->where('status', $status);
+        }
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('intern', function ($internQuery) use ($search) {
+                    $internQuery->where('name', 'like', "%{$search}%")
+                        ->orWhereHas('internProfile', fn ($pq) => $pq->where('id_number', 'like', "%{$search}%"));
+                })
+                    ->orWhereHas('resolvedBy', fn ($rq) => $rq->where('name', 'like', "%{$search}%"))
+                    ->orWhere('reason', 'like', "%{$search}%")
+                    ->orWhere('rejection_reason', 'like', "%{$search}%")
+                    ->orWhere('date', 'like', "%{$search}%");
+            });
+        }
+
+        if ($type !== 'all') {
+            if ($type === 'no_record') {
+                $query->whereNotNull('proposed_time_in')
+                    ->whereNotNull('proposed_time_out');
+            } elseif ($type === 'missing_time_in') {
+                $query->whereNotNull('proposed_time_in')
+                    ->whereNull('proposed_time_out');
+            } elseif ($type === 'open') {
+                $query->whereNull('proposed_time_in');
+            }
+        }
+
+        $ticketsPaginated = $query
+            ->orderByDesc('resolved_at')
+            ->orderByDesc('updated_at')
+            ->orderByDesc('date')
+            ->paginate($perPage, ['*'], 'page', $validated['page'] ?? 1)
+            ->withQueryString();
+
+        $scanMap = $this->buildDayScansMap($ticketsPaginated->items(), $timezone);
+
+        $tickets = $ticketsPaginated->through(function (ResolutionTicket $ticket) use ($timezone, $scanMap) {
+            $key = $ticket->intern_user_id.'_'.$ticket->date->toDateString();
+            $dayScans = $scanMap[$key] ?? [
+                'time_in_photo_url' => null,
+                'time_in_scanned_at' => null,
+                'time_out_photo_url' => null,
+                'time_out_scanned_at' => null,
+            ];
+
+            return [
+                'id' => $ticket->id,
+                'intern_user_id' => $ticket->intern_user_id,
+                'intern_name' => $ticket->intern->name,
+                'intern_id_number' => $ticket->intern->internProfile?->id_number,
+                'intern_profile_photo_url' => $ticket->intern->profile_photo_url,
+                'date' => $ticket->date->toDateString(),
+                'type' => match (true) {
+                    $ticket->proposed_time_in !== null && $ticket->proposed_time_out !== null => 'no_record',
+                    $ticket->proposed_time_in !== null => 'missing_time_in',
+                    default => 'open',
+                },
+                'status' => $ticket->status,
+                'proposed_time_in' => $ticket->proposed_time_in?->clone()->setTimezone($timezone)->format('g:i A'),
+                'proposed_time_out' => $ticket->proposed_time_out?->clone()->setTimezone($timezone)->format('g:i A'),
+                'final_time_in' => $ticket->final_time_in?->clone()->setTimezone($timezone)->format('g:i A'),
+                'final_time_out' => $ticket->final_time_out?->clone()->setTimezone($timezone)->format('g:i A'),
+                'reason' => $ticket->reason,
+                'rejection_reason' => $ticket->rejection_reason,
+                'resolved_by_name' => $ticket->resolvedBy?->name ?? ($ticket->status === ResolutionTicket::STATUS_CANCELLED ? 'Intern (Self-cancelled)' : 'System'),
+                'resolved_at' => $ticket->resolved_at?->clone()->setTimezone($timezone)->format('M j, Y g:i A'),
+                'resolved_at_relative' => $ticket->resolved_at?->diffForHumans(),
+                'created_at' => $ticket->created_at?->clone()->setTimezone($timezone)->format('M j, Y g:i A'),
+                'time_in_photo_url' => $dayScans['time_in_photo_url'],
+                'time_in_scanned_at' => $dayScans['time_in_scanned_at'],
+                'time_out_photo_url' => $dayScans['time_out_photo_url'],
+                'time_out_scanned_at' => $dayScans['time_out_scanned_at'],
+            ];
+        });
+
+        return Inertia::render('supervisor/resolution-tickets-logs', [
+            'tickets' => $tickets,
+            'totalResolved' => $totalResolved,
+            'totalApproved' => $totalApproved,
+            'totalRejected' => $totalRejected,
+            'totalCancelled' => $totalCancelled,
+            'totalPending' => $totalPending,
+            'totalSnapshots' => $totalSnapshots,
+            'filters' => [
+                'search' => $search,
+                'status' => $status,
+                'type' => $type,
+                'per_page' => $perPage,
+            ],
+        ]);
+    }
+
+    public function snapshots(Request $request): Response
+    {
+        $supervisorProfile = $request->user()->supervisorProfile;
+
+        if ($supervisorProfile->isOjtSupervisor()) {
+            abort(403, 'OJT Supervisors cannot view scan snapshots.');
+        }
+
+        $validated = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'date' => ['nullable', 'date_format:Y-m-d'],
+            'label' => ['nullable', 'string', 'in:all,time_in,time_out'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_PER_PAGE],
+        ]);
+
+        $search = trim($validated['search'] ?? '');
+        $date = $validated['date'] ?? null;
+        $label = $validated['label'] ?? 'all';
+        $perPage = (int) ($validated['per_page'] ?? self::DEFAULT_PER_PAGE);
+
+        $internUserIds = InternProfile::query()
+            ->verified()
+            ->where('status', 'approved')
+            ->where('hte_id', $supervisorProfile->hte_id)
+            ->pluck('user_id');
+
+        $timezone = config('dtr.timezone');
+
+        $baseQuery = AttendanceLog::query()
+            ->whereIn('intern_user_id', $internUserIds)
+            ->whereNotNull('captured_photo_path');
+
+        $totalSnapshots = (clone $baseQuery)->count();
+        $totalPending = ResolutionTicket::query()
+            ->whereIn('intern_user_id', $internUserIds)
+            ->where('status', ResolutionTicket::STATUS_PENDING)
+            ->count();
+        $totalResolved = ResolutionTicket::query()
+            ->whereIn('intern_user_id', $internUserIds)
+            ->whereIn('status', [
+                ResolutionTicket::STATUS_APPROVED,
+                ResolutionTicket::STATUS_REJECTED,
+                ResolutionTicket::STATUS_CANCELLED,
+            ])
+            ->count();
+
+        $query = (clone $baseQuery)->with(['intern.internProfile', 'kiosk']);
+
+        if ($date !== null) {
+            $dayStart = Carbon::parse($date, $timezone)->startOfDay();
+            $dayEnd = Carbon::parse($date, $timezone)->endOfDay();
+            $query->whereBetween('scan_timestamp', [$dayStart, $dayEnd]);
+        }
+
+        if ($search !== '') {
+            $query->whereHas('intern', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhereHas('internProfile', fn ($pq) => $pq->where('id_number', 'like', "%{$search}%"));
+            });
+        }
+
+        $snapshotsPaginated = $query
+            ->orderByDesc('scan_timestamp')
+            ->paginate($perPage, ['*'], 'page', $validated['page'] ?? 1)
+            ->withQueryString();
+
+        $snapshots = $snapshotsPaginated->through(function (AttendanceLog $log) use ($timezone) {
+            $localTime = $log->scan_timestamp->clone()->setTimezone($timezone);
+            $cutoff = Carbon::parse($localTime->toDateString().' '.config('dtr.time_out_cutoff'), $timezone);
+
+            $dayStart = $localTime->clone()->startOfDay();
+            $dayEnd = $localTime->clone()->endOfDay();
+            $firstScanToday = AttendanceLog::where('intern_user_id', $log->intern_user_id)
+                ->whereBetween('scan_timestamp', [$dayStart, $dayEnd])
+                ->orderBy('scan_timestamp')
+                ->first();
+
+            $isFirstScan = $firstScanToday?->log_id === $log->log_id;
+            $isAfterCutoff = $firstScanToday && $firstScanToday->scan_timestamp->clone()->setTimezone($timezone)->gt($cutoff);
+
+            $computedLabel = ($isFirstScan && ! $isAfterCutoff) ? 'time_in' : 'time_out';
+
+            return [
+                'id' => $log->log_id,
+                'intern_user_id' => $log->intern_user_id,
+                'intern_name' => $log->intern?->name ?? 'Unknown Intern',
+                'intern_id_number' => $log->intern?->internProfile?->id_number,
+                'intern_profile_photo_url' => $log->intern?->profile_photo_url,
+                'label' => $computedLabel,
+                'captured_photo_url' => $log->captured_photo_url,
+                'captured_photo_path' => $log->captured_photo_path,
+                'kiosk_name' => $log->kiosk?->name ?? 'Scanner Device',
+                'storage_disk' => 'public',
+                'storage_location' => 'attendance-snapshots (in storage/app/public/attendance-snapshots)',
+                'date' => $localTime->toDateString(),
+                'scanned_at' => $log->scan_timestamp->diffForHumans(),
+                'scanned_at_full' => $localTime->format('M j, Y g:i A'),
+            ];
+        });
+
+        return Inertia::render('supervisor/resolution-tickets-snapshots', [
+            'snapshots' => $snapshots,
+            'totalSnapshots' => $totalSnapshots,
+            'totalPending' => $totalPending,
+            'totalResolved' => $totalResolved,
+            'filters' => [
+                'search' => $search,
+                'date' => $date,
+                'label' => $label,
+                'per_page' => $perPage,
+            ],
+        ]);
+    }
+
+    /**
+     * @param  array<int, mixed>|Collection<int, mixed>  $tickets
+     * @return array<string, array{time_in_photo_url: ?string, time_in_scanned_at: ?string, time_out_photo_url: ?string, time_out_scanned_at: ?string}>
+     */
+    private function buildDayScansMap(array|Collection $tickets, string $timezone): array
+    {
+        $ticketCollection = collect($tickets);
+        if ($ticketCollection->isEmpty()) {
+            return [];
+        }
+
+        $internUserIds = $ticketCollection->pluck('intern_user_id')->unique()->all();
+        $minDate = Carbon::parse($ticketCollection->min('date')->toDateString(), $timezone)->startOfDay();
+        $maxDate = Carbon::parse($ticketCollection->max('date')->toDateString(), $timezone)->endOfDay();
+
+        $allScans = AttendanceLog::query()
+            ->whereIn('intern_user_id', $internUserIds)
+            ->whereBetween('scan_timestamp', [$minDate, $maxDate])
+            ->whereNull('resolved_ticket_id')
+            ->orderBy('scan_timestamp')
+            ->get()
+            ->groupBy(function (AttendanceLog $log) use ($timezone) {
+                return $log->intern_user_id.'_'.$log->scan_timestamp->clone()->setTimezone($timezone)->toDateString();
+            });
+
+        $result = [];
+        foreach ($ticketCollection as $ticket) {
+            $dateStr = $ticket->date instanceof Carbon ? $ticket->date->toDateString() : Carbon::parse($ticket->date)->toDateString();
+            $key = $ticket->intern_user_id.'_'.$dateStr;
+
+            $scansForDay = $allScans->get($key, collect());
+
+            $timeInPhotoUrl = null;
+            $timeInScannedAt = null;
+            $timeOutPhotoUrl = null;
+            $timeOutScannedAt = null;
+
+            if ($scansForDay->isNotEmpty()) {
+                $cutoff = Carbon::parse($dateStr.' '.config('dtr.time_out_cutoff'), $timezone);
+                $earliestScan = $scansForDay->first();
+                $earliestScanLocal = $earliestScan->scan_timestamp->clone()->setTimezone($timezone);
+
+                if ($earliestScanLocal->gt($cutoff)) {
+                    $lastScan = $scansForDay->last();
+                    $timeOutPhotoUrl = $lastScan->captured_photo_url;
+                    $timeOutScannedAt = $lastScan->scan_timestamp->clone()->setTimezone($timezone)->format('g:i A');
+                } else {
+                    $timeInPhotoUrl = $earliestScan->captured_photo_url;
+                    $timeInScannedAt = $earliestScanLocal->format('g:i A');
+
+                    if ($scansForDay->count() > 1) {
+                        $lastScan = $scansForDay->last();
+                        $timeOutPhotoUrl = $lastScan->captured_photo_url;
+                        $timeOutScannedAt = $lastScan->scan_timestamp->clone()->setTimezone($timezone)->format('g:i A');
+                    }
+                }
+            }
+
+            $result[$key] = [
+                'time_in_photo_url' => $timeInPhotoUrl,
+                'time_in_scanned_at' => $timeInScannedAt,
+                'time_out_photo_url' => $timeOutPhotoUrl,
+                'time_out_scanned_at' => $timeOutScannedAt,
+            ];
+        }
+
+        return $result;
     }
 }

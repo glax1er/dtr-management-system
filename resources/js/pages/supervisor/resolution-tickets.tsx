@@ -13,6 +13,7 @@ import type { FormEvent } from 'react';
 import { TicketActions } from '@/components/approve-ticket-dialog';
 import { NumberedPagination } from '@/components/numbered-pagination';
 import type { Paginated } from '@/components/pagination-footer';
+import { ResolutionTicketsNav } from '@/components/resolution-tickets-nav';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { AttendanceBadge } from '@/components/ui/badges/attendance-badge';
@@ -47,6 +48,8 @@ import { dashboard } from '@/routes';
 type ResolutionTicketRow = {
     id: number;
     intern_name: string;
+    intern_id_number?: string | null;
+    intern_profile_photo_url?: string | null;
     date: string;
     type: 'missing_time_in' | 'open' | 'no_record';
     proposed_time_in: string | null;
@@ -66,6 +69,8 @@ interface Filters {
 type ResolutionTicketsProps = {
     tickets: Paginated<ResolutionTicketRow>;
     totalPending?: number;
+    totalResolved?: number;
+    totalSnapshots?: number;
     filters?: Filters;
 };
 
@@ -82,6 +87,8 @@ const buildParams = (
 export default function ResolutionTickets({
     tickets,
     totalPending = tickets.total,
+    totalResolved = 0,
+    totalSnapshots = 0,
     filters = { search: '', type: 'all', per_page: 20 },
 }: ResolutionTicketsProps) {
     const getInitials = useInitials();
@@ -350,6 +357,14 @@ export default function ResolutionTickets({
                         </div>
                     </div>
                 </div>
+
+                {/* Sub-Navigation Tabs */}
+                <ResolutionTicketsNav
+                    currentTab="pending"
+                    totalPending={totalPending}
+                    totalResolved={totalResolved}
+                    totalSnapshots={totalSnapshots}
+                />
 
                 {/* Mobile inline search */}
                 {mobileSearchOpen && (
